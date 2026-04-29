@@ -1,0 +1,52 @@
+{
+  "symbol": "PAXGUSDT",
+  "baseAsset": "PAXG",
+  "quoteAsset": "USDT",
+  "position": {
+    "id": "fixture-paxg-hard-conflict",
+    "symbol": "PAXGUSDT",
+    "entryAt": "2026-04-19T18:22:00.000Z",
+    "entryPrice": 4786.056056,
+    "quantity": 0.0120879,
+    "totalCost": 57.91,
+    "entryFee": 0.06,
+    "notional": 57.85,
+    "currentPrice": 4694.735,
+    "lastMarkedPrice": 4694.735,
+    "stopLossPrice": 4704.998453,
+    "brokerMode": "paper",
+    "operatorMode": "protect_only",
+    "protectiveOrderListId": null,
+    "protectiveOrders": [],
+    "protectiveOrderStatus": null
+  },
+  "accountInfo": {
+    "balances": [
+      { "asset": "PAXG", "free": "0.00000000", "locked": "0.00000000" }
+    ],
+    "canTrade": true,
+    "accountType": "SPOT",
+    "permissions": ["SPOT"]
+  },
+  "openOrders": [],
+  "openOrderLists": [],
+  "recentTrades": [
+    { "symbol": "PAXGUSDT", "isBuyer": true, "qty": "0.0020000", "price": "4748.20", "time": 1761009900000 },
+    { "symbol": "PAXGUSDT", "isBuyer": true, "qty": "0.0025000", "price": "4751.11", "time": 1761010800000 },
+    { "symbol": "PAXGUSDT", "isBuyer": true, "qty": "0.0020000", "price": "4755.72", "time": 1761011700000 },
+    { "symbol": "PAXGUSDT", "isBuyer": true, "qty": "0.0025000", "price": "4758.51", "time": 1761012600000 },
+    { "symbol": "PAXGUSDT", "isBuyer": true, "qty": "0.0030879", "price": "4759.32", "time": 1761013500000 }
+  ],
+  "marketSnapshot": {
+    "book": {
+      "mid": 4723.515,
+      "bid": 4723.51,
+      "ask": 4723.52
+    }
+  },
+  "expected": {
+    "decision": "NEEDS_MANUAL_REVIEW",
+    "reason": "hard_inventory_conflict",
+    "classification": "hard_inventory_conflict"
+  }
+}

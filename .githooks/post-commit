@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+if [ "${AUTO_PUSH_DISABLED:-}" = "1" ]; then
+  exit 0
+fi
+
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+if [ -z "$branch" ]; then
+  echo "[post-commit] Skip auto-push: detached HEAD."
+  exit 0
+fi
+
+remote="${AUTO_PUSH_REMOTE:-origin}"
+if ! git remote get-url "$remote" >/dev/null 2>&1; then
+  echo "[post-commit] Skip auto-push: remote '$remote' is not configured."
+  exit 0
+fi
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "[post-commit] Skip auto-push: working tree is dirty."
+  exit 0
+fi
+
+echo "[post-commit] Auto-pushing $branch to $remote..."
+if ! git push "$remote" "$branch"; then
+  echo "[post-commit] Auto-push failed; commit remains local."
+fi

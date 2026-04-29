@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trading Desk</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <main class="main">
+        <header class="topbar">
+          <div class="topbar-head">
+            <div class="brand-shell">
+              <div class="brand-mark" aria-hidden="true">C</div>
+              <div class="brand-block">
+                <p class="eyebrow">Codex AI Crypto Trading Bot</p>
+                <h1>Trading Desk</h1>
+                <p id="controlHint" class="topbar-copy">Dashboard wordt geladen...</p>
+              </div>
+            </div>
+
+            <div class="topbar-side">
+              <div class="status-strip" aria-label="Botstatus">
+                <span class="status-chip" id="modeBadge">MODE</span>
+                <span class="status-chip muted" id="runStateBadge">STATUS</span>
+                <span class="status-chip muted" id="healthBadge">HEALTH</span>
+                <span class="status-chip muted refresh-chip" id="refreshBadge">Laatste update: -</span>
+              </div>
+
+              <div class="topbar-actions">
+                <button id="paperBtn" class="ghost" type="button">Paper</button>
+                <button id="liveBtn" class="ghost warn" type="button">Live</button>
+                <button id="refreshBtn" class="ghost" type="button">Refresh</button>
+                <button id="startBtn" type="button">Start</button>
+                <button id="stopBtn" class="danger" type="button">Stop</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="operatorSummary" class="headline-strip" aria-label="Belangrijkste samenvatting"></div>
+        </header>
+
+        <section class="overview-layout">
+          <article class="panel panel-primary">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">System overview</p>
+                <h2>Wat telt nu het meest?</h2>
+              </div>
+            </div>
+            <div id="overviewCards" class="overview-card-grid"></div>
+          </article>
+
+          <article class="panel panel-side">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Attention</p>
+                <h2>Nu bekijken</h2>
+              </div>
+            </div>
+            <div id="attentionList" class="stack-list"></div>
+            <div class="subsection-head">
+              <p class="eyebrow">Operator focus</p>
+            </div>
+            <div id="actionList" class="stack-list compact-list"></div>
+            <div class="subsection-head">
+              <p class="eyebrow">Snelle acties</p>
+            </div>
+            <div id="quickActionsList" class="quick-actions"></div>
+          </article>
+        </section>
+
+        <section class="primary-layout">
+          <article class="panel panel-primary">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Can it trade now?</p>
+                <h2>Focus en blockers</h2>
+              </div>
+            </div>
+            <div id="focusList" class="focus-grid"></div>
+          </article>
+
+          <article class="panel panel-side">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Open positions</p>
+                <h2>Actieve exposure</h2>
+              </div>
+            </div>
+            <div id="positionsList" class="stack-list"></div>
+          </article>
+        </section>
+
+        <section class="activity-layout">
+          <article class="panel panel-primary">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Recent activity</p>
+                <h2>Laatste trades</h2>
+              </div>
+            </div>
+            <div id="recentTradesList" class="stack-list"></div>
+          </article>
+        </section>
+
+        <section class="advanced-layout">
+          <details class="panel detail-panel" open>
+            <summary class="panel-summary">
+              <div>
+                <p class="eyebrow">Opportunity board</p>
+                <h3>Top kansen en blokkades</h3>
+              </div>
+              <span id="decisionMeta" class="panel-meta"></span>
+            </summary>
+            <div class="detail-body">
+              <div class="toolbar">
+                <input id="decisionSearch" type="search" placeholder="Zoek symbol of strategie" />
+                <label class="toggle">
+                  <input id="decisionAllowedOnly" type="checkbox" />
+                  Alleen tradebaar
+                </label>
+                <button id="decisionShowMoreBtn" class="ghost ghost-small" type="button">Toon meer</button>
+              </div>
+              <div id="opportunityList" class="stack-list"></div>
+            </div>
+          </details>
+
+          <details class="panel detail-panel">
+            <summary class="panel-summary">
+              <div>
+                <p class="eyebrow">Health</p>
+                <h3>Freshness en systeemstatus</h3>
+              </div>
+            </summary>
+            <div class="detail-body">
+              <div id="healthList" class="stack-list"></div>
+            </div>
+          </details>
+
+          <details class="panel detail-panel">
+            <summary class="panel-summary">
+              <div>
+                <p class="eyebrow">Learning</p>
+                <h3>Learning en tuning</h3>
+              </div>
+            </summary>
+            <div class="detail-body detail-grid">
+              <div id="learningList" class="stack-list"></div>
+              <div id="diagnosticsList" class="stack-list"></div>
+            </div>
+          </details>
+
+          <details class="panel detail-panel">
+            <summary class="panel-summary">
+              <div>
+                <p class="eyebrow">Explainability</p>
+                <h3>Replay, explainers en promotion</h3>
+              </div>
+            </summary>
+            <div class="detail-body detail-grid">
+              <div id="explainabilityList" class="stack-list"></div>
+              <div id="promotionList" class="stack-list"></div>
+            </div>
+          </details>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

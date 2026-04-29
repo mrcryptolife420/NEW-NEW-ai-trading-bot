@@ -1,0 +1,1191 @@
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { coinAliases } from "../data/coinAliases.js";
+import { getCoinProfile } from "../data/coinProfiles.js";
+import { resolveExchangeCapabilities } from "./exchangeCapabilities.js";
+import { ConfigValidationError } from "./errors.js";
+import { applyResolvedConfigProfiles, resolveConfigProfiles } from "./profiles.js";
+import { parseNormalizedConfig } from "./schema.js";
+import { validateConfig } from "./validate.js";
+
+const DEFAULTS = {
+  botMode: "paper",
+  baseQuoteAsset: "USDT",
+  startingCash: 10_000,
+  maxOpenPositions: 4,
+  maxPositionFraction: 0.15,
+  maxTotalExposureFraction: 0.6,
+  riskPerTrade: 0.01,
+  maxDailyDrawdown: 0.04,
+  userRegion: "BE",
+  exchangeCapabilitiesEnabled: [],
+  exchangeCapabilitiesDisabled: [],
+  minModelConfidence: 0.5,
+  entryCooldownMinutes: 20,
+  symbolLossCooldownMinutes: 240,
+  minTradeUsdt: 25,
+  paperMinTradeUsdt: 10,
+  tradingIntervalSeconds: 120,
+  paperFeeBps: 10,
+  paperSlippageBps: 6,
+  paperLatencyMs: 220,
+  paperMakerFillFloor: 0.22,
+  paperPartialFillMinRatio: 0.35,
+  backtestLatencyMs: 260,
+  backtestSyntheticDepthUsd: 140000,
+  stopLossPct: 0.018,
+  takeProfitPct: 0.03,
+  trailingStopPct: 0.012,
+  maxHoldMinutes: 360,
+  maxSpreadBps: 25,
+  maxRealizedVolPct: 0.07,
+  watchlist: [
+    "BTCUSDT",
+    "ETHUSDT",
+    "BNBUSDT",
+    "SOLUSDT",
+    "XRPUSDT",
+    "ADAUSDT",
+    "LINKUSDT",
+    "AVAXUSDT",
+    "DOGEUSDT",
+    "TRXUSDT",
+    "LTCUSDT",
+    "DOTUSDT",
+    "UNIUSDT",
+    "AAVEUSDT",
+    "NEARUSDT",
+    "SUIUSDT",
+    "APTUSDT",
+    "BCHUSDT"
+  ],
+  enableDynamicWatchlist: true,
+  watchlistTopN: 100,
+  watchlistFetchPerPage: 250,
+  dynamicWatchlistMinSymbols: 40,
+  watchlistExcludeStablecoins: true,
+  watchlistExcludeLeveragedTokens: true,
+  watchlistInclude: [],
+  watchlistExclude: [],
+  klineInterval: "15m",
+  enableCrossTimeframeConsensus: true,
+  lowerTimeframeInterval: "5m",
+  higherTimeframeInterval: "1h",
+  lowerTimeframeLimit: 120,
+  higherTimeframeLimit: 120,
+  higherTimeframeIntervalDaily: "1d",
+  higherTimeframeLimitDaily: 120,
+  enableDailyTimeframe: true,
+  fundingRateHistoryLimit: 200,
+  enableAggtradeOrderflow: true,
+  aggtradeWindowSeconds: 60,
+  aggtradeBufferSize: 500,
+  enableBtcDominance: true,
+  btcDominanceCacheMinutes: 30,
+  enableVolumeProfile: true,
+  volumeProfileBins: 24,
+  vwapLookbackCandles: 96,
+  enableGlobalMarketContext: true,
+  globalMarketCacheMinutes: 20,
+  crossTimeframeMinAlignmentScore: 0.42,
+  crossTimeframeMaxVolGapPct: 0.03,
+  klineLimit: 180,
+  backtestCandleLimit: 500,
+  historyCacheEnabled: true,
+  historyFetchBatchSize: 1000,
+  historyMaxGapFillRanges: 24,
+  historyPartitionGranularity: "month",
+  historyVerifyFreshnessMultiplier: 4,
+  marketSnapshotCacheMinutes: 4,
+  marketSnapshotConcurrency: 5,
+  marketSnapshotBudgetSymbols: 28,
+  exchangeInfoCacheMs: 6 * 60 * 60_000,
+  restMarketDataFallbackMinMs: 30_000,
+  restTimeframeFallbackMinMs: 60_000,
+  requestWeightBackoffMaxMs: 60_000,
+  requestWeightWarnThreshold1m: 4800,
+  newsLookbackHours: 20,
+  newsCacheMinutes: 10,
+  newsHeadlineLimit: 12,
+  announcementLookbackHours: 48,
+  announcementCacheMinutes: 15,
+  marketStructureCacheMinutes: 3,
+  marketStructureLookbackPoints: 12,
+  calendarLookbackDays: 30,
+  calendarCacheMinutes: 30,
+  newsMinSourceQuality: 0.68,
+  newsMinReliabilityScore: 0.64,
+  newsStrictWhitelist: true,
+  sourceReliabilityMinOperationalScore: 0.22,
+  sourceReliabilityMaxRecentFailures: 2,
+  sourceReliabilityRateLimitCooldownMinutes: 30,
+  sourceReliabilityTimeoutCooldownMinutes: 12,
+  sourceReliabilityFailureCooldownMinutes: 8,
+  enableMarketSentimentContext: true,
+  marketSentimentCacheMinutes: 15,
+  alternativeApiBaseUrl: "https://api.alternative.me",
+  coinGeckoApiBaseUrl: "https://api.coingecko.com/api/v3",
+  enableOnChainLiteContext: true,
+  onChainLiteCacheMinutes: 30,
+  onChainLiteStablecoinIds: ["tether", "usd-coin", "dai", "first-digital-usd", "ethena-usde"],
+  onChainLiteMajorIds: ["bitcoin", "ethereum", "binancecoin", "solana", "ripple", "dogecoin"],
+  onChainLiteTrendingLimit: 7,
+  enableVolatilityContext: true,
+  volatilityCacheMinutes: 20,
+  deribitApiBaseUrl: "https://www.deribit.com/api/v2",
+  adaptiveLearningEnabled: true,
+  adaptiveLearningCoreLearningRate: 0.01,
+  adaptiveLearningPaperCoreUpdates: true,
+  adaptiveLearningLiveCoreUpdates: false,
+  adaptiveLearningMaxThresholdShift: 0.012,
+  adaptiveLearningMaxSizeBias: 0.08,
+  adaptiveLearningMaxSampleWeight: 1.85,
+  adaptiveLearningMinQuarantineEvidence: 0.62,
+  adaptiveLearningStrategyReweightLookbackHours: 24 * 7,
+  adaptiveLearningStrategyReweightMaxBias: 0.1,
+  adaptiveLearningParameterOptimizationMinTrades: 24,
+  adaptiveLearningParameterOptimizationMaxCandidates: 12,
+  modelLearningRate: 0.06,
+  modelL2: 0.0005,
+  modelThreshold: 0.52,
+  optimizerBayesPriorAlpha: 2,
+  optimizerBayesPriorBeta: 2,
+  optimizerBayesExploration: 0.12,
+  challengerLearningRate: 0.08,
+  challengerL2: 0.00035,
+  challengerWindowTrades: 40,
+  challengerMinTrades: 12,
+  challengerPromotionMargin: 0.01,
+  enableStrategyRouter: true,
+  strategyMinConfidence: 0.4,
+  enablePriceActionStructure: true,
+  enableCvdConfirmation: true,
+  enableLiquidationMagnetContext: true,
+  enableRangeGridStrategy: true,
+  enableLiveRangeGrid: false,
+  maxGridLegs: 3,
+  gridBaseSizeMultiplier: 0.55,
+  gridBreakoutInvalidationThreshold: 0.58,
+  enableTransformerChallenger: true,
+  transformerLookbackCandles: 24,
+  transformerLearningRate: 0.03,
+  transformerMinConfidence: 0.12,
+  enableSequenceChallenger: true,
+  sequenceChallengerLearningRate: 0.024,
+  sequenceChallengerL2: 0.00045,
+  metaNeuralLearningRate: 0.025,
+  metaNeuralL2: 0.00045,
+  exitNeuralLearningRate: 0.022,
+  exitNeuralL2: 0.00055,
+  executionNeuralLearningRate: 0.02,
+  executionNeuralL2: 0.0005,
+  strategyMetaLearningRate: 0.022,
+  strategyMetaL2: 0.00055,
+  enableMultiAgentCommittee: true,
+  committeeMinConfidence: 0.38,
+  committeeMinAgreement: 0.28,
+  enableRlExecution: true,
+  minCalibrationConfidence: 0.16,
+  calibrationBins: 10,
+  calibrationMinObservations: 12,
+  calibrationPriorStrength: 4,
+  minRegimeConfidence: 0.4,
+  abstainBand: 0.02,
+  maxModelDisagreement: 0.28,
+  enableEventDrivenData: true,
+  enableLocalOrderBook: true,
+  localBookMaxSymbols: 28,
+  streamTradeBufferSize: 120,
+  streamDepthLevels: 20,
+  streamDepthSnapshotLimit: 200,
+  maxDepthEventAgeMs: 15000,
+  localBookBootstrapWaitMs: 450,
+  localBookWarmupMs: 2500,
+  enableSmartExecution: true,
+  enablePeggedOrders: true,
+  defaultPegOffsetLevels: 1,
+  maxPeggedImpactBps: 3.5,
+  enableStpTelemetryQuery: true,
+  stpTelemetryLimit: 20,
+  makerMinSpreadBps: 4,
+  aggressiveEntryThreshold: 0.72,
+  baseMakerPatienceMs: 3500,
+  maxMakerPatienceMs: 12000,
+  enableTrailingProtection: true,
+  enableSessionLogic: true,
+  sessionLowLiquiditySpreadBps: 6,
+  sessionLowLiquidityDepthUsd: 150000,
+  sessionCautionMinutesToFunding: 45,
+  sessionHardBlockMinutesToFunding: 8,
+  sessionWeekendRiskMultiplier: 0.82,
+  sessionOffHoursRiskMultiplier: 0.88,
+  sessionFundingRiskMultiplier: 0.78,
+  blockWeekendHighRiskStrategies: true,
+  enableDriftMonitoring: true,
+  driftMinFeatureStatCount: 20,
+  driftFeatureScoreAlert: 1.35,
+  driftFeatureScoreBlock: 1.85,
+  driftLowReliabilityAlert: 0.6,
+  driftCalibrationEceAlert: 0.18,
+  driftCalibrationEceBlock: 0.28,
+  driftExecutionSlipAlertBps: 4,
+  driftExecutionSlipBlockBps: 8,
+  driftPredictionConfidenceAlert: 0.12,
+  driftMinCandidateCount: 3,
+  selfHealEnabled: true,
+  selfHealSwitchToPaper: true,
+  selfHealResetRlOnTrigger: true,
+  selfHealRestoreStableModel: true,
+  selfHealCooldownMinutes: 180,
+  selfHealMaxRecentLossStreak: 3,
+  selfHealWarningLossStreak: 2,
+  selfHealMaxRecentDrawdownPct: 0.03,
+  selfHealWarningDrawdownPct: 0.018,
+  selfHealPaperCalibrationProbeSizeMultiplier: 0.22,
+  selfHealPaperCalibrationProbeThresholdPenalty: 0.03,
+  lossStreakLookbackMinutes: 720,
+  stableModelMaxSnapshots: 5,
+  stableModelMinTrades: 6,
+  stableModelMaxCalibrationEce: 0.14,
+  stableModelMinWinRate: 0.45,
+  targetAnnualizedVolatility: 0.35,
+  maxLossStreak: 3,
+  maxSymbolLossStreak: 2,
+  minBookPressureForEntry: -0.36,
+  paperExplorationEnabled: true,
+  paperExplorationThresholdBuffer: 0.06,
+  paperExplorationSizeMultiplier: 0.58,
+  paperExplorationCooldownMinutes: 90,
+  paperExplorationMinBookPressure: -0.36,
+  paperRecoveryProbeEnabled: true,
+  paperRecoveryProbeThresholdBuffer: 0.035,
+  paperRecoveryProbeSizeMultiplier: 0.38,
+  paperRecoveryProbeCooldownMinutes: 60,
+  paperRecoveryProbeMinBookPressure: -0.28,
+  paperRecoveryProbeAllowMinTradeOverride: true,
+  paperLearningProbeDailyLimit: 8,
+  paperLearningShadowDailyLimit: 12,
+  paperLearningNearMissThresholdBuffer: 0.025,
+  paperLearningMinSignalQuality: 0.4,
+  paperLearningMinDataQuality: 0.52,
+  paperLearningMaxProbePerFamilyPerDay: 3,
+  paperLearningMaxProbePerRegimePerDay: 4,
+  paperLearningMaxProbePerSessionPerDay: 3,
+  paperLearningMaxProbePerRegimeFamilyPerDay: 2,
+  paperLearningMaxProbePerConditionStrategyPerDay: 2,
+  paperLearningMaxShadowPerRegimeFamilyPerDay: 3,
+  paperLearningMaxShadowPerConditionStrategyPerDay: 3,
+  paperLearningMaxConcurrentPositions: 3,
+  paperLearningMinNoveltyScore: 0.18,
+  baselineCoreEnabled: true,
+  baselineCoreMinTradeCount: 8,
+  baselineCoreMinPreferredTrades: 4,
+  baselineCoreMinSuspendTrades: 3,
+  baselineCorePreferredStrategyCount: 3,
+  baselineCoreStrategyLossCutoff: -0.5,
+  baselineCoreCatastrophicStrategyLossCutoff: -5,
+  baselineCoreMaxSuspendWinRate: 0.2,
+  paperLearningSandboxEnabled: true,
+  paperLearningSandboxMinClosedTrades: 3,
+  paperLearningSandboxMaxThresholdShift: 0.01,
+  exitOnSpreadShockBps: 20,
+  minVolTargetFraction: 0.4,
+  maxVolTargetFraction: 1.05,
+  maxPairCorrelation: 0.82,
+  maxClusterPositions: 1,
+  maxSectorPositions: 2,
+  maxFamilyPositions: 2,
+  maxRegimePositions: 2,
+  pairHealthLookbackHours: 72,
+  pairHealthMinScore: 0.38,
+  pairHealthQuarantineMinutes: 180,
+  pairHealthMaxInfraIssues: 3,
+  enableUniverseSelector: true,
+  universeMaxSymbols: 24,
+  universeMinScore: 0.28,
+  universeMinDepthConfidence: 0.16,
+  universeMinDepthUsd: 30000,
+  enableMarketProviderDerivativesContext: true,
+  enableMarketProviderMacroContext: true,
+  enableMarketProviderExecutionFeedback: true,
+  enableMarketProviderCrossExchangeDivergence: true,
+  enableMarketProviderStablecoinFlows: true,
+  enableMarketProviderMicrostructurePriors: true,
+  universeTargetVolPct: 0.018,
+  universeRotationLookbackDays: 21,
+  universeRotationBoost: 0.08,
+  universeRotationMaxCoolingClusters: 2,
+  enableExitIntelligence: true,
+  exitIntelligenceMinConfidence: 0.52,
+  exitIntelligenceTrimScore: 0.6,
+  exitIntelligenceTrailScore: 0.56,
+  exitIntelligenceExitScore: 0.72,
+  tradeQualityMinScore: 0.45,
+  tradeQualityCautionScore: 0.58,
+  modelPromotionMinShadowTrades: 18,
+  modelPromotionMinPaperTrades: 10,
+  modelPromotionMinPaperWinRate: 0.5,
+  modelPromotionMaxPaperDrawdownPct: 0.12,
+  modelPromotionMinPaperQuality: 0.56,
+  modelPromotionMinLiveTrades: 5,
+  modelPromotionMinLiveQuality: 0.54,
+  strategyAttributionMinTrades: 6,
+  divergenceMinPaperTrades: 4,
+  divergenceMinLiveTrades: 3,
+  divergenceAlertScore: 0.42,
+  divergenceBlockScore: 0.68,
+  divergenceAlertSlipGapBps: 3.5,
+  offlineTrainerMinReadiness: 0.34,
+  modelPromotionProbationLiveTrades: 4,
+  exchangeTruthFreezeMismatchCount: 2,
+  exchangeTruthRecentFillLookbackMinutes: 30,
+  enableAutoReconcile: true,
+  autoReconcileRetryCount: 2,
+  autoReconcileRetryDelayMs: 1200,
+  demoPaperReconcileConfirmationSamples: 3,
+  demoPaperReconcileConfirmationDelayMs: 450,
+  demoPaperReconcileMinConfidence: 0.78,
+  demoPaperReconcileAutoClearQuorum: 2,
+  demoPaperMarkDriftToleranceBps: 45,
+  demoPaperRecentFillGraceMs: 18000,
+  demoPaperStablePriceToleranceBps: 18,
+  qtyMismatchTolerance: 0,
+  priceMismatchToleranceBps: 35,
+  maxAutoFixNotional: 750,
+  autoReconcileDryRun: false,
+  positionFailureProtectOnlyCount: 2,
+  positionFailureManualReviewCount: 4,
+  shadowTradeDecisionLimit: 3,
+  thresholdAutoApplyEnabled: true,
+  thresholdAutoApplyMinConfidence: 0.58,
+  thresholdProbationMinTrades: 6,
+  thresholdProbationWindowDays: 7,
+  thresholdProbationMaxAvgPnlDropPct: 0.01,
+  thresholdProbationMaxWinRateDrop: 0.08,
+  thresholdRelaxStep: 0.012,
+  thresholdTightenStep: 0.01,
+  thresholdTuningMaxRecommendations: 5,
+  offlineTrainerScorecardHalfLifeHours: 24 * 7,
+  offlineTrainerScorecardPriorTrades: 3,
+  offlineTrainerMinEffectiveSample: 2.4,
+  featureDecayMinTrades: 8,
+  featureDecayWeakScore: 0.18,
+  featureDecayBlockedScore: 0.1,
+  executionCalibrationMinLiveTrades: 6,
+  executionCalibrationLookbackTrades: 48,
+  executionCalibrationMaxBpsAdjust: 6,
+  parameterGovernorMinTrades: 4,
+  parameterGovernorMaxThresholdShift: 0.03,
+  parameterGovernorMaxStopLossMultiplierDelta: 0.14,
+  parameterGovernorMaxTakeProfitMultiplierDelta: 0.18,
+  referenceVenueFetchEnabled: false,
+  referenceVenueQuoteUrls: [],
+  referenceVenueMinQuotes: 2,
+  referenceVenueMaxDivergenceBps: 18,
+  strategyResearchFetchEnabled: false,
+  strategyResearchFeedUrls: [],
+  strategyResearchPaperScoreFloor: 0.64,
+  strategyGenomeMaxChildren: 4,
+  counterfactualLookaheadMinutes: 90,
+  counterfactualQueueLimit: 40,
+  researchPromotionMinSharpe: 0.35,
+  researchPromotionMinTrades: 6,
+  researchPromotionMaxDrawdownPct: 0.12,
+  binanceApiBaseUrl: "https://api.binance.com",
+  binanceFuturesApiBaseUrl: "https://fapi.binance.com",
+  binanceRecvWindow: 5000,
+  clockSyncSampleCount: 5,
+  clockSyncMaxAgeMs: 300000,
+  clockSyncMaxRttMs: 1200,
+  enableExchangeProtection: true,
+  allowRecoverUnsyncedPositions: false,
+  stpMode: "NONE",
+  liveStopLimitBufferPct: 0.002,
+  maxServerTimeDriftMs: 450,
+  maxKlineStalenessMultiplier: 3,
+  healthMaxConsecutiveFailures: 3,
+  reportLookbackTrades: 50,
+  enableMetaDecisionGate: true,
+  metaMinConfidence: 0.42,
+  metaBlockScore: 0.44,
+  metaCautionScore: 0.53,
+  enableCanaryLiveMode: true,
+  canaryLiveTradeCount: 5,
+  canaryLiveSizeMultiplier: 0.35,
+  capitalLadderSeedMultiplier: 0.18,
+  capitalLadderScaledMultiplier: 0.55,
+  capitalLadderFullMultiplier: 1,
+  capitalLadderMinApprovedCandidates: 1,
+  capitalGovernorWeeklyDrawdownPct: 0.08,
+  capitalGovernorBadDayStreak: 3,
+  capitalGovernorBadDayStreakMinLossFraction: 0.003,
+  capitalGovernorRecoveryTrades: 4,
+  capitalGovernorRecoveryMinWinRate: 0.55,
+  capitalGovernorMinSizeMultiplier: 0.3,
+  dailyRiskBudgetFloor: 0.35,
+  portfolioMaxCvarPct: 0.04,
+  portfolioDrawdownBudgetPct: 0.05,
+  portfolioRegimeKillSwitchLossStreak: 3,
+  maxEntriesPerDay: 12,
+  maxEntriesPerSymbolPerDay: 2,
+  scaleOutTriggerPct: 0.014,
+  scaleOutFraction: 0.4,
+  scaleOutMinNotionalUsd: 35,
+  scaleOutTrailOffsetPct: 0.003,
+  researchCandleLimit: 900,
+  researchTrainCandles: 240,
+  researchTestCandles: 72,
+  researchStepCandles: 72,
+  researchMaxWindows: 6,
+  researchMaxSymbols: 4,
+  dataRecorderEnabled: true,
+  dataRecorderRetentionDays: 21,
+  dataRecorderColdRetentionDays: 90,
+  modelRegistryMinScore: 0.56,
+  modelRegistryRollbackDrawdownPct: 0.08,
+  modelRegistryMaxEntries: 12,
+  stateBackupEnabled: true,
+  stateBackupIntervalMinutes: 30,
+  stateBackupRetention: 6,
+  serviceRestartDelaySeconds: 8,
+  serviceRestartBackoffMultiplier: 1.8,
+  serviceRestartMaxDelaySeconds: 180,
+  serviceStatusFilename: "service-status.json",
+  serviceMaxRestartsPerHour: 20,
+  exchangeTruthLoopIntervalSeconds: 90,
+  operatorAlertMaxItems: 8,
+  operatorAlertWebhookUrls: [],
+  operatorAlertDiscordWebhookUrls: [],
+  operatorAlertTelegramBotToken: "",
+  operatorAlertTelegramChatId: "",
+  operatorAlertDispatchMinSeverity: "high",
+  operatorAlertDispatchCooldownMinutes: 30,
+  operatorAlertSilenceMinutes: 180,
+  inactivityWatchdogNoCandidateHours: 3,
+  inactivityWatchdogNoExecutionHours: 2,
+  inactivityWatchdogDominantBlockerHours: 2,
+  inactivityWatchdogSizingFailureCycles: 3,
+  inactivityWatchdogDashboardDriftCycles: 2,
+  inactivityWatchdogStateStallHours: 2,
+  gitShortClonePath: "C:\\code\\Codex-ai-trading-bot",
+  liveTradingAcknowledged: "",
+  dashboardPort: 3011,
+  dashboardPortfolioRefreshSeconds: 5,
+  dashboardEquityPointLimit: 1440,
+  dashboardCyclePointLimit: 720,
+  dashboardDecisionLimit: 24,
+  paperExecutionVenue: "internal",
+  /** null = auto: alleen paper + PAPER_EXECUTION_VENUE=binance_demo_spot */
+  allowSyntheticMinNotionalExit: null,
+  /** Buffer boven exchange MIN_NOTIONAL voor pre-check (bv. 0.02 = 2%) */
+  minNotionalExitBufferPct: 0.02
+};
+
+function parseEnvExampleKeys(content = "") {
+  return new Set(
+    `${content || ""}`
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#") && line.includes("="))
+      .map((line) => line.split("=")[0]?.trim())
+      .filter(Boolean)
+  );
+}
+
+async function loadAllowedEnvKeys(projectRoot) {
+  const envExamplePath = path.join(projectRoot, ".env.example");
+  try {
+    const content = await fs.readFile(envExamplePath, "utf8");
+    return parseEnvExampleKeys(content);
+  } catch {
+    return new Set();
+  }
+}
+
+function detectUnknownConfigKeys(fileEnv = {}, allowedEnvKeys = new Set()) {
+  if (!(allowedEnvKeys instanceof Set) || allowedEnvKeys.size === 0) {
+    return [];
+  }
+  return Object.keys(fileEnv)
+    .filter((key) => /^[A-Z][A-Z0-9_]*$/.test(key))
+    .filter((key) => !allowedEnvKeys.has(key))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function parseEnvContent(content) {
+  const env = {};
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = line.slice(0, separatorIndex).trim();
+    const value = line.slice(separatorIndex + 1).trim();
+    env[key] = value.replace(/^['"]|['"]$/g, "");
+  }
+  return env;
+}
+
+function parseNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function parseBoolean(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  return ["1", "true", "yes", "on"].includes(`${value}`.trim().toLowerCase());
+}
+
+function parseOptionalTriStateBoolean(raw, fallbackNull) {
+  if (raw === undefined || raw === null || `${raw}`.trim() === "") {
+    return fallbackNull;
+  }
+  return parseBoolean(raw, false);
+}
+
+function parseCsv(value, fallback) {
+  if (!value) {
+    return fallback;
+  }
+  const items = value
+    .split(",")
+    .map((item) => item.trim().toUpperCase())
+    .filter(Boolean);
+  return items.length > 0 ? items : fallback;
+}
+
+function parseTextCsv(value, fallback) {
+  if (!value) {
+    return fallback;
+  }
+  const items = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length > 0 ? items : fallback;
+}
+
+function parseLowerCsv(value, fallback) {
+  if (!value) {
+    return fallback;
+  }
+  const items = value
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  return items.length > 0 ? items : fallback;
+}
+
+function normalizeMode(value, fallback) {
+  const normalized = `${value || fallback}`.trim().toLowerCase();
+  return normalized === "live" ? "live" : "paper";
+}
+
+export function resolveDefaultHistoryDir() {
+  if (process.platform === "win32") {
+    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    return path.join(localAppData, "binance-ai-trading-bot", "data-history");
+  }
+  return path.join(os.homedir(), ".local", "share", "binance-ai-trading-bot", "data-history");
+}
+
+function resolveHistoryDirSetting(env = {}, projectRoot = process.cwd()) {
+  const configured = `${env.HISTORY_DIR || ""}`.trim();
+  if (configured) {
+    return {
+      path: path.isAbsolute(configured) ? configured : path.resolve(projectRoot, configured),
+      source: "env"
+    };
+  }
+  return {
+    path: resolveDefaultHistoryDir(),
+    source: "default"
+  };
+}
+
+function resolveRuntimeDir(env = {}, projectRoot = process.cwd()) {
+  const configured = `${env.RUNTIME_DIR || ""}`.trim();
+  if (!configured) {
+    return path.join(projectRoot, "data", "runtime");
+  }
+  return path.isAbsolute(configured) ? configured : path.resolve(projectRoot, configured);
+}
+
+export async function loadConfig(projectRoot = process.cwd()) {
+  const envPath = path.join(projectRoot, ".env");
+  let fileEnv = {};
+  try {
+    const content = await fs.readFile(envPath, "utf8");
+    fileEnv = parseEnvContent(content);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  const env = {
+    ...fileEnv,
+    ...process.env
+  };
+  const allowedEnvKeys = await loadAllowedEnvKeys(projectRoot);
+  const unknownEnvKeys = detectUnknownConfigKeys(fileEnv, allowedEnvKeys);
+  const resolvedProfiles = resolveConfigProfiles(env);
+
+  const botMode = normalizeMode(env.BOT_MODE, DEFAULTS.botMode);
+  const watchlist = parseCsv(env.WATCHLIST, DEFAULTS.watchlist);
+  const watchlistInclude = parseCsv(env.WATCHLIST_INCLUDE, DEFAULTS.watchlistInclude);
+  const watchlistExclude = parseCsv(env.WATCHLIST_EXCLUDE, DEFAULTS.watchlistExclude);
+  const runtimeDir = resolveRuntimeDir(env, projectRoot);
+  const historyDirSetting = resolveHistoryDirSetting(env, projectRoot);
+  const historyDir = historyDirSetting.path;
+
+  const config = {
+    projectRoot,
+    runtimeDir,
+    historyDir,
+    historyDirSource: historyDirSetting.source,
+    envPath,
+    botMode,
+    baseQuoteAsset: env.BASE_QUOTE_ASSET || DEFAULTS.baseQuoteAsset,
+    startingCash: parseNumber(env.STARTING_CASH, DEFAULTS.startingCash),
+    maxOpenPositions: parseNumber(env.MAX_OPEN_POSITIONS, DEFAULTS.maxOpenPositions),
+    maxPositionFraction: parseNumber(env.MAX_POSITION_FRACTION, DEFAULTS.maxPositionFraction),
+    maxTotalExposureFraction: parseNumber(env.MAX_TOTAL_EXPOSURE_FRACTION, DEFAULTS.maxTotalExposureFraction),
+    riskPerTrade: parseNumber(env.RISK_PER_TRADE, DEFAULTS.riskPerTrade),
+    maxDailyDrawdown: parseNumber(env.MAX_DAILY_DRAWDOWN, DEFAULTS.maxDailyDrawdown),
+    userRegion: (env.USER_REGION || DEFAULTS.userRegion).trim().toUpperCase(),
+    exchangeCapabilitiesEnabled: parseLowerCsv(env.EXCHANGE_CAPABILITIES_ENABLED, DEFAULTS.exchangeCapabilitiesEnabled),
+    exchangeCapabilitiesDisabled: parseLowerCsv(env.EXCHANGE_CAPABILITIES_DISABLED, DEFAULTS.exchangeCapabilitiesDisabled),
+    minModelConfidence: parseNumber(env.MIN_MODEL_CONFIDENCE, DEFAULTS.minModelConfidence),
+    entryCooldownMinutes: parseNumber(env.ENTRY_COOLDOWN_MINUTES, DEFAULTS.entryCooldownMinutes),
+    symbolLossCooldownMinutes: parseNumber(env.SYMBOL_LOSS_COOLDOWN_MINUTES, DEFAULTS.symbolLossCooldownMinutes),
+    minTradeUsdt: parseNumber(env.MIN_TRADE_USDT, DEFAULTS.minTradeUsdt),
+    paperMinTradeUsdt: parseNumber(env.PAPER_MIN_TRADE_USDT, DEFAULTS.paperMinTradeUsdt),
+    tradingIntervalSeconds: parseNumber(env.TRADING_INTERVAL_SECONDS, DEFAULTS.tradingIntervalSeconds),
+    paperFeeBps: parseNumber(env.PAPER_FEE_BPS, DEFAULTS.paperFeeBps),
+    paperSlippageBps: parseNumber(env.PAPER_SLIPPAGE_BPS, DEFAULTS.paperSlippageBps),
+    paperLatencyMs: parseNumber(env.PAPER_LATENCY_MS, DEFAULTS.paperLatencyMs),
+    paperMakerFillFloor: parseNumber(env.PAPER_MAKER_FILL_FLOOR, DEFAULTS.paperMakerFillFloor),
+    paperPartialFillMinRatio: parseNumber(env.PAPER_PARTIAL_FILL_MIN_RATIO, DEFAULTS.paperPartialFillMinRatio),
+    backtestLatencyMs: parseNumber(env.BACKTEST_LATENCY_MS, DEFAULTS.backtestLatencyMs),
+    backtestSyntheticDepthUsd: parseNumber(env.BACKTEST_SYNTHETIC_DEPTH_USD, DEFAULTS.backtestSyntheticDepthUsd),
+    stopLossPct: parseNumber(env.STOP_LOSS_PCT, DEFAULTS.stopLossPct),
+    takeProfitPct: parseNumber(env.TAKE_PROFIT_PCT, DEFAULTS.takeProfitPct),
+    trailingStopPct: parseNumber(env.TRAILING_STOP_PCT, DEFAULTS.trailingStopPct),
+    maxHoldMinutes: parseNumber(env.MAX_HOLD_MINUTES, DEFAULTS.maxHoldMinutes),
+    maxSpreadBps: parseNumber(env.MAX_SPREAD_BPS, DEFAULTS.maxSpreadBps),
+    maxRealizedVolPct: parseNumber(env.MAX_REALIZED_VOL_PCT, DEFAULTS.maxRealizedVolPct),
+    watchlist,
+    enableDynamicWatchlist: parseBoolean(env.ENABLE_DYNAMIC_WATCHLIST, DEFAULTS.enableDynamicWatchlist),
+    watchlistTopN: parseNumber(env.WATCHLIST_TOP_N, DEFAULTS.watchlistTopN),
+    watchlistFetchPerPage: parseNumber(env.WATCHLIST_FETCH_PER_PAGE, DEFAULTS.watchlistFetchPerPage),
+    dynamicWatchlistMinSymbols: parseNumber(env.DYNAMIC_WATCHLIST_MIN_SYMBOLS, DEFAULTS.dynamicWatchlistMinSymbols),
+    watchlistExcludeStablecoins: parseBoolean(env.WATCHLIST_EXCLUDE_STABLECOINS, DEFAULTS.watchlistExcludeStablecoins),
+    watchlistExcludeLeveragedTokens: parseBoolean(env.WATCHLIST_EXCLUDE_LEVERAGED_TOKENS, DEFAULTS.watchlistExcludeLeveragedTokens),
+    watchlistInclude,
+    watchlistExclude,
+    klineInterval: env.KLINE_INTERVAL || DEFAULTS.klineInterval,
+    klineLimit: parseNumber(env.KLINE_LIMIT, DEFAULTS.klineLimit),
+    backtestCandleLimit: parseNumber(env.BACKTEST_CANDLE_LIMIT, DEFAULTS.backtestCandleLimit),
+    historyCacheEnabled: parseBoolean(env.HISTORY_CACHE_ENABLED, DEFAULTS.historyCacheEnabled),
+    historyFetchBatchSize: parseNumber(env.HISTORY_FETCH_BATCH_SIZE, DEFAULTS.historyFetchBatchSize),
+    historyMaxGapFillRanges: parseNumber(env.HISTORY_MAX_GAP_FILL_RANGES, DEFAULTS.historyMaxGapFillRanges),
+    historyPartitionGranularity: (["day", "month"].includes((env.HISTORY_PARTITION_GRANULARITY || DEFAULTS.historyPartitionGranularity).trim().toLowerCase()) ? (env.HISTORY_PARTITION_GRANULARITY || DEFAULTS.historyPartitionGranularity).trim().toLowerCase() : DEFAULTS.historyPartitionGranularity),
+    historyVerifyFreshnessMultiplier: parseNumber(env.HISTORY_VERIFY_FRESHNESS_MULTIPLIER, DEFAULTS.historyVerifyFreshnessMultiplier),
+    marketSnapshotCacheMinutes: parseNumber(env.MARKET_SNAPSHOT_CACHE_MINUTES, DEFAULTS.marketSnapshotCacheMinutes),
+    marketSnapshotConcurrency: parseNumber(env.MARKET_SNAPSHOT_CONCURRENCY, DEFAULTS.marketSnapshotConcurrency),
+    marketSnapshotBudgetSymbols: parseNumber(env.MARKET_SNAPSHOT_BUDGET_SYMBOLS, DEFAULTS.marketSnapshotBudgetSymbols),
+    exchangeInfoCacheMs: parseNumber(env.EXCHANGE_INFO_CACHE_MS, DEFAULTS.exchangeInfoCacheMs),
+    restMarketDataFallbackMinMs: parseNumber(env.REST_MARKET_DATA_FALLBACK_MIN_MS, DEFAULTS.restMarketDataFallbackMinMs),
+    restTimeframeFallbackMinMs: parseNumber(env.REST_TIMEFRAME_FALLBACK_MIN_MS, DEFAULTS.restTimeframeFallbackMinMs),
+    requestWeightBackoffMaxMs: parseNumber(env.REQUEST_WEIGHT_BACKOFF_MAX_MS, DEFAULTS.requestWeightBackoffMaxMs),
+    requestWeightWarnThreshold1m: parseNumber(env.REQUEST_WEIGHT_WARN_THRESHOLD_1M, DEFAULTS.requestWeightWarnThreshold1m),
+    newsLookbackHours: parseNumber(env.NEWS_LOOKBACK_HOURS, DEFAULTS.newsLookbackHours),
+    newsCacheMinutes: parseNumber(env.NEWS_CACHE_MINUTES, DEFAULTS.newsCacheMinutes),
+    newsHeadlineLimit: parseNumber(env.NEWS_HEADLINE_LIMIT, DEFAULTS.newsHeadlineLimit),
+    announcementLookbackHours: parseNumber(env.ANNOUNCEMENT_LOOKBACK_HOURS, DEFAULTS.announcementLookbackHours),
+    announcementCacheMinutes: parseNumber(env.ANNOUNCEMENT_CACHE_MINUTES, DEFAULTS.announcementCacheMinutes),
+    marketStructureCacheMinutes: parseNumber(env.MARKET_STRUCTURE_CACHE_MINUTES, DEFAULTS.marketStructureCacheMinutes),
+    marketStructureLookbackPoints: parseNumber(env.MARKET_STRUCTURE_LOOKBACK_POINTS, DEFAULTS.marketStructureLookbackPoints),
+    calendarLookbackDays: parseNumber(env.CALENDAR_LOOKBACK_DAYS, DEFAULTS.calendarLookbackDays),
+    calendarCacheMinutes: parseNumber(env.CALENDAR_CACHE_MINUTES, DEFAULTS.calendarCacheMinutes),
+    newsMinSourceQuality: parseNumber(env.NEWS_MIN_SOURCE_QUALITY, DEFAULTS.newsMinSourceQuality),
+    newsMinReliabilityScore: parseNumber(env.NEWS_MIN_RELIABILITY_SCORE, DEFAULTS.newsMinReliabilityScore),
+    newsStrictWhitelist: parseBoolean(env.NEWS_STRICT_WHITELIST, DEFAULTS.newsStrictWhitelist),
+    sourceReliabilityMinOperationalScore: parseNumber(env.SOURCE_RELIABILITY_MIN_OPERATIONAL_SCORE, DEFAULTS.sourceReliabilityMinOperationalScore),
+    sourceReliabilityMaxRecentFailures: parseNumber(env.SOURCE_RELIABILITY_MAX_RECENT_FAILURES, DEFAULTS.sourceReliabilityMaxRecentFailures),
+    sourceReliabilityRateLimitCooldownMinutes: parseNumber(env.SOURCE_RELIABILITY_RATE_LIMIT_COOLDOWN_MINUTES, DEFAULTS.sourceReliabilityRateLimitCooldownMinutes),
+    sourceReliabilityTimeoutCooldownMinutes: parseNumber(env.SOURCE_RELIABILITY_TIMEOUT_COOLDOWN_MINUTES, DEFAULTS.sourceReliabilityTimeoutCooldownMinutes),
+    sourceReliabilityFailureCooldownMinutes: parseNumber(env.SOURCE_RELIABILITY_FAILURE_COOLDOWN_MINUTES, DEFAULTS.sourceReliabilityFailureCooldownMinutes),
+    enableMarketSentimentContext: parseBoolean(env.ENABLE_MARKET_SENTIMENT_CONTEXT, DEFAULTS.enableMarketSentimentContext),
+    marketSentimentCacheMinutes: parseNumber(env.MARKET_SENTIMENT_CACHE_MINUTES, DEFAULTS.marketSentimentCacheMinutes),
+    alternativeApiBaseUrl: env.ALTERNATIVE_API_BASE_URL || DEFAULTS.alternativeApiBaseUrl,
+    coinGeckoApiBaseUrl: env.COINGECKO_API_BASE_URL || DEFAULTS.coinGeckoApiBaseUrl,
+    enableOnChainLiteContext: parseBoolean(env.ENABLE_ONCHAIN_LITE_CONTEXT, DEFAULTS.enableOnChainLiteContext),
+    onChainLiteCacheMinutes: parseNumber(env.ONCHAIN_LITE_CACHE_MINUTES, DEFAULTS.onChainLiteCacheMinutes),
+    onChainLiteStablecoinIds: parseTextCsv(env.ONCHAIN_LITE_STABLECOIN_IDS, DEFAULTS.onChainLiteStablecoinIds),
+    onChainLiteMajorIds: parseTextCsv(env.ONCHAIN_LITE_MAJOR_IDS, DEFAULTS.onChainLiteMajorIds),
+    onChainLiteTrendingLimit: parseNumber(env.ONCHAIN_LITE_TRENDING_LIMIT, DEFAULTS.onChainLiteTrendingLimit),
+    enableVolatilityContext: parseBoolean(env.ENABLE_VOLATILITY_CONTEXT, DEFAULTS.enableVolatilityContext),
+    volatilityCacheMinutes: parseNumber(env.VOLATILITY_CACHE_MINUTES, DEFAULTS.volatilityCacheMinutes),
+    deribitApiBaseUrl: env.DERIBIT_API_BASE_URL || DEFAULTS.deribitApiBaseUrl,
+    adaptiveLearningEnabled: parseBoolean(env.ADAPTIVE_LEARNING_ENABLED, DEFAULTS.adaptiveLearningEnabled),
+    adaptiveLearningCoreLearningRate: parseNumber(env.ADAPTIVE_LEARNING_CORE_LEARNING_RATE, DEFAULTS.adaptiveLearningCoreLearningRate),
+  adaptiveLearningPaperCoreUpdates: parseBoolean(env.ADAPTIVE_LEARNING_PAPER_CORE_UPDATES, DEFAULTS.adaptiveLearningPaperCoreUpdates),
+  adaptiveLearningLiveCoreUpdates: parseBoolean(env.ADAPTIVE_LEARNING_LIVE_CORE_UPDATES, DEFAULTS.adaptiveLearningLiveCoreUpdates),
+  adaptiveLearningMaxThresholdShift: parseNumber(env.ADAPTIVE_LEARNING_MAX_THRESHOLD_SHIFT, DEFAULTS.adaptiveLearningMaxThresholdShift),
+  adaptiveLearningMaxSizeBias: parseNumber(env.ADAPTIVE_LEARNING_MAX_SIZE_BIAS, DEFAULTS.adaptiveLearningMaxSizeBias),
+  adaptiveLearningMaxSampleWeight: parseNumber(env.ADAPTIVE_LEARNING_MAX_SAMPLE_WEIGHT, DEFAULTS.adaptiveLearningMaxSampleWeight),
+  adaptiveLearningMinQuarantineEvidence: parseNumber(env.ADAPTIVE_LEARNING_MIN_QUARANTINE_EVIDENCE, DEFAULTS.adaptiveLearningMinQuarantineEvidence),
+    adaptiveLearningStrategyReweightLookbackHours: parseNumber(env.ADAPTIVE_LEARNING_STRATEGY_REWEIGHT_LOOKBACK_HOURS, DEFAULTS.adaptiveLearningStrategyReweightLookbackHours),
+    adaptiveLearningStrategyReweightMaxBias: parseNumber(env.ADAPTIVE_LEARNING_STRATEGY_REWEIGHT_MAX_BIAS, DEFAULTS.adaptiveLearningStrategyReweightMaxBias),
+    adaptiveLearningParameterOptimizationMinTrades: parseNumber(env.ADAPTIVE_LEARNING_PARAMETER_OPTIMIZATION_MIN_TRADES, DEFAULTS.adaptiveLearningParameterOptimizationMinTrades),
+    adaptiveLearningParameterOptimizationMaxCandidates: parseNumber(env.ADAPTIVE_LEARNING_PARAMETER_OPTIMIZATION_MAX_CANDIDATES, DEFAULTS.adaptiveLearningParameterOptimizationMaxCandidates),
+    modelLearningRate: parseNumber(env.MODEL_LEARNING_RATE, DEFAULTS.modelLearningRate),
+    modelL2: parseNumber(env.MODEL_L2, DEFAULTS.modelL2),
+    modelThreshold: parseNumber(env.MODEL_THRESHOLD, DEFAULTS.modelThreshold),
+    optimizerBayesPriorAlpha: parseNumber(env.OPTIMIZER_BAYES_PRIOR_ALPHA, DEFAULTS.optimizerBayesPriorAlpha),
+    optimizerBayesPriorBeta: parseNumber(env.OPTIMIZER_BAYES_PRIOR_BETA, DEFAULTS.optimizerBayesPriorBeta),
+    optimizerBayesExploration: parseNumber(env.OPTIMIZER_BAYES_EXPLORATION, DEFAULTS.optimizerBayesExploration),
+    challengerLearningRate: parseNumber(env.CHALLENGER_LEARNING_RATE, DEFAULTS.challengerLearningRate),
+    challengerL2: parseNumber(env.CHALLENGER_L2, DEFAULTS.challengerL2),
+    challengerWindowTrades: parseNumber(env.CHALLENGER_WINDOW_TRADES, DEFAULTS.challengerWindowTrades),
+    challengerMinTrades: parseNumber(env.CHALLENGER_MIN_TRADES, DEFAULTS.challengerMinTrades),
+    challengerPromotionMargin: parseNumber(env.CHALLENGER_PROMOTION_MARGIN, DEFAULTS.challengerPromotionMargin),
+    modelPromotionMinShadowTrades: parseNumber(env.MODEL_PROMOTION_MIN_SHADOW_TRADES, DEFAULTS.modelPromotionMinShadowTrades),
+    modelPromotionMinPaperTrades: parseNumber(env.MODEL_PROMOTION_MIN_PAPER_TRADES, DEFAULTS.modelPromotionMinPaperTrades),
+    modelPromotionMinPaperWinRate: parseNumber(env.MODEL_PROMOTION_MIN_PAPER_WIN_RATE, DEFAULTS.modelPromotionMinPaperWinRate),
+    modelPromotionMaxPaperDrawdownPct: parseNumber(env.MODEL_PROMOTION_MAX_PAPER_DRAWDOWN_PCT, DEFAULTS.modelPromotionMaxPaperDrawdownPct),
+    modelPromotionMinPaperQuality: parseNumber(env.MODEL_PROMOTION_MIN_PAPER_QUALITY, DEFAULTS.modelPromotionMinPaperQuality),
+    modelPromotionMinLiveTrades: parseNumber(env.MODEL_PROMOTION_MIN_LIVE_TRADES, DEFAULTS.modelPromotionMinLiveTrades),
+    modelPromotionMinLiveQuality: parseNumber(env.MODEL_PROMOTION_MIN_LIVE_QUALITY, DEFAULTS.modelPromotionMinLiveQuality),
+    enableStrategyRouter: parseBoolean(env.ENABLE_STRATEGY_ROUTER, DEFAULTS.enableStrategyRouter),
+    strategyMinConfidence: parseNumber(env.STRATEGY_MIN_CONFIDENCE, DEFAULTS.strategyMinConfidence),
+    enablePriceActionStructure: parseBoolean(env.ENABLE_PRICE_ACTION_STRUCTURE, DEFAULTS.enablePriceActionStructure),
+    enableCvdConfirmation: parseBoolean(env.ENABLE_CVD_CONFIRMATION, DEFAULTS.enableCvdConfirmation),
+    enableLiquidationMagnetContext: parseBoolean(env.ENABLE_LIQUIDATION_MAGNET_CONTEXT, DEFAULTS.enableLiquidationMagnetContext),
+    enableRangeGridStrategy: parseBoolean(env.ENABLE_RANGE_GRID_STRATEGY, DEFAULTS.enableRangeGridStrategy),
+    enableLiveRangeGrid: parseBoolean(env.ENABLE_LIVE_RANGE_GRID, DEFAULTS.enableLiveRangeGrid),
+    maxGridLegs: parseNumber(env.MAX_GRID_LEGS, DEFAULTS.maxGridLegs),
+    gridBaseSizeMultiplier: parseNumber(env.GRID_BASE_SIZE_MULTIPLIER, DEFAULTS.gridBaseSizeMultiplier),
+    gridBreakoutInvalidationThreshold: parseNumber(env.GRID_BREAKOUT_INVALIDATION_THRESHOLD, DEFAULTS.gridBreakoutInvalidationThreshold),
+    enableTransformerChallenger: parseBoolean(env.ENABLE_TRANSFORMER_CHALLENGER, DEFAULTS.enableTransformerChallenger),
+    transformerLookbackCandles: parseNumber(env.TRANSFORMER_LOOKBACK_CANDLES, DEFAULTS.transformerLookbackCandles),
+    transformerLearningRate: parseNumber(env.TRANSFORMER_LEARNING_RATE, DEFAULTS.transformerLearningRate),
+    transformerMinConfidence: parseNumber(env.TRANSFORMER_MIN_CONFIDENCE, DEFAULTS.transformerMinConfidence),
+    enableSequenceChallenger: parseBoolean(env.ENABLE_SEQUENCE_CHALLENGER, DEFAULTS.enableSequenceChallenger),
+    sequenceChallengerLearningRate: parseNumber(env.SEQUENCE_CHALLENGER_LEARNING_RATE, DEFAULTS.sequenceChallengerLearningRate),
+    sequenceChallengerL2: parseNumber(env.SEQUENCE_CHALLENGER_L2, DEFAULTS.sequenceChallengerL2),
+    metaNeuralLearningRate: parseNumber(env.META_NEURAL_LEARNING_RATE, DEFAULTS.metaNeuralLearningRate),
+    metaNeuralL2: parseNumber(env.META_NEURAL_L2, DEFAULTS.metaNeuralL2),
+    exitNeuralLearningRate: parseNumber(env.EXIT_NEURAL_LEARNING_RATE, DEFAULTS.exitNeuralLearningRate),
+    exitNeuralL2: parseNumber(env.EXIT_NEURAL_L2, DEFAULTS.exitNeuralL2),
+    executionNeuralLearningRate: parseNumber(env.EXECUTION_NEURAL_LEARNING_RATE, DEFAULTS.executionNeuralLearningRate),
+    executionNeuralL2: parseNumber(env.EXECUTION_NEURAL_L2, DEFAULTS.executionNeuralL2),
+    strategyMetaLearningRate: parseNumber(env.STRATEGY_META_LEARNING_RATE, DEFAULTS.strategyMetaLearningRate),
+    strategyMetaL2: parseNumber(env.STRATEGY_META_L2, DEFAULTS.strategyMetaL2),
+    enableMultiAgentCommittee: parseBoolean(env.ENABLE_MULTI_AGENT_COMMITTEE, DEFAULTS.enableMultiAgentCommittee),
+    committeeMinConfidence: parseNumber(env.COMMITTEE_MIN_CONFIDENCE, DEFAULTS.committeeMinConfidence),
+    committeeMinAgreement: parseNumber(env.COMMITTEE_MIN_AGREEMENT, DEFAULTS.committeeMinAgreement),
+    enableRlExecution: parseBoolean(env.ENABLE_RL_EXECUTION, DEFAULTS.enableRlExecution),
+    minCalibrationConfidence: parseNumber(env.MIN_CALIBRATION_CONFIDENCE, DEFAULTS.minCalibrationConfidence),
+    calibrationBins: parseNumber(env.CALIBRATION_BINS, DEFAULTS.calibrationBins),
+    calibrationMinObservations: parseNumber(env.CALIBRATION_MIN_OBSERVATIONS, DEFAULTS.calibrationMinObservations),
+    calibrationPriorStrength: parseNumber(env.CALIBRATION_PRIOR_STRENGTH, DEFAULTS.calibrationPriorStrength),
+    minRegimeConfidence: parseNumber(env.MIN_REGIME_CONFIDENCE, DEFAULTS.minRegimeConfidence),
+    abstainBand: parseNumber(env.ABSTAIN_BAND, DEFAULTS.abstainBand),
+    maxModelDisagreement: parseNumber(env.MAX_MODEL_DISAGREEMENT, DEFAULTS.maxModelDisagreement),
+    enableEventDrivenData: parseBoolean(env.ENABLE_EVENT_DRIVEN_DATA, DEFAULTS.enableEventDrivenData),
+    enableLocalOrderBook: parseBoolean(env.ENABLE_LOCAL_ORDER_BOOK, DEFAULTS.enableLocalOrderBook),
+    localBookMaxSymbols: parseNumber(env.LOCAL_BOOK_MAX_SYMBOLS, DEFAULTS.localBookMaxSymbols),
+    streamTradeBufferSize: parseNumber(env.STREAM_TRADE_BUFFER_SIZE, DEFAULTS.streamTradeBufferSize),
+    streamDepthLevels: parseNumber(env.STREAM_DEPTH_LEVELS, DEFAULTS.streamDepthLevels),
+    streamDepthSnapshotLimit: parseNumber(env.STREAM_DEPTH_SNAPSHOT_LIMIT, DEFAULTS.streamDepthSnapshotLimit),
+    maxDepthEventAgeMs: parseNumber(env.MAX_DEPTH_EVENT_AGE_MS, DEFAULTS.maxDepthEventAgeMs),
+    localBookBootstrapWaitMs: parseNumber(env.LOCAL_BOOK_BOOTSTRAP_WAIT_MS, DEFAULTS.localBookBootstrapWaitMs),
+    localBookWarmupMs: parseNumber(env.LOCAL_BOOK_WARMUP_MS, DEFAULTS.localBookWarmupMs),
+    enableCrossTimeframeConsensus: parseBoolean(env.ENABLE_CROSS_TIMEFRAME_CONSENSUS, DEFAULTS.enableCrossTimeframeConsensus),
+    lowerTimeframeInterval: env.LOWER_TIMEFRAME_INTERVAL || DEFAULTS.lowerTimeframeInterval,
+    higherTimeframeInterval: env.HIGHER_TIMEFRAME_INTERVAL || DEFAULTS.higherTimeframeInterval,
+    lowerTimeframeLimit: parseNumber(env.LOWER_TIMEFRAME_LIMIT, DEFAULTS.lowerTimeframeLimit),
+    higherTimeframeLimit: parseNumber(env.HIGHER_TIMEFRAME_LIMIT, DEFAULTS.higherTimeframeLimit),
+    higherTimeframeIntervalDaily: env.HIGHER_TIMEFRAME_INTERVAL_DAILY || DEFAULTS.higherTimeframeIntervalDaily,
+    higherTimeframeLimitDaily: parseNumber(env.HIGHER_TIMEFRAME_LIMIT_DAILY, DEFAULTS.higherTimeframeLimitDaily),
+    enableDailyTimeframe: parseBoolean(env.ENABLE_DAILY_TIMEFRAME, DEFAULTS.enableDailyTimeframe),
+    fundingRateHistoryLimit: parseNumber(env.FUNDING_RATE_HISTORY_LIMIT, DEFAULTS.fundingRateHistoryLimit),
+    enableAggtradeOrderflow: parseBoolean(env.ENABLE_AGGTRADE_ORDERFLOW, DEFAULTS.enableAggtradeOrderflow),
+    aggtradeWindowSeconds: parseNumber(env.AGGTRADE_WINDOW_SECONDS, DEFAULTS.aggtradeWindowSeconds),
+    aggtradeBufferSize: parseNumber(env.AGGTRADE_BUFFER_SIZE, DEFAULTS.aggtradeBufferSize),
+    enableBtcDominance: parseBoolean(env.ENABLE_BTC_DOMINANCE, DEFAULTS.enableBtcDominance),
+    btcDominanceCacheMinutes: parseNumber(env.BTC_DOMINANCE_CACHE_MINUTES, DEFAULTS.btcDominanceCacheMinutes),
+    enableVolumeProfile: parseBoolean(env.ENABLE_VOLUME_PROFILE, DEFAULTS.enableVolumeProfile),
+    volumeProfileBins: parseNumber(env.VOLUME_PROFILE_BINS, DEFAULTS.volumeProfileBins),
+    vwapLookbackCandles: parseNumber(env.VWAP_LOOKBACK_CANDLES, DEFAULTS.vwapLookbackCandles),
+    enableGlobalMarketContext: parseBoolean(env.ENABLE_GLOBAL_MARKET_CONTEXT, DEFAULTS.enableGlobalMarketContext),
+    globalMarketCacheMinutes: parseNumber(env.GLOBAL_MARKET_CACHE_MINUTES, DEFAULTS.globalMarketCacheMinutes),
+    crossTimeframeMinAlignmentScore: parseNumber(env.CROSS_TIMEFRAME_MIN_ALIGNMENT_SCORE, DEFAULTS.crossTimeframeMinAlignmentScore),
+    crossTimeframeMaxVolGapPct: parseNumber(env.CROSS_TIMEFRAME_MAX_VOL_GAP_PCT, DEFAULTS.crossTimeframeMaxVolGapPct),
+    enableSmartExecution: parseBoolean(env.ENABLE_SMART_EXECUTION, DEFAULTS.enableSmartExecution),
+    enablePeggedOrders: parseBoolean(env.ENABLE_PEGGED_ORDERS, DEFAULTS.enablePeggedOrders),
+    defaultPegOffsetLevels: parseNumber(env.DEFAULT_PEG_OFFSET_LEVELS, DEFAULTS.defaultPegOffsetLevels),
+    maxPeggedImpactBps: parseNumber(env.MAX_PEGGED_IMPACT_BPS, DEFAULTS.maxPeggedImpactBps),
+    enableStpTelemetryQuery: parseBoolean(env.ENABLE_STP_TELEMETRY_QUERY, DEFAULTS.enableStpTelemetryQuery),
+    stpTelemetryLimit: parseNumber(env.STP_TELEMETRY_LIMIT, DEFAULTS.stpTelemetryLimit),
+    makerMinSpreadBps: parseNumber(env.MAKER_MIN_SPREAD_BPS, DEFAULTS.makerMinSpreadBps),
+    aggressiveEntryThreshold: parseNumber(env.AGGRESSIVE_ENTRY_THRESHOLD, DEFAULTS.aggressiveEntryThreshold),
+    baseMakerPatienceMs: parseNumber(env.BASE_MAKER_PATIENCE_MS, DEFAULTS.baseMakerPatienceMs),
+    maxMakerPatienceMs: parseNumber(env.MAX_MAKER_PATIENCE_MS, DEFAULTS.maxMakerPatienceMs),
+    enableTrailingProtection: parseBoolean(env.ENABLE_TRAILING_PROTECTION, DEFAULTS.enableTrailingProtection),
+    enableSessionLogic: parseBoolean(env.ENABLE_SESSION_LOGIC, DEFAULTS.enableSessionLogic),
+    sessionLowLiquiditySpreadBps: parseNumber(env.SESSION_LOW_LIQUIDITY_SPREAD_BPS, DEFAULTS.sessionLowLiquiditySpreadBps),
+    sessionLowLiquidityDepthUsd: parseNumber(env.SESSION_LOW_LIQUIDITY_DEPTH_USD, DEFAULTS.sessionLowLiquidityDepthUsd),
+    sessionCautionMinutesToFunding: parseNumber(env.SESSION_CAUTION_MINUTES_TO_FUNDING, DEFAULTS.sessionCautionMinutesToFunding),
+    sessionHardBlockMinutesToFunding: parseNumber(env.SESSION_HARD_BLOCK_MINUTES_TO_FUNDING, DEFAULTS.sessionHardBlockMinutesToFunding),
+    sessionWeekendRiskMultiplier: parseNumber(env.SESSION_WEEKEND_RISK_MULTIPLIER, DEFAULTS.sessionWeekendRiskMultiplier),
+    sessionOffHoursRiskMultiplier: parseNumber(env.SESSION_OFF_HOURS_RISK_MULTIPLIER, DEFAULTS.sessionOffHoursRiskMultiplier),
+    sessionFundingRiskMultiplier: parseNumber(env.SESSION_FUNDING_RISK_MULTIPLIER, DEFAULTS.sessionFundingRiskMultiplier),
+    blockWeekendHighRiskStrategies: parseBoolean(env.BLOCK_WEEKEND_HIGH_RISK_STRATEGIES, DEFAULTS.blockWeekendHighRiskStrategies),
+    enableDriftMonitoring: parseBoolean(env.ENABLE_DRIFT_MONITORING, DEFAULTS.enableDriftMonitoring),
+    driftMinFeatureStatCount: parseNumber(env.DRIFT_MIN_FEATURE_STAT_COUNT, DEFAULTS.driftMinFeatureStatCount),
+    driftFeatureScoreAlert: parseNumber(env.DRIFT_FEATURE_SCORE_ALERT, DEFAULTS.driftFeatureScoreAlert),
+    driftFeatureScoreBlock: parseNumber(env.DRIFT_FEATURE_SCORE_BLOCK, DEFAULTS.driftFeatureScoreBlock),
+    driftLowReliabilityAlert: parseNumber(env.DRIFT_LOW_RELIABILITY_ALERT, DEFAULTS.driftLowReliabilityAlert),
+    driftCalibrationEceAlert: parseNumber(env.DRIFT_CALIBRATION_ECE_ALERT, DEFAULTS.driftCalibrationEceAlert),
+    driftCalibrationEceBlock: parseNumber(env.DRIFT_CALIBRATION_ECE_BLOCK, DEFAULTS.driftCalibrationEceBlock),
+    driftExecutionSlipAlertBps: parseNumber(env.DRIFT_EXECUTION_SLIP_ALERT_BPS, DEFAULTS.driftExecutionSlipAlertBps),
+    driftExecutionSlipBlockBps: parseNumber(env.DRIFT_EXECUTION_SLIP_BLOCK_BPS, DEFAULTS.driftExecutionSlipBlockBps),
+    driftPredictionConfidenceAlert: parseNumber(env.DRIFT_PREDICTION_CONFIDENCE_ALERT, DEFAULTS.driftPredictionConfidenceAlert),
+    driftMinCandidateCount: parseNumber(env.DRIFT_MIN_CANDIDATE_COUNT, DEFAULTS.driftMinCandidateCount),
+    selfHealEnabled: parseBoolean(env.SELF_HEAL_ENABLED, DEFAULTS.selfHealEnabled),
+    selfHealSwitchToPaper: parseBoolean(env.SELF_HEAL_SWITCH_TO_PAPER, DEFAULTS.selfHealSwitchToPaper),
+    selfHealResetRlOnTrigger: parseBoolean(env.SELF_HEAL_RESET_RL_ON_TRIGGER, DEFAULTS.selfHealResetRlOnTrigger),
+    selfHealRestoreStableModel: parseBoolean(env.SELF_HEAL_RESTORE_STABLE_MODEL, DEFAULTS.selfHealRestoreStableModel),
+    selfHealCooldownMinutes: parseNumber(env.SELF_HEAL_COOLDOWN_MINUTES, DEFAULTS.selfHealCooldownMinutes),
+    selfHealMaxRecentLossStreak: parseNumber(env.SELF_HEAL_MAX_RECENT_LOSS_STREAK, DEFAULTS.selfHealMaxRecentLossStreak),
+    selfHealWarningLossStreak: parseNumber(env.SELF_HEAL_WARNING_LOSS_STREAK, DEFAULTS.selfHealWarningLossStreak),
+    selfHealMaxRecentDrawdownPct: parseNumber(env.SELF_HEAL_MAX_RECENT_DRAWDOWN_PCT, DEFAULTS.selfHealMaxRecentDrawdownPct),
+    selfHealWarningDrawdownPct: parseNumber(env.SELF_HEAL_WARNING_DRAWDOWN_PCT, DEFAULTS.selfHealWarningDrawdownPct),
+    selfHealPaperCalibrationProbeSizeMultiplier: parseNumber(env.SELF_HEAL_PAPER_CALIBRATION_PROBE_SIZE_MULTIPLIER, DEFAULTS.selfHealPaperCalibrationProbeSizeMultiplier),
+    selfHealPaperCalibrationProbeThresholdPenalty: parseNumber(env.SELF_HEAL_PAPER_CALIBRATION_PROBE_THRESHOLD_PENALTY, DEFAULTS.selfHealPaperCalibrationProbeThresholdPenalty),
+    lossStreakLookbackMinutes: parseNumber(env.LOSS_STREAK_LOOKBACK_MINUTES, DEFAULTS.lossStreakLookbackMinutes),
+    stableModelMaxSnapshots: parseNumber(env.STABLE_MODEL_MAX_SNAPSHOTS, DEFAULTS.stableModelMaxSnapshots),
+    stableModelMinTrades: parseNumber(env.STABLE_MODEL_MIN_TRADES, DEFAULTS.stableModelMinTrades),
+    stableModelMaxCalibrationEce: parseNumber(env.STABLE_MODEL_MAX_CALIBRATION_ECE, DEFAULTS.stableModelMaxCalibrationEce),
+    stableModelMinWinRate: parseNumber(env.STABLE_MODEL_MIN_WIN_RATE, DEFAULTS.stableModelMinWinRate),
+    targetAnnualizedVolatility: parseNumber(env.TARGET_ANNUALIZED_VOLATILITY, DEFAULTS.targetAnnualizedVolatility),
+    maxLossStreak: parseNumber(env.MAX_LOSS_STREAK, DEFAULTS.maxLossStreak),
+    maxSymbolLossStreak: parseNumber(env.MAX_SYMBOL_LOSS_STREAK, DEFAULTS.maxSymbolLossStreak),
+    minBookPressureForEntry: parseNumber(env.MIN_BOOK_PRESSURE_FOR_ENTRY, DEFAULTS.minBookPressureForEntry),
+    paperExplorationEnabled: parseBoolean(env.PAPER_EXPLORATION_ENABLED, DEFAULTS.paperExplorationEnabled),
+    paperExplorationThresholdBuffer: parseNumber(env.PAPER_EXPLORATION_THRESHOLD_BUFFER, DEFAULTS.paperExplorationThresholdBuffer),
+    paperExplorationSizeMultiplier: parseNumber(env.PAPER_EXPLORATION_SIZE_MULTIPLIER, DEFAULTS.paperExplorationSizeMultiplier),
+    paperExplorationCooldownMinutes: parseNumber(env.PAPER_EXPLORATION_COOLDOWN_MINUTES, DEFAULTS.paperExplorationCooldownMinutes),
+    paperExplorationMinBookPressure: parseNumber(env.PAPER_EXPLORATION_MIN_BOOK_PRESSURE, DEFAULTS.paperExplorationMinBookPressure),
+    paperRecoveryProbeEnabled: parseBoolean(env.PAPER_RECOVERY_PROBE_ENABLED, DEFAULTS.paperRecoveryProbeEnabled),
+    paperRecoveryProbeThresholdBuffer: parseNumber(env.PAPER_RECOVERY_PROBE_THRESHOLD_BUFFER, DEFAULTS.paperRecoveryProbeThresholdBuffer),
+    paperRecoveryProbeSizeMultiplier: parseNumber(env.PAPER_RECOVERY_PROBE_SIZE_MULTIPLIER, DEFAULTS.paperRecoveryProbeSizeMultiplier),
+    paperRecoveryProbeCooldownMinutes: parseNumber(env.PAPER_RECOVERY_PROBE_COOLDOWN_MINUTES, DEFAULTS.paperRecoveryProbeCooldownMinutes),
+    paperRecoveryProbeMinBookPressure: parseNumber(env.PAPER_RECOVERY_PROBE_MIN_BOOK_PRESSURE, DEFAULTS.paperRecoveryProbeMinBookPressure),
+    paperRecoveryProbeAllowMinTradeOverride: parseBoolean(env.PAPER_RECOVERY_PROBE_ALLOW_MIN_TRADE_OVERRIDE, DEFAULTS.paperRecoveryProbeAllowMinTradeOverride),
+    paperLearningProbeDailyLimit: parseNumber(env.PAPER_LEARNING_PROBE_DAILY_LIMIT, DEFAULTS.paperLearningProbeDailyLimit),
+    paperLearningShadowDailyLimit: parseNumber(env.PAPER_LEARNING_SHADOW_DAILY_LIMIT, DEFAULTS.paperLearningShadowDailyLimit),
+    paperLearningNearMissThresholdBuffer: parseNumber(env.PAPER_LEARNING_NEAR_MISS_THRESHOLD_BUFFER, DEFAULTS.paperLearningNearMissThresholdBuffer),
+    paperLearningMinSignalQuality: parseNumber(env.PAPER_LEARNING_MIN_SIGNAL_QUALITY, DEFAULTS.paperLearningMinSignalQuality),
+    paperLearningMinDataQuality: parseNumber(env.PAPER_LEARNING_MIN_DATA_QUALITY, DEFAULTS.paperLearningMinDataQuality),
+    paperLearningMaxProbePerFamilyPerDay: parseNumber(env.PAPER_LEARNING_MAX_PROBE_PER_FAMILY_PER_DAY, DEFAULTS.paperLearningMaxProbePerFamilyPerDay),
+    paperLearningMaxProbePerRegimePerDay: parseNumber(env.PAPER_LEARNING_MAX_PROBE_PER_REGIME_PER_DAY, DEFAULTS.paperLearningMaxProbePerRegimePerDay),
+    paperLearningMaxProbePerSessionPerDay: parseNumber(env.PAPER_LEARNING_MAX_PROBE_PER_SESSION_PER_DAY, DEFAULTS.paperLearningMaxProbePerSessionPerDay),
+    paperLearningMaxProbePerRegimeFamilyPerDay: parseNumber(env.PAPER_LEARNING_MAX_PROBE_PER_REGIME_FAMILY_PER_DAY, DEFAULTS.paperLearningMaxProbePerRegimeFamilyPerDay),
+    paperLearningMaxProbePerConditionStrategyPerDay: parseNumber(env.PAPER_LEARNING_MAX_PROBE_PER_CONDITION_STRATEGY_PER_DAY, DEFAULTS.paperLearningMaxProbePerConditionStrategyPerDay),
+    paperLearningMaxShadowPerRegimeFamilyPerDay: parseNumber(env.PAPER_LEARNING_MAX_SHADOW_PER_REGIME_FAMILY_PER_DAY, DEFAULTS.paperLearningMaxShadowPerRegimeFamilyPerDay),
+    paperLearningMaxShadowPerConditionStrategyPerDay: parseNumber(env.PAPER_LEARNING_MAX_SHADOW_PER_CONDITION_STRATEGY_PER_DAY, DEFAULTS.paperLearningMaxShadowPerConditionStrategyPerDay),
+    paperLearningMaxConcurrentPositions: parseNumber(env.PAPER_LEARNING_MAX_CONCURRENT_POSITIONS, DEFAULTS.paperLearningMaxConcurrentPositions),
+    paperLearningMinNoveltyScore: parseNumber(env.PAPER_LEARNING_MIN_NOVELTY_SCORE, DEFAULTS.paperLearningMinNoveltyScore),
+    baselineCoreEnabled: parseBoolean(env.BASELINE_CORE_ENABLED, DEFAULTS.baselineCoreEnabled),
+    baselineCoreMinTradeCount: parseNumber(env.BASELINE_CORE_MIN_TRADE_COUNT, DEFAULTS.baselineCoreMinTradeCount),
+    baselineCoreMinPreferredTrades: parseNumber(env.BASELINE_CORE_MIN_PREFERRED_TRADES, DEFAULTS.baselineCoreMinPreferredTrades),
+    baselineCoreMinSuspendTrades: parseNumber(env.BASELINE_CORE_MIN_SUSPEND_TRADES, DEFAULTS.baselineCoreMinSuspendTrades),
+    baselineCorePreferredStrategyCount: parseNumber(env.BASELINE_CORE_PREFERRED_STRATEGY_COUNT, DEFAULTS.baselineCorePreferredStrategyCount),
+    baselineCoreStrategyLossCutoff: parseNumber(env.BASELINE_CORE_STRATEGY_LOSS_CUTOFF, DEFAULTS.baselineCoreStrategyLossCutoff),
+    baselineCoreCatastrophicStrategyLossCutoff: parseNumber(env.BASELINE_CORE_CATASTROPHIC_STRATEGY_LOSS_CUTOFF, DEFAULTS.baselineCoreCatastrophicStrategyLossCutoff),
+    baselineCoreMaxSuspendWinRate: parseNumber(env.BASELINE_CORE_MAX_SUSPEND_WIN_RATE, DEFAULTS.baselineCoreMaxSuspendWinRate),
+    paperLearningSandboxEnabled: parseBoolean(env.PAPER_LEARNING_SANDBOX_ENABLED, DEFAULTS.paperLearningSandboxEnabled),
+    paperLearningSandboxMinClosedTrades: parseNumber(env.PAPER_LEARNING_SANDBOX_MIN_CLOSED_TRADES, DEFAULTS.paperLearningSandboxMinClosedTrades),
+    paperLearningSandboxMaxThresholdShift: parseNumber(env.PAPER_LEARNING_SANDBOX_MAX_THRESHOLD_SHIFT, DEFAULTS.paperLearningSandboxMaxThresholdShift),
+    exitOnSpreadShockBps: parseNumber(env.EXIT_ON_SPREAD_SHOCK_BPS, DEFAULTS.exitOnSpreadShockBps),
+    minVolTargetFraction: parseNumber(env.MIN_VOL_TARGET_FRACTION, DEFAULTS.minVolTargetFraction),
+    maxVolTargetFraction: parseNumber(env.MAX_VOL_TARGET_FRACTION, DEFAULTS.maxVolTargetFraction),
+    maxPairCorrelation: parseNumber(env.MAX_PAIR_CORRELATION, DEFAULTS.maxPairCorrelation),
+    maxClusterPositions: parseNumber(env.MAX_CLUSTER_POSITIONS, DEFAULTS.maxClusterPositions),
+    maxSectorPositions: parseNumber(env.MAX_SECTOR_POSITIONS, DEFAULTS.maxSectorPositions),
+    maxFamilyPositions: parseNumber(env.MAX_FAMILY_POSITIONS, DEFAULTS.maxFamilyPositions),
+    maxRegimePositions: parseNumber(env.MAX_REGIME_POSITIONS, DEFAULTS.maxRegimePositions),
+    pairHealthLookbackHours: parseNumber(env.PAIR_HEALTH_LOOKBACK_HOURS, DEFAULTS.pairHealthLookbackHours),
+    pairHealthMinScore: parseNumber(env.PAIR_HEALTH_MIN_SCORE, DEFAULTS.pairHealthMinScore),
+    pairHealthQuarantineMinutes: parseNumber(env.PAIR_HEALTH_QUARANTINE_MINUTES, DEFAULTS.pairHealthQuarantineMinutes),
+    pairHealthMaxInfraIssues: parseNumber(env.PAIR_HEALTH_MAX_INFRA_ISSUES, DEFAULTS.pairHealthMaxInfraIssues),
+    enableUniverseSelector: parseBoolean(env.ENABLE_UNIVERSE_SELECTOR, DEFAULTS.enableUniverseSelector),
+    universeMaxSymbols: parseNumber(env.UNIVERSE_MAX_SYMBOLS, DEFAULTS.universeMaxSymbols),
+    universeMinScore: parseNumber(env.UNIVERSE_MIN_SCORE, DEFAULTS.universeMinScore),
+    universeMinDepthConfidence: parseNumber(env.UNIVERSE_MIN_DEPTH_CONFIDENCE, DEFAULTS.universeMinDepthConfidence),
+    universeMinDepthUsd: parseNumber(env.UNIVERSE_MIN_DEPTH_USD, DEFAULTS.universeMinDepthUsd),
+    enableMarketProviderDerivativesContext: parseBoolean(
+      env.ENABLE_MARKET_PROVIDER_DERIVATIVES_CONTEXT,
+      DEFAULTS.enableMarketProviderDerivativesContext
+    ),
+    enableMarketProviderMacroContext: parseBoolean(
+      env.ENABLE_MARKET_PROVIDER_MACRO_CONTEXT,
+      DEFAULTS.enableMarketProviderMacroContext
+    ),
+    enableMarketProviderExecutionFeedback: parseBoolean(
+      env.ENABLE_MARKET_PROVIDER_EXECUTION_FEEDBACK,
+      DEFAULTS.enableMarketProviderExecutionFeedback
+    ),
+    enableMarketProviderCrossExchangeDivergence: parseBoolean(
+      env.ENABLE_MARKET_PROVIDER_CROSS_EXCHANGE_DIVERGENCE,
+      DEFAULTS.enableMarketProviderCrossExchangeDivergence
+    ),
+    enableMarketProviderStablecoinFlows: parseBoolean(
+      env.ENABLE_MARKET_PROVIDER_STABLECOIN_FLOWS,
+      DEFAULTS.enableMarketProviderStablecoinFlows
+    ),
+    enableMarketProviderMicrostructurePriors: parseBoolean(
+      env.ENABLE_MARKET_PROVIDER_MICROSTRUCTURE_PRIORS,
+      DEFAULTS.enableMarketProviderMicrostructurePriors
+    ),
+    universeTargetVolPct: parseNumber(env.UNIVERSE_TARGET_VOL_PCT, DEFAULTS.universeTargetVolPct),
+    universeRotationLookbackDays: parseNumber(env.UNIVERSE_ROTATION_LOOKBACK_DAYS, DEFAULTS.universeRotationLookbackDays),
+    universeRotationBoost: parseNumber(env.UNIVERSE_ROTATION_BOOST, DEFAULTS.universeRotationBoost),
+    universeRotationMaxCoolingClusters: parseNumber(env.UNIVERSE_ROTATION_MAX_COOLING_CLUSTERS, DEFAULTS.universeRotationMaxCoolingClusters),
+    enableExitIntelligence: parseBoolean(env.ENABLE_EXIT_INTELLIGENCE, DEFAULTS.enableExitIntelligence),
+    exitIntelligenceMinConfidence: parseNumber(env.EXIT_INTELLIGENCE_MIN_CONFIDENCE, DEFAULTS.exitIntelligenceMinConfidence),
+    exitIntelligenceTrimScore: parseNumber(env.EXIT_INTELLIGENCE_TRIM_SCORE, DEFAULTS.exitIntelligenceTrimScore),
+    exitIntelligenceTrailScore: parseNumber(env.EXIT_INTELLIGENCE_TRAIL_SCORE, DEFAULTS.exitIntelligenceTrailScore),
+    exitIntelligenceExitScore: parseNumber(env.EXIT_INTELLIGENCE_EXIT_SCORE, DEFAULTS.exitIntelligenceExitScore),
+    tradeQualityMinScore: parseNumber(env.TRADE_QUALITY_MIN_SCORE, DEFAULTS.tradeQualityMinScore),
+    tradeQualityCautionScore: parseNumber(env.TRADE_QUALITY_CAUTION_SCORE, DEFAULTS.tradeQualityCautionScore),
+    strategyAttributionMinTrades: parseNumber(env.STRATEGY_ATTRIBUTION_MIN_TRADES, DEFAULTS.strategyAttributionMinTrades),
+    divergenceMinPaperTrades: parseNumber(env.DIVERGENCE_MIN_PAPER_TRADES, DEFAULTS.divergenceMinPaperTrades),
+    divergenceMinLiveTrades: parseNumber(env.DIVERGENCE_MIN_LIVE_TRADES, DEFAULTS.divergenceMinLiveTrades),
+    divergenceAlertScore: parseNumber(env.DIVERGENCE_ALERT_SCORE, DEFAULTS.divergenceAlertScore),
+    divergenceBlockScore: parseNumber(env.DIVERGENCE_BLOCK_SCORE, DEFAULTS.divergenceBlockScore),
+    divergenceAlertSlipGapBps: parseNumber(env.DIVERGENCE_ALERT_SLIP_GAP_BPS, DEFAULTS.divergenceAlertSlipGapBps),
+    offlineTrainerMinReadiness: parseNumber(env.OFFLINE_TRAINER_MIN_READINESS, DEFAULTS.offlineTrainerMinReadiness),
+    modelPromotionProbationLiveTrades: parseNumber(env.MODEL_PROMOTION_PROBATION_LIVE_TRADES, DEFAULTS.modelPromotionProbationLiveTrades),
+    exchangeTruthFreezeMismatchCount: parseNumber(env.EXCHANGE_TRUTH_FREEZE_MISMATCH_COUNT, DEFAULTS.exchangeTruthFreezeMismatchCount),
+    exchangeTruthRecentFillLookbackMinutes: parseNumber(env.EXCHANGE_TRUTH_RECENT_FILL_LOOKBACK_MINUTES, DEFAULTS.exchangeTruthRecentFillLookbackMinutes),
+      enableAutoReconcile: parseBoolean(env.ENABLE_AUTO_RECONCILE, DEFAULTS.enableAutoReconcile),
+      autoReconcileRetryCount: parseNumber(env.AUTO_RECONCILE_RETRY_COUNT, DEFAULTS.autoReconcileRetryCount),
+      autoReconcileRetryDelayMs: parseNumber(env.AUTO_RECONCILE_RETRY_DELAY_MS, DEFAULTS.autoReconcileRetryDelayMs),
+      demoPaperReconcileConfirmationSamples: parseNumber(
+        env.DEMO_PAPER_RECONCILE_CONFIRMATION_SAMPLES,
+        DEFAULTS.demoPaperReconcileConfirmationSamples
+      ),
+      demoPaperReconcileConfirmationDelayMs: parseNumber(
+        env.DEMO_PAPER_RECONCILE_CONFIRMATION_DELAY_MS,
+        DEFAULTS.demoPaperReconcileConfirmationDelayMs
+      ),
+      demoPaperReconcileMinConfidence: parseNumber(
+        env.DEMO_PAPER_RECONCILE_MIN_CONFIDENCE,
+        DEFAULTS.demoPaperReconcileMinConfidence
+      ),
+      demoPaperReconcileAutoClearQuorum: parseNumber(
+        env.DEMO_PAPER_RECONCILE_AUTO_CLEAR_QUORUM,
+        DEFAULTS.demoPaperReconcileAutoClearQuorum
+      ),
+      demoPaperMarkDriftToleranceBps: parseNumber(
+        env.DEMO_PAPER_MARK_DRIFT_TOLERANCE_BPS,
+        DEFAULTS.demoPaperMarkDriftToleranceBps
+      ),
+      demoPaperRecentFillGraceMs: parseNumber(
+        env.DEMO_PAPER_RECENT_FILL_GRACE_MS,
+        DEFAULTS.demoPaperRecentFillGraceMs
+      ),
+      demoPaperStablePriceToleranceBps: parseNumber(
+        env.DEMO_PAPER_STABLE_PRICE_TOLERANCE_BPS,
+        DEFAULTS.demoPaperStablePriceToleranceBps
+      ),
+      qtyMismatchTolerance: parseNumber(env.QTY_MISMATCH_TOLERANCE, DEFAULTS.qtyMismatchTolerance),
+      priceMismatchToleranceBps: parseNumber(env.PRICE_MISMATCH_TOLERANCE_BPS, DEFAULTS.priceMismatchToleranceBps),
+    maxAutoFixNotional: parseNumber(env.MAX_AUTO_FIX_NOTIONAL, DEFAULTS.maxAutoFixNotional),
+    autoReconcileDryRun: parseBoolean(env.AUTO_RECONCILE_DRY_RUN, DEFAULTS.autoReconcileDryRun),
+    positionFailureProtectOnlyCount: parseNumber(env.POSITION_FAILURE_PROTECT_ONLY_COUNT, DEFAULTS.positionFailureProtectOnlyCount),
+    positionFailureManualReviewCount: parseNumber(env.POSITION_FAILURE_MANUAL_REVIEW_COUNT, DEFAULTS.positionFailureManualReviewCount),
+    shadowTradeDecisionLimit: parseNumber(env.SHADOW_TRADE_DECISION_LIMIT, DEFAULTS.shadowTradeDecisionLimit),
+    thresholdAutoApplyEnabled: parseBoolean(env.THRESHOLD_AUTO_APPLY_ENABLED, DEFAULTS.thresholdAutoApplyEnabled),
+    thresholdAutoApplyMinConfidence: parseNumber(env.THRESHOLD_AUTO_APPLY_MIN_CONFIDENCE, DEFAULTS.thresholdAutoApplyMinConfidence),
+    thresholdProbationMinTrades: parseNumber(env.THRESHOLD_PROBATION_MIN_TRADES, DEFAULTS.thresholdProbationMinTrades),
+    thresholdProbationWindowDays: parseNumber(env.THRESHOLD_PROBATION_WINDOW_DAYS, DEFAULTS.thresholdProbationWindowDays),
+    thresholdProbationMaxAvgPnlDropPct: parseNumber(env.THRESHOLD_PROBATION_MAX_AVG_PNL_DROP_PCT, DEFAULTS.thresholdProbationMaxAvgPnlDropPct),
+    thresholdProbationMaxWinRateDrop: parseNumber(env.THRESHOLD_PROBATION_MAX_WIN_RATE_DROP, DEFAULTS.thresholdProbationMaxWinRateDrop),
+    thresholdRelaxStep: parseNumber(env.THRESHOLD_RELAX_STEP, DEFAULTS.thresholdRelaxStep),
+    thresholdTightenStep: parseNumber(env.THRESHOLD_TIGHTEN_STEP, DEFAULTS.thresholdTightenStep),
+    thresholdTuningMaxRecommendations: parseNumber(env.THRESHOLD_TUNING_MAX_RECOMMENDATIONS, DEFAULTS.thresholdTuningMaxRecommendations),
+    offlineTrainerScorecardHalfLifeHours: parseNumber(env.OFFLINE_TRAINER_SCORECARD_HALF_LIFE_HOURS, DEFAULTS.offlineTrainerScorecardHalfLifeHours),
+    offlineTrainerScorecardPriorTrades: parseNumber(env.OFFLINE_TRAINER_SCORECARD_PRIOR_TRADES, DEFAULTS.offlineTrainerScorecardPriorTrades),
+    offlineTrainerMinEffectiveSample: parseNumber(env.OFFLINE_TRAINER_MIN_EFFECTIVE_SAMPLE, DEFAULTS.offlineTrainerMinEffectiveSample),
+    featureDecayMinTrades: parseNumber(env.FEATURE_DECAY_MIN_TRADES, DEFAULTS.featureDecayMinTrades),
+    featureDecayWeakScore: parseNumber(env.FEATURE_DECAY_WEAK_SCORE, DEFAULTS.featureDecayWeakScore),
+    featureDecayBlockedScore: parseNumber(env.FEATURE_DECAY_BLOCKED_SCORE, DEFAULTS.featureDecayBlockedScore),
+    executionCalibrationMinLiveTrades: parseNumber(env.EXECUTION_CALIBRATION_MIN_LIVE_TRADES, DEFAULTS.executionCalibrationMinLiveTrades),
+    executionCalibrationLookbackTrades: parseNumber(env.EXECUTION_CALIBRATION_LOOKBACK_TRADES, DEFAULTS.executionCalibrationLookbackTrades),
+    executionCalibrationMaxBpsAdjust: parseNumber(env.EXECUTION_CALIBRATION_MAX_BPS_ADJUST, DEFAULTS.executionCalibrationMaxBpsAdjust),
+    parameterGovernorMinTrades: parseNumber(env.PARAMETER_GOVERNOR_MIN_TRADES, DEFAULTS.parameterGovernorMinTrades),
+    parameterGovernorMaxThresholdShift: parseNumber(env.PARAMETER_GOVERNOR_MAX_THRESHOLD_SHIFT, DEFAULTS.parameterGovernorMaxThresholdShift),
+    parameterGovernorMaxStopLossMultiplierDelta: parseNumber(env.PARAMETER_GOVERNOR_MAX_STOP_LOSS_MULTIPLIER_DELTA, DEFAULTS.parameterGovernorMaxStopLossMultiplierDelta),
+    parameterGovernorMaxTakeProfitMultiplierDelta: parseNumber(env.PARAMETER_GOVERNOR_MAX_TAKE_PROFIT_MULTIPLIER_DELTA, DEFAULTS.parameterGovernorMaxTakeProfitMultiplierDelta),
+    referenceVenueFetchEnabled: parseBoolean(env.REFERENCE_VENUE_FETCH_ENABLED, DEFAULTS.referenceVenueFetchEnabled),
+    referenceVenueQuoteUrls: parseTextCsv(env.REFERENCE_VENUE_QUOTE_URLS, DEFAULTS.referenceVenueQuoteUrls),
+    referenceVenueMinQuotes: parseNumber(env.REFERENCE_VENUE_MIN_QUOTES, DEFAULTS.referenceVenueMinQuotes),
+    referenceVenueMaxDivergenceBps: parseNumber(env.REFERENCE_VENUE_MAX_DIVERGENCE_BPS, DEFAULTS.referenceVenueMaxDivergenceBps),
+    strategyResearchFetchEnabled: parseBoolean(env.STRATEGY_RESEARCH_FETCH_ENABLED, DEFAULTS.strategyResearchFetchEnabled),
+    strategyResearchFeedUrls: parseTextCsv(env.STRATEGY_RESEARCH_FEED_URLS, DEFAULTS.strategyResearchFeedUrls),
+    strategyResearchPaperScoreFloor: parseNumber(env.STRATEGY_RESEARCH_PAPER_SCORE_FLOOR, DEFAULTS.strategyResearchPaperScoreFloor),
+    strategyGenomeMaxChildren: parseNumber(env.STRATEGY_GENOME_MAX_CHILDREN, DEFAULTS.strategyGenomeMaxChildren),
+    counterfactualLookaheadMinutes: parseNumber(env.COUNTERFACTUAL_LOOKAHEAD_MINUTES, DEFAULTS.counterfactualLookaheadMinutes),
+    counterfactualQueueLimit: parseNumber(env.COUNTERFACTUAL_QUEUE_LIMIT, DEFAULTS.counterfactualQueueLimit),
+    researchPromotionMinSharpe: parseNumber(env.RESEARCH_PROMOTION_MIN_SHARPE, DEFAULTS.researchPromotionMinSharpe),
+    researchPromotionMinTrades: parseNumber(env.RESEARCH_PROMOTION_MIN_TRADES, DEFAULTS.researchPromotionMinTrades),
+    researchPromotionMaxDrawdownPct: parseNumber(env.RESEARCH_PROMOTION_MAX_DRAWDOWN_PCT, DEFAULTS.researchPromotionMaxDrawdownPct),
+    binanceApiKey: env.BINANCE_API_KEY || "",
+    binanceApiSecret: env.BINANCE_API_SECRET || "",
+    binanceFuturesApiBaseUrl: env.BINANCE_FUTURES_API_BASE_URL || DEFAULTS.binanceFuturesApiBaseUrl,
+    binanceRecvWindow: parseNumber(env.BINANCE_RECV_WINDOW, DEFAULTS.binanceRecvWindow),
+    clockSyncSampleCount: parseNumber(env.CLOCK_SYNC_SAMPLE_COUNT, DEFAULTS.clockSyncSampleCount),
+    clockSyncMaxAgeMs: parseNumber(env.CLOCK_SYNC_MAX_AGE_MS, DEFAULTS.clockSyncMaxAgeMs),
+    clockSyncMaxRttMs: parseNumber(env.CLOCK_SYNC_MAX_RTT_MS, DEFAULTS.clockSyncMaxRttMs),
+    binanceApiBaseUrl: env.BINANCE_API_BASE_URL || DEFAULTS.binanceApiBaseUrl,
+    enableExchangeProtection: parseBoolean(env.ENABLE_EXCHANGE_PROTECTION, DEFAULTS.enableExchangeProtection),
+    allowRecoverUnsyncedPositions: parseBoolean(env.ALLOW_RECOVER_UNSYNCED_POSITIONS, DEFAULTS.allowRecoverUnsyncedPositions),
+    stpMode: (env.STP_MODE || DEFAULTS.stpMode).trim().toUpperCase(),
+    liveStopLimitBufferPct: parseNumber(env.LIVE_STOP_LIMIT_BUFFER_PCT, DEFAULTS.liveStopLimitBufferPct),
+    maxServerTimeDriftMs: parseNumber(env.MAX_SERVER_TIME_DRIFT_MS, DEFAULTS.maxServerTimeDriftMs),
+    maxKlineStalenessMultiplier: parseNumber(env.MAX_KLINE_STALENESS_MULTIPLIER, DEFAULTS.maxKlineStalenessMultiplier),
+    healthMaxConsecutiveFailures: parseNumber(env.HEALTH_MAX_CONSECUTIVE_FAILURES, DEFAULTS.healthMaxConsecutiveFailures),
+    reportLookbackTrades: parseNumber(env.REPORT_LOOKBACK_TRADES, DEFAULTS.reportLookbackTrades),
+    enableMetaDecisionGate: parseBoolean(env.ENABLE_META_DECISION_GATE, DEFAULTS.enableMetaDecisionGate),
+    metaMinConfidence: parseNumber(env.META_MIN_CONFIDENCE, DEFAULTS.metaMinConfidence),
+    metaBlockScore: parseNumber(env.META_BLOCK_SCORE, DEFAULTS.metaBlockScore),
+    metaCautionScore: parseNumber(env.META_CAUTION_SCORE, DEFAULTS.metaCautionScore),
+    enableCanaryLiveMode: parseBoolean(env.ENABLE_CANARY_LIVE_MODE, DEFAULTS.enableCanaryLiveMode),
+    canaryLiveTradeCount: parseNumber(env.CANARY_LIVE_TRADE_COUNT, DEFAULTS.canaryLiveTradeCount),
+    canaryLiveSizeMultiplier: parseNumber(env.CANARY_LIVE_SIZE_MULTIPLIER, DEFAULTS.canaryLiveSizeMultiplier),
+    capitalLadderSeedMultiplier: parseNumber(env.CAPITAL_LADDER_SEED_MULTIPLIER, DEFAULTS.capitalLadderSeedMultiplier),
+    capitalLadderScaledMultiplier: parseNumber(env.CAPITAL_LADDER_SCALED_MULTIPLIER, DEFAULTS.capitalLadderScaledMultiplier),
+    capitalLadderFullMultiplier: parseNumber(env.CAPITAL_LADDER_FULL_MULTIPLIER, DEFAULTS.capitalLadderFullMultiplier),
+    capitalLadderMinApprovedCandidates: parseNumber(env.CAPITAL_LADDER_MIN_APPROVED_CANDIDATES, DEFAULTS.capitalLadderMinApprovedCandidates),
+    capitalGovernorWeeklyDrawdownPct: parseNumber(env.CAPITAL_GOVERNOR_WEEKLY_DRAWDOWN_PCT, DEFAULTS.capitalGovernorWeeklyDrawdownPct),
+    capitalGovernorBadDayStreak: parseNumber(env.CAPITAL_GOVERNOR_BAD_DAY_STREAK, DEFAULTS.capitalGovernorBadDayStreak),
+    capitalGovernorBadDayStreakMinLossFraction: parseNumber(env.CAPITAL_GOVERNOR_BAD_DAY_STREAK_MIN_LOSS_FRACTION, DEFAULTS.capitalGovernorBadDayStreakMinLossFraction),
+    capitalGovernorRecoveryTrades: parseNumber(env.CAPITAL_GOVERNOR_RECOVERY_TRADES, DEFAULTS.capitalGovernorRecoveryTrades),
+    capitalGovernorRecoveryMinWinRate: parseNumber(env.CAPITAL_GOVERNOR_RECOVERY_MIN_WIN_RATE, DEFAULTS.capitalGovernorRecoveryMinWinRate),
+    capitalGovernorMinSizeMultiplier: parseNumber(env.CAPITAL_GOVERNOR_MIN_SIZE_MULTIPLIER, DEFAULTS.capitalGovernorMinSizeMultiplier),
+    dailyRiskBudgetFloor: parseNumber(env.DAILY_RISK_BUDGET_FLOOR, DEFAULTS.dailyRiskBudgetFloor),
+    portfolioMaxCvarPct: parseNumber(env.PORTFOLIO_MAX_CVAR_PCT, DEFAULTS.portfolioMaxCvarPct),
+    portfolioDrawdownBudgetPct: parseNumber(env.PORTFOLIO_DRAWDOWN_BUDGET_PCT, DEFAULTS.portfolioDrawdownBudgetPct),
+    portfolioRegimeKillSwitchLossStreak: parseNumber(env.PORTFOLIO_REGIME_KILL_SWITCH_LOSS_STREAK, DEFAULTS.portfolioRegimeKillSwitchLossStreak),
+    maxEntriesPerDay: parseNumber(env.MAX_ENTRIES_PER_DAY, DEFAULTS.maxEntriesPerDay),
+    maxEntriesPerSymbolPerDay: parseNumber(env.MAX_ENTRIES_PER_SYMBOL_PER_DAY, DEFAULTS.maxEntriesPerSymbolPerDay),
+    scaleOutTriggerPct: parseNumber(env.SCALE_OUT_TRIGGER_PCT, DEFAULTS.scaleOutTriggerPct),
+    scaleOutFraction: parseNumber(env.SCALE_OUT_FRACTION, DEFAULTS.scaleOutFraction),
+    scaleOutMinNotionalUsd: parseNumber(env.SCALE_OUT_MIN_NOTIONAL_USD, DEFAULTS.scaleOutMinNotionalUsd),
+    scaleOutTrailOffsetPct: parseNumber(env.SCALE_OUT_TRAIL_OFFSET_PCT, DEFAULTS.scaleOutTrailOffsetPct),
+    researchCandleLimit: parseNumber(env.RESEARCH_CANDLE_LIMIT, DEFAULTS.researchCandleLimit),
+    researchTrainCandles: parseNumber(env.RESEARCH_TRAIN_CANDLES, DEFAULTS.researchTrainCandles),
+    researchTestCandles: parseNumber(env.RESEARCH_TEST_CANDLES, DEFAULTS.researchTestCandles),
+    researchStepCandles: parseNumber(env.RESEARCH_STEP_CANDLES, DEFAULTS.researchStepCandles),
+    researchMaxWindows: parseNumber(env.RESEARCH_MAX_WINDOWS, DEFAULTS.researchMaxWindows),
+    researchMaxSymbols: parseNumber(env.RESEARCH_MAX_SYMBOLS, DEFAULTS.researchMaxSymbols),
+    dataRecorderEnabled: parseBoolean(env.DATA_RECORDER_ENABLED, DEFAULTS.dataRecorderEnabled),
+    dataRecorderRetentionDays: parseNumber(env.DATA_RECORDER_RETENTION_DAYS, DEFAULTS.dataRecorderRetentionDays),
+    dataRecorderColdRetentionDays: parseNumber(env.DATA_RECORDER_COLD_RETENTION_DAYS, DEFAULTS.dataRecorderColdRetentionDays),
+    modelRegistryMinScore: parseNumber(env.MODEL_REGISTRY_MIN_SCORE, DEFAULTS.modelRegistryMinScore),
+    modelRegistryRollbackDrawdownPct: parseNumber(env.MODEL_REGISTRY_ROLLBACK_DRAWDOWN_PCT, DEFAULTS.modelRegistryRollbackDrawdownPct),
+    modelRegistryMaxEntries: parseNumber(env.MODEL_REGISTRY_MAX_ENTRIES, DEFAULTS.modelRegistryMaxEntries),
+    stateBackupEnabled: parseBoolean(env.STATE_BACKUP_ENABLED, DEFAULTS.stateBackupEnabled),
+    stateBackupIntervalMinutes: parseNumber(env.STATE_BACKUP_INTERVAL_MINUTES, DEFAULTS.stateBackupIntervalMinutes),
+    stateBackupRetention: parseNumber(env.STATE_BACKUP_RETENTION, DEFAULTS.stateBackupRetention),
+    serviceRestartDelaySeconds: parseNumber(env.SERVICE_RESTART_DELAY_SECONDS, DEFAULTS.serviceRestartDelaySeconds),
+    serviceRestartBackoffMultiplier: parseNumber(env.SERVICE_RESTART_BACKOFF_MULTIPLIER, DEFAULTS.serviceRestartBackoffMultiplier),
+    serviceRestartMaxDelaySeconds: parseNumber(env.SERVICE_RESTART_MAX_DELAY_SECONDS, DEFAULTS.serviceRestartMaxDelaySeconds),
+    serviceStatusFilename: env.SERVICE_STATUS_FILENAME || DEFAULTS.serviceStatusFilename,
+    serviceMaxRestartsPerHour: parseNumber(env.SERVICE_MAX_RESTARTS_PER_HOUR, DEFAULTS.serviceMaxRestartsPerHour),
+    exchangeTruthLoopIntervalSeconds: parseNumber(env.EXCHANGE_TRUTH_LOOP_INTERVAL_SECONDS, DEFAULTS.exchangeTruthLoopIntervalSeconds),
+    operatorAlertMaxItems: parseNumber(env.OPERATOR_ALERT_MAX_ITEMS, DEFAULTS.operatorAlertMaxItems),
+    operatorAlertWebhookUrls: parseTextCsv(env.OPERATOR_ALERT_WEBHOOK_URLS, DEFAULTS.operatorAlertWebhookUrls),
+    operatorAlertDiscordWebhookUrls: parseTextCsv(env.OPERATOR_ALERT_DISCORD_WEBHOOK_URLS, DEFAULTS.operatorAlertDiscordWebhookUrls),
+    operatorAlertTelegramBotToken: (env.OPERATOR_ALERT_TELEGRAM_BOT_TOKEN || DEFAULTS.operatorAlertTelegramBotToken).trim(),
+    operatorAlertTelegramChatId: (env.OPERATOR_ALERT_TELEGRAM_CHAT_ID || DEFAULTS.operatorAlertTelegramChatId).trim(),
+    operatorAlertDispatchMinSeverity: (env.OPERATOR_ALERT_DISPATCH_MIN_SEVERITY || DEFAULTS.operatorAlertDispatchMinSeverity).trim().toLowerCase(),
+    operatorAlertDispatchCooldownMinutes: parseNumber(env.OPERATOR_ALERT_DISPATCH_COOLDOWN_MINUTES, DEFAULTS.operatorAlertDispatchCooldownMinutes),
+    operatorAlertSilenceMinutes: parseNumber(env.OPERATOR_ALERT_SILENCE_MINUTES, DEFAULTS.operatorAlertSilenceMinutes),
+    inactivityWatchdogNoCandidateHours: parseNumber(env.INACTIVITY_WATCHDOG_NO_CANDIDATE_HOURS, DEFAULTS.inactivityWatchdogNoCandidateHours),
+    inactivityWatchdogNoExecutionHours: parseNumber(env.INACTIVITY_WATCHDOG_NO_EXECUTION_HOURS, DEFAULTS.inactivityWatchdogNoExecutionHours),
+    inactivityWatchdogDominantBlockerHours: parseNumber(env.INACTIVITY_WATCHDOG_DOMINANT_BLOCKER_HOURS, DEFAULTS.inactivityWatchdogDominantBlockerHours),
+    inactivityWatchdogSizingFailureCycles: parseNumber(env.INACTIVITY_WATCHDOG_SIZING_FAILURE_CYCLES, DEFAULTS.inactivityWatchdogSizingFailureCycles),
+    inactivityWatchdogDashboardDriftCycles: parseNumber(env.INACTIVITY_WATCHDOG_DASHBOARD_DRIFT_CYCLES, DEFAULTS.inactivityWatchdogDashboardDriftCycles),
+    inactivityWatchdogStateStallHours: parseNumber(env.INACTIVITY_WATCHDOG_STATE_STALL_HOURS, DEFAULTS.inactivityWatchdogStateStallHours),
+    gitShortClonePath: env.GIT_SHORT_CLONE_PATH || DEFAULTS.gitShortClonePath,
+    liveTradingAcknowledged: env.LIVE_TRADING_ACKNOWLEDGED || DEFAULTS.liveTradingAcknowledged,
+    dashboardPort: parseNumber(env.DASHBOARD_PORT, DEFAULTS.dashboardPort),
+    dashboardPortfolioRefreshSeconds: parseNumber(env.DASHBOARD_PORTFOLIO_REFRESH_SECONDS, DEFAULTS.dashboardPortfolioRefreshSeconds),
+    dashboardEquityPointLimit: parseNumber(env.DASHBOARD_EQUITY_POINT_LIMIT, DEFAULTS.dashboardEquityPointLimit),
+    dashboardCyclePointLimit: parseNumber(env.DASHBOARD_CYCLE_POINT_LIMIT, DEFAULTS.dashboardCyclePointLimit),
+    dashboardDecisionLimit: parseNumber(env.DASHBOARD_DECISION_LIMIT, DEFAULTS.dashboardDecisionLimit),
+    paperExecutionVenue: (env.PAPER_EXECUTION_VENUE || DEFAULTS.paperExecutionVenue).trim().toLowerCase(),
+    allowSyntheticMinNotionalExit: parseOptionalTriStateBoolean(
+      env.ALLOW_SYNTHETIC_MIN_NOTIONAL_EXIT,
+      DEFAULTS.allowSyntheticMinNotionalExit
+    ),
+    minNotionalExitBufferPct: parseNumber(env.MIN_NOTIONAL_EXIT_BUFFER_PCT, DEFAULTS.minNotionalExitBufferPct),
+    symbolMetadata: Object.fromEntries(watchlist.map((symbol) => [symbol, coinAliases[symbol] || [symbol]])),
+    symbolProfiles: Object.fromEntries(watchlist.map((symbol) => [symbol, getCoinProfile(symbol)])),
+    marketCapRanks: Object.fromEntries(watchlist.map((symbol, index) => [symbol, index + 1]))
+  };
+
+  const profiledConfig = applyResolvedConfigProfiles(config, resolvedProfiles);
+
+  profiledConfig.exchangeCapabilities = resolveExchangeCapabilities(profiledConfig);
+  let parsedConfig;
+  try {
+    parsedConfig = parseNormalizedConfig(profiledConfig, DEFAULTS);
+  } catch (error) {
+    const issues = Array.isArray(error?.issues) ? error.issues : [];
+    const errors = issues.length
+      ? issues.map((issue) => {
+          const pathLabel = Array.isArray(issue.path) && issue.path.length ? issue.path.join(".") : "config";
+          return `${pathLabel}: ${issue.message}`;
+        })
+      : [error?.message || "Invalid configuration schema."];
+    throw new ConfigValidationError("Invalid configuration.", {
+      errors,
+      warnings: [],
+      unknownKeys: unknownEnvKeys
+    });
+  }
+  const validation = validateConfig(parsedConfig);
+  if (unknownEnvKeys.length || !validation.valid) {
+    const errors = [...validation.errors];
+    if (unknownEnvKeys.length) {
+      errors.unshift(`Unknown config keys in .env: ${unknownEnvKeys.join(", ")}.`);
+    }
+    throw new ConfigValidationError("Invalid configuration.", {
+      errors,
+      warnings: validation.warnings,
+      unknownKeys: unknownEnvKeys
+    });
+  }
+  parsedConfig.validation = {
+    valid: true,
+    errors: [],
+    warnings: validation.warnings
+  };
+  return parsedConfig;
+}

@@ -1,0 +1,51 @@
+# Secrets and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Local runtime data and generated state
+data/
+
+# Dependencies
+node_modules/
+
+# OS/editor/local agent state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/settings.local.json
+
+# Logs, reports, temp files
+*.log
+*.pid
+docs-*.html
+dashboard-*.log
+doctor-latest.json
+strict_after_*.json
+tmp_*.json
+tmp_*.js
+tmp_*.err
+tmp_*.log
+tmp_*.pid
+tmp_current_*.json
+*-feed.xml
+binance-announcements.html
+src/news/tmp-test.js
+
+# Downloaded/exported market data
+data/historical/
+data/history/
+data/runtime/
+data/*.csv
+data/*.zip
+
+# Nested local repository copies
+ai trading bot/
+NEW-NEW-ai-trading-bot-/

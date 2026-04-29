@@ -1,0 +1,6816 @@
+import { clamp } from "../utils/math.js";
+import { minutesBetween, sameUtcDay } from "../utils/time.js";
+import { buildMarketStateSummary } from "../strategy/marketState.js";
+import { buildConfidenceBreakdown, buildDataQualitySummary, buildSignalQualitySummary } from "../strategy/candidateInsights.js";
+import { matchesBrokerMode } from "../utils/tradingSource.js";
+import { evaluatePositionGuards, shouldBlockAmbiguousSetup } from "./entryGuards.js";
+import { getAmbiguityThreshold, buildDecisionContextConfidence } from "./entryScoring.js";
+import { buildGroupedSizingPlan, buildSizingFactorBreakdown } from "./entrySizing.js";
+import { buildEntryDiagnosticsSummary, buildPermissioningSummary, buildReasonProfiles } from "./entryFinalize.js";
+import { buildRiskVerdict } from "./reasonCodes.js";
+import { HARD_SAFETY_BLOCKERS, applyHardSafetyPolicy } from "./policies/hardSafetyPolicy.js";
+import { buildDecisionBoundarySummary, buildBlockerDecomposition, buildConfidenceAdjudication } from "./policies/diagnosticsPolicy.js";
+import { buildEdgeScore } from "./policies/alphaQualityPolicy.js";
+import { buildPermissioningScore } from "./policies/governancePolicy.js";
+import { buildSizingPolicySummary } from "./policies/sizingPolicy.js";
+import { buildRecoveryProbePolicy, isRecoveryProbeSoftBlocker } from "./policies/recoveryProbePolicy.js";
+import { resolvePolicyProfile } from "./policyProfiles.js";
+
+function safeValue(value, fallback = 0) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function isBinanceDemoPaperConfig(config = {}) {
+  return (config.botMode || "paper") === "paper" && String(config.paperExecutionVenue || "").toLowerCase() === "binance_demo_spot";
+}
+
+function resolveEffectiveMinTradeUsdt(config = {}, symbolRules = null, botMode = "paper") {
+  const configuredFloor = botMode === "paper"
+    ? safeValue(config.paperMinTradeUsdt, safeValue(config.minTradeUsdt, 0))
+    : safeValue(config.minTradeUsdt, 0);
+  const venueMinNotional = safeValue(symbolRules?.minNotional, 0);
+  if (botMode === "paper" && isBinanceDemoPaperConfig(config)) {
+    const bufferedVenueFloor = venueMinNotional > 0
+      ? Math.max(venueMinNotional * 1.1, Math.min(12, venueMinNotional + 4))
+      : 0;
+    return Math.max(configuredFloor, bufferedVenueFloor, venueMinNotional);
+  }
+  return Math.max(configuredFloor, venueMinNotional);
+}
+
+function resolvePaperExplorationSizeMultiplier(config = {}) {
+  const base = safeValue(config.paperExplorationSizeMultiplier, 0.45);
+  return isBinanceDemoPaperConfig(config) ? Math.max(base, 0.82) : base;
+}
+
+function resolvePaperRecoveryProbeSizeMultiplier(config = {}) {
+  const base = safeValue(config.paperRecoveryProbeSizeMultiplier, 0.22);
+  return isBinanceDemoPaperConfig(config) ? Math.max(base, 0.5) : base;
+}
+
+function num(value, digits = 4) {
+  return Number(safeValue(value, 0).toFixed(digits));
+}
+
+function isValidPositiveNumber(value) {
+  return Number.isFinite(value) && value > 0;
+}
+
+function isWithinLookback(at, nowIso, lookbackMinutes) {
+  if (!at || !Number.isFinite(lookbackMinutes) || lookbackMinutes <= 0) {
+    return true;
+  }
+  const atMs = new Date(at).getTime();
+  const nowMs = new Date(nowIso || at).getTime();
+  if (!Number.isFinite(atMs) || !Number.isFinite(nowMs)) {
+    return true;
+  }
+  return nowMs - atMs <= lookbackMinutes * 60_000;
+}
+
+function getMostRecentTradeTimestamp(journal) {
+  return [...(journal?.trades || [])]
+    .reverse()
+    .map((trade) => trade.exitAt || trade.entryAt || null)
+    .find(Boolean) || null;
+}
+
+function isSoftPaperReason(reason) {
+  return [
+    "model_confidence_too_low",
+    "model_uncertainty_abstain",
+    "transformer_challenger_reject",
+    "committee_veto",
+    "committee_confidence_too_low",
+    "committee_low_agreement",
+    "strategy_fit_too_low",
+    "strategy_context_mismatch",
+    "orderbook_sell_pressure",
+    "execution_cost_budget_exceeded",
+    "strategy_cooldown",
+    "strategy_budget_cooled",
+    "family_budget_cooled",
+    "cluster_budget_cooled",
+    "regime_budget_cooled",
+    "factor_budget_cooled",
+    "daily_risk_budget_cooled",
+    "regime_kill_switch_active",
+    "portfolio_cvar_budget_cooled",
+    "portfolio_loss_streak_guard",
+    "symbol_loss_streak_guard",
+    "capital_governor_blocked",
+    "capital_governor_recovery",
+    "trade_size_below_minimum",
+    "entry_cooldown_active",
+    "daily_entry_budget_reached",
+    "weekend_high_risk_strategy_block",
+    "ambiguous_setup_context"
+  ].includes(reason);
+}
+
+function classifyReasonCategory(reason = "") {
+  if (!reason) {
+    return "other";
+  }
+  if (reason.includes("confidence") || reason.includes("abstain") || reason.includes("quality")) {
+    return "quality";
+  }
+  if (reason.includes("committee") || reason.includes("meta") || reason.includes("governor")) {
+    return "governance";
+  }
+  if (reason.includes("volatility") || reason.includes("spread") || reason.includes("orderbook") || reason.includes("liquidity")) {
+    return "execution";
+  }
+  if (reason.includes("news") || reason.includes("event") || reason.includes("calendar") || reason.includes("announcement")) {
+    return "event";
+  }
+  if (reason.includes("portfolio") || reason.includes("exposure") || reason.includes("position") || reason.includes("trade_size")) {
+    return "risk";
+  }
+  if (reason.includes("exchange_safety") || reason.includes("exchange_truth") || reason.includes("reconcile")) {
+    return "safety";
+  }
+  if (reason.includes("regime") || reason.includes("trend") || reason.includes("breakout") || reason.includes("session")) {
+    return "regime";
+  }
+  if (reason.startsWith("paper_learning_") || reason.includes("shadow")) {
+    return "learning";
+  }
+  return "other";
+}
+
+function reasonSeverity(reason = "") {
+  if (!reason || isSoftPaperReason(reason)) {
+    return 1;
+  }
+  if (
+    [
+      "exchange_safety_blocked",
+      "exchange_safety_symbol_blocked",
+      "exchange_truth_freeze",
+      "reconcile_required",
+      "position_already_open",
+      "max_open_positions_reached",
+      "trade_size_invalid",
+      "trade_size_below_minimum"
+    ].includes(reason)
+  ) {
+    return 5;
+  }
+  if (
+    [
+      "capital_governor_blocked",
+      "regime_kill_switch_active",
+      "self_heal_pause_entries",
+      "execution_cost_budget_exceeded"
+    ].includes(reason)
+  ) {
+    return 4;
+  }
+  return 3;
+}
+
+function normalizeDecisionReasons(reasons = []) {
+  return [...new Set((reasons || []).filter(Boolean))]
+    .sort((left, right) => {
+      const severityDelta = reasonSeverity(right) - reasonSeverity(left);
+      if (severityDelta !== 0) {
+        return severityDelta;
+      }
+      return left.localeCompare(right);
+    });
+}
+
+
+function isMildPaperQualityReason(reason) {
+  return [
+    "local_book_quality_too_low",
+    "quality_quorum_degraded"
+  ].includes(reason);
+}
+
+function isPaperProbeCapReason(reason) {
+  return [
+    "paper_learning_family_probe_cap_reached",
+    "paper_learning_regime_probe_cap_reached",
+    "paper_learning_session_probe_cap_reached",
+    "paper_learning_regime_family_probe_cap_reached",
+    "paper_learning_condition_strategy_probe_cap_reached"
+  ].includes(reason);
+}
+
+function isPaperShadowCapReason(reason) {
+  return [
+    "paper_learning_regime_family_shadow_cap_reached",
+    "paper_learning_condition_strategy_shadow_cap_reached"
+  ].includes(reason);
+}
+
+function isPaperRecoveryProbeReason(reason) {
+  return [
+    "capital_governor_blocked",
+    "capital_governor_recovery",
+    "trade_size_below_minimum"
+  ].includes(reason);
+}
+
+function isRecoveryProbeMetaCautionReason(reason = "") {
+  return [
+    "meta_gate_caution",
+    "meta_neural_caution",
+    "trade_quality_caution",
+    "meta_followthrough_caution"
+  ].includes(reason);
+}
+
+function isPaperRecoveryProbeSoftReason(reason, selfHealState = {}, { allowModelConfidenceNearMiss = false } = {}) {
+  if (
+    isPaperRecoveryProbeReason(reason) ||
+    isPaperLeniencyReason(reason, selfHealState) ||
+    isMildPaperQualityReason(reason) ||
+    isRecoveryProbeMetaCautionReason(reason)
+  ) {
+    return true;
+  }
+  if (reason === "model_confidence_too_low") {
+    return Boolean(allowModelConfidenceNearMiss);
+  }
+  return false;
+}
+
+function isPaperRecoveryProbeHardStopReason(reason = "") {
+  return HARD_SAFETY_BLOCKERS.has(reason) || [
+    "exchange_truth_freeze",
+    "exchange_safety_blocked",
+    "exchange_safety_symbol_blocked",
+    "reconcile_required",
+    "lifecycle_attention_required",
+    "quality_quorum_observe_only",
+    "session_blocked",
+    "drift_blocked",
+    "operator_ack_required",
+    "position_already_open",
+    "max_open_positions_reached"
+  ].includes(reason);
+}
+
+function buildPaperRecoveryProbeAdmission({
+  config = {},
+  capitalGovernor = {},
+  reasons = [],
+  openPositionsInMode = [],
+  canOpenAnotherPaperLearningPosition = true,
+  score = {},
+  threshold = 0,
+  baseThreshold = 0,
+  recoveryProbeProbabilityFloor = 0,
+  setupQuality = {},
+  signalQualitySummary = {},
+  dataQualitySummary = {},
+  confidenceBreakdown = {},
+  lowConfidencePressure = {},
+  qualityQuorumSummary = {},
+  marketSnapshot = {},
+  newsSummary = {},
+  announcementSummary = {},
+  calendarSummary = {},
+  marketStructureSummary = {},
+  volatilitySummary = {},
+  sessionSummary = {},
+  driftSummary = {},
+  selfHealState = {},
+  invalidQuoteAmount = false
+} = {}) {
+  const active =
+    config.botMode === "paper" &&
+    isBinanceDemoPaperConfig(config) &&
+    Boolean(capitalGovernor.allowProbeEntries);
+  const probeOnlyActive = active && capitalGovernor.allowEntries === false;
+  const normalizedReasons = normalizeDecisionReasons(reasons);
+  const blockerDecomposition = buildBlockerDecomposition(normalizedReasons);
+  const thresholdGap = safeValue(score.probability, 0) - safeValue(threshold, 0);
+  const thresholdGapToBase = safeValue(score.probability, 0) - safeValue(baseThreshold, 0);
+  const modelConfidenceNearMissEligible =
+    normalizedReasons.includes("model_confidence_too_low") &&
+    safeValue(score.probability, 0) >= Math.max(safeValue(recoveryProbeProbabilityFloor, 0), safeValue(threshold, 0) - 0.025) &&
+    safeValue(setupQuality.score, 0) >= 0.68 &&
+    safeValue(signalQualitySummary.overallScore, 0) >= 0.7 &&
+    safeValue(dataQualitySummary.overallScore, 0) >= 0.62 &&
+    safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.6 &&
+    !safeValue(lowConfidencePressure.featureTrustHardRisk, false);
+  const hardBlockers = normalizedReasons.filter((reason) => isPaperRecoveryProbeHardStopReason(reason));
+  const softBlockedOnly =
+    normalizedReasons.length > 0 &&
+    hardBlockers.length === 0 &&
+    normalizedReasons.every((reason) => isPaperRecoveryProbeSoftReason(reason, selfHealState, {
+      allowModelConfidenceNearMiss: modelConfidenceNearMissEligible
+    }));
+  const qualityStrong =
+    safeValue(setupQuality.score, 0) >= 0.66 &&
+    !["weak"].includes(setupQuality.tier || "");
+  const signalStrong =
+    safeValue(signalQualitySummary.overallScore, 0) >= 0.68 &&
+    safeValue(signalQualitySummary.executionViability, 0) >= 0.56;
+  const dataStrong = safeValue(dataQualitySummary.overallScore, 0) >= 0.58;
+  const confidenceStrong =
+    safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.62 &&
+    safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.58;
+  const thresholdGapSmall =
+    safeValue(score.probability, 0) >= Math.max(safeValue(recoveryProbeProbabilityFloor, 0), safeValue(threshold, 0) - 0.035);
+  const executionAcceptable =
+    !invalidQuoteAmount &&
+    (marketSnapshot.book?.bookPressure || 0) >= safeValue(config.paperRecoveryProbeMinBookPressure, -0.28) &&
+    safeValue(marketSnapshot.book?.spreadBps, 0) <= Math.min(safeValue(config.maxSpreadBps, 25) * 0.5, 10) &&
+    safeValue(marketSnapshot.market?.realizedVolPct, 0) <= safeValue(config.maxRealizedVolPct, 0.07) * 0.82 &&
+    safeValue(newsSummary.riskScore, 0) <= 0.36 &&
+    safeValue(announcementSummary.riskScore, 0) <= 0.24 &&
+    safeValue(calendarSummary.riskScore, 0) <= 0.3 &&
+    safeValue(marketStructureSummary.riskScore, 0) <= 0.36 &&
+    safeValue(volatilitySummary.riskScore, 0) <= 0.76 &&
+    !(sessionSummary.blockerReasons || []).length &&
+    (
+      !(driftSummary.blockerReasons || []).length ||
+      (driftSummary.blockerReasons || []).every((reason) => isMildPaperQualityReason(reason))
+    ) &&
+    qualityQuorumSummary.observeOnly !== true &&
+    canRelaxPaperSelfHeal(selfHealState);
+  const noOpenPositions = openPositionsInMode.length === 0;
+  const qualifyingReasons = normalizedReasons.filter((reason) => isPaperRecoveryProbeSoftReason(reason, selfHealState, {
+    allowModelConfidenceNearMiss: modelConfidenceNearMissEligible
+  }));
+  const eligible =
+    probeOnlyActive &&
+    noOpenPositions &&
+    canOpenAnotherPaperLearningPosition &&
+    softBlockedOnly &&
+    thresholdGapSmall &&
+    qualityStrong &&
+    signalStrong &&
+    dataStrong &&
+    confidenceStrong &&
+    executionAcceptable;
+
+  let whyNoProbeAttempt = null;
+  if (probeOnlyActive) {
+    if (!noOpenPositions) {
+      whyNoProbeAttempt = "open_position_already_active";
+    } else if (!canOpenAnotherPaperLearningPosition) {
+      whyNoProbeAttempt = "max_concurrent_probes_reached";
+    } else if (hardBlockers.length) {
+      whyNoProbeAttempt = hardBlockers[0];
+    } else if (!softBlockedOnly) {
+      whyNoProbeAttempt = blockerDecomposition.rootBlocker || "non_probe_soft_blocker_present";
+    } else if (!thresholdGapSmall) {
+      whyNoProbeAttempt = "probe_threshold_gap_too_large";
+    } else if (!(qualityStrong && signalStrong && dataStrong && confidenceStrong)) {
+      whyNoProbeAttempt = !qualityStrong
+        ? "probe_quality_below_floor"
+        : !signalStrong
+          ? "probe_signal_quality_below_floor"
+          : !dataStrong
+            ? "probe_data_quality_below_floor"
+            : "probe_confidence_below_floor";
+    } else if (!executionAcceptable) {
+      whyNoProbeAttempt = "probe_execution_conditions_unacceptable";
+    }
+  }
+
+  return {
+    active,
+    probeOnlyActive,
+    eligible,
+    activated: false,
+    softBlockedOnly,
+    qualifyingReasons,
+    hardBlockers,
+    rootBlocker: blockerDecomposition.rootBlocker,
+    downstreamBlockers: blockerDecomposition.downstreamBlockers,
+    thresholdGap: num(thresholdGap, 4),
+    thresholdGapToBase: num(thresholdGapToBase, 4),
+    qualityStrong,
+    signalStrong,
+    dataStrong,
+    confidenceStrong,
+    executionAcceptable,
+    modelConfidenceNearMissEligible,
+    metaCautionOverrideEligible: normalizedReasons.some((reason) => isRecoveryProbeMetaCautionReason(reason)),
+    whyNoProbeAttempt,
+    probeRejectedReason: null,
+    openPositionCount: openPositionsInMode.length,
+    capitalGovernorProbeState: {
+      status: capitalGovernor.status || "unknown",
+      pressureBand: capitalGovernor.pressureBand || "unknown",
+      allowEntries: Boolean(capitalGovernor.allowEntries),
+      allowProbeEntries: Boolean(capitalGovernor.allowProbeEntries),
+      recoveryMode: Boolean(capitalGovernor.recoveryMode)
+    }
+  };
+}
+
+function canRelaxPaperSelfHeal(selfHealState = {}) {
+  const issues = new Set(selfHealState.issues || []);
+  return Boolean(selfHealState.learningAllowed) || !issues.has("health_circuit_open");
+}
+
+function isPaperLeniencyReason(reason, selfHealState = {}) {
+  if (reason === "self_heal_pause_entries") {
+    return canRelaxPaperSelfHeal(selfHealState);
+  }
+  return isSoftPaperReason(reason);
+}
+
+function isPaperExplorationProbeReason(reason, selfHealState = {}) {
+  if (isPaperLeniencyReason(reason, selfHealState) || isMildPaperQualityReason(reason)) {
+    return true;
+  }
+  const calibrationProbeActive = selfHealState.mode === "paper_calibration_probe" && canRelaxPaperSelfHeal(selfHealState);
+  if (calibrationProbeActive && ["meta_gate_caution", "meta_neural_caution", "capital_governor_recovery"].includes(reason)) {
+    return true;
+  }
+  return [
+    "model_confidence_too_low",
+    "trade_size_below_minimum"
+  ].includes(reason);
+}
+
+function usesWeekendHighRiskStrategyGate(strategySummary = {}) {
+  const family = strategySummary.family || "";
+  const activeStrategy = strategySummary.activeStrategy || "";
+  if (["breakout", "derivatives"].includes(family)) {
+    return true;
+  }
+  if (family === "market_structure") {
+    return ["market_structure_break"].includes(activeStrategy);
+  }
+  return false;
+}
+
+function isRedundantCommitteeVeto({ committeeVetoIds = [], portfolioSummary = {}, strategySummary = {} } = {}) {
+  if (!committeeVetoIds.length) {
+    return false;
+  }
+  const vetoSet = new Set(committeeVetoIds);
+  const portfolioReasons = new Set(portfolioSummary.reasons || []);
+  const strategyBlockers = new Set(strategySummary.blockers || []);
+  const portfolioCovered =
+    vetoSet.has("portfolio_overlap") &&
+    [
+      "cluster_exposure_limit_hit",
+      "sector_exposure_limit_hit",
+      "pair_correlation_too_high",
+      "family_exposure_limit_hit",
+      "regime_exposure_limit_hit",
+      "strategy_exposure_limit_hit",
+      "portfolio_cvar_budget_hit",
+      "portfolio_drawdown_budget_hit",
+      "regime_kill_switch_active"
+    ].some((reason) => portfolioReasons.has(reason));
+  const strategyCovered =
+    vetoSet.has("strategy_context_mismatch") &&
+    strategyBlockers.size > 0;
+  return committeeVetoIds.every((id) =>
+    (id === "portfolio_overlap" && portfolioCovered) ||
+    (id === "strategy_context_mismatch" && strategyCovered)
+  );
+}
+
+function getStrategyFitGuardFloor(strategySummary = {}, botMode = "paper") {
+  const activeStrategy = strategySummary.activeStrategy || "";
+  const family = strategySummary.family || "";
+  if (botMode === "paper") {
+    if (activeStrategy === "liquidity_sweep") {
+      return 0.46;
+    }
+    if (activeStrategy === "orderbook_imbalance") {
+      return 0.4;
+    }
+    if (activeStrategy === "range_grid_reversion" || family === "range_grid") {
+      return 0.48;
+    }
+    if (["zscore_reversion", "vwap_reversion"].includes(activeStrategy) || family === "mean_reversion") {
+      return 0.47;
+    }
+  }
+  return 0.5;
+}
+
+function canUsePaperProbeScopeOverflow({
+  entryMode = "standard",
+  reasons = [],
+  score = {},
+  threshold = 0,
+  paperLearningBudget = {},
+  paperLearningSampling = {},
+  signalQualitySummary = {},
+  dataQualitySummary = {},
+  confidenceBreakdown = {},
+  selfHealState = {}
+} = {}) {
+  if (!["paper_exploration", "paper_recovery_probe"].includes(entryMode)) {
+    return false;
+  }
+  if ((paperLearningBudget.probeRemaining || 0) <= 0) {
+    return false;
+  }
+  const capReasons = reasons.filter((reason) => isPaperProbeCapReason(reason));
+  if (capReasons.length !== 1) {
+    return false;
+  }
+  const nonCapReasons = reasons.filter((reason) => !isPaperProbeCapReason(reason));
+  if (!nonCapReasons.length || !nonCapReasons.every((reason) => isPaperLeniencyReason(reason, selfHealState) || isMildPaperQualityReason(reason))) {
+    return false;
+  }
+  return (
+    score.probability >= threshold - 0.04 &&
+    safeValue(score.calibrationConfidence, 0) >= 0.66 &&
+    safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.6 &&
+    safeValue(signalQualitySummary.overallScore, 0) >= 0.66 &&
+    safeValue(dataQualitySummary.overallScore, 0) >= 0.44 &&
+    safeValue(paperLearningSampling.noveltyScore, 0) >= 0.18
+  );
+}
+
+function hasConfirmedPaperSellPressure({ marketSnapshot = {}, strategySummary = {}, config = {} } = {}) {
+  const book = marketSnapshot.book || {};
+  const family = strategySummary.family || "";
+  const restBookFallbackPressureOnly =
+    (book.bookSource || "") === "rest_book" &&
+    book.bookFallbackReady === true &&
+    book.localBookSynced !== true;
+  const fallbackCorroborated =
+    (book.microPriceEdgeBps || 0) < -0.22 ||
+    (book.weightedDepthImbalance || 0) < -0.14 ||
+    (
+      (book.bookPressure || 0) < config.minBookPressureForEntry - 0.18 &&
+      (
+        (book.microPriceEdgeBps || 0) < -0.08 ||
+        (book.weightedDepthImbalance || 0) < -0.08
+      )
+    );
+  const baseConfirmed =
+    !restBookFallbackPressureOnly ||
+    fallbackCorroborated;
+  if (!["breakout", "market_structure"].includes(family)) {
+    return baseConfirmed;
+  }
+  if (restBookFallbackPressureOnly) {
+    return baseConfirmed;
+  }
+  return (
+    (book.bookPressure || 0) < config.minBookPressureForEntry - 0.1 ||
+    ((book.bookPressure || 0) < config.minBookPressureForEntry && (book.microPriceEdgeBps || 0) < 0) ||
+    ((book.bookPressure || 0) < config.minBookPressureForEntry && (book.weightedDepthImbalance || 0) < -0.1) ||
+    (book.microPriceEdgeBps || 0) < -0.22 ||
+    (book.weightedDepthImbalance || 0) < -0.16
+  );
+}
+
+function average(values = [], fallback = 0) {
+  return values.length ? values.reduce((total, value) => total + value, 0) / values.length : fallback;
+}
+
+function buildRelativeStrengthComposite(market = {}) {
+  const base = average([
+    market.relativeStrengthVsBtc,
+    market.relativeStrengthVsEth,
+    market.clusterRelativeStrength,
+    market.sectorRelativeStrength
+  ].filter((value) => Number.isFinite(value)), 0);
+  const contextualAdjustment =
+    (safeValue(market.leadershipTailwindScore, 0.5) - 0.5) * 0.012 +
+    (safeValue(market.relativeAccelerationScore, 0.5) - 0.5) * 0.008 -
+    safeValue(market.lateFollowerRisk, 0) * 0.006 -
+    safeValue(market.copycatBreakoutRisk, 0) * 0.005;
+  return base + contextualAdjustment;
+}
+
+function buildDownsideVolDominance(market = {}) {
+  const upside = safeValue(market.upsideRealizedVolPct);
+  const downside = safeValue(market.downsideRealizedVolPct);
+  return (downside - upside) / Math.max(upside + downside, 1e-9);
+}
+
+function buildAcceptanceQuality(market = {}) {
+  return clamp(average([
+    market.closeLocationQuality,
+    market.volumeAcceptanceScore,
+    market.anchoredVwapAcceptanceScore,
+    Number.isFinite(market.anchoredVwapRejectionScore) ? 1 - market.anchoredVwapRejectionScore : null,
+    market.breakoutFollowThroughScore
+  ].filter((value) => Number.isFinite(value)), 0.5), 0, 1);
+}
+
+function buildReplenishmentQuality(book = {}) {
+  return clamp(average([
+    Number.isFinite(book.replenishmentScore) ? (book.replenishmentScore + 1) / 2 : null,
+    Number.isFinite(book.queueRefreshScore) ? (book.queueRefreshScore + 1) / 2 : null,
+    Number.isFinite(book.resilienceScore) ? (book.resilienceScore + 1) / 2 : null
+  ].filter((value) => Number.isFinite(value)), 0.5), 0, 1);
+}
+
+function normalizeRelativeStrength(relativeStrength = 0) {
+  return clamp((safeValue(relativeStrength, 0) + 0.01) / 0.03, 0, 1);
+}
+
+function buildSetupQualityAssessment({
+  config = {},
+  score = {},
+  threshold = 0,
+  strategySummary = {},
+  signalQualitySummary = {},
+  confidenceBreakdown = {},
+  dataQualitySummary = {},
+  acceptanceQuality = 0,
+  replenishmentQuality = 0,
+  relativeStrengthComposite = 0,
+  leadershipTailwindScore = 0.5,
+  lateFollowerRisk = 0,
+  copycatBreakoutRisk = 0,
+  downsideVolDominance = 0,
+  timeframeSummary = {},
+  pairHealthSummary = {},
+  venueConfirmationSummary = {},
+  marketConditionSummary = {},
+  marketStateSummary = {},
+  regimeSummary = {}
+} = {}) {
+  const edgeToThreshold = safeValue(score.probability, 0) - safeValue(threshold, 0);
+  const strategyFit = safeValue(strategySummary.fitScore, 0);
+  const strategyFitGuardFloor = getStrategyFitGuardFloor(strategySummary, config.botMode || "paper");
+  const strategyBlockerCount = Array.isArray(strategySummary.blockers) ? strategySummary.blockers.length : 0;
+  const relativeStrengthScore = normalizeRelativeStrength(relativeStrengthComposite);
+  const conditionConfidence = clamp(safeValue(marketConditionSummary.conditionConfidence, 0.5), 0, 1);
+  const conditionRisk = clamp(safeValue(marketConditionSummary.conditionRisk, 0.5), 0, 1);
+  const hostilePhase = ["late_crowded", "late_distribution"].includes(marketStateSummary.phase || "");
+  const hostileRegime = ["high_vol", "breakout"].includes(regimeSummary.regime || "");
+  const strategyContextPenalty = strategyBlockerCount
+    ? Math.min(0.12, 0.04 + strategyBlockerCount * 0.02)
+    : 0;
+  const strategyFitPenalty = Math.max(0, strategyFitGuardFloor - strategyFit) * 0.12;
+  const qualityScore = clamp(
+      0.14 +
+        Math.max(0, edgeToThreshold + 0.03) * 2.4 * 0.16 +
+        strategyFit * 0.17 +
+        safeValue(signalQualitySummary.overallScore, 0) * 0.16 +
+        safeValue(confidenceBreakdown.overallConfidence, 0) * 0.14 +
+        safeValue(dataQualitySummary.overallScore, 0) * 0.1 +
+        clamp(acceptanceQuality, 0, 1) * 0.08 +
+        clamp(replenishmentQuality, 0, 1) * 0.06 +
+      relativeStrengthScore * 0.05 +
+      clamp(leadershipTailwindScore, 0, 1) * 0.04 +
+      safeValue(timeframeSummary.alignmentScore, 0) * 0.05 +
+      conditionConfidence * 0.04 +
+      safeValue(pairHealthSummary.score, 0.5) * 0.04 +
+        Math.max(0, 1 - conditionRisk) * 0.03 -
+        Math.max(0, conditionRisk - 0.48) * 0.06 -
+        clamp(lateFollowerRisk, 0, 1) * 0.06 -
+        clamp(copycatBreakoutRisk, 0, 1) * 0.05 -
+        Math.max(0, downsideVolDominance) * 0.08 -
+        strategyFitPenalty -
+        strategyContextPenalty -
+        (hostilePhase ? 0.06 : 0) -
+        (hostileRegime ? 0.03 : 0) -
+        ((venueConfirmationSummary.status || "") === "blocked" ? 0.08 : 0),
+      0,
+      1
+  );
+  const cautionScore = safeValue(config.tradeQualityCautionScore, 0.58);
+  const minScore = safeValue(config.tradeQualityMinScore, 0.47);
+  let tier =
+    qualityScore >= 0.72 ? "elite" :
+    qualityScore >= cautionScore ? "good" :
+    qualityScore >= minScore ? "watch" :
+    "weak";
+  if (strategyBlockerCount > 0 || strategyFit < strategyFitGuardFloor) {
+    tier = tier === "elite" || tier === "good" ? "watch" : tier;
+  }
+  if (strategyBlockerCount >= 2 && strategyFit < Math.max(0.18, strategyFitGuardFloor - 0.08)) {
+    tier = "weak";
+  }
+  return {
+    score: num(qualityScore, 4),
+    tier,
+    edgeToThreshold: num(edgeToThreshold, 4),
+    relativeStrengthScore: num(relativeStrengthScore, 4),
+    hostilePhase,
+    hostileRegime,
+    regimeFit: num(strategyFit, 4),
+    strategyFitGuardFloor: num(strategyFitGuardFloor, 4),
+    strategyBlockerCount,
+    conditionConfidence: num(conditionConfidence, 4),
+    conditionRisk: num(conditionRisk, 4),
+    signalQuality: num(safeValue(signalQualitySummary.overallScore, 0), 4),
+    executionReadiness: num(safeValue(confidenceBreakdown.executionConfidence, 0), 4),
+    acceptanceQuality: num(acceptanceQuality, 4),
+    replenishmentQuality: num(replenishmentQuality, 4),
+    leadershipTailwindScore: num(leadershipTailwindScore, 4),
+    lateFollowerRisk: num(lateFollowerRisk, 4),
+    copycatBreakoutRisk: num(copycatBreakoutRisk, 4)
+  };
+}
+
+function buildApprovalReasons({
+  score = {},
+  threshold = 0,
+  strategySummary = {},
+  signalQualitySummary = {},
+  confidenceBreakdown = {},
+  setupQuality = {},
+  acceptanceQuality = 0,
+  replenishmentQuality = 0,
+  relativeStrengthComposite = 0,
+  leadershipTailwindScore = 0.5,
+  lateFollowerRisk = 0,
+  copycatBreakoutRisk = 0,
+  marketConditionSummary = {}
+} = {}) {
+  const reasons = [];
+  if (safeValue(score.probability, 0) >= safeValue(threshold, 0) + 0.05) {
+    reasons.push("probability_edge_clear");
+  }
+  if ((setupQuality.tier || "") === "elite") {
+    reasons.push("setup_quality_elite");
+  } else if ((setupQuality.tier || "") === "good") {
+    reasons.push("setup_quality_good");
+  }
+  if (safeValue(strategySummary.fitScore, 0) >= 0.62) {
+    reasons.push("strategy_fit_strong");
+  }
+  if (safeValue(signalQualitySummary.overallScore, 0) >= 0.62) {
+    reasons.push("signal_confluence_strong");
+  }
+  if (safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.56) {
+    reasons.push("execution_ready");
+  }
+  if (acceptanceQuality >= 0.58) {
+    reasons.push("acceptance_confirmed");
+  }
+  if (replenishmentQuality >= 0.56) {
+    reasons.push("orderbook_supportive");
+  }
+  if (
+    safeValue(marketConditionSummary.conditionConfidence, 0) >= 0.62 &&
+    safeValue(marketConditionSummary.conditionRisk, 1) <= 0.42
+  ) {
+    reasons.push("condition_context_supportive");
+  }
+  if (relativeStrengthComposite >= 0.003) {
+    reasons.push("relative_strength_confirmed");
+  }
+  if (clamp(leadershipTailwindScore, 0, 1) >= 0.62) {
+    reasons.push("leadership_rotation_support");
+  }
+  if (clamp(lateFollowerRisk, 0, 1) <= 0.34 && clamp(copycatBreakoutRisk, 0, 1) <= 0.32 && relativeStrengthComposite >= 0.0025) {
+    reasons.push("leader_not_follower");
+  }
+  return [...new Set(reasons)].slice(0, 4);
+}
+
+function buildExpectedNetEdgeSummary({
+  score = {},
+  threshold = 0,
+  strategySummary = {},
+  confidenceBreakdown = {},
+  setupQuality = {},
+  signalQualitySummary = {},
+  marketConditionSummary = {},
+  pairHealthSummary = {},
+  marketSnapshot = {},
+  volatilitySummary = {},
+  newsSummary = {},
+  executionCostBudget = {},
+  stopLossPct = 0,
+  takeProfitPct = 0
+} = {}) {
+  if (!isValidPositiveNumber(stopLossPct) || !isValidPositiveNumber(takeProfitPct)) {
+    return {
+      available: false,
+      decision: "uncertain",
+      confidence: 0,
+      primaryReason: "missing_reward_risk_structure",
+      reasonCategories: ["structure"],
+      components: [],
+      expectancyScore: 0.5
+    };
+  }
+  const probability = clamp(safeValue(score.probability, 0.5), 0.01, 0.99);
+  const overallConfidence = clamp(safeValue(confidenceBreakdown.overallConfidence, 0.5), 0, 1);
+  const modelConfidence = clamp(safeValue(confidenceBreakdown.modelConfidence, overallConfidence), 0, 1);
+  const executionConfidence = clamp(safeValue(confidenceBreakdown.executionConfidence, overallConfidence), 0, 1);
+  const setupScore = clamp(safeValue(setupQuality.score, 0.5), 0, 1);
+  const signalScore = clamp(safeValue(signalQualitySummary.overallScore, 0.5), 0, 1);
+  const pairHealthScore = clamp(safeValue(pairHealthSummary.score, 0.5), 0, 1);
+  const marketConditionRisk = clamp(safeValue(marketConditionSummary.conditionRisk, 0.5), 0, 1);
+  const volatilityRisk = clamp(safeValue(volatilitySummary.riskScore, 0.5), 0, 1);
+  const newsRisk = clamp(
+    Math.max(
+      safeValue(newsSummary.riskScore, 0),
+      safeValue(newsSummary.eventRiskScore, 0),
+      safeValue(newsSummary.socialRisk, 0) * 0.7
+    ),
+    0,
+    1
+  );
+  const spreadBps = Math.max(0, safeValue(marketSnapshot.book?.spreadBps, 0));
+  const depthConfidence = clamp(safeValue(marketSnapshot.book?.depthConfidence, 0.5), 0, 1);
+  const executionBudgetBps = Math.max(
+    0,
+    safeValue(
+      executionCostBudget.averageBudgetCostBps,
+      safeValue(executionCostBudget.averageTotalCostBps, 0)
+    )
+  );
+  const slippageDeltaBps = Math.max(0, safeValue(executionCostBudget.averageSlippageDeltaBps, 0));
+  const expectedExecutionDragBps = Math.max(executionBudgetBps, spreadBps * 0.6) + slippageDeltaBps;
+  const expectedExecutionDragPct = expectedExecutionDragBps / 10_000;
+  const historicalTradeCount = Math.max(0, Number(strategySummary.historicalTradeCount || 0));
+  const historicalWinRate = Number.isFinite(strategySummary.historicalWinRate)
+    ? clamp(safeValue(strategySummary.historicalWinRate, 0.5), 0, 1)
+    : null;
+  const historicalSampleConfidence = historicalTradeCount
+    ? clamp(historicalTradeCount / 18, 0, 1)
+    : 0;
+  const historicalAdjustment = historicalWinRate == null
+    ? 0
+    : clamp(
+        (historicalWinRate - 0.5) * (0.08 + historicalSampleConfidence * 0.12),
+        -0.06,
+        0.06
+      );
+  const contextQuality = clamp(
+    0.18 +
+      setupScore * 0.22 +
+      signalScore * 0.16 +
+      pairHealthScore * 0.12 +
+      (1 - marketConditionRisk) * 0.16 +
+      depthConfidence * 0.08 +
+      (1 - newsRisk) * 0.04 +
+      (1 - volatilityRisk) * 0.04,
+    0,
+    1
+  );
+  const followThroughProbability = clamp(
+    probability +
+      (overallConfidence - 0.5) * 0.16 +
+      (modelConfidence - 0.5) * 0.06 +
+      (executionConfidence - 0.5) * 0.07 +
+      (setupScore - 0.5) * 0.14 +
+      (signalScore - 0.5) * 0.08 +
+      (pairHealthScore - 0.5) * 0.08 +
+      historicalAdjustment -
+      marketConditionRisk * 0.08 -
+      volatilityRisk * 0.05 -
+      newsRisk * 0.05 -
+      Math.max(0, 0.55 - depthConfidence) * 0.1 -
+      (setupQuality.hostilePhase ? 0.03 : 0) -
+      (setupQuality.hostileRegime ? 0.02 : 0),
+    0.05,
+    0.95
+  );
+  const expectedStopOutRisk = clamp(
+    (1 - followThroughProbability) * 0.72 +
+      marketConditionRisk * 0.16 +
+      volatilityRisk * 0.12 +
+      newsRisk * 0.08 +
+      Math.max(0, 0.58 - executionConfidence) * 0.18 +
+      Math.max(0, 0.6 - depthConfidence) * 0.12 +
+      (setupQuality.hostilePhase ? 0.06 : 0) +
+      (setupQuality.hostileRegime ? 0.04 : 0),
+    0.05,
+    0.95
+  );
+  const expectedGrossEdgePct = followThroughProbability * takeProfitPct;
+  const expectedStopOutDragPct = expectedStopOutRisk * stopLossPct;
+  const expectedNetExpectancyPct = expectedGrossEdgePct - expectedStopOutDragPct - expectedExecutionDragPct;
+  const expectancyEnvelope = Math.max(takeProfitPct + stopLossPct + expectedExecutionDragPct, 0.01);
+  const expectancyScore = clamp(0.5 + (expectedNetExpectancyPct / expectancyEnvelope) * 3.2, 0, 1);
+  const confidence = clamp(
+    0.24 +
+      overallConfidence * 0.26 +
+      executionConfidence * 0.16 +
+      setupScore * 0.12 +
+      signalScore * 0.08 +
+      historicalSampleConfidence * 0.14,
+    0.18,
+    0.92
+  );
+  const adverseReasons = [];
+  const supportiveReasons = [];
+  if (followThroughProbability < 0.54) {
+    adverseReasons.push({ id: "followthrough_probability_weak", category: "alpha" });
+  } else if (followThroughProbability >= 0.6) {
+    supportiveReasons.push({ id: "followthrough_probability_supportive", category: "alpha" });
+  }
+  if (expectedExecutionDragPct >= Math.max(expectedGrossEdgePct * 0.4, 0.0012)) {
+    adverseReasons.push({ id: "execution_drag_high", category: "execution" });
+  } else if (expectedExecutionDragPct <= 0.0008) {
+    supportiveReasons.push({ id: "execution_drag_controlled", category: "execution" });
+  }
+  if (expectedStopOutRisk >= 0.55) {
+    adverseReasons.push({ id: "stop_out_risk_high", category: "risk" });
+  } else if (expectedStopOutRisk <= 0.42) {
+    supportiveReasons.push({ id: "stop_out_risk_controlled", category: "risk" });
+  }
+  if (contextQuality < 0.48) {
+    adverseReasons.push({ id: "market_context_fragile", category: "context" });
+  } else if (contextQuality >= 0.6) {
+    supportiveReasons.push({ id: "market_context_supportive", category: "context" });
+  }
+  if (historicalTradeCount >= 6 && historicalWinRate != null && historicalWinRate < 0.48) {
+    adverseReasons.push({ id: "historical_prior_weak", category: "history" });
+  } else if (historicalTradeCount >= 6 && historicalWinRate != null && historicalWinRate >= 0.55) {
+    supportiveReasons.push({ id: "historical_prior_supportive", category: "history" });
+  }
+  const components = [
+    {
+      id: "followthrough_probability",
+      category: "alpha",
+      status: followThroughProbability >= 0.6 ? "support" : followThroughProbability < 0.54 ? "caution" : "neutral",
+      score: num(followThroughProbability, 4),
+      impactPct: num(expectedGrossEdgePct, 4),
+      detail: `raw ${num(probability, 4)} -> follow-through ${num(followThroughProbability, 4)}`
+    },
+    {
+      id: "execution_drag",
+      category: "execution",
+      status: expectedExecutionDragPct >= Math.max(expectedGrossEdgePct * 0.4, 0.0012) ? "caution" : "neutral",
+      score: num(expectedExecutionDragPct, 4),
+      impactPct: num(-expectedExecutionDragPct, 4),
+      detail: `${num(expectedExecutionDragBps, 2)} bps expected drag`
+    },
+    {
+      id: "stop_out_risk",
+      category: "risk",
+      status: expectedStopOutRisk >= 0.55 ? "caution" : expectedStopOutRisk <= 0.42 ? "support" : "neutral",
+      score: num(expectedStopOutRisk, 4),
+      impactPct: num(-expectedStopOutDragPct, 4),
+      detail: `risk ${num(expectedStopOutRisk, 4)} against ${num(stopLossPct, 4)} stop`
+    },
+    {
+      id: "market_context_quality",
+      category: "context",
+      status: contextQuality >= 0.6 ? "support" : contextQuality < 0.48 ? "caution" : "neutral",
+      score: num(contextQuality, 4),
+      impactPct: num((contextQuality - 0.5) * expectancyEnvelope * 0.35, 4),
+      detail: `setup ${num(setupScore, 4)}, signal ${num(signalScore, 4)}, pair ${num(pairHealthScore, 4)}`
+    }
+  ];
+  if (historicalTradeCount > 0) {
+    components.push({
+      id: "historical_strategy_prior",
+      category: "history",
+      status: historicalWinRate != null && historicalWinRate >= 0.55
+        ? "support"
+        : historicalWinRate != null && historicalWinRate < 0.48
+          ? "caution"
+          : "neutral",
+      score: historicalWinRate == null ? null : num(historicalWinRate, 4),
+      impactPct: num(historicalAdjustment * expectancyEnvelope, 4),
+      detail: `${historicalTradeCount} scoped trade(s)${historicalWinRate == null ? "" : ` @ ${Math.round(historicalWinRate * 100)}% win`}`
+    });
+  }
+  const primaryReasonSet = adverseReasons.length ? adverseReasons : supportiveReasons;
+  const primaryReason = primaryReasonSet[0]?.id || (expectedNetExpectancyPct >= 0 ? "net_expectancy_balanced" : "net_expectancy_soft_negative");
+  const reasonCategories = [...new Set(primaryReasonSet.map((item) => item.category))].slice(0, 3);
+  const decision = confidence < 0.38
+    ? "uncertain"
+    : expectedNetExpectancyPct >= Math.max(0.0012, expectedExecutionDragPct * 0.8)
+      ? "positive"
+      : expectedNetExpectancyPct <= -Math.max(0.0008, expectedExecutionDragPct * 0.6)
+        ? "negative"
+        : "neutral";
+  return {
+    available: true,
+    decision,
+    confidence: num(confidence, 4),
+    primaryReason,
+    reasonCategories,
+    probabilityEdgeToThreshold: num(probability - safeValue(threshold, 0), 4),
+    expectedGrossEdgePct: num(expectedGrossEdgePct, 4),
+    expectedExecutionDragPct: num(expectedExecutionDragPct, 4),
+    expectedExecutionDragBps: num(expectedExecutionDragBps, 2),
+    expectedStopOutRisk: num(expectedStopOutRisk, 4),
+    expectedStopOutDragPct: num(expectedStopOutDragPct, 4),
+    expectedNetExpectancyPct: num(expectedNetExpectancyPct, 4),
+    expectancyScore: num(expectancyScore, 4),
+    historicalContext: {
+      tradeCount: historicalTradeCount,
+      winRate: historicalWinRate == null ? null : num(historicalWinRate, 4),
+      sampleConfidence: num(historicalSampleConfidence, 4)
+    },
+    components
+  };
+}
+
+function buildEntryTimingRefinementSummary({
+  score = {},
+  threshold = 0,
+  strategySummary = {},
+  setupQuality = {},
+  signalQualitySummary = {},
+  marketSnapshot = {},
+  trendStateSummary = {},
+  marketStateSummary = {},
+  marketConditionSummary = {},
+  timeframeSummary = {},
+  pairHealthSummary = {},
+  acceptanceQuality = 0,
+  replenishmentQuality = 0,
+  expectedNetEdge = {}
+} = {}) {
+  const market = marketSnapshot.market || {};
+  const book = marketSnapshot.book || {};
+  const family = strategySummary.family || "";
+  const strategyId = strategySummary.activeStrategy || "";
+  const continuationFocused =
+    ["trend_following", "breakout", "market_structure", "orderflow"].includes(family) ||
+    strategyId === "market_structure_break";
+  const meanReversionFocused =
+    family === "mean_reversion" ||
+    ["vwap_reversion", "zscore_reversion", "bear_rally_reclaim", "liquidity_sweep"].includes(strategyId);
+  const closeLocation = clamp(safeValue(market.closeLocation, 0.5), 0, 1);
+  const closeLocationQuality = clamp(safeValue(market.closeLocationQuality, 0.5), 0, 1);
+  const bollingerPosition = clamp(safeValue(market.bollingerPosition, 0.5), 0, 1);
+  const vwapGapPct = Math.abs(safeValue(market.vwapGapPct, 0));
+  const breakoutFollowThrough = clamp(safeValue(market.breakoutFollowThroughScore, 0.5), 0, 1);
+  const conditionRisk = clamp(safeValue(marketConditionSummary.conditionRisk, 0.5), 0, 1);
+  const exhaustionScore = clamp(
+    safeValue(trendStateSummary.exhaustionScore, safeValue(market.trendExhaustionScore, 0)),
+    0,
+    1
+  );
+  const setupScore = clamp(safeValue(setupQuality.score, 0.5), 0, 1);
+  const executionReadiness = clamp(safeValue(setupQuality.executionReadiness, 0.5), 0, 1);
+  const executionViability = clamp(safeValue(signalQualitySummary.executionViability, 0.5), 0, 1);
+  const structureQuality = clamp(safeValue(signalQualitySummary.structureQuality, 0.5), 0, 1);
+  const timeframeAlignment = clamp(safeValue(timeframeSummary.alignmentScore, 0.5), 0, 1);
+  const pairHealthScore = clamp(safeValue(pairHealthSummary.score, 0.5), 0, 1);
+  const spreadBps = Math.max(0, safeValue(book.spreadBps, 0));
+  const expectedSlipBps = Math.max(0, safeValue(book.entryEstimate?.touchSlippageBps, 0));
+  const depthConfidence = clamp(safeValue(book.depthConfidence || book.localBook?.depthConfidence, 0.5), 0, 1);
+  const queueRefreshScore = Number.isFinite(book.queueRefreshScore)
+    ? clamp((book.queueRefreshScore + 1) / 2, 0, 1)
+    : depthConfidence;
+  const queueScore = Number.isFinite(book.queueScore)
+    ? clamp((book.queueScore + 1) / 2, 0, 1)
+    : queueRefreshScore;
+  const bookPressure = clamp((safeValue(book.bookPressure, 0) + 1) / 2, 0, 1);
+  const thresholdEdge = safeValue(score.probability, 0) - safeValue(threshold, 0);
+
+  const extensionScore = clamp(
+    0.9 -
+      Math.max(0, vwapGapPct - 0.0055) * 30 -
+      Math.max(0, closeLocation - 0.82) * 0.95 -
+      Math.max(0, bollingerPosition - 0.86) * 0.72 -
+      Math.max(0, exhaustionScore - 0.56) * 0.5,
+    0,
+    1
+  );
+  const acceptanceScore = clamp(
+    0.18 +
+      clamp(acceptanceQuality, 0, 1) * 0.3 +
+      clamp(replenishmentQuality, 0, 1) * 0.18 +
+      closeLocationQuality * 0.16 +
+      breakoutFollowThrough * 0.12 +
+      timeframeAlignment * 0.12 +
+      pairHealthScore * 0.07 -
+      Math.max(0, conditionRisk - 0.45) * 0.16,
+    0,
+    1
+  );
+  const executionWindowScore = clamp(
+    0.18 +
+      executionReadiness * 0.24 +
+      executionViability * 0.18 +
+      depthConfidence * 0.16 +
+      queueRefreshScore * 0.08 +
+      queueScore * 0.06 +
+      bookPressure * 0.06 -
+      expectedSlipBps / 12 -
+      spreadBps / 120,
+    0,
+    1
+  );
+  const continuationStretchPressure = continuationFocused
+    ? clamp(
+        Math.max(0, closeLocation - 0.88) * 2.2 +
+          Math.max(0, bollingerPosition - 0.9) * 1.8 +
+          Math.max(0, vwapGapPct - 0.008) * 55 +
+          Math.max(0, exhaustionScore - 0.64) * 1.4,
+        0,
+        1
+      )
+    : 0;
+  const pullbackPreference = continuationFocused
+    ? clamp(
+        Math.max(0, 0.6 - extensionScore) * 0.55 +
+          continuationStretchPressure * 0.7 +
+          Math.max(0, 0.56 - acceptanceScore) * 0.18,
+        0,
+        1
+      )
+    : meanReversionFocused
+      ? clamp(
+          Math.max(0, 0.52 - extensionScore) * 0.35 +
+            Math.max(0, closeLocation - 0.7) * 0.16,
+          0,
+          1
+        )
+      : 0;
+  const reclaimNeed = continuationFocused
+    ? clamp(
+        Math.max(0, 0.5 - acceptanceScore) * 1.05 +
+          Math.max(0, 0.5 - breakoutFollowThrough) * 0.28 +
+          Math.max(0, 0.54 - timeframeAlignment) * 0.18,
+        0,
+        1
+      )
+    : 0;
+  let timingScore = clamp(
+    0.16 +
+      extensionScore * 0.22 +
+      acceptanceScore * 0.23 +
+      executionWindowScore * 0.24 +
+      setupScore * 0.06 +
+      structureQuality * 0.04 +
+      pairHealthScore * 0.03 +
+      clamp(safeValue(expectedNetEdge.expectancyScore, 0.5), 0, 1) * 0.05 +
+      Math.max(0, 0.62 - pullbackPreference) * 0.04 +
+      Math.max(0, 0.62 - reclaimNeed) * 0.03 -
+      continuationStretchPressure * 0.22,
+    0,
+    1
+  );
+  const confidence = clamp(
+    0.24 +
+      (Number.isFinite(spreadBps) ? 0.08 : 0) +
+      (Number.isFinite(book.depthConfidence) ? 0.08 : 0) +
+      (Number.isFinite(market.closeLocation) ? 0.08 : 0) +
+      (Number.isFinite(market.vwapGapPct) ? 0.07 : 0) +
+      (Number.isFinite(trendStateSummary.exhaustionScore) ? 0.08 : 0) +
+      (Number.isFinite(timeframeSummary.alignmentScore) ? 0.06 : 0) +
+      (Number.isFinite(pairHealthSummary.score) ? 0.05 : 0) +
+      Math.max(0, setupScore - 0.5) * 0.1,
+    0.24,
+    0.92
+  );
+
+  const components = [
+    {
+      id: "extension_state",
+      category: "extension",
+      status: extensionScore < 0.38 ? "caution" : extensionScore >= 0.62 ? "support" : "neutral",
+      score: num(extensionScore, 4),
+      detail: `vwap ${num(vwapGapPct, 4)} | close ${num(closeLocation, 4)} | bb ${num(bollingerPosition, 4)} | exhaust ${num(exhaustionScore, 4)}`
+    },
+    {
+      id: "acceptance_state",
+      category: "acceptance",
+      status: acceptanceScore < 0.42 ? "caution" : acceptanceScore >= 0.58 ? "support" : "neutral",
+      score: num(acceptanceScore, 4),
+      detail: `accept ${num(acceptanceQuality, 4)} | replenish ${num(replenishmentQuality, 4)} | follow ${num(breakoutFollowThrough, 4)}`
+    },
+    {
+      id: "execution_window",
+      category: "execution",
+      status: executionWindowScore < 0.42 ? "caution" : executionWindowScore >= 0.58 ? "support" : "neutral",
+      score: num(executionWindowScore, 4),
+      detail: `spread ${num(spreadBps, 2)}bps | slip ${num(expectedSlipBps, 2)}bps | depth ${num(depthConfidence, 4)} | queue ${num(queueRefreshScore, 4)}`
+    },
+    {
+      id: "timing_preference",
+      category: "timing_style",
+      status: pullbackPreference >= 0.46 || reclaimNeed >= 0.46 ? "caution" : timingScore >= 0.6 ? "support" : "neutral",
+      score: num(Math.max(1 - pullbackPreference, 1 - reclaimNeed), 4),
+      detail: `pullback ${num(pullbackPreference, 4)} | reclaim ${num(reclaimNeed, 4)} | stretch ${num(continuationStretchPressure, 4)} | phase ${marketStateSummary.phase || marketConditionSummary.conditionId || "unknown"}`
+    }
+  ];
+
+  let state = "take_now";
+  let primaryReason = "timing_take_now";
+  if (
+    timingScore < 0.3 ||
+    (
+      executionWindowScore < 0.34 &&
+      acceptanceScore < 0.38 &&
+      Math.max(0, thresholdEdge) < 0.08
+    ) ||
+    (
+      continuationFocused &&
+      extensionScore < 0.28 &&
+      acceptanceScore < 0.36 &&
+      Math.max(0, thresholdEdge) < 0.08
+    )
+  ) {
+    state = "skip_due_to_timing_decay";
+    primaryReason = executionWindowScore < extensionScore && executionWindowScore < acceptanceScore
+      ? "timing_execution_decay"
+      : acceptanceScore <= extensionScore
+        ? "timing_acceptance_decay"
+        : "timing_extension_decay";
+  } else if (executionWindowScore < 0.44 && executionWindowScore <= acceptanceScore && executionWindowScore <= extensionScore) {
+    state = "wait_for_better_execution_window";
+    primaryReason = "timing_execution_window_poor";
+  } else if (continuationFocused && reclaimNeed >= 0.46 && acceptanceScore < 0.52) {
+    state = "wait_for_reclaim";
+    primaryReason = "timing_reclaim_needed";
+  } else if (
+    continuationFocused &&
+    continuationStretchPressure >= 0.3 &&
+    closeLocation >= 0.88 &&
+    (
+      acceptanceScore < 0.72 ||
+      breakoutFollowThrough < 0.66 ||
+      Math.max(0, thresholdEdge) < 0.12
+    )
+  ) {
+    state = "wait_for_pullback";
+    primaryReason = "timing_pullback_preferred";
+  } else if ((continuationFocused || meanReversionFocused) && pullbackPreference >= 0.46) {
+    state = "wait_for_pullback";
+    primaryReason = "timing_pullback_preferred";
+  }
+
+  if (state === "skip_due_to_timing_decay") {
+    timingScore = Math.min(timingScore, 0.28);
+  } else if (state === "wait_for_better_execution_window") {
+    timingScore = Math.min(timingScore, 0.42);
+  } else if (state === "wait_for_reclaim") {
+    timingScore = Math.min(timingScore, 0.46);
+  } else if (state === "wait_for_pullback") {
+    timingScore = Math.min(timingScore, 0.44);
+  }
+
+  const reasonCategories = [...new Set(components
+    .filter((item) => item.status === "caution")
+    .map((item) => item.category))].slice(0, 3);
+  const rankingAdjustment = num(clamp((timingScore - 0.5) * 0.12, -0.06, 0.05), 4);
+
+  return {
+    available: true,
+    state,
+    primaryReason,
+    confidence: num(confidence, 4),
+    timingScore: num(timingScore, 4),
+    executionWindowScore: num(executionWindowScore, 4),
+    acceptanceScore: num(acceptanceScore, 4),
+    extensionScore: num(extensionScore, 4),
+    pullbackPreference: num(pullbackPreference, 4),
+    reclaimNeed: num(reclaimNeed, 4),
+    immediateEntryPreferred: state === "take_now",
+    rankingAdjustment,
+    reasonCategories,
+    components
+  };
+}
+
+function classifyPermissioningCategory(reason = "") {
+  if (!reason) {
+    return "other";
+  }
+  if (reason.includes("meta_followthrough")) {
+    return "alpha_quality";
+  }
+  if (reason.includes("committee") || reason.includes("meta")) {
+    return "governance";
+  }
+  if (reason.includes("news") || reason.includes("event") || reason.includes("calendar") || reason.includes("announcement")) {
+    return "event";
+  }
+  if (reason.includes("session")) {
+    return "session";
+  }
+  if (reason.includes("cooldown") || reason.includes("duplicate")) {
+    return "cooldown";
+  }
+  if (reason.includes("correlation")) {
+    return "correlation";
+  }
+  if (reason.includes("self_heal") || reason.includes("pause_entries")) {
+    return "self_heal";
+  }
+  if (
+    reason.includes("capital_governor") ||
+    reason.includes("budget") ||
+    reason.includes("exposure") ||
+    reason.includes("position_") ||
+    reason.includes("portfolio_")
+  ) {
+    return "capital_risk";
+  }
+  if (reason.includes("trade_size") || reason.includes("size_")) {
+    return "risk_sizing";
+  }
+  if (
+    reason.includes("execution") ||
+    reason.includes("spread") ||
+    reason.includes("orderbook") ||
+    reason.includes("liquidity") ||
+    reason.includes("venue")
+  ) {
+    return "execution";
+  }
+  const category = classifyReasonCategory(reason);
+  if (["governance", "event", "execution", "risk"].includes(category)) {
+    return category;
+  }
+  return "other";
+}
+
+function resolveBudgetExposureMatch(capitalGovernor = {}, {
+  strategySummary = {},
+  regimeSummary = {},
+  portfolioSummary = {},
+  newsSummary = {},
+  announcementSummary = {}
+} = {}) {
+  const exposureBudgets = capitalGovernor.exposureBudgets || {};
+  const matches = [];
+  const family = strategySummary.family || "uncategorized";
+  const regime = regimeSummary.regime || strategySummary.regime || "unknown";
+  const cluster = portfolioSummary.dominantCluster || strategySummary.family || family;
+  const dominantEventType = newsSummary.dominantEventType || announcementSummary.dominantEventType || "general";
+  const maxCorrelation = safeValue(portfolioSummary.maxCorrelation, 0);
+
+  const pushMatchedBudget = (bucket = [], key, reason) => {
+    const matched = (bucket || []).find((item) => `${item.key || ""}` === `${key || ""}`);
+    if (matched) {
+      matches.push({
+        reason,
+        scope: matched.scope || reason.replace("capital_governor_", "").replace(/_/g, ""),
+        key,
+        blocked: Boolean(matched.blocked),
+        pressure: safeValue(matched.pressure, 0),
+        exposureFraction: safeValue(matched.exposureFraction, 0),
+        budgetFraction: safeValue(matched.budgetFraction, 0)
+      });
+    }
+  };
+
+  pushMatchedBudget(exposureBudgets.family, family, "capital_governor_family_budget");
+  pushMatchedBudget(exposureBudgets.regime, regime, "capital_governor_regime_budget");
+  pushMatchedBudget(exposureBudgets.cluster, cluster, "capital_governor_cluster_budget");
+  if (dominantEventType && dominantEventType !== "general") {
+    pushMatchedBudget(exposureBudgets.event, dominantEventType, "capital_governor_event_concentration");
+  }
+  if (maxCorrelation >= safeValue(exposureBudgets.correlation?.threshold, 0.72)) {
+    matches.push({
+      reason: "capital_governor_correlation_budget",
+      scope: "portfolio",
+      key: "high_correlation",
+      blocked: Boolean(exposureBudgets.correlation?.blocked),
+      pressure: safeValue(exposureBudgets.correlation?.pressure, 0),
+      exposureFraction: safeValue(exposureBudgets.correlation?.exposureFraction, 0),
+      budgetFraction: safeValue(exposureBudgets.correlation?.budgetFraction, 0)
+    });
+  }
+  const strongest = matches.sort((left, right) => right.pressure - left.pressure)[0] || null;
+  const sizeMultiplier = clamp(1 - Math.max(0, safeValue(strongest?.pressure, 0) - 0.78) * 0.55, 0.35, 1);
+  return {
+    matches,
+    strongest,
+    blocked: matches.some((item) => item.blocked),
+    sizeMultiplier
+  };
+}
+
+function getMetaCautionReasons(metaSummary = {}) {
+  return [...new Set((metaSummary.reasons || []).filter((reason) =>
+    ["meta_gate_caution", "meta_neural_caution", "trade_quality_caution", "meta_followthrough_caution"].includes(reason)
+  ))];
+}
+
+function getCommitteeVetoIds(committeeSummary = {}) {
+  return [...new Set((committeeSummary.vetoes || []).map((item) => item?.id).filter(Boolean))];
+}
+
+function isSoftPaperCommitteeDisagreementOnly({ committeeSummary = {}, score = {} } = {}) {
+  const vetoIds = getCommitteeVetoIds(committeeSummary);
+  if (!vetoIds.length || !vetoIds.every((id) => id === "model_disagreement")) {
+    return false;
+  }
+  const committeeProbability = safeValue(committeeSummary.probability, 0.5);
+  const modelProbability = safeValue(score.probability, 0.5);
+  return (
+    committeeProbability >= modelProbability - 0.02 &&
+    safeValue(committeeSummary.netScore, 0) >= -0.08 &&
+    safeValue(committeeSummary.agreement, 0) >= 0.22
+  );
+}
+
+function isSoftPaperCommitteeConfidenceOnly({ committeeSummary = {}, score = {}, threshold = 0 } = {}) {
+  if (getCommitteeVetoIds(committeeSummary).length) {
+    return false;
+  }
+  const committeeProbability = safeValue(committeeSummary.probability, 0.5);
+  const modelProbability = safeValue(score.probability, 0.5);
+  return (
+    safeValue(committeeSummary.agreement, 0) >= 0.72 &&
+    safeValue(committeeSummary.netScore, 0) >= -0.08 &&
+    committeeProbability >= modelProbability - 0.04 &&
+    committeeProbability >= threshold - 0.1
+  );
+}
+
+function isRedundantPaperCommitteeConfidence({ committeeSummary = {}, score = {}, threshold = 0, reasons = [] } = {}) {
+  if (!reasons.includes("model_confidence_too_low")) {
+    return false;
+  }
+  if (getCommitteeVetoIds(committeeSummary).length) {
+    return false;
+  }
+  const committeeProbability = safeValue(committeeSummary.probability, 0.5);
+  const modelProbability = safeValue(score.probability, 0.5);
+  return (
+    safeValue(committeeSummary.agreement, 0) >= 0.78 &&
+    safeValue(committeeSummary.netScore, 0) >= -0.1 &&
+    committeeProbability >= modelProbability - 0.03 &&
+    committeeProbability >= threshold - 0.1
+  );
+}
+
+function getPaperLearningBudgetState({ journal = {}, runtime = {}, nowIso, config = {} } = {}) {
+  const botMode = config.botMode || "paper";
+  const probeUsed = [
+    ...(journal?.trades || []).filter((trade) => matchesBrokerMode(trade, botMode) && trade.learningLane === "probe" && trade.entryAt && sameUtcDay(trade.entryAt, nowIso)),
+    ...(runtime?.openPositions || []).filter((position) => matchesBrokerMode(position, botMode) && position.learningLane === "probe" && position.entryAt && sameUtcDay(position.entryAt, nowIso))
+  ].length;
+  const shadowUsed = [
+    ...(journal?.counterfactuals || []).filter((item) => matchesBrokerMode(item, botMode) && item.learningLane === "shadow" && sameUtcDay(item.resolvedAt || item.queuedAt || item.at, nowIso)),
+    ...(runtime?.counterfactualQueue || []).filter((item) => matchesBrokerMode(item, botMode) && item.learningLane === "shadow" && sameUtcDay(item.queuedAt || item.dueAt, nowIso))
+  ].length;
+  const probeDailyLimit = Math.max(0, Math.round(config.paperLearningProbeDailyLimit || 0));
+  const shadowDailyLimit = Math.max(0, Math.round(config.paperLearningShadowDailyLimit || 0));
+  return {
+    probeDailyLimit,
+    probeUsed,
+    probeRemaining: Math.max(0, probeDailyLimit - probeUsed),
+    shadowDailyLimit,
+    shadowUsed,
+    shadowRemaining: Math.max(0, shadowDailyLimit - shadowUsed)
+  };
+}
+
+function incrementCounter(map, key) {
+  if (!key) {
+    return;
+  }
+  map[key] = (map[key] || 0) + 1;
+}
+
+function buildPaperScopeKey(parts = []) {
+  return parts.map((part) => `${part || ""}`.trim()).filter(Boolean).join("::");
+}
+
+function getPaperLearningSamplingState({
+  journal = {},
+  runtime = {},
+  nowIso,
+  config = {},
+  strategySummary = {},
+  regimeSummary = {},
+  sessionSummary = {},
+  marketConditionSummary = {}
+} = {}) {
+  const botMode = config.botMode || "paper";
+  const familyCounts = {};
+  const regimeCounts = {};
+  const sessionCounts = {};
+  const regimeFamilyCounts = {};
+  const conditionStrategyCounts = {};
+  const shadowRegimeFamilyCounts = {};
+  const shadowConditionStrategyCounts = {};
+  const records = [
+    ...(journal?.trades || []).filter((trade) => matchesBrokerMode(trade, botMode) && trade.learningLane === "probe" && trade.entryAt && sameUtcDay(trade.entryAt, nowIso)),
+    ...(runtime?.openPositions || []).filter((position) => matchesBrokerMode(position, botMode) && position.learningLane === "probe" && position.entryAt && sameUtcDay(position.entryAt, nowIso))
+  ];
+  for (const item of records) {
+    const familyId = item.strategyFamily || item.family || item.strategy?.family || item.entryRationale?.strategy?.family || null;
+    const regimeId = item.regimeAtEntry || item.regime || item.entryRationale?.regimeSummary?.regime || null;
+    const sessionId = item.sessionAtEntry || item.session || item.entryRationale?.session?.session || null;
+    const conditionId = item.marketConditionAtEntry || item.marketCondition?.conditionId || item.entryRationale?.marketCondition?.conditionId || null;
+    const strategyId = item.strategyAtEntry || item.strategy || item.entryRationale?.strategy?.activeStrategy || null;
+    incrementCounter(familyCounts, familyId);
+    incrementCounter(regimeCounts, regimeId);
+    incrementCounter(sessionCounts, sessionId);
+    incrementCounter(regimeFamilyCounts, buildPaperScopeKey([regimeId, familyId]));
+    incrementCounter(conditionStrategyCounts, buildPaperScopeKey([conditionId, strategyId]));
+  }
+  const shadowRecords = [
+    ...(journal?.counterfactuals || []).filter((item) => matchesBrokerMode(item, botMode) && item.learningLane === "shadow" && sameUtcDay(item.resolvedAt || item.queuedAt || item.at, nowIso)),
+    ...(runtime?.counterfactualQueue || []).filter((item) => matchesBrokerMode(item, botMode) && item.learningLane === "shadow" && sameUtcDay(item.queuedAt || item.dueAt, nowIso))
+  ];
+  for (const item of shadowRecords) {
+    const familyId = item.strategyFamily || item.family || item.strategy?.family || item.paperLearning?.scope?.family || item.entryRationale?.strategy?.family || null;
+    const regimeId = item.regimeAtEntry || item.regime || item.paperLearning?.scope?.regime || item.entryRationale?.regimeSummary?.regime || null;
+    const conditionId = item.marketConditionAtEntry || item.marketCondition?.conditionId || item.paperLearning?.scope?.condition || item.entryRationale?.marketCondition?.conditionId || null;
+    const strategyId = item.strategyAtEntry || item.strategy || item.paperLearning?.scope?.strategy || item.entryRationale?.strategy?.activeStrategy || null;
+    incrementCounter(shadowRegimeFamilyCounts, buildPaperScopeKey([regimeId, familyId]));
+    incrementCounter(shadowConditionStrategyCounts, buildPaperScopeKey([conditionId, strategyId]));
+  }
+  const family = strategySummary.family || null;
+  const regime = regimeSummary.regime || null;
+  const session = sessionSummary.session || null;
+  const conditionId = marketConditionSummary.conditionId || null;
+  const strategyId = strategySummary.activeStrategy || null;
+  const regimeFamilyKey = buildPaperScopeKey([regime, family]);
+  const conditionStrategyKey = buildPaperScopeKey([conditionId, strategyId]);
+  const familyLimit = Math.max(0, Math.round(config.paperLearningMaxProbePerFamilyPerDay || 0));
+  const regimeLimit = Math.max(0, Math.round(config.paperLearningMaxProbePerRegimePerDay || 0));
+  const sessionLimit = Math.max(0, Math.round(config.paperLearningMaxProbePerSessionPerDay || 0));
+  const regimeFamilyLimit = Math.max(0, Math.round(config.paperLearningMaxProbePerRegimeFamilyPerDay || 0));
+  const conditionStrategyLimit = Math.max(0, Math.round(config.paperLearningMaxProbePerConditionStrategyPerDay || 0));
+  const shadowRegimeFamilyLimit = Math.max(0, Math.round(config.paperLearningMaxShadowPerRegimeFamilyPerDay || 0));
+  const shadowConditionStrategyLimit = Math.max(0, Math.round(config.paperLearningMaxShadowPerConditionStrategyPerDay || 0));
+  const familyUsed = family ? (familyCounts[family] || 0) : 0;
+  const regimeUsed = regime ? (regimeCounts[regime] || 0) : 0;
+  const sessionUsed = session ? (sessionCounts[session] || 0) : 0;
+  const regimeFamilyUsed = regimeFamilyKey ? (regimeFamilyCounts[regimeFamilyKey] || 0) : 0;
+  const conditionStrategyUsed = conditionStrategyKey ? (conditionStrategyCounts[conditionStrategyKey] || 0) : 0;
+  const shadowRegimeFamilyUsed = regimeFamilyKey ? (shadowRegimeFamilyCounts[regimeFamilyKey] || 0) : 0;
+  const shadowConditionStrategyUsed = conditionStrategyKey ? (shadowConditionStrategyCounts[conditionStrategyKey] || 0) : 0;
+  const familyRemaining = familyLimit > 0 ? Math.max(0, familyLimit - familyUsed) : Infinity;
+  const regimeRemaining = regimeLimit > 0 ? Math.max(0, regimeLimit - regimeUsed) : Infinity;
+  const sessionRemaining = sessionLimit > 0 ? Math.max(0, sessionLimit - sessionUsed) : Infinity;
+  const regimeFamilyRemaining = regimeFamilyLimit > 0 ? Math.max(0, regimeFamilyLimit - regimeFamilyUsed) : Infinity;
+  const conditionStrategyRemaining = conditionStrategyLimit > 0 ? Math.max(0, conditionStrategyLimit - conditionStrategyUsed) : Infinity;
+  const shadowRegimeFamilyRemaining = shadowRegimeFamilyLimit > 0 ? Math.max(0, shadowRegimeFamilyLimit - shadowRegimeFamilyUsed) : Infinity;
+  const shadowConditionStrategyRemaining = shadowConditionStrategyLimit > 0 ? Math.max(0, shadowConditionStrategyLimit - shadowConditionStrategyUsed) : Infinity;
+  const familyNovelty = familyLimit > 0 ? clamp(1 - (familyUsed / familyLimit), 0, 1) : (familyUsed === 0 ? 1 : 0.5);
+  const regimeNovelty = regimeLimit > 0 ? clamp(1 - (regimeUsed / regimeLimit), 0, 1) : (regimeUsed === 0 ? 1 : 0.5);
+  const sessionNovelty = sessionLimit > 0 ? clamp(1 - (sessionUsed / sessionLimit), 0, 1) : (sessionUsed === 0 ? 1 : 0.5);
+  const regimeFamilyNovelty = regimeFamilyLimit > 0 ? clamp(1 - (regimeFamilyUsed / regimeFamilyLimit), 0, 1) : (regimeFamilyUsed === 0 ? 1 : 0.5);
+  const conditionStrategyNovelty = conditionStrategyLimit > 0 ? clamp(1 - (conditionStrategyUsed / conditionStrategyLimit), 0, 1) : (conditionStrategyUsed === 0 ? 1 : 0.5);
+  const recordCount = records.length;
+  const scopeRarityScore = clamp(recordCount <= 0 ? 1 : 1 / Math.sqrt(recordCount + 1), 0, 1);
+  const noveltyScore = clamp(
+    familyNovelty * 0.22 +
+    regimeNovelty * 0.18 +
+    sessionNovelty * 0.1 +
+    regimeFamilyNovelty * 0.22 +
+    conditionStrategyNovelty * 0.18 +
+    scopeRarityScore * 0.1,
+    0,
+    1
+  );
+  return {
+    scope: {
+      family,
+      regime,
+      session,
+      condition: conditionId,
+      strategy: strategyId
+    },
+    probeCaps: {
+      familyLimit,
+      familyUsed,
+      familyRemaining: Number.isFinite(familyRemaining) ? familyRemaining : null,
+      regimeLimit,
+      regimeUsed,
+      regimeRemaining: Number.isFinite(regimeRemaining) ? regimeRemaining : null,
+      sessionLimit,
+      sessionUsed,
+      sessionRemaining: Number.isFinite(sessionRemaining) ? sessionRemaining : null,
+      regimeFamilyKey: regimeFamilyKey || null,
+      regimeFamilyLimit,
+      regimeFamilyUsed,
+      regimeFamilyRemaining: Number.isFinite(regimeFamilyRemaining) ? regimeFamilyRemaining : null,
+      conditionStrategyKey: conditionStrategyKey || null,
+      conditionStrategyLimit,
+      conditionStrategyUsed,
+      conditionStrategyRemaining: Number.isFinite(conditionStrategyRemaining) ? conditionStrategyRemaining : null
+    },
+    shadowCaps: {
+      regimeFamilyKey: regimeFamilyKey || null,
+      regimeFamilyLimit: shadowRegimeFamilyLimit,
+      regimeFamilyUsed: shadowRegimeFamilyUsed,
+      regimeFamilyRemaining: Number.isFinite(shadowRegimeFamilyRemaining) ? shadowRegimeFamilyRemaining : null,
+      conditionStrategyKey: conditionStrategyKey || null,
+      conditionStrategyLimit: shadowConditionStrategyLimit,
+      conditionStrategyUsed: shadowConditionStrategyUsed,
+      conditionStrategyRemaining: Number.isFinite(shadowConditionStrategyRemaining) ? shadowConditionStrategyRemaining : null
+    },
+    noveltyScore,
+    canOpenProbe:
+      (familyLimit === 0 || familyUsed < familyLimit) &&
+      (regimeLimit === 0 || regimeUsed < regimeLimit) &&
+      (sessionLimit === 0 || sessionUsed < sessionLimit) &&
+      (regimeFamilyLimit === 0 || regimeFamilyUsed < regimeFamilyLimit) &&
+      (conditionStrategyLimit === 0 || conditionStrategyUsed < conditionStrategyLimit),
+    canQueueShadow:
+      (shadowRegimeFamilyLimit === 0 || shadowRegimeFamilyUsed < shadowRegimeFamilyLimit) &&
+      (shadowConditionStrategyLimit === 0 || shadowConditionStrategyUsed < shadowConditionStrategyLimit),
+    rarityScore: scopeRarityScore
+  };
+}
+
+function collectPaperShadowCapReasons(samplingState = {}) {
+  const reasons = [];
+  if (
+    (samplingState.shadowCaps?.regimeFamilyLimit || 0) > 0 &&
+    (samplingState.shadowCaps?.regimeFamilyUsed || 0) >= (samplingState.shadowCaps?.regimeFamilyLimit || 0)
+  ) {
+    reasons.push("paper_learning_regime_family_shadow_cap_reached");
+  }
+  if (
+    (samplingState.shadowCaps?.conditionStrategyLimit || 0) > 0 &&
+    (samplingState.shadowCaps?.conditionStrategyUsed || 0) >= (samplingState.shadowCaps?.conditionStrategyLimit || 0)
+  ) {
+    reasons.push("paper_learning_condition_strategy_shadow_cap_reached");
+  }
+  return reasons;
+}
+
+function buildPaperActiveLearningState({
+  score = {},
+  threshold = 0,
+  confidenceBreakdown = {},
+  signalQualitySummary = {},
+  dataQualitySummary = {},
+  reasons = [],
+  samplingState = {}
+} = {}) {
+  const thresholdBuffer = Math.max(0.0001, Math.abs(score.probability - threshold) + 0.02);
+  const nearMissScore = clamp(1 - Math.min(1, Math.abs((score.probability || 0) - threshold) / thresholdBuffer), 0, 1);
+  const disagreementScore = clamp(safeValue(score.disagreement) / 0.2, 0, 1);
+  const uncertaintyScore = clamp(1 - safeValue(confidenceBreakdown.overallConfidence, 0.5), 0, 1);
+  const signalScore = clamp(safeValue(signalQualitySummary.overallScore, 0.5), 0, 1);
+  const dataScore = clamp(safeValue(dataQualitySummary.overallScore, 0.5), 0, 1);
+  const blockerDensity = clamp(reasons.length / 5, 0, 1);
+  const noveltyScore = clamp(safeValue(samplingState.noveltyScore, 0.5), 0, 1);
+  const rarityScore = clamp(safeValue(samplingState.rarityScore, 0.5), 0, 1);
+  const activeLearningScore = clamp(
+    nearMissScore * 0.26 +
+    disagreementScore * 0.18 +
+    uncertaintyScore * 0.2 +
+    blockerDensity * 0.12 +
+    noveltyScore * 0.12 +
+    rarityScore * 0.08 +
+    signalScore * 0.02 +
+    dataScore * 0.02,
+    0,
+    1
+  );
+  const focusReason = disagreementScore >= 0.6
+    ? "model_disagreement"
+    : uncertaintyScore >= 0.48
+      ? "confidence_uncertainty"
+      : nearMissScore >= 0.7
+        ? "threshold_near_miss"
+        : blockerDensity >= 0.5
+          ? "multi_blocker_conflict"
+          : noveltyScore >= 0.7 || rarityScore >= 0.65
+            ? "rare_scope"
+            : "standard_learning";
+  return {
+    activeLearningScore,
+    focusReason,
+    nearMissScore,
+    disagreementScore,
+    uncertaintyScore,
+    blockerDensity
+  };
+}
+
+function isHardPaperLearningBlocker(reason) {
+  return [
+    "health_circuit_open",
+    "exchange_truth_freeze",
+    "exchange_safety_blocked",
+    "exchange_safety_symbol_blocked",
+    "lifecycle_attention_required",
+    "quality_quorum_observe_only",
+    "quality_quorum_degraded",
+    "session_blocked",
+    "drift_blocked",
+    "operator_ack_required"
+  ].includes(reason);
+}
+
+function classifyPaperBlocker(reason) {
+  if ([
+    "health_circuit_open",
+    "exchange_truth_freeze",
+    "exchange_safety_blocked",
+    "exchange_safety_symbol_blocked",
+    "lifecycle_attention_required",
+    "reconcile_required",
+    "operator_ack_required"
+  ].includes(reason)) {
+    return "safety";
+  }
+  if ([
+    "capital_governor_blocked",
+    "capital_governor_recovery",
+    "execution_cost_budget_exceeded",
+    "strategy_cooldown",
+    "strategy_budget_cooled",
+    "family_budget_cooled",
+    "cluster_budget_cooled",
+    "regime_budget_cooled",
+    "factor_budget_cooled",
+    "daily_risk_budget_cooled",
+    "regime_kill_switch_active",
+    "baseline_core_strategy_suspended",
+    "baseline_core_outside_preferred_set"
+  ].includes(reason)) {
+    return "governance";
+  }
+  if ([
+    "committee_veto",
+    "model_confidence_too_low",
+    "model_uncertainty_abstain",
+    "committee_confidence_too_low",
+    "strategy_fit_too_low",
+    "paper_learning_probe_budget_reached",
+    "paper_learning_family_probe_cap_reached",
+    "paper_learning_regime_probe_cap_reached",
+    "paper_learning_session_probe_cap_reached",
+    "paper_learning_regime_family_probe_cap_reached",
+    "paper_learning_condition_strategy_probe_cap_reached",
+    "paper_learning_regime_family_shadow_cap_reached",
+    "paper_learning_condition_strategy_shadow_cap_reached",
+    "paper_learning_novelty_too_low"
+  ].includes(reason)) {
+    return "learning";
+  }
+  return "market";
+}
+
+function resolvePaperTradeBucket(trade = {}) {
+  const outcome = trade.paperLearningOutcome?.outcome || null;
+  if (["good_trade", "acceptable_trade"].includes(outcome)) {
+    return "good";
+  }
+  if (["bad_trade", "early_exit", "late_exit", "execution_drag"].includes(outcome)) {
+    return "weak";
+  }
+  return "neutral";
+}
+
+function buildPaperThresholdSandboxState({
+  journal = {},
+  config = {},
+  strategySummary = {},
+  regimeSummary = {},
+  sessionSummary = {},
+  nowIso
+} = {}) {
+  if (!config.paperLearningSandboxEnabled) {
+    return {
+      active: false,
+      status: "disabled",
+      thresholdShift: 0,
+      sampleSize: 0,
+      scope: {
+        family: strategySummary.family || null,
+        regime: regimeSummary.regime || null,
+        session: sessionSummary.session || null
+      }
+    };
+  }
+  const scope = {
+    family: strategySummary.family || null,
+    regime: regimeSummary.regime || null,
+    session: sessionSummary.session || null
+  };
+  const records = (journal?.trades || [])
+    .filter((trade) => (trade.brokerMode || "paper") === "paper" && trade.exitAt && isWithinLookback(trade.exitAt, nowIso, 60 * 24 * 21))
+    .filter((trade) => {
+      const familyMatch = !scope.family || trade.strategyFamily === scope.family;
+      const regimeMatch = !scope.regime || trade.regimeAtEntry === scope.regime;
+      const sessionMatch = !scope.session || trade.sessionAtEntry === scope.session;
+      return familyMatch && regimeMatch && sessionMatch;
+    })
+    .slice(-18);
+  const minClosedTrades = Math.max(1, Math.round(config.paperLearningSandboxMinClosedTrades || 3));
+  if (records.length < minClosedTrades) {
+    return {
+      active: false,
+      status: "warmup",
+      thresholdShift: 0,
+      sampleSize: records.length,
+      scope
+    };
+  }
+  const goodCount = records.filter((trade) => resolvePaperTradeBucket(trade) === "good").length;
+  const weakCount = records.filter((trade) => resolvePaperTradeBucket(trade) === "weak").length;
+  const avgNetPnlPct = average(records.map((trade) => trade.netPnlPct || 0), 0);
+  const avgExecutionQuality = average(records.map((trade) => trade.executionQualityScore || 0), 0);
+  const goodRate = goodCount / Math.max(records.length, 1);
+  const weakRate = weakCount / Math.max(records.length, 1);
+  let thresholdShift = 0;
+  let status = "observe";
+  if (goodRate >= 0.62 && avgNetPnlPct > 0 && avgExecutionQuality >= 0.52) {
+    thresholdShift = -Math.min(config.paperLearningSandboxMaxThresholdShift || 0.01, 0.004 + (goodRate - 0.62) * 0.02);
+    status = "relax";
+  } else if (weakRate >= 0.52 && avgNetPnlPct < 0) {
+    thresholdShift = Math.min(config.paperLearningSandboxMaxThresholdShift || 0.01, 0.004 + (weakRate - 0.52) * 0.02);
+    status = "tighten";
+  }
+  return {
+    active: thresholdShift !== 0,
+    status,
+    thresholdShift: clamp(thresholdShift, -(config.paperLearningSandboxMaxThresholdShift || 0.01), config.paperLearningSandboxMaxThresholdShift || 0.01),
+    sampleSize: records.length,
+    goodRate,
+    weakRate,
+    avgNetPnlPct,
+    avgExecutionQuality,
+    scope
+  };
+}
+
+function buildExecutionQualityMemory({
+  journal = {},
+  symbol = null,
+  strategySummary = {},
+  regimeSummary = {},
+  sessionSummary = {},
+  botMode = "paper",
+  nowIso
+} = {}) {
+  const familyId = strategySummary.family || null;
+  const strategyId = strategySummary.activeStrategy || null;
+  const regimeId = regimeSummary.regime || null;
+  const sessionId = sessionSummary.session || null;
+  const recentTrades = (journal?.trades || [])
+    .filter((trade) => matchesBrokerMode(trade, botMode) && trade.exitAt && isWithinLookback(trade.exitAt, nowIso, 60 * 24 * 21))
+    .slice(-80);
+  const symbolTrades = symbol
+    ? recentTrades.filter((trade) => trade.symbol === symbol).slice(-10)
+    : [];
+  const scopedTrades = recentTrades
+    .filter((trade) => {
+      const familyMatch = !familyId || trade.strategyFamily === familyId;
+      const strategyMatch = !strategyId || trade.strategyAtEntry === strategyId;
+      const regimeMatch = !regimeId || trade.regimeAtEntry === regimeId;
+      const sessionMatch = !sessionId || trade.sessionAtEntry === sessionId;
+      return familyMatch && strategyMatch && regimeMatch && sessionMatch;
+    })
+    .slice(-18);
+  const weightedRecords = [...symbolTrades, ...scopedTrades.filter((trade) => !symbolTrades.includes(trade))];
+  if (!weightedRecords.length) {
+    return {
+      active: false,
+      sampleSize: 0,
+      score: 0.5,
+      thresholdBias: 0,
+      sizeBias: 1,
+      opportunityBias: 0,
+      blockerNoisePenalty: 0,
+      note: "execution_quality_memory_warmup"
+    };
+  }
+  const avgExecutionQuality = average(weightedRecords.map((trade) => trade.executionQualityScore || 0), 0);
+  const avgNetPnlPct = average(weightedRecords.map((trade) => trade.netPnlPct || 0), 0);
+  const avgOpportunity = average(weightedRecords.map((trade) => trade.opportunityScoreAtEntry || trade.entryRationale?.opportunityScore || 0), 0);
+  const weakExecutionRate = weightedRecords.filter((trade) => (trade.executionQualityScore || 0) < 0.42).length / Math.max(weightedRecords.length, 1);
+  const positiveRate = weightedRecords.filter((trade) => (trade.netPnlPct || 0) > 0).length / Math.max(weightedRecords.length, 1);
+  const score = clamp(
+    avgExecutionQuality * 0.45 +
+      clamp(avgNetPnlPct * 14 + 0.5, 0, 1) * 0.3 +
+      clamp(avgOpportunity, 0, 1) * 0.15 +
+      positiveRate * 0.1 -
+      weakExecutionRate * 0.18,
+    0,
+    1
+  );
+  return {
+    active: weightedRecords.length >= 3,
+    sampleSize: weightedRecords.length,
+    score: num(score, 4),
+    avgExecutionQuality: num(avgExecutionQuality, 4),
+    avgNetPnlPct: num(avgNetPnlPct, 4),
+    avgOpportunity: num(avgOpportunity, 4),
+    weakExecutionRate: num(weakExecutionRate, 4),
+    positiveRate: num(positiveRate, 4),
+    thresholdBias: num(clamp((score - 0.55) * 0.028, -0.012, 0.01), 4),
+    sizeBias: num(clamp(0.94 + Math.max(0, score - 0.48) * 0.3 - Math.max(0, weakExecutionRate - 0.34) * 0.14, 0.9, 1.08), 4),
+    opportunityBias: num(clamp((score - 0.5) * 0.12, -0.04, 0.05), 4),
+    blockerNoisePenalty: num(clamp(Math.max(0, weakExecutionRate - positiveRate) * 0.08, 0, 0.05), 4),
+    note: score >= 0.6 ? "execution_quality_edge" : score <= 0.42 ? "execution_quality_drag" : "execution_quality_neutral"
+  };
+}
+
+function isFalseNegativeLearningBlocker(reason = "") {
+  return [
+    "model_confidence_too_low",
+    "meta_followthrough_caution",
+    "meta_gate_caution",
+    "meta_neural_caution",
+    "committee_confidence_too_low",
+    "committee_low_agreement",
+    "trade_size_below_minimum",
+    "strategy_fit_too_low",
+    "cross_timeframe_misalignment"
+  ].includes(reason);
+}
+
+function buildPaperLearningValueScore({
+  score = {},
+  threshold = 0,
+  signalQualitySummary = {},
+  confidenceBreakdown = {},
+  dataQualitySummary = {},
+  reasons = [],
+  entryMode = "standard",
+  samplingState = {},
+  activeLearningState = {}
+} = {}) {
+  const thresholdBuffer = Math.max(0.0001, Math.abs(score.probability - threshold) + 0.02);
+  const nearMissScore = clamp(1 - Math.min(1, Math.abs((score.probability || 0) - threshold) / thresholdBuffer), 0, 1);
+  const disagreementScore = clamp(safeValue(score.disagreement) / 0.2, 0, 1);
+  const signalScore = clamp(safeValue(signalQualitySummary.overallScore, 0.5), 0, 1);
+  const dataScore = clamp(safeValue(dataQualitySummary.overallScore, 0.5), 0, 1);
+  const confidenceScore = clamp(1 - safeValue(confidenceBreakdown.overallConfidence, 0.5) * 0.55, 0, 1);
+  const blockerScore = clamp(reasons.length / 4, 0, 1);
+  const noveltyScore = clamp(safeValue(samplingState.noveltyScore, 0.5), 0, 1);
+  const rarityScore = clamp(safeValue(samplingState.rarityScore, 0.5), 0, 1);
+  const activeLearningScore = clamp(safeValue(activeLearningState.activeLearningScore, 0.5), 0, 1);
+  const modeBoost = entryMode === "paper_recovery_probe" ? 0.08 : entryMode === "paper_exploration" ? 0.05 : 0;
+  return clamp(
+    nearMissScore * 0.16 +
+    disagreementScore * 0.08 +
+    signalScore * 0.17 +
+    dataScore * 0.15 +
+    confidenceScore * 0.08 +
+    blockerScore * 0.08 +
+    noveltyScore * 0.08 +
+    rarityScore * 0.06 +
+    activeLearningScore * 0.14 +
+    modeBoost,
+    0,
+    1
+  );
+}
+
+function resolvePaperLearningLane({
+  config = {},
+  allow = false,
+  entryMode = "standard",
+  reasons = [],
+  score = {},
+  threshold = 0,
+  signalQualitySummary = {},
+  confidenceBreakdown = {},
+  dataQualitySummary = {},
+  paperLearningBudget = {},
+  botMode = "paper",
+  samplingState = {},
+  regimeSummary = {},
+  sessionSummary = {}
+} = {}) {
+  const activeLearningState = buildPaperActiveLearningState({
+    score,
+    threshold,
+    confidenceBreakdown,
+    signalQualitySummary,
+    dataQualitySummary,
+    reasons,
+    samplingState
+  });
+  const learningValueScore = buildPaperLearningValueScore({
+    score,
+    threshold,
+    signalQualitySummary,
+    confidenceBreakdown,
+    dataQualitySummary,
+    reasons,
+    entryMode,
+    samplingState,
+    activeLearningState
+  });
+  if (botMode !== "paper") {
+    return {
+      lane: allow ? "safe" : null,
+      learningValueScore,
+      activeLearningState
+    };
+  }
+  if (allow) {
+    return {
+      lane: entryMode === "paper_exploration" || entryMode === "paper_recovery_probe" ? "probe" : "safe",
+      learningValueScore,
+      activeLearningState
+    };
+  }
+  const regime = `${regimeSummary?.regime || "range"}`.toLowerCase();
+  const session = `${sessionSummary?.session || "unknown"}`.toLowerCase();
+  const baseNearMissBuffer = config.paperLearningNearMissThresholdBuffer || 0.025;
+  const adaptiveNearMissBuffer = clamp(
+    baseNearMissBuffer +
+      (regime === "breakout" || regime === "high_vol" ? 0.008 : regime === "trend" ? 0.004 : regime === "range" ? 0 : 0.002) +
+      (session === "asia" ? 0.003 : session === "weekend" ? -0.002 : 0),
+    0.012,
+    0.05
+  );
+  const signalFloor = clamp(
+    (config.paperLearningMinSignalQuality || 0.4) +
+      (regime === "breakout" || regime === "high_vol" ? 0.03 : regime === "range" ? -0.01 : 0),
+    0.32,
+    0.62
+  );
+  const dataFloor = clamp(
+    (config.paperLearningMinDataQuality || 0.52) +
+      (regime === "high_vol" ? 0.02 : 0) +
+      (session === "weekend" ? 0.02 : 0),
+    0.42,
+    0.72
+  );
+  const nearThreshold = (score.probability || 0) >= threshold - adaptiveNearMissBuffer;
+  const qualityOkay =
+    safeValue(signalQualitySummary.overallScore, 0) >= signalFloor &&
+    safeValue(dataQualitySummary.overallScore, 0) >= dataFloor;
+  const hardBlocked = reasons.some((reason) => isHardPaperLearningBlocker(reason));
+  const informativeShadowCase =
+    nearThreshold ||
+    safeValue(activeLearningState.activeLearningScore, 0) >= 0.5 ||
+    safeValue(activeLearningState.disagreementScore, 0) >= 0.35 ||
+    safeValue(activeLearningState.uncertaintyScore, 0) >= 0.48;
+  const shadowQualityOkay =
+    safeValue(signalQualitySummary.overallScore, 0) >= Math.max(0.34, signalFloor - 0.06) &&
+    safeValue(dataQualitySummary.overallScore, 0) >= Math.max(0.42, dataFloor - 0.08);
+  if (informativeShadowCase && shadowQualityOkay && !hardBlocked && (paperLearningBudget.shadowRemaining || 0) > 0) {
+    if (samplingState.canQueueShadow === false) {
+      return {
+        lane: null,
+        learningValueScore,
+        activeLearningState,
+        shadowQueueBlockedByCap: true,
+        shadowCapReasons: collectPaperShadowCapReasons(samplingState)
+      };
+    }
+    return {
+      lane: "shadow",
+      learningValueScore,
+      activeLearningState,
+      shadowQueueBlockedByCap: false,
+      shadowCapReasons: []
+    };
+  }
+  return {
+    lane: null,
+    learningValueScore,
+    activeLearningState,
+    shadowQueueBlockedByCap: false,
+    shadowCapReasons: []
+  };
+}
+
+function buildStrategyAllocationGovernanceState({
+  config = {},
+  botMode = "paper",
+  allow = false,
+  reasons = [],
+  learningLane = null,
+  strategySummary = {},
+  strategyAllocationSummary = {},
+  paperLearningBudget = {},
+  samplingState = {},
+  canOpenAnotherPaperLearningPosition = true
+} = {}) {
+  const activeStrategy = strategySummary.activeStrategy || strategyAllocationSummary.activeStrategy || null;
+  const activeFamily = strategySummary.family || strategyAllocationSummary.activeFamily || null;
+  const preferredStrategy = strategyAllocationSummary.preferredStrategy || null;
+  const preferredFamily = strategyAllocationSummary.preferredFamily || null;
+  const posture = strategyAllocationSummary.posture || "neutral";
+  const confidence = clamp(safeValue(strategyAllocationSummary.confidence, 0), 0, 1);
+  const activeBias = safeValue(strategyAllocationSummary.activeBias, 0);
+  const explorationWeight = clamp(safeValue(strategyAllocationSummary.explorationWeight, 0), 0, 1);
+  const fitBoost = safeValue(strategyAllocationSummary.fitBoost, 0);
+  const hardBlocked = reasons.some((reason) => isHardPaperLearningBlocker(reason));
+  const shadowRemaining = Math.max(0, Math.round(paperLearningBudget.shadowRemaining || 0));
+  const probeRemaining = Math.max(0, Math.round(paperLearningBudget.probeRemaining || 0));
+  const canOpenProbe = canOpenAnotherPaperLearningPosition && probeRemaining > 0 && samplingState.canOpenProbe !== false;
+  const canQueueShadow = shadowRemaining > 0 && !hardBlocked && samplingState.canQueueShadow !== false;
+  const favorThreshold = Math.max(0.42, safeValue(config.strategyAllocationGovernanceMinConfidence, 0.44));
+  const coolThreshold = Math.max(0.4, favorThreshold - 0.04);
+  const notes = [...(strategyAllocationSummary.notes || [])];
+  const preferenceMismatch =
+    (preferredStrategy && activeStrategy && preferredStrategy !== activeStrategy) ||
+    (preferredFamily && activeFamily && preferredFamily !== activeFamily);
+  const state = {
+    status: "neutral",
+    applied: false,
+    mode: "observe",
+    recommendedLane: learningLane,
+    priorityBoost: 0,
+    posture,
+    confidence,
+    activeBias,
+    preferredStrategy,
+    preferredFamily,
+    activeStrategy,
+    activeFamily,
+    preferenceMismatch,
+    notes
+  };
+
+  if (botMode !== "paper" || !activeStrategy) {
+    return state;
+  }
+
+  if (posture === "favor" && confidence >= favorThreshold && activeBias >= 0.08) {
+    state.status = "favoring";
+    state.priorityBoost = clamp(0.03 + confidence * 0.05 + explorationWeight * 0.04 + Math.max(0, fitBoost) * 0.4, 0.03, 0.12);
+    if (allow && learningLane === "safe" && canOpenProbe && explorationWeight >= 0.12) {
+      state.recommendedLane = "probe";
+      state.mode = "priority_probe";
+      state.applied = true;
+      state.notes = [...notes, `Allocator geeft ${activeStrategy} extra paper-prioriteit binnen ${preferredFamily || activeFamily || "de huidige family"}.`];
+      return state;
+    }
+    state.mode = state.priorityBoost >= 0.04 ? "priority" : "observe";
+    state.applied = state.priorityBoost >= 0.04;
+    if (state.applied) {
+      state.notes = [...notes, `Allocator bevoordeelt ${activeStrategy} nu voor extra paper-sampling.`];
+    }
+    return state;
+  }
+
+  if (posture === "cool" && confidence >= coolThreshold && activeBias <= -0.08) {
+    state.status = "cooling";
+    if (allow && learningLane === "safe" && canOpenProbe) {
+      state.recommendedLane = "probe";
+      state.mode = "probe_only";
+      state.applied = true;
+      state.notes = [...notes, `Allocator koelt ${activeStrategy} af; alleen probe-exposure blijft nu verantwoord.`];
+      return state;
+    }
+    if (!allow && canQueueShadow) {
+      state.recommendedLane = "shadow";
+      state.mode = "shadow_only";
+      state.applied = true;
+      state.notes = [...notes, `Allocator koelt ${activeStrategy} af; shadow learning krijgt nu voorrang.`];
+      return state;
+    }
+    state.mode = "cooling_only";
+    state.notes = [...notes, `Allocator koelt ${activeStrategy} af, maar er is nu geen extra probe/shadow capaciteit beschikbaar.`];
+    return state;
+  }
+
+  return state;
+}
+
+function applyPaperLearningGuidance({
+  botMode = "paper",
+  guidance = {},
+  allow = false,
+  entryMode = "standard",
+  learningLane = null,
+  learningValueScore = 0,
+  activeLearningState = {},
+  paperLearningBudget = {},
+  samplingState = {},
+  score = {},
+  threshold = 0
+} = {}) {
+  if (botMode !== "paper" || !guidance?.active) {
+    return {
+      learningLane,
+      learningValueScore,
+      activeLearningState,
+      opportunityBoost: 0,
+      applied: false
+    };
+  }
+
+  const nearMiss = safeValue(score.probability, 0) >= threshold - 0.035;
+  let nextLearningLane = learningLane;
+  if (
+    guidance.preferredLane === "probe" &&
+    allow &&
+    nextLearningLane === "safe" &&
+    ["standard", "paper_exploration", "paper_recovery_probe"].includes(entryMode) &&
+    nearMiss
+  ) {
+    nextLearningLane = "probe";
+  } else if (
+    guidance.preferredLane === "shadow" &&
+    !allow &&
+    (nextLearningLane === "safe" || !nextLearningLane) &&
+    (paperLearningBudget.shadowRemaining || 0) > 0 &&
+    samplingState.canQueueShadow !== false
+  ) {
+    nextLearningLane = "shadow";
+  }
+
+  const scopeEvidenceBoost = clamp(safeValue(guidance.scopeEvidenceBoost, 0), 0, 0.08);
+  const reviewImpactBoost = clamp(safeValue(guidance.reviewImpactBoost, 0), 0, 0.06);
+  const positiveLearningBoost =
+    safeValue(guidance.priorityBoost, 0) * 0.7 +
+    safeValue(guidance.probeBoost, 0) * (allow ? 0.75 : 0.35) +
+    safeValue(guidance.shadowBoost, 0) * (!allow ? 0.7 : 0.2) +
+    scopeEvidenceBoost * 0.6 +
+    reviewImpactBoost * 0.65;
+  const negativeLearningPenalty = safeValue(guidance.cautionPenalty, 0) * 0.45;
+  const nextLearningValueScore = clamp(learningValueScore + positiveLearningBoost - negativeLearningPenalty, 0, 1);
+  const nextActiveLearningScore = clamp(
+    safeValue(activeLearningState.activeLearningScore, 0) +
+      safeValue(guidance.priorityBoost, 0) * 0.55 +
+      safeValue(guidance.probeBoost, 0) * 0.35 +
+      safeValue(guidance.shadowBoost, 0) * 0.32 -
+      safeValue(guidance.cautionPenalty, 0) * 0.24 +
+      scopeEvidenceBoost * 0.34 +
+      reviewImpactBoost * 0.42,
+    0,
+    1
+  );
+  const opportunityBoost = num(clamp(
+    (allow
+      ? safeValue(guidance.priorityBoost, 0) + safeValue(guidance.probeBoost, 0) * 0.8
+      : safeValue(guidance.priorityBoost, 0) * 0.45 + safeValue(guidance.shadowBoost, 0) * 0.9) +
+      scopeEvidenceBoost * 0.42 +
+      reviewImpactBoost * 0.55 -
+      safeValue(guidance.cautionPenalty, 0) * 0.8,
+    -0.05,
+    0.12
+  ), 4);
+
+  return {
+    learningLane: nextLearningLane,
+    learningValueScore: nextLearningValueScore,
+    activeLearningState: {
+      ...activeLearningState,
+      activeLearningScore: nextActiveLearningScore,
+      focusReason: activeLearningState.focusReason || guidance.focusReason || "paper_learning_guidance"
+    },
+    opportunityBoost,
+    applied:
+      nextLearningLane !== learningLane ||
+      nextLearningValueScore !== learningValueScore ||
+      nextActiveLearningScore !== safeValue(activeLearningState.activeLearningScore, 0) ||
+      opportunityBoost !== 0
+  };
+}
+
+function applyOfflineLearningGuidance({
+  botMode = "paper",
+  guidance = {},
+  learningValueScore = 0,
+  activeLearningState = {}
+} = {}) {
+  if (!guidance?.active) {
+    return {
+      thresholdShift: 0,
+      sizeMultiplier: 1,
+      priorityBoost: 0,
+      confidenceBias: 0,
+      cautionPenalty: 0,
+      executionCaution: 0,
+      featureTrustPenalty: 0,
+      independentWeakGroupPressure: 0,
+      correlatedWeakFeaturePressure: 0,
+      adjacentFeaturePressure: 0,
+      featurePressureSources: [],
+      impactedFeatureGroups: [],
+      staleClosedLearning: false,
+      staleLearningPressureDampened: false,
+      benchmarkPenaltyScale: 1,
+      opportunityShift: 0,
+      learningValueScore,
+      activeLearningState,
+      onlineAdaptation: null,
+      strategyReweighting: null,
+      applied: false
+    };
+  }
+
+  const rawThresholdShift = clamp(
+    safeValue(guidance.thresholdShift, 0),
+    botMode === "paper" ? -0.028 : -0.018,
+    botMode === "paper" ? 0.02 : 0.018
+  );
+  const rawSizeMultiplier = clamp(
+    safeValue(guidance.sizeMultiplier, 1),
+    botMode === "paper" ? 0.88 : 0.84,
+    botMode === "paper" ? 1.12 : 1.08
+  );
+  const priorityBoost = clamp(safeValue(guidance.priorityBoost, 0), 0, 0.08);
+  const confidenceBias = clamp(safeValue(guidance.confidenceBias, 0), -0.03, 0.03);
+  const baseCautionPenalty = clamp(safeValue(guidance.cautionPenalty, 0), 0, 0.14);
+  const executionCaution = clamp(safeValue(guidance.executionCaution, 0), 0, 0.18);
+  const featureTrustPenaltyRaw = clamp(safeValue(guidance.featureTrustPenalty, guidance.featurePenalty || 0), 0, 0.12);
+  const independentWeakGroupPressure = clamp(safeValue(guidance.independentWeakGroupPressure, 0), 0, 0.04);
+  const correlatedWeakFeaturePressure = clamp(safeValue(guidance.correlatedWeakFeaturePressure, 0), 0, 0.02);
+  const adjacentFeaturePressure = clamp(safeValue(guidance.adjacentFeaturePressure, 0), 0, 0.03);
+  const featurePressureSources = Array.isArray(guidance.featurePressureSources) ? guidance.featurePressureSources : [];
+  const impactedFeatureGroups = Array.isArray(guidance.impactedFeatureGroups) ? guidance.impactedFeatureGroups : [];
+  const sortedFeatureSources = featurePressureSources
+    .slice()
+    .sort((left, right) => safeValue(right.penalty, 0) - safeValue(left.penalty, 0));
+  const primaryFeatureSource = sortedFeatureSources[0]?.source || null;
+  const pruningDrivenSource = ["pruning_drop_candidate", "pruning_guard_only", "inverse_attribution"].includes(primaryFeatureSource);
+  const weakGroupCount = impactedFeatureGroups.length;
+  const parityMissingPressure = featurePressureSources.some((item) => item?.source === "parity_missing_in_live" && safeValue(item?.penalty, 0) >= 0.012);
+  const featureTrustHardRisk = parityMissingPressure || featureTrustPenaltyRaw >= 0.1 || weakGroupCount >= 3;
+  const featureTrustEchoPressure = pruningDrivenSource && weakGroupCount <= 1 && featureTrustPenaltyRaw <= 0.1;
+  const featureTrustSoftCaution = !featureTrustHardRisk && featureTrustPenaltyRaw > 0;
+  const featureTrustPenalty =
+    botMode === "paper" &&
+    (guidance.enableFeatureTrustEchoDampening !== false) &&
+    featureTrustEchoPressure &&
+    !featureTrustHardRisk
+      ? clamp(featureTrustPenaltyRaw * 0.5, 0, 0.12)
+      : featureTrustPenaltyRaw;
+  const adjustedExecutionCaution =
+    botMode === "paper" &&
+    (guidance.enableFeatureTrustEchoDampening !== false) &&
+    featureTrustEchoPressure &&
+    !featureTrustHardRisk
+      ? clamp(executionCaution * 0.72, 0, 0.18)
+      : executionCaution;
+  const paperScopedSofteningBoost =
+    botMode === "paper" &&
+    safeValue(guidance.priorityBoost, 0) >= 0.04 &&
+    !featureTrustHardRisk
+      ? 0.012
+      : 0;
+  const cautionPenalty = clamp(baseCautionPenalty + adjustedExecutionCaution * 0.55 + featureTrustPenalty * 0.4, 0, 0.18);
+  const thresholdShift = botMode === "paper"
+    ? rawThresholdShift
+    : Math.max(0, rawThresholdShift);
+  const baseSizeMultiplier = botMode === "paper"
+    ? rawSizeMultiplier
+    : Math.min(1, rawSizeMultiplier);
+  const executionAwareSizeMultiplier = clamp(
+    baseSizeMultiplier *
+      (1 - adjustedExecutionCaution * (botMode === "paper" ? 0.72 : 0.88)) *
+      (1 - featureTrustPenalty * 0.42),
+    0.78,
+    botMode === "paper" ? 1.08 : 1
+  );
+  const learningBias = botMode === "paper"
+    ? clamp(
+        Math.max(0, -thresholdShift) * 1.5 +
+          Math.max(0, executionAwareSizeMultiplier - 1) * 0.18 -
+          (cautionPenalty - paperScopedSofteningBoost) * 0.45,
+        -0.04,
+        0.06
+      )
+    : clamp(-cautionPenalty * 0.35, -0.04, 0.015);
+  const nextLearningValueScore = clamp(learningValueScore + learningBias, 0, 1);
+  const nextActiveLearningScore = clamp(
+    safeValue(activeLearningState.activeLearningScore, 0) +
+      Math.max(0, -thresholdShift) * 0.55 +
+      Math.max(0, executionAwareSizeMultiplier - 1) * 0.14 -
+      cautionPenalty * 0.24 +
+      priorityBoost * 0.5 +
+      Math.max(0, confidenceBias) * 0.2,
+    0,
+    1
+  );
+  const opportunityShift = num(clamp(
+    (thresholdShift < 0 ? Math.abs(thresholdShift) * 1.9 : -thresholdShift * 1.6) +
+      (executionAwareSizeMultiplier - 1) * 0.42 -
+      cautionPenalty * 0.42 +
+      priorityBoost * 0.85 +
+      confidenceBias * 0.35,
+    -0.08,
+    0.08
+  ), 4);
+
+  return {
+    thresholdShift: num(thresholdShift, 4),
+    sizeMultiplier: num(executionAwareSizeMultiplier, 4),
+    priorityBoost: num(priorityBoost, 4),
+    confidenceBias: num(confidenceBias, 4),
+    cautionPenalty: num(Math.max(0, cautionPenalty - paperScopedSofteningBoost), 4),
+    executionCaution: num(adjustedExecutionCaution, 4),
+    executionCautionRaw: num(executionCaution, 4),
+    featureTrustPenalty: num(featureTrustPenalty, 4),
+    featureTrustPenaltyRaw: num(featureTrustPenaltyRaw, 4),
+    featureTrustHardRisk,
+    featureTrustSoftCaution,
+    featureTrustEchoPressure,
+    pruningDrivenSource,
+    primaryFeatureSource,
+    independentWeakGroupPressure: num(independentWeakGroupPressure, 4),
+    correlatedWeakFeaturePressure: num(correlatedWeakFeaturePressure, 4),
+    adjacentFeaturePressure: num(adjacentFeaturePressure, 4),
+    featurePressureSources: featurePressureSources.slice(0, 4),
+    impactedFeatureGroups: impactedFeatureGroups.slice(0, 4),
+    staleClosedLearning: Boolean(guidance.staleClosedLearning),
+    staleLearningPressureDampened: Boolean(guidance.staleLearningPressureDampened),
+    benchmarkPenaltyScale: num(safeValue(guidance.benchmarkPenaltyScale, 1), 4),
+    adaptiveCandidatesApplied: Array.isArray(guidance.adaptiveCandidatesApplied) ? guidance.adaptiveCandidatesApplied.slice(0, 4) : [],
+    adaptiveCandidateConfidence: num(safeValue(guidance.adaptiveCandidateConfidence, 0), 4),
+    adaptiveCandidateThresholdShift: num(safeValue(guidance.adaptiveCandidateThresholdShift, 0), 4),
+    adaptiveCandidateSizeSupport: num(safeValue(guidance.adaptiveCandidateSizeSupport, 1), 4),
+    adaptiveCandidatePriorityBoost: num(safeValue(guidance.adaptiveCandidatePriorityBoost, 0), 4),
+    opportunityShift,
+    learningValueScore: nextLearningValueScore,
+    activeLearningState: {
+      ...activeLearningState,
+      activeLearningScore: nextActiveLearningScore,
+      focusReason: activeLearningState.focusReason || guidance.focusReason || "offline_learning_guidance"
+    },
+    onlineAdaptation: guidance.onlineAdaptation || null,
+    strategyReweighting: guidance.strategyReweighting || null,
+    applied:
+      thresholdShift !== 0 ||
+      executionAwareSizeMultiplier !== 1 ||
+      priorityBoost !== 0 ||
+      confidenceBias !== 0 ||
+      cautionPenalty !== 0 ||
+      executionCaution !== 0 ||
+      featureTrustPenalty !== 0 ||
+      opportunityShift !== 0 ||
+      nextLearningValueScore !== learningValueScore ||
+      nextActiveLearningScore !== safeValue(activeLearningState.activeLearningScore, 0)
+  };
+}
+
+function buildLowConfidencePressure({
+  score = {},
+  threshold = 0,
+  baseThreshold = 0,
+  confidenceBreakdown = {},
+  calibrationWarmup = 0,
+  minCalibrationConfidence = 0,
+  sessionThresholdPenalty = 0,
+  driftThresholdPenalty = 0,
+  selfHealThresholdPenalty = 0,
+  metaThresholdPenalty = 0,
+  thresholdTuningAdjustment = {},
+  parameterGovernorAdjustment = {},
+  strategyMetaSummary = {},
+  missedTradeTuningApplied = {},
+  trendStateTuning = {},
+  offlineLearningGuidanceApplied = {},
+  signalQualitySummary = {},
+  dataQualitySummary = {}
+} = {}) {
+  const thresholdPenaltyPressure = clamp(
+    Math.max(0, safeValue(sessionThresholdPenalty, 0)) +
+      Math.max(0, safeValue(driftThresholdPenalty, 0)) +
+      Math.max(0, safeValue(selfHealThresholdPenalty, 0)) +
+      Math.max(0, safeValue(metaThresholdPenalty, 0)) +
+      Math.max(0, safeValue(thresholdTuningAdjustment.adjustment, 0)) +
+      Math.max(0, safeValue(parameterGovernorAdjustment.thresholdShift, 0)) +
+      Math.max(0, safeValue(strategyMetaSummary.thresholdShift || 0, 0)) +
+      Math.max(0, safeValue(trendStateTuning.thresholdShift, 0)),
+    0,
+    0.18
+  );
+  const thresholdRelief = clamp(
+    Math.max(0, -safeValue(missedTradeTuningApplied.thresholdShift, 0)),
+    0,
+    0.08
+  );
+  const calibrationWarmupGap = clamp(1 - safeValue(calibrationWarmup, 0), 0, 1);
+  const calibrationConfidenceGap = clamp(0.5 - safeValue(score.calibrationConfidence, 0.5), 0, 1);
+  const modelConfidenceGap = clamp(0.62 - safeValue(confidenceBreakdown.modelConfidence, 0.62), 0, 1);
+  const dataConfidenceGap = clamp(0.6 - safeValue(confidenceBreakdown.dataConfidence, 0.6), 0, 1);
+  const executionConfidenceGap = clamp(0.58 - safeValue(confidenceBreakdown.executionConfidence, 0.58), 0, 1);
+  const disagreementPressure = clamp(safeValue(score.disagreement, 0) / 0.28, 0, 1);
+  const disagreementAudit = score.disagreementAudit || {};
+  const rawDisagreement = clamp(safeValue(disagreementAudit.rawDisagreement, safeValue(score.disagreement, 0)), 0, 1);
+  const weightedDisagreement = clamp(safeValue(disagreementAudit.weightedDisagreement, safeValue(score.disagreement, 0)), 0, 1);
+  const disagreementCompression = clamp(rawDisagreement - weightedDisagreement, 0, 0.2);
+  const effectiveDisagreementPressure = clamp(weightedDisagreement / 0.28, 0, 1);
+  const dominantDisagreementPair = disagreementAudit.dominantPair || null;
+  const blendAudit = score.blendAudit || {};
+  const blendDrag = clamp(
+    safeValue(blendAudit.championToBlendDrag, 0),
+    0,
+    0.12
+  );
+  const challengerNeutralDrag = clamp(safeValue(blendAudit.challenger?.neutralDrag, 0), 0, 0.08);
+  const transformerNeutralDrag = clamp(safeValue(blendAudit.transformer?.neutralDrag, 0), 0, 0.08);
+  const sequenceNeutralDrag = clamp(safeValue(blendAudit.sequence?.neutralDrag, 0), 0, 0.08);
+  const dominantBlendDragSource = [
+    ["challenger", challengerNeutralDrag],
+    ["transformer", transformerNeutralDrag],
+    ["sequence", sequenceNeutralDrag]
+  ].sort((left, right) => right[1] - left[1])[0]?.[0] || null;
+  const featureTrustPenalty = clamp(safeValue(offlineLearningGuidanceApplied.featureTrustPenalty, 0), 0, 0.12);
+  const featureTrustPenaltyRaw = clamp(safeValue(offlineLearningGuidanceApplied.featureTrustPenaltyRaw, featureTrustPenalty), 0, 0.12);
+  const executionCaution = clamp(safeValue(offlineLearningGuidanceApplied.executionCaution, 0), 0, 0.18);
+  const executionCautionRaw = clamp(safeValue(offlineLearningGuidanceApplied.executionCautionRaw, executionCaution), 0, 0.18);
+  const featurePressureSources = Array.isArray(offlineLearningGuidanceApplied.featurePressureSources)
+    ? offlineLearningGuidanceApplied.featurePressureSources
+    : [];
+  const impactedFeatureGroups = Array.isArray(offlineLearningGuidanceApplied.impactedFeatureGroups)
+    ? offlineLearningGuidanceApplied.impactedFeatureGroups
+    : [];
+  const dominantFeaturePressureSource = featurePressureSources
+    .slice()
+    .sort((left, right) => safeValue(right.penalty, 0) - safeValue(left.penalty, 0))[0]?.source || null;
+  const dominantFeaturePressureGroup = impactedFeatureGroups
+    .slice()
+    .sort((left, right) => safeValue(right.penalty, 0) - safeValue(left.penalty, 0))[0]?.group || null;
+  const independentWeakGroupCount = impactedFeatureGroups.length;
+  const featureTrustHardRisk = Boolean(offlineLearningGuidanceApplied.featureTrustHardRisk);
+  const featureTrustEchoPressure = Boolean(offlineLearningGuidanceApplied.featureTrustEchoPressure);
+  const featureTrustSoftCaution = Boolean(offlineLearningGuidanceApplied.featureTrustSoftCaution);
+  const pruningDrivenSource = Boolean(offlineLearningGuidanceApplied.pruningDrivenSource);
+  const featureTrustNarrowPressure =
+    independentWeakGroupCount > 0 &&
+    independentWeakGroupCount <= 1 &&
+    featureTrustPenalty <= 0.08 &&
+    !featurePressureSources.some((item) => ["parity_missing_in_live", "pruning_drop_candidate"].includes(item?.source || "") && safeValue(item?.penalty, 0) >= 0.018);
+  const edgeToThreshold = num(safeValue(score.probability, 0) - safeValue(threshold, 0), 4);
+  const edgeToBaseThreshold = num(safeValue(score.probability, 0) - safeValue(baseThreshold, 0), 4);
+  const signalQuality = clamp(safeValue(signalQualitySummary.overallScore, 0), 0, 1);
+  const dataQuality = clamp(safeValue(dataQualitySummary.overallScore, 0), 0, 1);
+  const softDataQualityEligible =
+    dataQuality >= 0.58 ||
+    (
+      dataQuality >= 0.36 &&
+      safeValue(confidenceBreakdown.dataConfidence, 0) >= 0.58
+    );
+  const featureTrustEchoScale = featureTrustEchoPressure && !featureTrustHardRisk ? 0.62 : 1;
+  const driverScores = {
+    calibration_warmup: calibrationWarmupGap * 0.95 + Math.max(0, thresholdPenaltyPressure - 0.01) * 1.4,
+    calibration_confidence: calibrationConfidenceGap * 1.25 + Math.max(0, safeValue(minCalibrationConfidence, 0) - safeValue(score.calibrationConfidence, 0)) * 0.8,
+    threshold_penalty_stack: thresholdPenaltyPressure * 8.5 - thresholdRelief * 2.4,
+    auxiliary_blend_drag: blendDrag * 10.5 + Math.max(challengerNeutralDrag, transformerNeutralDrag, sequenceNeutralDrag) * 4.5,
+    model_disagreement: disagreementPressure * 1.05 + Math.max(0, rawDisagreement - 0.22) * 0.35,
+    feature_trust: featureTrustPenalty * 8.2 * featureTrustEchoScale + (featureTrustHardRisk ? 0.16 : 0),
+    execution_quality: executionConfidenceGap * 1.12 + executionCaution * 2.1,
+    data_quality: dataConfidenceGap * 1.05 + Math.max(0, 0.58 - dataQuality) * 0.7,
+    model_confidence: modelConfidenceGap * 1.08
+  };
+  const [primaryDriver = "model_confidence", primaryScore = 0] = Object.entries(driverScores)
+    .sort((left, right) => right[1] - left[1])[0] || [];
+  const softNearMissEligible =
+    edgeToThreshold >= -0.045 ||
+    (
+      edgeToThreshold >= -0.055 &&
+      ["calibration_warmup", "feature_trust", "auxiliary_blend_drag", "model_disagreement"].includes(primaryDriver)
+    ) ||
+    (
+      primaryDriver === "threshold_penalty_stack" &&
+      edgeToBaseThreshold >= -0.055
+    );
+  const softExecutionConfidenceEligible =
+    safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.56 ||
+    (
+      safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.52 &&
+      ["calibration_warmup", "feature_trust", "auxiliary_blend_drag", "model_disagreement"].includes(primaryDriver)
+    );
+  const reliefEligible =
+    softNearMissEligible &&
+    signalQuality >= 0.64 &&
+    softDataQualityEligible &&
+    softExecutionConfidenceEligible &&
+    safeValue(confidenceBreakdown.dataConfidence, 0) >= 0.58 &&
+      (
+        primaryDriver === "model_disagreement"
+          ? effectiveDisagreementPressure <= 0.42
+          : disagreementPressure <= 0.42
+      ) &&
+      executionCaution <= 0.08 &&
+      (
+      (
+        featureTrustPenalty <= 0.08 &&
+        ["calibration_warmup", "calibration_confidence", "threshold_penalty_stack"].includes(primaryDriver)
+      ) ||
+      (
+        primaryDriver === "auxiliary_blend_drag" &&
+        blendDrag <= 0.045 &&
+        disagreementPressure <= 0.32 &&
+        featureTrustPenalty <= 0.08 &&
+        executionCaution <= 0.06
+      ) ||
+      (
+        primaryDriver === "model_disagreement" &&
+        rawDisagreement <= 0.22 &&
+        disagreementCompression >= 0.03 &&
+        featureTrustPenalty <= 0.08 &&
+        executionCaution <= 0.06
+      ) ||
+      (
+        primaryDriver === "feature_trust" &&
+        (
+          featureTrustNarrowPressure ||
+          (featureTrustEchoPressure && pruningDrivenSource)
+        ) &&
+        ["inverse_attribution", "pruning_guard_only", "pruning_drop_candidate", null].includes(dominantFeaturePressureSource)
+      )
+    );
+
+  const note =
+    primaryDriver === "calibration_warmup"
+      ? "Calibrator warmt nog op; sterke paper setups vallen daardoor net onder de entry-threshold."
+      : primaryDriver === "calibration_confidence"
+        ? "Calibrated confidence blijft nog zwak terwijl de rest van de setup relatief gezond is."
+        : primaryDriver === "threshold_penalty_stack"
+          ? "Threshold-penalties stapelen nu harder op dan de ruwe setupkwaliteit rechtvaardigt."
+          : primaryDriver === "auxiliary_blend_drag"
+            ? `${dominantBlendDragSource || "auxiliary"} trekt de champion-score met weinig directional edge terug richting neutraal.`
+          : primaryDriver === "feature_trust"
+            ? `${dominantFeaturePressureGroup || "feature"}-druk uit ${describeFeaturePressureSource(dominantFeaturePressureSource)} duwt deze setup nu onder de vertrouwenstrigger.`
+            : primaryDriver === "execution_quality"
+              ? "Execution-confidence en cost-caution drukken dit signaal onder de gewone entry-grens."
+              : primaryDriver === "data_quality"
+                ? "Datakwaliteit en quorum houden de confidence nu zichtbaar omlaag."
+                : primaryDriver === "model_disagreement"
+                  ? `${dominantDisagreementPair || "ensemble"} blijft verdeeld, maar een deel van die spanning komt uit zwakke auxiliary signalen.`
+                  : "Model confidence blijft te laag ten opzichte van de huidige threshold-stack.";
+
+  return {
+    active: edgeToThreshold < 0 || primaryScore > 0.08,
+    primaryDriver,
+    edgeToThreshold,
+    edgeToBaseThreshold,
+    thresholdPenaltyPressure: num(thresholdPenaltyPressure, 4),
+    thresholdRelief: num(thresholdRelief, 4),
+    calibrationWarmup: num(calibrationWarmup, 4),
+    calibrationWarmupGap: num(calibrationWarmupGap, 4),
+    calibrationConfidenceGap: num(calibrationConfidenceGap, 4),
+    disagreementPressure: num(disagreementPressure, 4),
+    effectiveDisagreementPressure: num(effectiveDisagreementPressure, 4),
+    rawDisagreement: num(rawDisagreement, 4),
+    weightedDisagreement: num(weightedDisagreement, 4),
+    disagreementCompression: num(disagreementCompression, 4),
+    dominantDisagreementPair,
+    blendDrag: num(blendDrag, 4),
+    challengerNeutralDrag: num(challengerNeutralDrag, 4),
+    transformerNeutralDrag: num(transformerNeutralDrag, 4),
+    sequenceNeutralDrag: num(sequenceNeutralDrag, 4),
+    dominantBlendDragSource,
+    modelConfidenceGap: num(modelConfidenceGap, 4),
+    dataConfidenceGap: num(dataConfidenceGap, 4),
+    executionConfidenceGap: num(executionConfidenceGap, 4),
+    featureTrustPenalty: num(featureTrustPenalty, 4),
+    featureTrustPenaltyRaw: num(featureTrustPenaltyRaw, 4),
+    featureTrustHardRisk,
+    featureTrustEchoPressure,
+    featureTrustSoftCaution,
+    pruningDrivenSource,
+    dominantFeaturePressureSource,
+    dominantFeaturePressureGroup,
+    independentWeakGroupCount,
+    featureTrustNarrowPressure,
+    executionCaution: num(executionCaution, 4),
+    executionCautionRaw: num(executionCautionRaw, 4),
+    signalQuality: num(signalQuality, 4),
+    dataQuality: num(dataQuality, 4),
+    reliefEligible,
+    note
+  };
+}
+
+function describeFeaturePressureSource(source) {
+  switch (source) {
+    case "pruning_drop_candidate":
+      return "learning-pruning (drop-candidate)";
+    case "pruning_guard_only":
+      return "learning-pruning (guard-only)";
+    case "parity_missing_in_live":
+      return "live-parity verlies";
+    case "inverse_attribution":
+      return "inverse feature-attributie";
+    default:
+      return source || "feature_governance";
+  }
+}
+
+function toBoolean(value, fallback = false) {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["false", "0", "no", "off", ""].includes(normalized)) {
+      return false;
+    }
+  }
+  if (value == null) {
+    return fallback;
+  }
+  return Boolean(value);
+}
+
+function summarizeExchangeCapabilities(capabilities = {}) {
+  return {
+    region: capabilities.region || "GLOBAL",
+    spotEnabled: toBoolean(capabilities.spotEnabled, true),
+    marginEnabled: toBoolean(capabilities.marginEnabled),
+    futuresEnabled: toBoolean(capabilities.futuresEnabled),
+    shortingEnabled: toBoolean(capabilities.shortingEnabled),
+    leveragedTokensEnabled: toBoolean(capabilities.leveragedTokensEnabled),
+    spotBearMarketMode: capabilities.spotBearMarketMode || "defensive_rebounds",
+    notes: [...(capabilities.notes || [])]
+  };
+}
+
+function buildDowntrendPolicy({ marketSnapshot = {}, marketStructureSummary = {}, regimeSummary = {}, exchangeCapabilities = {}, trendStateSummary = null } = {}) {
+  const market = marketSnapshot.market || {};
+  const baseDowntrendScore = clamp(
+    Math.max(0, -safeValue(market.momentum20)) * 18 * 0.24 +
+    Math.max(0, -safeValue(market.emaGap)) * 38 * 0.18 +
+    Math.max(0, -safeValue(market.dmiSpread)) * 2.5 * 0.12 +
+    Math.max(0, -safeValue(market.swingStructureScore)) * 0.14 +
+    safeValue(market.downsideAccelerationScore) * 0.08 +
+    Math.max(0, -safeValue(market.anchoredVwapGapPct)) * 18 * 0.05 +
+    (safeValue(market.supertrendDirection) < 0 ? 0.16 : 0) +
+    safeValue(market.bearishPatternScore) * 0.11 +
+    safeValue(marketStructureSummary.longSqueezeScore) * 0.08 +
+    (regimeSummary.regime === "trend" ? 0.06 : regimeSummary.regime === "high_vol" ? 0.04 : 0),
+    0,
+    1
+  );
+  const downtrendScore = clamp(
+    trendStateSummary
+      ? baseDowntrendScore * 0.52 + safeValue(trendStateSummary.downtrendScore) * 0.48
+      : baseDowntrendScore,
+    0,
+    1
+  );
+  return {
+    downtrendScore,
+    strongDowntrend: downtrendScore >= 0.58,
+    severeDowntrend: downtrendScore >= 0.74,
+    shortingUnavailable: exchangeCapabilities.shortingEnabled === false,
+    spotOnly: exchangeCapabilities.spotEnabled !== false && exchangeCapabilities.shortingEnabled === false
+  };
+}
+
+function matchesScopedAdjustment(entry = {}, strategyId = null, regimeId = null) {
+  const strategies = entry.affectedStrategies || [];
+  const regimes = entry.affectedRegimes || [];
+  const strategyMatch = !strategies.length || (strategyId && strategies.includes(strategyId));
+  const regimeMatch = !regimes.length || (regimeId && regimes.includes(regimeId));
+  return strategyMatch && regimeMatch;
+}
+
+function resolveTrendStateTuning({ marketSnapshot = {}, strategySummary = {}, regimeSummary = {}, trendStateSummary = null } = {}) {
+  const market = marketSnapshot.market || {};
+  const family = strategySummary.family || "";
+  const strategyId = strategySummary.activeStrategy || "";
+  const trendFamily = ["trend_following", "breakout"].includes(family);
+  const meanReversionFamily = family === "mean_reversion";
+  const matureTrend = safeValue(trendStateSummary?.maturityScore, safeValue(market.trendMaturityScore)) >= 0.6;
+  const exhaustedTrend = safeValue(trendStateSummary?.exhaustionScore, safeValue(market.trendExhaustionScore)) >= 0.68;
+  const strongDownsideAcceleration = safeValue(market.downsideAccelerationScore) >= 0.6 || safeValue(trendStateSummary?.downtrendScore) >= 0.68;
+  const strongUpsideAcceleration = safeValue(market.upsideAccelerationScore) >= 0.6 || safeValue(trendStateSummary?.uptrendScore) >= 0.68;
+  const strongNegativeStructure = (trendStateSummary?.direction || "") === "downtrend" || safeValue(market.swingStructureScore) <= -0.32;
+  const strongPositiveStructure = (trendStateSummary?.direction || "") === "uptrend" || safeValue(market.swingStructureScore) >= 0.32;
+  const lowDataConfidence = safeValue(trendStateSummary?.dataConfidenceScore, 0.7) < 0.55;
+  let thresholdShift = 0;
+  let sizeMultiplier = 1;
+  const notes = [];
+
+  if (trendFamily && ["trend", "breakout"].includes(regimeSummary.regime || "")) {
+    if (matureTrend && strongPositiveStructure && !exhaustedTrend && !strongDownsideAcceleration) {
+      thresholdShift -= 0.008;
+      sizeMultiplier *= 1.04;
+      notes.push("trend_follow_through");
+    }
+    if (exhaustedTrend || strongDownsideAcceleration) {
+      thresholdShift += 0.01;
+      sizeMultiplier *= 0.9;
+      notes.push("trend_exhaustion_caution");
+    }
+  }
+
+  if (meanReversionFamily && strongDownsideAcceleration && strongNegativeStructure && !["bear_rally_reclaim"].includes(strategyId)) {
+    thresholdShift += 0.01;
+    sizeMultiplier *= 0.88;
+    notes.push("mean_reversion_vs_downtrend");
+  }
+
+  if (meanReversionFamily && strategyId === "bear_rally_reclaim" && exhaustedTrend && strongDownsideAcceleration) {
+    thresholdShift -= 0.006;
+    sizeMultiplier *= 1.03;
+    notes.push("bear_bounce_probe_window");
+  }
+
+  if (trendFamily && strongUpsideAcceleration && exhaustedTrend) {
+    thresholdShift += 0.004;
+    sizeMultiplier *= 0.96;
+    notes.push("late_trend_extension");
+  }
+  if (lowDataConfidence) {
+    thresholdShift += 0.006;
+    sizeMultiplier *= 0.9;
+    notes.push("soft_data_confidence");
+  }
+
+  return {
+    active: notes.length > 0,
+    thresholdShift: clamp(thresholdShift, -0.012, 0.012),
+    sizeMultiplier: clamp(sizeMultiplier, 0.82, 1.06),
+    notes
+  };
+}
+
+function pushAdaptiveThresholdComponent(components, {
+  id = "",
+  shift = 0,
+  reason = "",
+  scope = "alpha_context"
+} = {}) {
+  if (!id || !Number.isFinite(shift) || Math.abs(shift) < 0.0005) {
+    return;
+  }
+  components.push({
+    id,
+    shift: num(shift, 4),
+    direction: shift < 0 ? "relax" : "tighten",
+    scope,
+    reason
+  });
+}
+
+function resolveAdaptiveThresholdContext({
+  config = {},
+  marketSnapshot = {},
+  strategySummary = {},
+  sessionSummary = {},
+  regimeSummary = {},
+  volatilitySummary = {},
+  marketConditionSummary = {},
+  signalQualitySummary = {},
+  dataQualitySummary = {},
+  confidenceBreakdown = {}
+} = {}) {
+  const family = `${strategySummary.family || ""}`.toLowerCase();
+  const strategyId = strategySummary.activeStrategy || null;
+  const regime = `${regimeSummary.regime || "unknown"}`.toLowerCase();
+  const session = `${sessionSummary.session || "unknown"}`.toLowerCase();
+  const conditionId = `${marketConditionSummary.conditionId || ""}`.toLowerCase();
+  const spreadBps = safeValue(marketSnapshot.book?.spreadBps, Number.POSITIVE_INFINITY);
+  const hasDepthConfidence = Number.isFinite(marketSnapshot.book?.depthConfidence);
+  const depthConfidence = hasDepthConfidence ? clamp(safeValue(marketSnapshot.book?.depthConfidence, 0), 0, 1) : null;
+  const realizedVolPct = Math.max(0, safeValue(marketSnapshot.market?.realizedVolPct, 0));
+  const maxSpreadBps = Math.max(1, safeValue(config.maxSpreadBps, 12));
+  const maxRealizedVolPct = Math.max(0.001, safeValue(config.maxRealizedVolPct, 0.06));
+  const hasSignalQuality = Number.isFinite(signalQualitySummary.overallScore);
+  const signalQuality = hasSignalQuality ? clamp(safeValue(signalQualitySummary.overallScore, 0), 0, 1) : null;
+  const hasDataQuality = Number.isFinite(dataQualitySummary.overallScore);
+  const dataQuality = hasDataQuality ? clamp(safeValue(dataQualitySummary.overallScore, 0), 0, 1) : null;
+  const hasExecutionConfidence = Number.isFinite(confidenceBreakdown.executionConfidence);
+  const executionConfidence = hasExecutionConfidence ? clamp(safeValue(confidenceBreakdown.executionConfidence, 0), 0, 1) : null;
+  const conditionConfidence = clamp(safeValue(marketConditionSummary.conditionConfidence, 0), 0, 1);
+  const conditionRisk = clamp(safeValue(marketConditionSummary.conditionRisk, 0.5), 0, 1);
+  const volatilityRisk = clamp(safeValue(volatilitySummary.riskScore, 0.5), 0, 1);
+  const components = [];
+  const trendFamilies = ["trend_following", "breakout", "market_structure", "orderflow"];
+  const rangeFamilies = ["mean_reversion", "range_grid"];
+  const trendContextSupportive = ["trend_continuation", "breakout_release"].includes(conditionId);
+  const rangeContextSupportive = ["range_acceptance", "failed_breakout"].includes(conditionId);
+  const lowLiquiditySession = Boolean(sessionSummary.lowLiquidity) || ["weekend"].includes(session);
+  const hasSpreadEvidence = Number.isFinite(spreadBps);
+  const liquidBook =
+    hasDepthConfidence &&
+    depthConfidence >= 0.72 &&
+    hasSpreadEvidence &&
+    spreadBps <= Math.min(maxSpreadBps * 0.4, 6);
+  const fragileBook =
+    (hasDepthConfidence && depthConfidence <= 0.48) ||
+    (hasSpreadEvidence && spreadBps >= Math.max(maxSpreadBps * 0.55, 7));
+  const supportiveQuality =
+    hasSignalQuality &&
+    signalQuality >= 0.64 &&
+    hasDataQuality &&
+    dataQuality >= 0.58 &&
+    hasExecutionConfidence &&
+    executionConfidence >= 0.56;
+
+  if (trendFamilies.includes(family)) {
+    if (
+      ["trend", "high_vol", "breakout"].includes(regime) &&
+      trendContextSupportive &&
+      conditionConfidence >= 0.58 &&
+      conditionRisk <= 0.38 &&
+      supportiveQuality
+    ) {
+      pushAdaptiveThresholdComponent(components, {
+        id: "trend_regime_support",
+        shift: regime === "trend" ? -0.007 : -0.0055,
+        reason: `${family} aligns with ${regime} / ${conditionId}.`
+      });
+    }
+    if (
+      ["range"].includes(regime) &&
+      ["range_acceptance", "failed_breakout", "range_break_risk"].includes(conditionId) &&
+      conditionConfidence >= 0.54
+    ) {
+      pushAdaptiveThresholdComponent(components, {
+        id: "trend_regime_mismatch",
+        shift: 0.0065,
+        reason: `${family} is fighting a range-style context.`
+      });
+    }
+  }
+
+  if (rangeFamilies.includes(family)) {
+    if (
+      ["range", "high_vol"].includes(regime) &&
+      rangeContextSupportive &&
+      conditionConfidence >= 0.58 &&
+      conditionRisk <= 0.36 &&
+      signalQuality >= 0.58
+    ) {
+      pushAdaptiveThresholdComponent(components, {
+        id: "range_regime_support",
+        shift: -0.006,
+        reason: `${family} aligns with ${regime} / ${conditionId}.`
+      });
+    }
+    if (
+      ["trend", "breakout"].includes(regime) &&
+      ["trend_continuation", "breakout_release"].includes(conditionId) &&
+      conditionConfidence >= 0.56
+    ) {
+      pushAdaptiveThresholdComponent(components, {
+        id: "range_regime_mismatch",
+        shift: 0.007,
+        reason: `${family} is fading a continuation regime.`
+      });
+    }
+  }
+
+  if (
+    trendFamilies.includes(family) &&
+    ["us", "europe"].includes(session) &&
+    !lowLiquiditySession &&
+    liquidBook
+  ) {
+    pushAdaptiveThresholdComponent(components, {
+      id: "session_liquidity_support",
+      shift: -0.002,
+      reason: `${session} session is liquid enough for ${family}.`
+    });
+  }
+
+  if (
+    trendFamilies.includes(family) &&
+    (session === "asia" || lowLiquiditySession) &&
+    fragileBook
+  ) {
+    pushAdaptiveThresholdComponent(components, {
+      id: "session_liquidity_caution",
+      shift: 0.003,
+      reason: `${session} session liquidity is weak for ${family}.`
+    });
+  }
+
+  if (
+    volatilityRisk <= 0.42 &&
+    realizedVolPct <= maxRealizedVolPct * 0.8 &&
+    liquidBook &&
+    supportiveQuality
+  ) {
+    pushAdaptiveThresholdComponent(components, {
+      id: "volatility_liquidity_support",
+      shift: -0.0025,
+      reason: "Volatility and order-book conditions are supportive."
+    });
+  }
+
+  if (
+    volatilityRisk >= 0.78 ||
+    realizedVolPct >= maxRealizedVolPct * 0.9 ||
+    fragileBook
+  ) {
+    pushAdaptiveThresholdComponent(components, {
+      id: "volatility_liquidity_caution",
+      shift: 0.0035,
+      reason: "Volatility or order-book quality is fragile."
+    });
+  }
+
+  if (
+    conditionConfidence >= 0.68 &&
+    conditionRisk <= 0.28 &&
+    signalQuality >= 0.68 &&
+    dataQuality >= 0.62
+  ) {
+    pushAdaptiveThresholdComponent(components, {
+      id: "market_context_quality_support",
+      shift: -0.0025,
+      reason: "Condition confidence and overall market-context quality are strong."
+    });
+  }
+
+  if (
+    conditionRisk >= 0.56 ||
+    (hasSignalQuality && signalQuality <= 0.52) ||
+    (hasDataQuality && dataQuality <= 0.5)
+  ) {
+    pushAdaptiveThresholdComponent(components, {
+      id: "market_context_quality_caution",
+      shift: 0.003,
+      reason: "Condition risk or market-context quality is weak."
+    });
+  }
+
+  const rawThresholdShift = components.reduce((total, item) => total + safeValue(item.shift, 0), 0);
+  const thresholdShift = clamp(rawThresholdShift, -0.014, 0.016);
+  const dominantComponent = [...components]
+    .sort((left, right) => Math.abs(right.shift) - Math.abs(left.shift))[0] || null;
+
+  return {
+    active: components.length > 0,
+    family: family || null,
+    strategyId,
+    regime: regime || null,
+    session: session || null,
+    conditionId: conditionId || null,
+    thresholdShift: num(thresholdShift, 4),
+    rawThresholdShift: num(rawThresholdShift, 4),
+    supportiveCount: components.filter((item) => item.shift < 0).length,
+    cautionCount: components.filter((item) => item.shift > 0).length,
+    dominantAdjustmentId: dominantComponent?.id || null,
+    dominantAdjustmentReason: dominantComponent?.reason || null,
+    marketContextQuality: {
+      signalQuality: num(signalQuality, 4),
+      dataQuality: num(dataQuality, 4),
+      executionConfidence: num(executionConfidence, 4),
+      conditionConfidence: num(conditionConfidence, 4),
+      conditionRisk: num(conditionRisk, 4),
+      volatilityRisk: num(volatilityRisk, 4),
+      depthConfidence: num(depthConfidence, 4),
+      spreadBps: Number.isFinite(spreadBps) ? num(spreadBps, 2) : null,
+      realizedVolPct: num(realizedVolPct, 4)
+    },
+    components
+  };
+}
+
+export class RiskManager {
+  constructor(config) {
+    this.config = config;
+  }
+
+  getDailyRealizedPnl(journal, nowIso) {
+    const tradePnl = (journal?.trades || [])
+      .filter((trade) => matchesBrokerMode(trade, this.config.botMode) && trade.exitAt && sameUtcDay(trade.exitAt, nowIso))
+      .reduce((total, trade) => total + (trade.pnlQuote || 0), 0);
+    const scaleOutPnl = (journal?.scaleOuts || [])
+      .filter((event) => matchesBrokerMode(event, this.config.botMode) && event.at && sameUtcDay(event.at, nowIso))
+      .reduce((total, event) => total + (event.realizedPnl || 0), 0);
+    return tradePnl + scaleOutPnl;
+  }
+
+  getRecentTradeForSymbol(journal, symbol) {
+    return [...(journal?.trades || [])]
+      .reverse()
+      .find((trade) => matchesBrokerMode(trade, this.config.botMode) && trade.symbol === symbol && trade.exitAt);
+  }
+
+  getDailyEntryCountForSymbol(journal, runtime, symbol, nowIso) {
+    const closedEntries = (journal?.trades || []).filter(
+      (trade) => matchesBrokerMode(trade, this.config.botMode) && trade.symbol === symbol && trade.entryAt && sameUtcDay(trade.entryAt, nowIso)
+    ).length;
+    const openEntries = (runtime?.openPositions || []).filter(
+      (position) => matchesBrokerMode(position, this.config.botMode) && position.symbol === symbol && position.entryAt && sameUtcDay(position.entryAt, nowIso)
+    ).length;
+    return closedEntries + openEntries;
+  }
+
+  getLossStreak(journal, symbol = null, options = {}) {
+    let streak = 0;
+    const trades = [...(journal?.trades || [])].reverse();
+    const nowIso = options.nowIso || null;
+    const lookbackMinutes = Number.isFinite(options.lookbackMinutes) ? options.lookbackMinutes : 0;
+    for (const trade of trades) {
+      if (!trade.exitAt) {
+        continue;
+      }
+      if (!matchesBrokerMode(trade, this.config.botMode)) {
+        continue;
+      }
+      if (symbol && trade.symbol !== symbol) {
+        continue;
+      }
+      if (!isWithinLookback(trade.exitAt, nowIso, lookbackMinutes)) {
+        break;
+      }
+      if ((trade.pnlQuote || 0) < 0) {
+        streak += 1;
+        continue;
+      }
+      break;
+    }
+    return streak;
+  }
+
+
+  getCurrentExposure(runtime) {
+    return (runtime.openPositions || [])
+      .filter((position) => matchesBrokerMode(position, this.config.botMode))
+      .reduce((total, position) => {
+      const notional = safeValue(position?.notional, Number.NaN);
+      const quantity = safeValue(position?.quantity, 0);
+      const entryPrice = safeValue(position?.entryPrice, 0);
+      const fallbackNotional = quantity * entryPrice;
+      const contribution = Number.isFinite(notional) ? notional : fallbackNotional;
+      return total + safeValue(contribution, 0);
+    }, 0);
+  }
+
+  getOptimizerAdjustments(strategySummary = {}) {
+    const optimizer = strategySummary.optimizer || {};
+    const strategyId = strategySummary.activeStrategy || null;
+    const familyId = strategySummary.family || null;
+
+    const globalThresholdTilt = safeValue(optimizer.thresholdTilt);
+    const familyThresholdTilt = safeValue(optimizer.familyThresholdTilts?.[familyId]);
+    const strategyThresholdTilt = safeValue(optimizer.strategyThresholdTilts?.[strategyId]);
+    const globalConfidenceTilt = safeValue(optimizer.confidenceTilt);
+    const familyConfidenceTilt = safeValue(optimizer.familyConfidenceTilts?.[familyId]);
+    const strategyConfidenceTilt = safeValue(optimizer.strategyConfidenceTilts?.[strategyId]);
+
+    return {
+      sampleSize: optimizer.sampleSize || 0,
+      sampleConfidence: safeValue(optimizer.sampleConfidence),
+      globalThresholdTilt,
+      familyThresholdTilt,
+      strategyThresholdTilt,
+      thresholdAdjustment: clamp(globalThresholdTilt * 0.2 + familyThresholdTilt * 0.35 + strategyThresholdTilt * 0.45, -0.12, 0.12),
+      globalConfidenceTilt,
+      familyConfidenceTilt,
+      strategyConfidenceTilt,
+      strategyConfidenceAdjustment: clamp(globalConfidenceTilt * 0.2 + familyConfidenceTilt * 0.35 + strategyConfidenceTilt * 0.45, -0.1, 0.1)
+    };
+  }
+
+  getThresholdTuningAdjustment(thresholdTuningSummary = {}, strategySummary = {}, regimeSummary = {}) {
+    const applied = thresholdTuningSummary?.appliedRecommendation || null;
+    if (!applied || !["probation", "confirmed"].includes(applied.status || "")) {
+      return {
+        adjustment: 0,
+        status: "inactive",
+        id: null,
+        confidence: 0
+      };
+    }
+    if (!matchesScopedAdjustment(applied, strategySummary?.activeStrategy || null, regimeSummary?.regime || null)) {
+      return {
+        adjustment: 0,
+        status: "out_of_scope",
+        id: applied.id || null,
+        confidence: safeValue(applied.confidence || 0)
+      };
+    }
+    return {
+      adjustment: clamp(safeValue(applied.adjustment || 0), -0.06, 0.06),
+      status: applied.status || "probation",
+      id: applied.id || null,
+      confidence: safeValue(applied.confidence || 0)
+    };
+  }
+
+  resolveMissedTradeTuning(missedTradeTuningSummary = {}, strategySummary = {}, marketConditionSummary = {}) {
+    const scope = missedTradeTuningSummary?.scope || {};
+    const conditionId = marketConditionSummary?.conditionId || null;
+    const familyId = strategySummary?.family || null;
+    const strategyId = strategySummary?.activeStrategy || null;
+    const actionClass = missedTradeTuningSummary?.actionClass || "no_action";
+    const inScope =
+      (!scope.conditionId || scope.conditionId === conditionId) &&
+      (!scope.familyId || scope.familyId === familyId) &&
+      (!scope.strategyId || scope.strategyId === strategyId);
+    const actionable =
+      ["scoped_soften", "scoped_harden"].includes(actionClass) ||
+      (actionClass === "paper_only" && this.config.botMode === "paper");
+    if (!inScope || !["priority", "guarded", "observe"].includes(missedTradeTuningSummary?.status || "") || !actionable) {
+      return {
+        active: false,
+        thresholdShift: 0,
+        paperProbeEligible: false,
+        shadowPriority: false,
+        priorityBoost: 0,
+        sizeMultiplier: 1,
+        action: "observe",
+        actionClass,
+        confidence: 0,
+        blocker: null,
+        note: null
+      };
+    }
+    const blocker = missedTradeTuningSummary.topBlocker || null;
+    const targetedBlocker = isFalseNegativeLearningBlocker(blocker);
+    const confidence = safeValue(missedTradeTuningSummary.confidence, 0);
+    const paperScopedSoftening =
+      this.config.botMode === "paper" &&
+      (actionClass === "scoped_soften" || actionClass === "paper_only") &&
+      targetedBlocker;
+    const thresholdShift = clamp(
+      safeValue(missedTradeTuningSummary.thresholdShift, 0) -
+        (paperScopedSoftening ? Math.min(0.008, confidence * 0.012) : 0),
+      this.config.botMode === "paper" ? -0.034 : -0.018,
+      this.config.botMode === "paper" ? 0.02 : 0.018
+    );
+    const sizeMultiplier = clamp(
+      safeValue(
+        missedTradeTuningSummary.sizeMultiplier,
+        actionClass === "scoped_soften" ? 1.04 : 1
+      ) + (paperScopedSoftening ? Math.min(0.05, confidence * 0.06) : 0),
+      0.9,
+      this.config.botMode === "paper" ? 1.18 : 1.06
+    );
+    const priorityBoost = clamp(
+      safeValue(missedTradeTuningSummary.priorityBoost, 0) +
+        (actionClass === "scoped_soften" ? confidence * 0.04 : 0) +
+        (paperScopedSoftening ? Math.min(0.03, confidence * 0.035) : 0),
+      0,
+      0.11
+    );
+    return {
+      active: true,
+      thresholdShift,
+      paperProbeEligible: Boolean(missedTradeTuningSummary.paperProbeEligible) || paperScopedSoftening,
+      shadowPriority: Boolean(missedTradeTuningSummary.shadowPriority) || (paperScopedSoftening && confidence >= 0.54),
+      priorityBoost,
+      sizeMultiplier,
+      action: missedTradeTuningSummary.action || "observe",
+      actionClass,
+      confidence,
+      blocker,
+      targetedBlocker,
+      blockerSofteningRecommendation: missedTradeTuningSummary.blockerSofteningRecommendation || null,
+      blockerHardeningRecommendation: missedTradeTuningSummary.blockerHardeningRecommendation || null,
+      note: missedTradeTuningSummary.note || null,
+      scope: {
+        conditionId: scope.conditionId || null,
+        familyId: scope.familyId || null,
+        strategyId: scope.strategyId || null
+      }
+    };
+  }
+
+  resolveAdaptiveExitPolicy(exitLearningSummary = {}, position = {}) {
+    const strategyId = position.strategyAtEntry || position.strategyDecision?.activeStrategy || position.entryRationale?.strategy?.activeStrategy || null;
+    const regimeId = position.regimeAtEntry || position.entryRationale?.regimeSummary?.regime || null;
+    const familyId = position.strategyFamily || position.strategyDecision?.family || position.entryRationale?.strategy?.family || null;
+    const conditionId = position.marketConditionAtEntry || position.entryRationale?.marketCondition?.conditionId || null;
+    const conditionPolicy = (exitLearningSummary?.conditionPolicies || []).find((item) => item.conditionId === conditionId && item.familyId === familyId) || null;
+    const familyPolicy = (exitLearningSummary?.familyPolicies || []).find((item) => item.id === familyId) || null;
+    const strategyPolicy = (exitLearningSummary?.strategyPolicies || []).find((item) => item.id === strategyId) || null;
+    const regimePolicy = (exitLearningSummary?.regimePolicies || []).find((item) => item.id === regimeId) || null;
+    const policies = [conditionPolicy, familyPolicy, strategyPolicy, regimePolicy].filter(Boolean);
+    if (!policies.length) {
+      return {
+        active: false,
+        scaleOutFractionMultiplier: 1,
+        scaleOutTriggerMultiplier: 1,
+        trailingStopMultiplier: 1,
+        maxHoldMinutesMultiplier: 1,
+        preferredExitStyle: "balanced",
+        trailTightnessBias: 0,
+        trimBias: 0,
+        holdTolerance: 0,
+        maxHoldBias: 0,
+        sources: []
+      };
+    }
+    return {
+      active: true,
+      scaleOutFractionMultiplier: clamp(average(policies.map((item) => safeValue(item.scaleOutFractionMultiplier || 1)), 1), 0.75, 1.25),
+      scaleOutTriggerMultiplier: clamp(average(policies.map((item) => safeValue(item.scaleOutTriggerMultiplier || 1)), 1), 0.78, 1.25),
+      trailingStopMultiplier: clamp(average(policies.map((item) => safeValue(item.trailingStopMultiplier || 1)), 1), 0.82, 1.22),
+      maxHoldMinutesMultiplier: clamp(average(policies.map((item) => safeValue(item.maxHoldMinutesMultiplier || 1)), 1), 0.75, 1.25),
+      preferredExitStyle: conditionPolicy?.preferredExitStyle || "balanced",
+      trailTightnessBias: clamp(average(policies.map((item) => safeValue(item.trailTightnessBias || 0)), 0), -0.2, 0.2),
+      trimBias: clamp(average(policies.map((item) => safeValue(item.trimBias || 0)), 0), -0.2, 0.2),
+      holdTolerance: clamp(average(policies.map((item) => safeValue(item.holdTolerance || 0)), 0), -0.2, 0.2),
+      maxHoldBias: clamp(average(policies.map((item) => safeValue(item.maxHoldBias || 0)), 0), -0.2, 0.2),
+      sources: policies.map((item) => item.id)
+    };
+  }
+
+  resolveParameterGovernor(parameterGovernorSummary = {}, strategySummary = {}, regimeSummary = {}) {
+    const strategyId = strategySummary.activeStrategy || null;
+    const regimeId = regimeSummary.regime || null;
+    const scopes = [
+      ...((parameterGovernorSummary.strategyScopes || []).filter((item) => item.id === strategyId)),
+      ...((parameterGovernorSummary.regimeScopes || []).filter((item) => item.id === regimeId))
+    ];
+    if (!scopes.length) {
+      return {
+        active: false,
+        thresholdShift: 0,
+        stopLossMultiplier: 1,
+        takeProfitMultiplier: 1,
+        trailingStopMultiplier: 1,
+        scaleOutTriggerMultiplier: 1,
+        scaleOutFractionMultiplier: 1,
+        maxHoldMinutesMultiplier: 1,
+        executionAggressivenessBias: 1,
+        sources: []
+      };
+    }
+    const avg = (key, fallback = 1) => average(scopes.map((item) => safeValue(item[key], fallback)), fallback);
+    return {
+      active: true,
+      thresholdShift: clamp(avg("thresholdShift", 0), -(this.config.parameterGovernorMaxThresholdShift || 0.03), this.config.parameterGovernorMaxThresholdShift || 0.03),
+      stopLossMultiplier: clamp(avg("stopLossMultiplier", 1), 1 - (this.config.parameterGovernorMaxStopLossMultiplierDelta || 0.14), 1 + (this.config.parameterGovernorMaxStopLossMultiplierDelta || 0.14)),
+      takeProfitMultiplier: clamp(avg("takeProfitMultiplier", 1), 1 - (this.config.parameterGovernorMaxTakeProfitMultiplierDelta || 0.18), 1 + (this.config.parameterGovernorMaxTakeProfitMultiplierDelta || 0.18)),
+      trailingStopMultiplier: clamp(avg("trailingStopMultiplier", 1), 0.82, 1.18),
+      scaleOutTriggerMultiplier: clamp(avg("scaleOutTriggerMultiplier", 1), 0.84, 1.18),
+      scaleOutFractionMultiplier: clamp(avg("scaleOutFractionMultiplier", 1), 0.84, 1.18),
+      maxHoldMinutesMultiplier: clamp(avg("maxHoldMinutesMultiplier", 1), 0.82, 1.18),
+      executionAggressivenessBias: clamp(avg("executionAggressivenessBias", 1), 0.82, 1.18),
+      sources: scopes.map((item) => `${item.scopeType}:${item.id}`)
+    };
+  }
+
+  resolveStrategyRetirement(strategyRetirementSummary = {}, strategySummary = {}) {
+    const strategyId = strategySummary.activeStrategy || null;
+    const policy = (strategyRetirementSummary.policies || []).find((item) => item.id === strategyId) || null;
+    if (!policy) {
+      return {
+        active: false,
+        status: "ready",
+        sizeMultiplier: 1,
+        blocked: false,
+        reason: null
+      };
+    }
+    return {
+      active: true,
+      status: policy.status || "observe",
+      sizeMultiplier: clamp(safeValue(policy.sizeMultiplier || 1), 0, 1),
+      blocked: (policy.status || "") === "retire",
+      reason: policy.note || null,
+      confidence: safeValue(policy.confidence || 0),
+      statusTriggers: [...(policy.statusTriggers || [])]
+    };
+  }
+
+  resolveExecutionCostBudget(executionCostSummary = {}, strategySummary = {}, regimeSummary = {}) {
+    const minScopedTrades = Math.max(1, Math.round(safeValue(this.config.executionCostBudgetMinScopedTrades) || 3));
+    if (executionCostSummary.stale) {
+      return {
+        active: false,
+        status: executionCostSummary.status || "warmup",
+        stale: true,
+        blocked: false,
+        sizeMultiplier: 1,
+        averageTotalCostBps: safeValue(executionCostSummary.averageTotalCostBps || 0),
+        averageSlippageDeltaBps: safeValue(executionCostSummary.averageSlippageDeltaBps || 0),
+        latestTradeAt: executionCostSummary.latestTradeAt || null,
+        freshnessHours: safeValue(executionCostSummary.freshnessHours, 0),
+        notes: ["stale_execution_cost_sample"]
+      };
+    }
+    const strategyId = strategySummary.activeStrategy || null;
+    const regimeId = regimeSummary.regime || null;
+    const strategyScope = (executionCostSummary.strategies || []).find((item) => item.id === strategyId) || null;
+    const regimeScope = (executionCostSummary.regimes || []).find((item) => item.id === regimeId) || null;
+    const scopes = [strategyScope, regimeScope].filter(Boolean);
+    if (!scopes.length) {
+      return {
+        active: false,
+        status: executionCostSummary.status || "warmup",
+        blocked: false,
+        sizeMultiplier: 1,
+        averageTotalCostBps: safeValue(executionCostSummary.averageTotalCostBps || 0),
+        averageBudgetCostBps: safeValue(executionCostSummary.averageBudgetCostBps || 0),
+        averageExcessFeeBps: safeValue(executionCostSummary.averageExcessFeeBps || 0),
+        minTradeCount: minScopedTrades
+      };
+    }
+    const matureScopes = scopes.filter((item) => {
+      const status = item.status || "warmup";
+      if (status === "warmup") {
+        return false;
+      }
+      if (Number.isFinite(item.tradeCount)) {
+        return item.tradeCount >= minScopedTrades;
+      }
+      return true;
+    });
+    const averageTotalCostBps = average(matureScopes.map((item) => safeValue(item.averageTotalCostBps || 0)), safeValue(executionCostSummary.averageTotalCostBps || 0));
+    const averageBudgetCostBps = average(matureScopes.map((item) => safeValue(item.averageBudgetCostBps || 0)), safeValue(executionCostSummary.averageBudgetCostBps || 0));
+    const averageExcessFeeBps = average(matureScopes.map((item) => safeValue(item.averageExcessFeeBps || 0)), safeValue(executionCostSummary.averageExcessFeeBps || 0));
+    const averageSlippageDeltaBps = average(matureScopes.map((item) => safeValue(item.averageSlippageDeltaBps || 0)), safeValue(executionCostSummary.averageSlippageDeltaBps || 0));
+    if (!matureScopes.length) {
+      return {
+        active: false,
+        status: "warmup",
+        blocked: false,
+        sizeMultiplier: 1,
+        averageTotalCostBps: safeValue(executionCostSummary.averageTotalCostBps || 0),
+        averageBudgetCostBps: safeValue(executionCostSummary.averageBudgetCostBps || 0),
+        averageExcessFeeBps: safeValue(executionCostSummary.averageExcessFeeBps || 0),
+        averageSlippageDeltaBps: safeValue(executionCostSummary.averageSlippageDeltaBps || 0),
+        scopeTradeCount: scopes.reduce((total, item) => total + (item.tradeCount || 0), 0),
+        minTradeCount: minScopedTrades,
+        notes: ["execution_cost_scope_warmup"]
+      };
+    }
+    const blocked = matureScopes.some((item) => (item.status || "") === "blocked");
+    const caution = !blocked && matureScopes.some((item) => (item.status || "") === "caution");
+    return {
+      active: true,
+      status: blocked ? "blocked" : caution ? "caution" : "ready",
+      blocked,
+      sizeMultiplier: blocked ? 0.58 : caution ? 0.82 : 1,
+      averageTotalCostBps,
+      averageBudgetCostBps,
+      averageExcessFeeBps,
+      averageSlippageDeltaBps,
+      scopeTradeCount: matureScopes.reduce((total, item) => total + (item.tradeCount || 0), 0),
+      minTradeCount: minScopedTrades,
+      notes: [...new Set(matureScopes.map((item) => item.id).filter(Boolean))]
+    };
+  }
+
+  resolveCapitalGovernor(capitalGovernorSummary = {}) {
+    const hasExplicitProbeFlag = Object.prototype.hasOwnProperty.call(capitalGovernorSummary, "allowProbeEntries");
+    const allowProbeEntries = hasExplicitProbeFlag
+      ? Boolean(capitalGovernorSummary.allowProbeEntries)
+      : this.config.botMode === "paper" &&
+        capitalGovernorSummary.allowEntries === false &&
+        Boolean(capitalGovernorSummary.recoveryMode);
+    const paperProbeSoftBlock = this.config.botMode === "paper" && allowProbeEntries;
+    return {
+      generatedAt: capitalGovernorSummary.generatedAt || null,
+      active: Boolean(capitalGovernorSummary.status),
+      status: capitalGovernorSummary.status || "warmup",
+      pressureBand: capitalGovernorSummary.pressureBand || "healthy",
+      allowEntries: capitalGovernorSummary.allowEntries !== false,
+      blocked: capitalGovernorSummary.allowEntries === false && !paperProbeSoftBlock,
+      allowProbeEntries,
+      recoveryMode: Boolean(capitalGovernorSummary.recoveryMode),
+      sizeMultiplier: clamp(safeValue(capitalGovernorSummary.sizeMultiplier ?? 1), 0, 1),
+      latestTradeAt: capitalGovernorSummary.latestTradeAt || null,
+      lastClosedTradeAgeHours: safeValue(capitalGovernorSummary.lastClosedTradeAgeHours, 0),
+      blockerReasons: [...(capitalGovernorSummary.blockerReasons || [])],
+      notes: [...(capitalGovernorSummary.notes || [])],
+      budgetPressure: safeValue(capitalGovernorSummary.budgetPressure, 0),
+      budgetBlockers: [...(capitalGovernorSummary.budgetBlockers || [])],
+      exposureBudgets: capitalGovernorSummary.exposureBudgets || {}
+    };
+  }
+
+  evaluateEntry({
+    symbol,
+    score,
+    marketSnapshot,
+    newsSummary,
+    announcementSummary = {},
+    marketStructureSummary = {},
+    marketSentimentSummary = {},
+    volatilitySummary = {},
+    calendarSummary = {},
+    committeeSummary = {},
+    rlAdvice = {},
+    strategySummary = {},
+    sessionSummary = {},
+    driftSummary = {},
+    selfHealState = {},
+    metaSummary = {},
+    timeframeSummary = {},
+    pairHealthSummary = {},
+    onChainLiteSummary = {},
+    divergenceSummary = {},
+    qualityQuorumSummary = {},
+    executionCostSummary = {},
+    strategyRetirementSummary = {},
+    capitalGovernorSummary = {},
+    missedTradeTuningSummary = {},
+    marketConditionSummary = {},
+    marketProviderSummary = {},
+    runtime,
+    journal,
+    balance = {},
+    symbolStats = {},
+    portfolioSummary = {},
+    regimeSummary = { regime: "range" },
+    thresholdTuningSummary = {},
+    parameterGovernorSummary = {},
+    capitalLadderSummary = {},
+    nowIso
+    ,
+    venueConfirmationSummary = {},
+    strategyMetaSummary = {},
+    strategyAllocationSummary = {},
+    baselineCoreSummary = {},
+    paperLearningGuidance = {},
+    offlineLearningGuidance = {},
+    exchangeCapabilitiesSummary = {},
+    symbolRules = null
+  }) {
+    const hardSafetyPolicy = applyHardSafetyPolicy({ runtime, symbol, reasons: [] });
+    const reasons = [...hardSafetyPolicy.reasons];
+    const openPositions = runtime.openPositions || [];
+    const exchangeSafetySymbolBlock = hardSafetyPolicy.exchangeSafetySymbolBlock;
+    const executionIntentBlock = hardSafetyPolicy.executionIntentBlock;
+    const openPositionsInMode = openPositions.filter((position) => matchesBrokerMode(position, this.config.botMode));
+    const paperLearningMaxConcurrentPositions = Math.max(1, Math.round(this.config.paperLearningMaxConcurrentPositions || 1));
+    const canOpenAnotherPaperLearningPosition = this.config.botMode !== "paper" || openPositionsInMode.length < paperLearningMaxConcurrentPositions;
+    const baseThreshold = Math.max(this.config.modelThreshold, this.config.minModelConfidence);
+    const optimizerAdjustments = this.getOptimizerAdjustments(strategySummary);
+    const thresholdTuningAdjustment = this.getThresholdTuningAdjustment(thresholdTuningSummary, strategySummary, regimeSummary);
+    const parameterGovernorAdjustment = this.resolveParameterGovernor(parameterGovernorSummary, strategySummary, regimeSummary);
+    const missedTradeTuningApplied = this.resolveMissedTradeTuning(missedTradeTuningSummary, strategySummary, marketConditionSummary);
+    const strategyRetirementPolicy = this.resolveStrategyRetirement(strategyRetirementSummary, strategySummary);
+    const executionCostBudget = this.resolveExecutionCostBudget(executionCostSummary, strategySummary, regimeSummary);
+    const capitalGovernor = this.resolveCapitalGovernor(capitalGovernorSummary);
+    const exposureBudgetMatch = resolveBudgetExposureMatch(capitalGovernor, {
+      strategySummary,
+      regimeSummary,
+      portfolioSummary,
+      newsSummary,
+      announcementSummary
+    });
+    const exchangeCapabilities = summarizeExchangeCapabilities(exchangeCapabilitiesSummary);
+    const marketStateSummary = buildMarketStateSummary({
+      marketFeatures: marketSnapshot.market || {},
+      bookFeatures: marketSnapshot.book || {},
+      newsSummary,
+      announcementSummary,
+      qualityQuorumSummary,
+      venueConfirmationSummary,
+      timeframeSummary
+    });
+    const trendStateSummary = marketStateSummary.trendStateSummary;
+    const dataQualitySummary = buildDataQualitySummary({
+      newsSummary,
+      announcementSummary,
+      marketStructureSummary,
+      marketSentimentSummary,
+      volatilitySummary,
+      onChainLiteSummary,
+      qualityQuorumSummary,
+      venueConfirmationSummary,
+      bookFeatures: marketSnapshot.book || {}
+    });
+    const signalQualitySummary = buildSignalQualitySummary({
+      marketFeatures: marketSnapshot.market || {},
+      bookFeatures: marketSnapshot.book || {},
+      strategySummary,
+      trendStateSummary,
+      qualityQuorumSummary,
+      venueConfirmationSummary,
+      newsSummary
+    });
+    const preliminaryConfidenceBreakdown = buildConfidenceBreakdown({
+      score,
+      trendStateSummary,
+      signalQualitySummary,
+      venueConfirmationSummary,
+      qualityQuorumSummary,
+      strategySummary,
+      executionPlan: {}
+    });
+    const downtrendPolicy = buildDowntrendPolicy({
+      marketSnapshot,
+      marketStructureSummary,
+      regimeSummary,
+      exchangeCapabilities,
+      trendStateSummary
+    });
+    const trendStateTuning = resolveTrendStateTuning({ marketSnapshot, strategySummary, regimeSummary, trendStateSummary });
+    const policyProfile = resolvePolicyProfile({
+      botMode: this.config.botMode,
+      strategySummary,
+      regimeSummary,
+      sessionSummary,
+      marketConditionSummary
+    });
+    const relativeStrengthComposite = buildRelativeStrengthComposite(marketSnapshot.market || {});
+    const leadershipTailwindScore = clamp(safeValue(marketSnapshot.market?.leadershipTailwindScore, 0.5), 0, 1);
+    const lateFollowerRisk = clamp(safeValue(marketSnapshot.market?.lateFollowerRisk, 0), 0, 1);
+    const copycatBreakoutRisk = clamp(safeValue(marketSnapshot.market?.copycatBreakoutRisk, 0), 0, 1);
+    const downsideVolDominance = buildDownsideVolDominance(marketSnapshot.market || {});
+    const acceptanceQuality = buildAcceptanceQuality(marketSnapshot.market || {});
+    const replenishmentQuality = buildReplenishmentQuality(marketSnapshot.book || {});
+    const marketConditionConfidence = safeValue(marketConditionSummary.conditionConfidence, 0);
+    const marketConditionRisk = safeValue(marketConditionSummary.conditionRisk, 0);
+    const metaCautionReasons = getMetaCautionReasons(metaSummary);
+    const hasDirectMetaCautionGate = metaCautionReasons.some((reason) => ["meta_gate_caution", "trade_quality_caution", "meta_followthrough_caution"].includes(reason));
+    const sessionThresholdPenalty = safeValue(sessionSummary.thresholdPenalty || 0);
+    const driftThresholdPenalty = safeValue(driftSummary.severity || 0) >= 0.82 ? 0.05 : safeValue(driftSummary.severity || 0) >= 0.45 ? 0.02 : 0;
+    const rawSelfHealThresholdPenalty = safeValue(selfHealState.thresholdPenalty || 0);
+    const selfHealThresholdPenalty = this.config.botMode === "paper" && canRelaxPaperSelfHeal(selfHealState)
+      ? Math.min(rawSelfHealThresholdPenalty, 0.02)
+      : rawSelfHealThresholdPenalty;
+    const metaThresholdPenalty = safeValue(metaSummary.thresholdPenalty || 0);
+    const calibrationWarmup = clamp(
+      safeValue(
+        score.calibrator?.warmupProgress ??
+        score.calibrator?.globalConfidence ??
+        score.calibrationConfidence ??
+        0
+      ),
+      0,
+      1
+    );
+    const paperWarmupDiscount = this.config.botMode === "paper" ? (1 - calibrationWarmup) * 0.06 : 0;
+    const thresholdFloor = this.config.botMode === "paper"
+      ? Math.max(0.5, this.config.minModelConfidence - paperWarmupDiscount)
+      : this.config.minModelConfidence;
+    const alphaThresholdBeforeAdaptive = clamp(
+      baseThreshold -
+        optimizerAdjustments.thresholdAdjustment -
+        paperWarmupDiscount +
+        safeValue(strategyMetaSummary.thresholdShift || 0) +
+        trendStateTuning.thresholdShift +
+        safeValue(policyProfile.profile?.thresholdShift, 0),
+      thresholdFloor,
+      0.99
+    );
+    const adaptiveThresholdContext = resolveAdaptiveThresholdContext({
+      config: this.config,
+      marketSnapshot,
+      strategySummary,
+      sessionSummary,
+      regimeSummary,
+      volatilitySummary,
+      marketConditionSummary,
+      signalQualitySummary,
+      dataQualitySummary,
+      confidenceBreakdown: preliminaryConfidenceBreakdown
+    });
+    let threshold = clamp(
+      baseThreshold - optimizerAdjustments.thresholdAdjustment - paperWarmupDiscount + sessionThresholdPenalty + driftThresholdPenalty + selfHealThresholdPenalty + metaThresholdPenalty + thresholdTuningAdjustment.adjustment + parameterGovernorAdjustment.thresholdShift + safeValue(strategyMetaSummary.thresholdShift || 0) + missedTradeTuningApplied.thresholdShift + safeValue(policyProfile.profile?.thresholdShift, 0),
+      thresholdFloor,
+      0.99
+    );
+    threshold = clamp(
+      threshold +
+      trendStateTuning.thresholdShift +
+      adaptiveThresholdContext.thresholdShift,
+      thresholdFloor,
+      0.99
+    );
+    let learningValueScore = 0;
+    let activeLearningState = { activeLearningScore: 0 };
+    const offlineLearningGuidanceApplied = applyOfflineLearningGuidance({
+      botMode: this.config.botMode,
+      guidance: {
+        ...(offlineLearningGuidance || {}),
+        enableFeatureTrustEchoDampening: this.config.enableFeatureTrustEchoDampening !== false
+      },
+      learningValueScore,
+      activeLearningState
+    });
+    learningValueScore = offlineLearningGuidanceApplied.learningValueScore;
+    activeLearningState = offlineLearningGuidanceApplied.activeLearningState;
+    threshold = clamp(
+      threshold + offlineLearningGuidanceApplied.thresholdShift,
+      thresholdFloor,
+      0.99
+    );
+    const paperThresholdSandbox = buildPaperThresholdSandboxState({
+      journal,
+      config: this.config,
+      strategySummary,
+      regimeSummary,
+      sessionSummary,
+      nowIso
+    });
+    const executionQualityMemory = buildExecutionQualityMemory({
+      journal,
+      symbol,
+      strategySummary,
+      regimeSummary,
+      sessionSummary,
+      botMode: this.config.botMode,
+      nowIso
+    });
+    const thresholdBeforeSandbox = threshold;
+    if (this.config.botMode === "paper" && Number.isFinite(paperThresholdSandbox.thresholdShift)) {
+      threshold = clamp(threshold + paperThresholdSandbox.thresholdShift, thresholdFloor, 0.99);
+    }
+    if (this.config.botMode === "paper" && executionQualityMemory.active) {
+      threshold = clamp(threshold - Math.max(0, safeValue(executionQualityMemory.thresholdBias, 0)), thresholdFloor, 0.99);
+    }
+    const positivePenaltyStack = [
+      sessionThresholdPenalty,
+      driftThresholdPenalty,
+      selfHealThresholdPenalty,
+      metaThresholdPenalty,
+      thresholdTuningAdjustment.adjustment,
+      parameterGovernorAdjustment.thresholdShift,
+      safeValue(strategyMetaSummary.thresholdShift || 0),
+      missedTradeTuningApplied.thresholdShift,
+      trendStateTuning.thresholdShift,
+      adaptiveThresholdContext.thresholdShift,
+      offlineLearningGuidanceApplied.thresholdShift,
+      safeValue(threshold - thresholdBeforeSandbox, 0)
+    ].reduce((total, value) => total + Math.max(0, safeValue(value, 0)), 0);
+    const strongPaperThresholdReliefCandidate =
+      this.config.botMode === "paper" &&
+      safeValue(score.rawProbability, safeValue(score.probability, 0)) >= safeValue(baseThreshold, 0) + 0.035 &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.66 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.56 &&
+      safeValue(preliminaryConfidenceBreakdown.overallConfidence, 0) >= 0.62 &&
+      safeValue(strategySummary.fitScore, 0) >= 0.6;
+    const softPenaltyCap =
+      this.config.botMode === "paper"
+        ? strongPaperThresholdReliefCandidate
+          ? 0.05
+          : 0.065
+        : Number.POSITIVE_INFINITY;
+    const cappedThresholdByPenaltyStack =
+      Number.isFinite(softPenaltyCap) && positivePenaltyStack > softPenaltyCap
+        ? clamp(baseThreshold + softPenaltyCap, thresholdFloor, 0.99)
+        : threshold;
+    const thresholdPenaltyCapRelief = Math.max(0, safeValue(threshold, 0) - safeValue(cappedThresholdByPenaltyStack, 0));
+    threshold = Math.min(threshold, cappedThresholdByPenaltyStack);
+    const standardConfidenceThreshold = clamp(
+      threshold,
+      Math.max(this.config.minModelConfidence || 0, 0),
+      0.99
+    );
+    const alphaThreshold = clamp(
+      alphaThresholdBeforeAdaptive + adaptiveThresholdContext.thresholdShift,
+      thresholdFloor,
+      0.99
+    );
+    const thresholdInflationContributors = [
+      { id: "base_threshold", value: safeValue(baseThreshold, 0) },
+      { id: "optimizer_adjustment", value: -safeValue(optimizerAdjustments.thresholdAdjustment, 0) },
+      { id: "paper_warmup_discount", value: -safeValue(paperWarmupDiscount, 0) },
+      { id: "session_penalty", value: safeValue(sessionThresholdPenalty, 0) },
+      { id: "drift_penalty", value: safeValue(driftThresholdPenalty, 0) },
+      { id: "self_heal_penalty", value: safeValue(selfHealThresholdPenalty, 0) },
+      { id: "meta_penalty", value: safeValue(metaThresholdPenalty, 0) },
+      { id: "threshold_tuning", value: safeValue(thresholdTuningAdjustment.adjustment, 0) },
+      { id: "parameter_governor_shift", value: safeValue(parameterGovernorAdjustment.thresholdShift, 0) },
+      { id: "strategy_meta_shift", value: safeValue(strategyMetaSummary.thresholdShift || 0, 0) },
+      { id: "missed_trade_shift", value: safeValue(missedTradeTuningApplied.thresholdShift, 0) },
+      { id: "policy_profile_shift", value: safeValue(policyProfile.profile?.thresholdShift, 0) },
+      { id: "trend_state_shift", value: safeValue(trendStateTuning.thresholdShift, 0) },
+      { id: "adaptive_shift", value: safeValue(adaptiveThresholdContext.thresholdShift, 0) },
+      { id: "offline_learning_shift", value: safeValue(offlineLearningGuidanceApplied.thresholdShift, 0) },
+      { id: "execution_quality_memory", value: -Math.max(0, safeValue(executionQualityMemory.thresholdBias, 0)) },
+      { id: "sandbox_shift", value: safeValue(paperThresholdSandbox.thresholdShift, 0) },
+      { id: "soft_penalty_stack_cap", value: -safeValue(thresholdPenaltyCapRelief, 0) }
+    ];
+    const rankedThresholdInflationContributors = thresholdInflationContributors
+      .filter((item) => Math.abs(safeValue(item.value, 0)) > 0.0001)
+      .sort((left, right) => Math.abs(safeValue(right.value, 0)) - Math.abs(safeValue(left.value, 0)))
+      .map((item) => ({
+        id: item.id,
+        value: num(item.value, 4),
+        direction: item.value >= 0 ? "inflation" : "relief"
+      }));
+    const lowConfidencePressure = buildLowConfidencePressure({
+      score,
+      threshold,
+      baseThreshold,
+      confidenceBreakdown: preliminaryConfidenceBreakdown,
+      calibrationWarmup,
+      minCalibrationConfidence: this.config.minCalibrationConfidence,
+      sessionThresholdPenalty,
+      driftThresholdPenalty,
+      selfHealThresholdPenalty,
+      metaThresholdPenalty,
+      thresholdTuningAdjustment,
+      parameterGovernorAdjustment,
+      strategyMetaSummary,
+      missedTradeTuningApplied,
+      trendStateTuning,
+      offlineLearningGuidanceApplied,
+      signalQualitySummary,
+      dataQualitySummary
+    });
+    const setupQuality = buildSetupQualityAssessment({
+      config: this.config,
+      score,
+      threshold,
+      strategySummary,
+      signalQualitySummary,
+      confidenceBreakdown: preliminaryConfidenceBreakdown,
+      dataQualitySummary,
+      acceptanceQuality,
+      replenishmentQuality,
+      relativeStrengthComposite,
+      leadershipTailwindScore,
+      lateFollowerRisk,
+      copycatBreakoutRisk,
+      downsideVolDominance,
+      timeframeSummary,
+      pairHealthSummary,
+      venueConfirmationSummary,
+      marketConditionSummary,
+      marketStateSummary,
+      regimeSummary
+    });
+    const confidenceAdjudicationPreliminary = buildConfidenceAdjudication({
+      score,
+      threshold,
+      baseThreshold,
+      alphaThreshold,
+      standardConfidenceThreshold,
+      lowConfidencePressure,
+      setupQuality,
+      signalQualitySummary,
+      dataQualitySummary,
+      confidenceBreakdown: preliminaryConfidenceBreakdown,
+      timeframeSummary,
+      marketStructureSummary,
+      newsSummary,
+      announcementSummary,
+      reasons: [],
+      policyProfile,
+      botMode: this.config.botMode
+    });
+    const confidenceAdjudicationEnabled = this.config.enableConfidenceAdjudication !== false;
+    const effectivePreliminaryConfidenceAdjudication = confidenceAdjudicationEnabled
+      ? confidenceAdjudicationPreliminary
+      : {
+        ...confidenceAdjudicationPreliminary,
+        confidenceRecoveryEligible: false,
+        thresholdReliefEligible: false,
+        thresholdRelief: 0,
+        thresholdReliefReason: "confidence_adjudication_disabled",
+        adjudicatedProbability: safeValue(score.probability, 0)
+      };
+    const adjudicatedConfidenceThreshold = clamp(
+      standardConfidenceThreshold - safeValue(effectivePreliminaryConfidenceAdjudication.thresholdRelief, 0),
+      thresholdFloor,
+      0.99
+    );
+    const adjudicatedProbability = safeValue(
+      effectivePreliminaryConfidenceAdjudication.adjudicatedProbability,
+      safeValue(score.probability, 0)
+    );
+    const strongTrendGuardOverride =
+      ["trend_following", "breakout", "market_structure"].includes(strategySummary.family || "") &&
+      relativeStrengthComposite > 0.004 &&
+      acceptanceQuality >= 0.62 &&
+      replenishmentQuality >= 0.54 &&
+      (timeframeSummary.alignmentScore || 0) >= 0.58 &&
+      (signalQualitySummary.overallScore || 0) >= 0.58 &&
+      (preliminaryConfidenceBreakdown.executionConfidence || 0) >= 0.5 &&
+      score.probability >= threshold + 0.03;
+    const strategyConfidenceFloor = clamp(this.config.strategyMinConfidence - optimizerAdjustments.strategyConfidenceAdjustment + selfHealThresholdPenalty * 0.35, 0.1, 0.95);
+    const dailyPnl = this.getDailyRealizedPnl(journal, nowIso);
+    const dailyLossFraction = dailyPnl < 0 ? Math.abs(dailyPnl) / this.config.startingCash : 0;
+    const currentExposure = this.getCurrentExposure(runtime);
+    const totalEquityProxy = Math.max(balance.quoteFree + currentExposure, 1);
+    const portfolioHeat = totalEquityProxy ? currentExposure / totalEquityProxy : 0;
+    const lossStreakOptions = {
+      nowIso,
+      lookbackMinutes: this.config.lossStreakLookbackMinutes
+    };
+    const globalLossStreak = this.getLossStreak(journal, null, lossStreakOptions);
+    const symbolLossStreak = this.getLossStreak(journal, symbol, lossStreakOptions);
+    const sessionSizeMultiplier = clamp(safeValue(sessionSummary.sizeMultiplier) || 1, 0.2, 1);
+    const driftSizeMultiplier = clamp((safeValue(driftSummary.severity || 0) >= 0.82) ? 0.55 : (safeValue(driftSummary.severity || 0) >= 0.45 ? 0.78 : 1), 0.2, 1);
+    const rawSelfHealSizeMultiplier = clamp(safeValue(selfHealState.sizeMultiplier) || 1, 0, 1);
+    const selfHealSizeMultiplier = this.config.botMode === "paper" &&
+      selfHealState.mode === "low_risk_only" &&
+      canRelaxPaperSelfHeal(selfHealState)
+      ? Math.max(rawSelfHealSizeMultiplier, 0.72)
+      : rawSelfHealSizeMultiplier;
+    const paperLearningRecoveryActive = this.config.botMode === "paper" &&
+      selfHealState.mode === "low_risk_only" &&
+      canRelaxPaperSelfHeal(selfHealState);
+    const metaSizeMultiplier = clamp(safeValue(metaSummary.sizeMultiplier) || 1, 0.1, 1.15);
+    const strategyMetaSizeMultiplier = clamp(safeValue(strategyMetaSummary.sizeMultiplier) || 1, 0.75, 1.15);
+    const venueSizeMultiplier = clamp((venueConfirmationSummary.status || "") === "blocked" ? 0.45 : (venueConfirmationSummary.confirmed ? 1.04 : 0.9), 0.45, 1.05);
+    const capitalLadderSizeMultiplier = clamp(safeValue(capitalLadderSummary.sizeMultiplier) || 1, 0, 1.2);
+    const capitalGovernorSizeMultiplier = clamp(
+      (capitalGovernor.sizeMultiplier || 1) * (exposureBudgetMatch.sizeMultiplier || 1),
+      0,
+      1
+    );
+    if (exposureBudgetMatch.blocked) {
+      for (const matchedBudget of exposureBudgetMatch.matches) {
+        if (!matchedBudget.blocked || reasons.includes(matchedBudget.reason)) {
+          continue;
+        }
+        reasons.push(matchedBudget.reason);
+      }
+    }
+    const retirementSizeMultiplier = clamp(strategyRetirementPolicy.sizeMultiplier || 1, 0, 1);
+    const executionCostSizeMultiplier = clamp(executionCostBudget.sizeMultiplier || 1, 0.45, 1);
+    const spotDowntrendPenalty = downtrendPolicy.spotOnly && downtrendPolicy.strongDowntrend ? (downtrendPolicy.severeDowntrend ? 0.52 : 0.68) : 1;
+    const lowRiskCandidate = ["trend_following", "mean_reversion", "orderflow"].includes(strategySummary.family || "") &&
+      (marketSnapshot.book.spreadBps || 0) <= Math.max(this.config.maxSpreadBps * 0.4, 3) &&
+      (marketSnapshot.market.realizedVolPct || 0) <= this.config.maxRealizedVolPct * 0.75 &&
+      (newsSummary.riskScore || 0) <= 0.42 &&
+      (calendarSummary.riskScore || 0) <= 0.42;
+    const riskSensitiveFamily = ["breakout", "trend_following", "market_structure", "orderflow"].includes(strategySummary.family || "");
+    const hostileTradeContext =
+      setupQuality.hostilePhase ||
+      setupQuality.hostileRegime ||
+      ["range_acceptance", "late_crowded"].includes(marketStateSummary.phase || "");
+    const marketConditionId = marketConditionSummary.conditionId || "";
+    const conditionDrivenBreakoutFailure =
+      ["breakout", "market_structure", "orderflow"].includes(strategySummary.family || "") &&
+      marketConditionId === "failed_breakout" &&
+      safeValue(marketConditionSummary.conditionConfidence, 0) >= 0.54 &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) < 0.52 &&
+      score.probability < threshold + 0.1;
+    const conditionDrivenBreakoutNotReady =
+      ["breakout", "market_structure", "orderflow"].includes(strategySummary.family || "") &&
+      marketConditionId === "range_break_risk" &&
+      safeValue(marketConditionSummary.conditionConfidence, 0) < 0.62 &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) < 0.48 &&
+      acceptanceQuality < 0.56 &&
+      score.probability < threshold + 0.055;
+    const ambiguityThreshold = getAmbiguityThreshold({
+      regime: regimeSummary.regime || "range",
+      family: strategySummary.family || "",
+      marketConditionId
+    });
+    const chopContextFragile =
+      ["breakout", "trend_following", "market_structure", "orderflow"].includes(strategySummary.family || "") &&
+      (
+        marketConditionId === "low_liquidity_caution" ||
+        (marketStateSummary.phase || "") === "range_acceptance"
+      ) &&
+      safeValue(marketConditionSummary.conditionRisk, 0) >= 0.46 &&
+      acceptanceQuality < 0.56 &&
+      safeValue(signalQualitySummary.structureQuality, 0) < 0.62 &&
+      score.probability < threshold + 0.055;
+    const entryOverextended =
+      ["trend_following", "breakout", "market_structure"].includes(strategySummary.family || "") &&
+      (
+        (marketSnapshot.market.closeLocation || 0) >= 0.84 ||
+        (marketSnapshot.market.bollingerPosition || 0) >= 0.88
+      ) &&
+      (marketSnapshot.market.vwapGapPct || 0) >= 0.008 &&
+      (trendStateSummary.exhaustionScore || 0) >= 0.62 &&
+      (safeValue(marketConditionSummary.conditionRisk, 0) >= 0.42 || marketConditionId === "trend_exhaustion") &&
+      score.probability < threshold + 0.12 &&
+      !strongTrendGuardOverride;
+    const meanReversionTooShallow =
+      strategySummary.family === "mean_reversion" &&
+      !["bear_rally_reclaim"].includes(strategySummary.activeStrategy || "") &&
+      ["trend_continuation", "breakout_release"].includes(marketConditionId) &&
+      (trendStateSummary.uptrendScore || 0) >= 0.64 &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) >= 0.56 &&
+      (marketSnapshot.market.priceZScore || 0) > -0.75 &&
+      acceptanceQuality < 0.58 &&
+      score.probability < threshold + 0.12;
+    const bosStrength = safeValue(marketSnapshot.market.bosStrengthScore, 0);
+    const cvdConfirmation = safeValue(marketSnapshot.market.cvdConfirmationScore, 0);
+    const cvdDivergence = safeValue(marketSnapshot.market.cvdDivergenceScore, 0);
+    const fvgRespect = safeValue(marketSnapshot.market.fvgRespectScore, 0);
+    const hasStructureSignals = [
+      marketSnapshot.market.bullishBosActive,
+      marketSnapshot.market.bearishBosActive,
+      marketSnapshot.market.bosStrengthScore,
+      marketSnapshot.market.fvgRespectScore,
+      marketSnapshot.market.cvdConfirmationScore,
+      marketSnapshot.market.cvdDivergenceScore
+    ].some((value) => value != null);
+    const rangeGridFamily = (strategySummary.family || "") === "range_grid";
+    const strongBosContinuation =
+      bosStrength >= 0.52 &&
+      (safeValue(marketSnapshot.market.bullishBosActive, 0) > 0 || safeValue(marketSnapshot.market.bearishBosActive, 0) > 0);
+    const rangeBreakRiskContext =
+      ["range_break_risk", "breakout_release", "trend_continuation"].includes(marketConditionId) ||
+      (marketStateSummary.phase || "") === "breakout_release";
+    const thresholdEdge = score.probability - threshold;
+    const matureEntryConfidence = (score.calibrationConfidence || 0) >= 0.45;
+    const trendContinuationFamily = ["trend_following", "breakout", "market_structure"].includes(strategySummary.family || "");
+    const breakoutConfirmationFamily = ["breakout", "market_structure", "orderflow"].includes(strategySummary.family || "");
+    const meanReversionFamily = (strategySummary.family || "") === "mean_reversion";
+    const chopLikelyContext =
+      ["range_acceptance", "late_crowded"].includes(marketStateSummary.phase || "") ||
+      (regimeSummary.regime || "") === "range";
+    const hasSignalQualityStructure = Number.isFinite(signalQualitySummary?.structureQuality);
+    const antiChopEntryRisk =
+      trendContinuationFamily &&
+      chopLikelyContext &&
+      hasStructureSignals &&
+      hasSignalQualityStructure &&
+      safeValue(signalQualitySummary.structureQuality, 0) < 0.66 &&
+      acceptanceQuality < 0.56 &&
+      thresholdEdge < 0.09 &&
+      matureEntryConfidence &&
+      !strongTrendGuardOverride;
+    const breakoutConfirmationWeak =
+      breakoutConfirmationFamily &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) < 0.44 &&
+      (marketSnapshot.market.closeLocationQuality || 0) < 0.56 &&
+      safeValue(marketSnapshot.book.depthConfidence, 0.5) < 0.68 &&
+      thresholdEdge < 0.11 &&
+      matureEntryConfidence &&
+      !strongTrendGuardOverride;
+    const continuationTimingExtended =
+      trendContinuationFamily &&
+      (marketSnapshot.market.closeLocation || 0) >= 0.86 &&
+      (trendStateSummary.exhaustionScore || 0) >= 0.58 &&
+      (marketSnapshot.market.vwapGapPct || 0) >= 0.007 &&
+      thresholdEdge < 0.12 &&
+      matureEntryConfidence &&
+      !strongTrendGuardOverride;
+    const meanReversionMomentumConflict =
+      meanReversionFamily &&
+      (trendStateSummary.uptrendScore || 0) >= 0.68 &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) >= 0.54 &&
+      relativeStrengthComposite >= 0.004 &&
+      thresholdEdge < 0.13 &&
+      matureEntryConfidence;
+    const confluenceDiversityWeak =
+      trendContinuationFamily &&
+      safeValue(signalQualitySummary.overallScore, 0) < 0.68 &&
+      acceptanceQuality < 0.58 &&
+      replenishmentQuality < 0.56 &&
+      Math.abs(relativeStrengthComposite) < 0.0028 &&
+      thresholdEdge < 0.1 &&
+      matureEntryConfidence;
+    const breakoutFakeoutRisk =
+      breakoutConfirmationFamily &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) < 0.5 &&
+      (marketSnapshot.market.anchoredVwapRejectionScore || 0) > 0.58 &&
+      relativeStrengthComposite < 0.002 &&
+      acceptanceQuality < 0.56 &&
+      thresholdEdge < 0.12 &&
+      matureEntryConfidence &&
+      !strongTrendGuardOverride;
+    const lateFollowerContextRisk =
+      breakoutConfirmationFamily &&
+      lateFollowerRisk >= 0.72 &&
+      leadershipTailwindScore < 0.54 &&
+      thresholdEdge < 0.12 &&
+      matureEntryConfidence &&
+      !strongTrendGuardOverride;
+    const copycatBreakoutContextRisk =
+      breakoutConfirmationFamily &&
+      copycatBreakoutRisk >= 0.72 &&
+      thresholdEdge < 0.12 &&
+      matureEntryConfidence &&
+      !strongTrendGuardOverride;
+    const ambiguityScore = clamp(
+      (safeValue(score.disagreement, 0) * 0.45) +
+      (Math.max(0, 0.7 - safeValue(committeeSummary.agreement, 0)) * 0.35) +
+      (Math.max(0, 0.62 - safeValue(signalQualitySummary.overallScore, 0)) * 0.28) +
+      (Math.max(0, 0.58 - safeValue(preliminaryConfidenceBreakdown.executionConfidence, 0)) * 0.22),
+      0,
+      1
+    );
+
+    const positionGuard = evaluatePositionGuards({
+      openPositionsInMode,
+      maxOpenPositions: this.config.maxOpenPositions,
+      symbol
+    });
+    if (positionGuard.reasons.length) {
+      reasons.push(...positionGuard.reasons);
+    }
+    if ((sessionSummary.blockerReasons || []).length) {
+      reasons.push(...sessionSummary.blockerReasons);
+    }
+    if (capitalLadderSummary.allowEntries === false) {
+      reasons.push("capital_ladder_shadow_only");
+      console.log(`[CAPITAL_LADDER_DEBUG] Stage: ${capitalLadderSummary.stage}, SizeMultiplier: ${capitalLadderSummary.sizeMultiplier}`);
+    }
+    if (capitalGovernor.blocked) {
+      reasons.push(capitalGovernor.recoveryMode ? "capital_governor_recovery" : "capital_governor_blocked");
+      console.log(`[CAPITAL_GOVERNOR_DEBUG] Status: ${capitalGovernor.status}, BlockerReasons: ${(capitalGovernor.blockerReasons || []).join(" | ")}`);
+    }
+    if ((timeframeSummary.blockerReasons || []).length) {
+      reasons.push(...timeframeSummary.blockerReasons);
+    }
+    if ((driftSummary.blockerReasons || []).length) {
+      reasons.push(...driftSummary.blockerReasons);
+    }
+    const softMetaCalibrationProbeBlock =
+      this.config.botMode === "paper" &&
+      selfHealState.mode === "paper_calibration_probe" &&
+      canRelaxPaperSelfHeal(selfHealState) &&
+      metaSummary.action === "block" &&
+      safeValue(metaSummary.score, 1) >= this.config.metaBlockScore - 0.04 &&
+      (metaSummary.reasons || []).length > 0 &&
+      (metaSummary.reasons || []).every((reason) =>
+        ["meta_gate_reject", "meta_neural_caution", "trade_quality_caution", "meta_followthrough_caution"].includes(reason)
+      );
+    if (metaSummary.action === "block") {
+      if (softMetaCalibrationProbeBlock) {
+        reasons.push("meta_gate_caution");
+        reasons.push(...getMetaCautionReasons(metaSummary));
+      } else {
+        reasons.push(...(metaSummary.reasons || []));
+      }
+    }
+    if (pairHealthSummary.quarantined) {
+      reasons.push("pair_health_quarantine");
+    }
+    if ((venueConfirmationSummary.status || "") === "blocked") {
+      reasons.push(...(venueConfirmationSummary.blockerReasons || ["reference_venue_divergence"]));
+    }
+    const hasOpenPositionForSymbol = positionGuard.hasOpenPositionForSymbol;
+    if (strategyRetirementPolicy.blocked) {
+      reasons.push("strategy_retired");
+    } else if (
+      !hasOpenPositionForSymbol &&
+      strategyRetirementPolicy.active &&
+      (strategyRetirementPolicy.status || "") === "cooldown" &&
+      score.probability < threshold + (this.config.botMode === "paper" ? 0.02 : 0.04) &&
+      !(
+        this.config.botMode === "paper" &&
+        canRelaxPaperSelfHeal(selfHealState) &&
+        safeValue(strategyRetirementPolicy.confidence, 0) < 0.72
+      )
+    ) {
+      reasons.push("strategy_cooldown");
+    }
+    if (
+      this.config.botMode === "paper" &&
+      baselineCoreSummary.active &&
+      baselineCoreSummary.enforce
+    ) {
+      const preferredStrategies = new Set(
+        (baselineCoreSummary.preferredStrategies || [])
+          .map((item) => item?.id || item)
+          .filter(Boolean)
+      );
+      const suspendedStrategies = new Set(
+        (baselineCoreSummary.suspendedStrategies || [])
+          .map((item) => item?.id || item)
+          .filter(Boolean)
+      );
+      if (suspendedStrategies.has(strategySummary.activeStrategy || "")) {
+        reasons.push("baseline_core_strategy_suspended");
+      } else if (preferredStrategies.size && !preferredStrategies.has(strategySummary.activeStrategy || "")) {
+        reasons.push("baseline_core_outside_preferred_set");
+      }
+    }
+    if (
+      downtrendPolicy.spotOnly &&
+      downtrendPolicy.strongDowntrend &&
+      !["bear_rally_reclaim", "vwap_reversion", "zscore_reversion", "liquidity_sweep", "funding_rate_extreme"].includes(strategySummary.activeStrategy || "") &&
+      score.probability < threshold + 0.08
+    ) {
+      reasons.push("spot_downtrend_guard");
+    }
+    if (["paused", "paper_fallback"].includes(selfHealState.mode)) {
+      reasons.push("self_heal_pause_entries");
+    }
+    if (hasOpenPositionForSymbol) {
+      reasons.push("position_already_open");
+    }
+    if (adjudicatedProbability < adjudicatedConfidenceThreshold) {
+      reasons.push("model_confidence_too_low");
+    }
+    if (score.shouldAbstain) {
+      reasons.push("model_uncertainty_abstain");
+    }
+    const abstainReasons = [...new Set((score.abstainReasons || []).filter(Boolean))];
+    if ((score.transformer?.confidence || 0) >= this.config.transformerMinConfidence && (score.transformer?.probability || 0) < threshold - 0.03) {
+      reasons.push("transformer_challenger_reject");
+    }
+    if (marketSnapshot.book.spreadBps > this.config.maxSpreadBps) {
+      reasons.push("spread_too_wide");
+    }
+    if (marketSnapshot.market.realizedVolPct > this.config.maxRealizedVolPct) {
+      reasons.push("volatility_too_high");
+    }
+    const sellPressureConfirmed = this.config.botMode === "paper"
+      ? hasConfirmedPaperSellPressure({ marketSnapshot, strategySummary, config: this.config })
+      : (marketSnapshot.book.bookPressure || 0) < this.config.minBookPressureForEntry;
+    if ((marketSnapshot.book.bookPressure || 0) < this.config.minBookPressureForEntry && sellPressureConfirmed) {
+      reasons.push("orderbook_sell_pressure");
+    }
+    if ((marketSnapshot.market.bearishPatternScore || 0) > 0.72 && (marketSnapshot.market.momentum5 || 0) <= 0) {
+      reasons.push("bearish_pattern_stack");
+    }
+    if (newsSummary.riskScore > 0.75) {
+      reasons.push("negative_news_risk");
+    }
+    if ((announcementSummary.riskScore || 0) > 0.7) {
+      reasons.push("exchange_notice_risk");
+    }
+    if ((calendarSummary.riskScore || 0) > 0.72 && (calendarSummary.proximityHours || 999) <= 24) {
+      reasons.push("high_impact_event_imminent");
+    }
+    if ((sessionSummary.lowLiquidity || false) && (marketSnapshot.book.spreadBps || 0) > this.config.sessionLowLiquiditySpreadBps) {
+      reasons.push("session_liquidity_guard");
+    }
+    if (sessionSummary.isWeekend && this.config.blockWeekendHighRiskStrategies && usesWeekendHighRiskStrategyGate(strategySummary)) {
+      reasons.push("weekend_high_risk_strategy_block");
+    }
+    if ((marketStructureSummary.riskScore || 0) > 0.82) {
+      reasons.push("market_structure_overheated");
+    }
+    if ((marketStructureSummary.crowdingBias || 0) > 0.7 && (marketStructureSummary.fundingRate || 0) > 0) {
+      reasons.push("crowded_longing");
+    }
+    if ((marketStructureSummary.longSqueezeScore || 0) > 0.72) {
+      reasons.push("long_squeeze_risk");
+    }
+    if ((marketStructureSummary.liquidationImbalance || 0) < -0.55 && (marketStructureSummary.liquidationIntensity || 0) > 0.35) {
+      reasons.push("liquidation_sell_pressure");
+    }
+    if ((marketStructureSummary.liquidationTrapRisk || 0) > 0.56) {
+      reasons.push("liquidation_trap_risk");
+    }
+    if ((marketSentimentSummary.riskScore || 0) > 0.84 && (marketSentimentSummary.contrarianScore || 0) < -0.2) {
+      reasons.push("macro_sentiment_overheated");
+    }
+    if ((onChainLiteSummary.riskOffScore || 0) > 0.82 || (onChainLiteSummary.stressScore || 0) > 0.78) {
+      reasons.push("stablecoin_flow_risk_off");
+    }
+    if ((onChainLiteSummary.marketBreadthScore || 0) < 0.24 && (onChainLiteSummary.stressScore || 0) > 0.5) {
+      reasons.push("onchain_breadth_weak");
+    }
+    if ((onChainLiteSummary.trendingScore || 0) > 0.82 && (onChainLiteSummary.riskOffScore || 0) > 0.62) {
+      reasons.push("onchain_hype_extreme");
+    }
+    if ((volatilitySummary.riskScore || 0) > 0.86 && (marketSnapshot.market.realizedVolPct || 0) > this.config.maxRealizedVolPct * 0.55) {
+      reasons.push("options_volatility_stress");
+    }
+    const committeeVetoIds = getCommitteeVetoIds(committeeSummary);
+    const softPaperCommitteeDisagreement =
+      this.config.botMode === "paper" &&
+      isSoftPaperCommitteeDisagreementOnly({ committeeSummary, score });
+    const redundantCommitteeVeto =
+      this.config.botMode === "paper" &&
+      isRedundantCommitteeVeto({ committeeVetoIds, portfolioSummary, strategySummary });
+    if (committeeVetoIds.length && !softPaperCommitteeDisagreement && !redundantCommitteeVeto) {
+      reasons.push("committee_veto");
+    }
+    const committeeGuardBuffer = this.config.botMode === "paper" ? 0.08 : 0.02;
+    const committeeNetGuard = this.config.botMode === "paper" ? -0.14 : -0.05;
+    const committeeProbabilityDelta = safeValue(committeeSummary.probability, 0.5) - safeValue(score.probability, 0.5);
+    const softPaperCommitteeConfidence =
+      this.config.botMode === "paper" &&
+      isSoftPaperCommitteeConfidenceOnly({ committeeSummary, score, threshold });
+    const redundantPaperCommitteeConfidence =
+      this.config.botMode === "paper" &&
+      isRedundantPaperCommitteeConfidence({ committeeSummary, score, threshold, reasons });
+    if (
+      (committeeSummary.confidence || 0) >= this.config.committeeMinConfidence &&
+      (committeeSummary.probability || 0) < threshold - committeeGuardBuffer &&
+      (committeeSummary.netScore || 0) <= committeeNetGuard &&
+      committeeProbabilityDelta <= -0.01 &&
+      !softPaperCommitteeConfidence &&
+      !redundantPaperCommitteeConfidence
+    ) {
+      reasons.push("committee_confidence_too_low");
+    }
+    if ((committeeSummary.agreement || 0) < this.config.committeeMinAgreement && score.probability < threshold + 0.04) {
+      reasons.push("committee_low_agreement");
+    }
+    if (setupQuality.score < this.config.tradeQualityMinScore && score.probability < threshold + 0.06) {
+      reasons.push("setup_quality_too_low");
+    }
+    if (
+      riskSensitiveFamily &&
+      hostileTradeContext &&
+      setupQuality.score < Math.min(0.92, this.config.tradeQualityCautionScore + 0.04) &&
+      score.probability < threshold + 0.055 &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push("setup_quality_not_exceptional");
+    }
+    const strategyFitGuardFloor = getStrategyFitGuardFloor(strategySummary, this.config.botMode);
+    if ((strategySummary.confidence || 0) >= strategyConfidenceFloor && (strategySummary.fitScore || 0) < strategyFitGuardFloor && score.probability < threshold + 0.05) {
+      reasons.push("strategy_fit_too_low");
+    }
+    if ((strategySummary.confidence || 0) >= strategyConfidenceFloor && (strategySummary.blockers || []).length && score.probability < threshold + 0.07) {
+      reasons.push("strategy_context_mismatch");
+    }
+    if (globalLossStreak >= this.config.maxLossStreak && !paperLearningRecoveryActive) {
+      reasons.push("portfolio_loss_streak_guard");
+    }
+    if (symbolLossStreak >= this.config.maxSymbolLossStreak && !paperLearningRecoveryActive) {
+      reasons.push("symbol_loss_streak_guard");
+    }
+    if (dailyLossFraction >= this.config.maxDailyDrawdown) {
+      reasons.push("daily_drawdown_limit_hit");
+    }
+    if (currentExposure / totalEquityProxy >= this.config.maxTotalExposureFraction) {
+      reasons.push("max_total_exposure_reached");
+    }
+    const portfolioBlockingReasons = [
+      ...(portfolioSummary.blockingReasons || []),
+      ...((portfolioSummary.blockingReasons || []).length ? [] : (portfolioSummary.hardReasons || []))
+    ];
+    if (portfolioBlockingReasons.length) {
+      reasons.push(...portfolioBlockingReasons);
+    }
+    if (executionCostBudget.blocked) {
+      reasons.push("execution_cost_budget_exceeded");
+    }
+    if (
+      ["trend_following", "breakout"].includes(strategySummary.family || "") &&
+      (marketStateSummary.phase || "") === "late_crowded" &&
+      (
+        (preliminaryConfidenceBreakdown.executionConfidence || 0) < 0.46 ||
+        (venueConfirmationSummary.status || "") === "blocked" ||
+        executionCostBudget.blocked
+      )
+    ) {
+      reasons.push("late_trend_execution_fragile");
+    }
+    if (
+      strategySummary.family === "mean_reversion" &&
+      (marketStateSummary.phase || "") === "healthy_downtrend" &&
+      !["bear_rally_reclaim"].includes(strategySummary.activeStrategy || "") &&
+      (marketStateSummary.trendFailure || 0) < 0.42 &&
+      (signalQualitySummary.structureQuality || 0) < 0.58
+    ) {
+      reasons.push("mean_reversion_vs_healthy_downtrend");
+    }
+    if (
+      strategySummary.family === "breakout" &&
+      (marketStateSummary.phase || "") === "range_acceptance" &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) < 0.38 &&
+      (
+        executionCostBudget.blocked ||
+        (marketSnapshot.book.spreadBps || 0) > Math.max(this.config.maxSpreadBps * 0.7, 8)
+      ) &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push("range_breakout_follow_through_weak");
+    }
+    if (conditionDrivenBreakoutFailure && !strongTrendGuardOverride) {
+      reasons.push("failed_breakout_context");
+    }
+    if (conditionDrivenBreakoutNotReady && !strongTrendGuardOverride) {
+      reasons.push("breakout_release_not_ready");
+    }
+    if (chopContextFragile && !strongTrendGuardOverride) {
+      reasons.push("chop_regime_fragile");
+    }
+    if (
+      ["trend_following", "breakout", "market_structure"].includes(strategySummary.family || "") &&
+      (marketStateSummary.phase || "") === "late_crowded" &&
+      safeValue(marketConditionSummary.conditionConfidence, 0) >= 0.56 &&
+      score.probability < threshold + 0.12 &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push("late_trend_crowding");
+    }
+    if (entryOverextended) {
+      reasons.push("entry_overextended");
+    }
+    if (meanReversionTooShallow) {
+      reasons.push("mean_reversion_too_shallow");
+    }
+    if (
+      ["breakout", "market_structure", "orderflow"].includes(strategySummary.family || "") &&
+      hasStructureSignals &&
+      (bosStrength < 0.34 || cvdConfirmation < 0.34 || fvgRespect < 0.26) &&
+      score.probability < threshold + 0.08 &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push("structure_confirmation_missing");
+    }
+    if (
+      ["breakout", "market_structure", "orderflow"].includes(strategySummary.family || "") &&
+      hasStructureSignals &&
+      cvdDivergence >= 0.52 &&
+      score.probability < threshold + 0.1 &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push("cvd_divergence");
+    }
+    if (
+      strategySummary.family === "mean_reversion" &&
+      hasStructureSignals &&
+      strongBosContinuation &&
+      Math.max(0, safeValue(marketSnapshot.market.cvdTrendAlignment, 0)) >= 0.36 &&
+      score.probability < threshold + 0.12
+    ) {
+      reasons.push("mean_reversion_vs_fresh_bos");
+    }
+    if (rangeGridFamily) {
+      if (this.config.botMode === "live" && !this.config.enableLiveRangeGrid) {
+        reasons.push("live_range_grid_disabled");
+      }
+      if (rangeBreakRiskContext) {
+        reasons.push("range_break_risk");
+      }
+      if (strongBosContinuation) {
+        reasons.push("bos_breakout_pressure");
+      }
+      if ((marketStructureSummary.liquidationTrapRisk || 0) > 0.46) {
+        reasons.push("liquidation_trap_risk");
+      }
+      if ((marketSnapshot.market.rangeWidthPct || 0) < 0.004) {
+        reasons.push("range_too_narrow");
+      }
+      if ((marketSnapshot.book.depthConfidence || 0) < 0.42 || (marketSnapshot.book.spreadBps || 0) > Math.max(this.config.maxSpreadBps * 0.75, 9)) {
+        reasons.push("grid_execution_quality_too_low");
+      }
+    }
+    if (antiChopEntryRisk) {
+      reasons.push("anti_chop_context_filter");
+    }
+    if (breakoutConfirmationWeak) {
+      reasons.push("breakout_confirmation_weak");
+    }
+    if (continuationTimingExtended) {
+      reasons.push("continuation_timing_extended");
+    }
+    if (meanReversionMomentumConflict) {
+      reasons.push("mean_reversion_momentum_conflict");
+    }
+    if (confluenceDiversityWeak) {
+      reasons.push("confluence_diversity_weak");
+    }
+    if (breakoutFakeoutRisk) {
+      reasons.push("breakout_fakeout_risk");
+    }
+    if (lateFollowerContextRisk) {
+      reasons.push("late_follower_risk");
+    }
+    if (copycatBreakoutContextRisk) {
+      reasons.push("copycat_breakout_risk");
+    }
+    if (shouldBlockAmbiguousSetup({
+      riskSensitiveFamily,
+      ambiguityScore,
+      ambiguityThreshold,
+      scoreProbability: score.probability,
+      threshold,
+      strongTrendGuardOverride
+    })) {
+      reasons.push("ambiguous_setup_context");
+    }
+    const trendAcceptanceFamily = strategySummary.family || "";
+    const activeStrategyId = strategySummary.activeStrategy || "";
+    const usesBreakoutAcceptanceGate =
+      trendAcceptanceFamily === "breakout" ||
+      activeStrategyId === "market_structure_break";
+    const usesTrendAcceptanceGate =
+      ["trend_following", "breakout"].includes(trendAcceptanceFamily) ||
+      activeStrategyId === "market_structure_break";
+    const anchoredAcceptanceFailure =
+      (marketSnapshot.market.anchoredVwapRejectionScore || 0) > 0.68 &&
+      acceptanceQuality < 0.44 &&
+      replenishmentQuality < 0.54;
+    const breakoutAcceptanceFailure =
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) < 0.3 &&
+      acceptanceQuality < 0.44 &&
+      relativeStrengthComposite < 0.002;
+    const severeBreakoutAcceptanceFailure =
+      usesBreakoutAcceptanceGate &&
+      (marketSnapshot.market.breakoutFollowThroughScore || 0) < 0.12 &&
+      acceptanceQuality < 0.43 &&
+      relativeStrengthComposite < 0.0025;
+    const trendAcceptanceFailure =
+      anchoredAcceptanceFailure ||
+      (
+        usesBreakoutAcceptanceGate &&
+        breakoutAcceptanceFailure
+      );
+    const severeTrendFragility =
+      ["trend_following", "breakout", "market_structure"].includes(strategySummary.family || "") &&
+      relativeStrengthComposite < -0.006 &&
+      acceptanceQuality < 0.34 &&
+      replenishmentQuality < 0.46 &&
+      downsideVolDominance > 0.24;
+    if (
+      usesTrendAcceptanceGate &&
+      trendAcceptanceFailure &&
+      (score.probability < threshold + 0.045 || severeTrendFragility || severeBreakoutAcceptanceFailure) &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push("trend_acceptance_failed");
+    }
+    if (
+      downsideVolDominance > 0.24 &&
+      acceptanceQuality < 0.44 &&
+      replenishmentQuality < 0.46 &&
+      relativeStrengthComposite < 0.002 &&
+      (score.probability < threshold + 0.04 || severeTrendFragility) &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push("downside_vol_dominance");
+    }
+    if (
+      ["trend_following", "breakout", "market_structure"].includes(strategySummary.family || "") &&
+      relativeStrengthComposite < -0.0045 &&
+      (score.probability < threshold + 0.04 || severeTrendFragility) &&
+      !strongTrendGuardOverride &&
+      !reasons.includes("relative_weakness_vs_market")
+    ) {
+      reasons.push("relative_weakness_vs_market");
+    }
+    if (
+      strategySummary.family === "orderflow" &&
+      replenishmentQuality < 0.46 &&
+      acceptanceQuality < 0.42 &&
+      (preliminaryConfidenceBreakdown.executionConfidence || 0) < 0.54 &&
+      score.probability < threshold + 0.045
+    ) {
+      reasons.push("orderflow_context_fragile");
+    }
+    if (
+      ((trendStateSummary.direction || "") === "uptrend" || (trendStateSummary.uptrendScore || 0) >= 0.58) &&
+      (trendStateSummary.exhaustionScore || 0) >= 0.72 &&
+      (signalQualitySummary.executionViability || 0) <= 0.44 &&
+      ((venueConfirmationSummary.status || "") === "blocked" || executionCostBudget.blocked)
+    ) {
+      reasons.push("trend_exhausted_execution_fragile");
+    }
+    // Paper + entries still allowed: recovery is already expressed via sizeMultiplier and
+    // governor notes. A hard "capital_governor_recovery" reason blocks paper_exploration
+    // (which excludes this reason) and over-vetoes watch-only recovery (streak/drawdown watch).
+    const paperRecoveryWatchOnly =
+      this.config.botMode === "paper" &&
+      capitalGovernor.recoveryMode &&
+      capitalGovernor.allowEntries &&
+      !capitalGovernor.blocked;
+    if (
+      capitalGovernor.recoveryMode &&
+      score.probability < threshold + 0.025 &&
+      !paperRecoveryWatchOnly
+    ) {
+      reasons.push("capital_governor_recovery");
+    }
+    if ((driftSummary.severity || 0) >= 0.45 && (score.calibrationConfidence || 0) < this.config.minCalibrationConfidence + 0.05) {
+      reasons.push("drift_confidence_guard");
+    }
+    if (selfHealState.lowRiskOnly && !lowRiskCandidate && this.config.botMode !== "paper") {
+      reasons.push("self_heal_low_risk_only");
+    }
+    if (qualityQuorumSummary.observeOnly) {
+      reasons.push("quality_quorum_observe_only");
+    } else if ((qualityQuorumSummary.status || "") === "degraded" && score.probability < threshold + 0.03) {
+      reasons.push("quality_quorum_degraded");
+    }
+    const portfolioAdvisoryReasons = new Set(
+      Array.isArray(portfolioSummary.advisoryReasons) ? portfolioSummary.advisoryReasons.filter(Boolean) : []
+    );
+    for (const portfolioReason of (Array.isArray(portfolioSummary.reasons) ? portfolioSummary.reasons : [])) {
+      if (portfolioAdvisoryReasons.has(portfolioReason)) {
+        continue;
+      }
+      if (!reasons.includes(portfolioReason)) {
+        reasons.push(portfolioReason);
+      }
+    }
+    if ((divergenceSummary?.leadBlocker?.status || "") === "blocked" && this.config.botMode === "live") {
+      reasons.push("live_paper_divergence_guard");
+    }
+    if ((metaSummary.dailyTradeCount || 0) >= this.config.maxEntriesPerDay) {
+      reasons.push("daily_entry_budget_reached");
+    }
+    if (metaSummary.action === "caution" && hasDirectMetaCautionGate) {
+      reasons.push(...metaCautionReasons);
+    }
+
+    const recentTrade = this.getRecentTradeForSymbol(journal, symbol);
+    const dailyEntriesForSymbol = this.getDailyEntryCountForSymbol(journal, runtime, symbol, nowIso);
+    const symbolLossCooldownMinutes = Math.max(0, safeValue(this.config.symbolLossCooldownMinutes, 240));
+    const entryCooldownMinutes = Math.max(0, safeValue(this.config.entryCooldownMinutes, 20));
+    if (dailyEntriesForSymbol >= this.config.maxEntriesPerSymbolPerDay && this.config.botMode !== "paper") {
+      reasons.push("symbol_entry_budget_reached");
+    }
+    if (
+      this.config.botMode !== "paper" &&
+      recentTrade?.exitAt &&
+      (recentTrade.pnlQuote || 0) < 0 &&
+      minutesBetween(recentTrade.exitAt, nowIso) < symbolLossCooldownMinutes
+    ) {
+      reasons.push("symbol_loss_cooldown_active");
+    }
+    if (!hasOpenPositionForSymbol && recentTrade?.exitAt && minutesBetween(recentTrade.exitAt, nowIso) < entryCooldownMinutes) {
+      reasons.push("entry_cooldown_active");
+    }
+    const churnWindowMinutes = Math.max(30, safeValue(this.config.entryChurnWindowMinutes, 180));
+    const recentSymbolClosedTrades = (journal?.trades || [])
+      .filter((trade) => trade?.symbol === symbol && trade?.exitAt)
+      .filter((trade) => minutesBetween(trade.exitAt, nowIso) <= churnWindowMinutes);
+    const churnLikeTrades = recentSymbolClosedTrades.filter((trade) =>
+      (trade.pnlQuote || 0) <= 0 || Math.abs(trade.netPnlPct || 0) <= 0.002
+    );
+    if (!hasOpenPositionForSymbol && recentSymbolClosedTrades.length >= 2 && churnLikeTrades.length >= 2) {
+      reasons.push("anti_reentry_churn_guard");
+    }
+    const recentPortfolioTradeAt = getMostRecentTradeTimestamp(journal);
+    const minutesSincePortfolioTrade = recentPortfolioTradeAt ? minutesBetween(recentPortfolioTradeAt, nowIso) : Number.POSITIVE_INFINITY;
+    const effectivePaperExplorationCooldownMinutes = this.config.botMode === "paper"
+      ? Math.min(this.config.paperExplorationCooldownMinutes || 0, 3)
+      : (this.config.paperExplorationCooldownMinutes || 0);
+    const effectivePaperRecoveryCooldownMinutes = this.config.botMode === "paper"
+      ? Math.min(this.config.paperRecoveryProbeCooldownMinutes || 0, 3)
+      : (this.config.paperRecoveryProbeCooldownMinutes || 0);
+
+    const stopLossPct = clamp(Math.max(this.config.stopLossPct, marketSnapshot.market.atrPct * 1.2), 0.008, 0.04);
+    const adjustedStopLossPct = clamp(stopLossPct * parameterGovernorAdjustment.stopLossMultiplier * clamp(safeValue(strategyMetaSummary.stopLossMultiplier || 1), 0.88, 1.12), 0.006, 0.05);
+    const regimeTakeProfitMultiplier = {
+      trend: 1.9,
+      breakout: 2.1,
+      range: 1.4,
+      high_vol: 1.5,
+      event_risk: 1.3
+    }[regimeSummary.regime] || 1.6;
+    const takeProfitPct = clamp(Math.max(this.config.takeProfitPct, adjustedStopLossPct * regimeTakeProfitMultiplier) * parameterGovernorAdjustment.takeProfitMultiplier, 0.008, 0.5);
+    const expectedNetEdge = buildExpectedNetEdgeSummary({
+      score,
+      threshold,
+      strategySummary,
+      confidenceBreakdown: preliminaryConfidenceBreakdown,
+      setupQuality,
+      signalQualitySummary,
+      marketConditionSummary,
+      pairHealthSummary,
+      marketSnapshot,
+      volatilitySummary,
+      newsSummary,
+      executionCostBudget,
+      stopLossPct: adjustedStopLossPct,
+      takeProfitPct
+    });
+    const entryTimingRefinement = buildEntryTimingRefinementSummary({
+      score,
+      threshold,
+      strategySummary,
+      setupQuality,
+      signalQualitySummary,
+      marketSnapshot,
+      trendStateSummary,
+      marketStateSummary,
+      marketConditionSummary,
+      timeframeSummary,
+      pairHealthSummary,
+      acceptanceQuality,
+      replenishmentQuality,
+      expectedNetEdge
+    });
+    const quoteFree = balance.quoteFree || 0;
+    const entryReferencePrice = safeValue(
+      marketSnapshot.book.ask,
+      safeValue(
+        marketSnapshot.book.mid,
+        safeValue(
+          marketSnapshot.market.close,
+          safeValue(marketSnapshot.market.lastPrice, Number.NaN)
+        )
+      )
+    );
+    const maxByPosition = quoteFree * this.config.maxPositionFraction;
+    const maxByRisk = adjustedStopLossPct > 0 ? (quoteFree * this.config.riskPerTrade) / adjustedStopLossPct : maxByPosition;
+    const remainingExposureBudget = Math.max(0, totalEquityProxy * this.config.maxTotalExposureFraction - currentExposure);
+    const confidenceFactor = clamp(0.65 + Math.max(0, score.probability - threshold) * 3.5, 0.6, 1.25);
+    const calibrationFactor = clamp(0.75 + (score.calibrationConfidence || 0) * 0.4, 0.75, 1.15);
+    const transformerFactor = clamp(0.88 + (score.transformer?.probability || 0.5) * 0.3 + (score.transformer?.confidence || 0) * 0.1, 0.78, 1.16);
+    const newsFactor = clamp(1 + newsSummary.sentimentScore * 0.12 - newsSummary.riskScore * 0.18 + (newsSummary.eventBullishScore || 0) * 0.08 - (newsSummary.eventBearishScore || 0) * 0.12, 0.65, 1.1);
+    const socialFactor = clamp(1 + (newsSummary.socialSentiment || 0) * 0.05 - (newsSummary.socialRisk || 0) * 0.08, 0.82, 1.05);
+    const announcementFactor = clamp(1 + (announcementSummary.sentimentScore || 0) * 0.08 - (announcementSummary.riskScore || 0) * 0.2, 0.7, 1.08);
+    const structureFactor = clamp(1 + (marketStructureSummary.signalScore || 0) * 0.1 - (marketStructureSummary.riskScore || 0) * 0.18 - Math.abs(marketStructureSummary.crowdingBias || 0) * 0.05, 0.62, 1.08);
+    const calendarFactor = clamp(1 + (calendarSummary.bullishScore || 0) * 0.08 - (calendarSummary.riskScore || 0) * 0.2 - (calendarSummary.urgencyScore || 0) * 0.06, 0.58, 1.05);
+    const macroFactor = clamp(1 + (marketSentimentSummary.contrarianScore || 0) * 0.08 - (marketSentimentSummary.riskScore || 0) * 0.12, 0.74, 1.08);
+    const volatilityFactor = clamp(1 - (volatilitySummary.riskScore || 0) * 0.16 - Math.max(0, volatilitySummary.ivPremium || 0) * 0.005, 0.68, 1.04);
+    const orderbookFactor = clamp(1 + (marketSnapshot.book.bookPressure || 0) * 0.14 + (marketSnapshot.book.microPriceEdgeBps || 0) / 250, 0.72, 1.12);
+    const replenishmentFactor = clamp(0.78 + replenishmentQuality * 0.32, 0.62, 1.08);
+    const relativeStrengthFactor = clamp(0.88 + relativeStrengthComposite * 8, 0.72, 1.12);
+    const acceptanceFactor = clamp(0.78 + acceptanceQuality * 0.34, 0.62, 1.12);
+    const downsideVolFactor = clamp(1 - Math.max(0, downsideVolDominance) * 0.26, 0.68, 1.04);
+    const patternFactor = clamp(1 + (marketSnapshot.market.bullishPatternScore || 0) * 0.08 - (marketSnapshot.market.bearishPatternScore || 0) * 0.12, 0.72, 1.08);
+    const committeeFactor = clamp(0.8 + (committeeSummary.sizeMultiplier || 1) * 0.24 + (committeeSummary.netScore || 0) * 0.12 + (committeeSummary.agreement || 0) * 0.08, 0.62, 1.16);
+    const strategyFactor = clamp(0.76 + (strategySummary.fitScore || 0) * 0.28 + (strategySummary.agreementGap || 0) * 0.12 + (strategySummary.optimizerBoost || 0) * 0.5 - (strategySummary.blockers || []).length * 0.06, 0.56, 1.16);
+    const rlFactor = clamp(rlAdvice.sizeMultiplier || 1, 0.78, 1.14);
+    const memoryFactor = clamp(0.9 + (symbolStats.avgPnlPct || 0) * 4, 0.75, 1.15);
+    const portfolioFactor = clamp((portfolioSummary.sizeMultiplier || 1) * (portfolioSummary.dailyBudgetFactor || 1) * (0.88 + (portfolioSummary.allocatorScore || 0) * 0.24), 0.22, 1.08);
+    const pairHealthFactor = clamp(0.78 + (pairHealthSummary.score || 0.5) * 0.34 - (pairHealthSummary.quarantined ? 0.24 : 0), 0.45, 1.08);
+    const timeframeFactor = clamp(0.76 + (timeframeSummary.alignmentScore || 0.5) * 0.36 - ((timeframeSummary.blockerReasons || []).length ? 0.16 : 0), 0.46, 1.08);
+    const onChainFactor = clamp(1 + (onChainLiteSummary.liquidityScore || 0) * 0.08 + (onChainLiteSummary.marketBreadthScore || 0) * 0.06 + (onChainLiteSummary.majorsMomentumScore || 0) * 0.05 - (onChainLiteSummary.riskOffScore || 0) * 0.14 - (onChainLiteSummary.stressScore || 0) * 0.12 - (onChainLiteSummary.trendingScore || 0) * ((onChainLiteSummary.riskOffScore || 0) > 0.6 ? 0.06 : 0.02), 0.56, 1.1);
+    const qualityQuorumFactor = clamp(
+      0.72 +
+        (qualityQuorumSummary.quorumScore || qualityQuorumSummary.averageScore || 0) * 0.34 -
+        (qualityQuorumSummary.observeOnly ? 0.26 : (qualityQuorumSummary.status || "") === "degraded" ? 0.12 : 0),
+      0.38,
+      1.04
+    );
+    const marketConfidenceFactor = clamp(0.84 + (preliminaryConfidenceBreakdown.marketConfidence || 0.5) * 0.18, 0.72, 1.02);
+    const dataConfidenceFactor = clamp(0.72 + safeValue(trendStateSummary.dataConfidenceScore, 0.6) * 0.36, 0.48, 1.05);
+    const executionConfidenceFactor = clamp(0.82 + (preliminaryConfidenceBreakdown.executionConfidence || 0.45) * 0.2, 0.68, 1.02);
+    const modelConfidenceFactor = clamp(0.82 + (preliminaryConfidenceBreakdown.modelConfidence || 0.45) * 0.2, 0.7, 1.03);
+    const signalQualityFactor = clamp(0.76 + (signalQualitySummary.overallScore || 0.5) * 0.34, 0.5, 1.08);
+    const setupQualityFactor = clamp(0.72 + safeValue(setupQuality.score, 0) * 0.4, 0.58, 1.08);
+    const riskClarityScore = clamp(
+      (preliminaryConfidenceBreakdown.overallConfidence || 0.5) * 0.42 +
+      (safeValue(setupQuality.score, 0.5)) * 0.24 +
+      (score.calibrationConfidence || 0.5) * 0.2 +
+      (committeeSummary.agreement || 0.5) * 0.14 -
+      Math.max(0, score.disagreement || 0) * 0.18,
+      0,
+      1
+    );
+    const uncertaintyPenalty = clamp(
+      1 -
+      Math.max(0, (score.disagreement || 0) - 0.45) * 0.5 -
+      Math.max(0, 0.62 - (score.calibrationConfidence || 0)) * 0.24,
+      0.62,
+      1.04
+    );
+    const setupTierSizeFactor = setupQuality.tier === "exceptional"
+      ? 1.03
+      : setupQuality.tier === "weak"
+        ? 0.8
+        : setupQuality.tier === "unreliable"
+          ? 0.68
+          : 1;
+    const riskClaritySizeFactor = clamp(uncertaintyPenalty * setupTierSizeFactor, 0.62, 1.05);
+    const effectiveRiskClaritySizeFactor =
+      this.config.botMode === "paper" && selfHealState.lowRiskOnly
+        ? Math.max(riskClaritySizeFactor, 0.82)
+        : riskClaritySizeFactor;
+    const divergenceFactor = clamp((divergenceSummary.averageScore || 0) >= this.config.divergenceBlockScore ? 0.55 : (divergenceSummary.averageScore || 0) >= this.config.divergenceAlertScore ? 0.86 : 1, 0.5, 1);
+    const heatPenalty = clamp(1 - portfolioHeat * 0.45, 0.55, 1);
+    const streakPenalty = paperLearningRecoveryActive
+      ? clamp(1 - globalLossStreak * 0.02 - symbolLossStreak * 0.01, 0.88, 1)
+      : clamp(1 - globalLossStreak * 0.08 - symbolLossStreak * 0.06, 0.55, 1);
+    const gridFamilySizeMultiplier = (strategySummary.family || "") === "range_grid"
+      ? clamp(safeValue(this.config.gridBaseSizeMultiplier, 0.55), 0.2, 0.9)
+      : 1;
+    const sizeCompressionContributors = [
+      { id: "confidence", value: confidenceFactor },
+      { id: "calibration", value: calibrationFactor },
+      { id: "transformer", value: transformerFactor },
+      { id: "news", value: newsFactor },
+      { id: "announcement", value: announcementFactor },
+      { id: "structure", value: structureFactor },
+      { id: "calendar", value: calendarFactor },
+      { id: "macro", value: macroFactor },
+      { id: "volatility", value: volatilityFactor },
+      { id: "orderbook", value: orderbookFactor },
+      { id: "committee", value: committeeFactor },
+      { id: "strategy", value: strategyFactor },
+      { id: "portfolio", value: portfolioFactor },
+      { id: "pair_health", value: pairHealthFactor },
+      { id: "timeframe", value: timeframeFactor },
+      { id: "quality_quorum", value: qualityQuorumFactor },
+      { id: "signal_quality", value: signalQualityFactor },
+      { id: "setup_quality", value: setupQualityFactor },
+      { id: "risk_clarity", value: effectiveRiskClaritySizeFactor },
+      { id: "divergence", value: divergenceFactor },
+      { id: "heat_penalty", value: heatPenalty },
+      { id: "streak_penalty", value: streakPenalty },
+      { id: "session", value: sessionSizeMultiplier },
+      { id: "drift", value: driftSizeMultiplier },
+      { id: "self_heal", value: selfHealSizeMultiplier },
+      { id: "meta", value: metaSizeMultiplier },
+      { id: "strategy_meta", value: strategyMetaSizeMultiplier },
+      { id: "venue", value: venueSizeMultiplier },
+      { id: "capital_governor", value: capitalGovernorSizeMultiplier },
+      { id: "capital_ladder", value: capitalLadderSizeMultiplier },
+      { id: "retirement", value: retirementSizeMultiplier },
+      { id: "execution_cost", value: executionCostSizeMultiplier },
+      { id: "trend_state", value: trendStateTuning.sizeMultiplier },
+      { id: "offline_learning", value: offlineLearningGuidanceApplied.sizeMultiplier },
+      { id: "spot_downtrend", value: spotDowntrendPenalty },
+      { id: "grid_family", value: gridFamilySizeMultiplier }
+    ];
+    const topSizeCompressionContributors = sizeCompressionContributors
+      .filter((item) => safeValue(item.value, 1) < 1)
+      .sort((left, right) => safeValue(left.value, 1) - safeValue(right.value, 1))
+      .slice(0, 3)
+      .map((item) => ({
+        id: item.id,
+        value: num(item.value, 4),
+        effect: num(1 - safeValue(item.value, 1), 4)
+      }));
+    const baseSizingBudget = Math.min(maxByPosition, maxByRisk, remainingExposureBudget);
+    const marketProviderExecutionFactor = clamp(
+      0.92 +
+        safeValue(marketProviderSummary.execution?.executionQualityScore, safeValue(marketProviderSummary.score, 0.5)) * 0.12 -
+        safeValue(marketProviderSummary.execution?.executionPainScore, 0) * 0.08,
+      0.88,
+      1.06
+    );
+    const marketProviderMacroFactor = clamp(
+      0.94 +
+        safeValue(marketProviderSummary.score, 0.5) * 0.08 +
+        Math.max(0, safeValue(marketProviderSummary.macro?.relativePerformance?.vsBtc, 0)) * 0.04,
+      0.9,
+      1.06
+    );
+    const executionFeedbackMemoryFactor = executionQualityMemory.active
+      ? clamp(
+          safeValue(executionQualityMemory.sizeBias, 1) *
+            (1 - safeValue(executionQualityMemory.blockerNoisePenalty, 0) * 2.1),
+          0.88,
+          1.08
+        )
+      : 1;
+    const executionFeedbackNoiseFactor = executionQualityMemory.active
+      ? clamp(1 - safeValue(executionQualityMemory.blockerNoisePenalty, 0) * 3.2, 0.86, 1)
+      : 1;
+    const groupedSizing = buildGroupedSizingPlan({
+      baseBudget: baseSizingBudget,
+      allowPaperSoftening: this.config.botMode === "paper",
+      groupOrder: ["alpha_conviction", "execution_pressure", "portfolio_pressure", "governance_pressure", "paper_bootstrap_floor"],
+      groups: {
+        alpha_conviction: {
+          label: "alpha_conviction",
+          softness: 0.46,
+          paperSoftness: 0.3,
+          min: 0.38,
+          paperMin: 0.56,
+          max: 1.16,
+          factors: [
+            { id: "confidence", value: confidenceFactor },
+            { id: "calibration", value: calibrationFactor },
+            { id: "transformer", value: transformerFactor },
+            { id: "structure", value: structureFactor },
+            { id: "committee", value: committeeFactor },
+            { id: "strategy", value: strategyFactor },
+            { id: "signal_quality", value: signalQualityFactor },
+            { id: "setup_quality", value: setupQualityFactor },
+            { id: "market_confidence", value: marketConfidenceFactor },
+            { id: "model_confidence", value: modelConfidenceFactor },
+            { id: "rl", value: rlFactor },
+            { id: "relative_strength", value: relativeStrengthFactor },
+            { id: "pattern", value: patternFactor }
+            ,{ id: "policy_profile_size", value: safeValue(policyProfile.profile?.sizeBias, 1) }
+          ]
+        },
+        execution_pressure: {
+          label: "execution_pressure",
+          softness: 0.52,
+          paperSoftness: 0.34,
+          min: 0.34,
+          paperMin: 0.54,
+          max: 1.12,
+          factors: [
+            { id: "orderbook", value: orderbookFactor },
+            { id: "replenishment", value: replenishmentFactor },
+            { id: "acceptance", value: acceptanceFactor },
+            { id: "pair_health", value: pairHealthFactor },
+            { id: "timeframe", value: timeframeFactor },
+            { id: "data_confidence", value: dataConfidenceFactor },
+            { id: "execution_confidence", value: executionConfidenceFactor },
+            { id: "execution_quality_memory", value: executionFeedbackMemoryFactor },
+            { id: "execution_blocker_noise", value: executionFeedbackNoiseFactor },
+            { id: "market_provider_execution", value: marketProviderExecutionFactor },
+            { id: "venue", value: venueSizeMultiplier },
+            { id: "execution_cost", value: executionCostSizeMultiplier }
+          ]
+        },
+        portfolio_pressure: {
+          label: "portfolio_pressure",
+          softness: 0.5,
+          paperSoftness: 0.32,
+          min: 0.28,
+          paperMin:
+            this.config.botMode === "paper" &&
+            capitalLadderSizeMultiplier >= 0.55 &&
+            capitalGovernorSizeMultiplier >= 0.55 &&
+            retirementSizeMultiplier >= 0.7
+              ? 0.5
+              : 0.28,
+          max: 1.08,
+          anchorFactor: Math.min(
+            1,
+            Math.max(0.18, capitalLadderSizeMultiplier || 1),
+            Math.max(0.3, capitalGovernorSizeMultiplier || 1),
+            Math.max(0.5, retirementSizeMultiplier || 1)
+          ),
+          factors: [
+            { id: "portfolio", value: portfolioFactor },
+            { id: "memory", value: memoryFactor },
+            { id: "heat_penalty", value: heatPenalty },
+            { id: "streak_penalty", value: streakPenalty },
+            { id: "session", value: sessionSizeMultiplier },
+            { id: "capital_governor", value: capitalGovernorSizeMultiplier },
+            { id: "capital_ladder", value: capitalLadderSizeMultiplier }
+          ]
+        },
+        governance_pressure: {
+          label: "governance_pressure",
+          softness: 0.58,
+          paperSoftness: 0.36,
+          min: 0.24,
+          paperMin:
+            this.config.botMode === "paper" &&
+            !exposureBudgetMatch.blocked &&
+            capitalLadderSizeMultiplier >= 0.55 &&
+            retirementSizeMultiplier >= 0.7
+              ? 0.48
+              : 0.24,
+          max: 1.1,
+          factors: [
+            { id: "news", value: newsFactor },
+            { id: "social", value: socialFactor },
+            { id: "announcement", value: announcementFactor },
+            { id: "calendar", value: calendarFactor },
+            { id: "macro", value: macroFactor },
+            { id: "volatility", value: volatilityFactor },
+            { id: "on_chain", value: onChainFactor },
+            { id: "market_provider_macro", value: marketProviderMacroFactor },
+            { id: "quality_quorum", value: qualityQuorumFactor },
+            { id: "risk_clarity", value: effectiveRiskClaritySizeFactor },
+            { id: "divergence", value: divergenceFactor },
+            { id: "drift", value: driftSizeMultiplier },
+            { id: "self_heal", value: selfHealSizeMultiplier },
+            { id: "meta", value: metaSizeMultiplier },
+            { id: "strategy_meta", value: strategyMetaSizeMultiplier },
+            { id: "retirement", value: retirementSizeMultiplier },
+            { id: "grid_family", value: gridFamilySizeMultiplier },
+            { id: "spot_downtrend", value: spotDowntrendPenalty },
+            { id: "trend_state", value: trendStateTuning.sizeMultiplier },
+            { id: "offline_learning", value: offlineLearningGuidanceApplied.sizeMultiplier },
+            { id: "missed_trade", value: safeValue(missedTradeTuningApplied.sizeMultiplier, 1) },
+            { id: "execution_bias", value: parameterGovernorAdjustment.executionAggressivenessBias },
+            { id: "downside_vol", value: downsideVolFactor },
+            { id: "policy_profile_size", value: safeValue(policyProfile.profile?.sizeBias, 1) }
+          ]
+        },
+        paper_bootstrap_floor: {
+          label: "paper_bootstrap_floor",
+          softness: 0.18,
+          min: 1,
+          max: this.config.botMode === "paper" ? 1.08 : 1,
+          factors: [
+            { id: "paper_mode", value: this.config.botMode === "paper" ? 1.02 : 1 },
+            { id: "positive_expected_edge", value: this.config.botMode === "paper" && expectedNetEdge.available && expectedNetEdge.decision === "positive" ? 1.02 : 1 },
+            { id: "probe_capable_governor", value: this.config.botMode === "paper" && capitalGovernor.allowProbeEntries ? 1.03 : 1 }
+          ]
+        }
+      }
+    });
+    const quoteAmount = groupedSizing.rawQuoteAmount;
+    const adjustedQuoteAmount = num(quoteAmount, 2);
+    const effectiveMinTradeUsdt = resolveEffectiveMinTradeUsdt(this.config, symbolRules, this.config.botMode);
+    const invalidQuoteAmount =
+      !Number.isFinite(quoteAmount) ||
+      !Number.isFinite(adjustedQuoteAmount) ||
+      adjustedQuoteAmount <= 0 ||
+      !Number.isFinite(maxByPosition) ||
+      !Number.isFinite(maxByRisk) ||
+      !Number.isFinite(remainingExposureBudget);
+
+    if (invalidQuoteAmount) {
+      reasons.push("trade_size_invalid");
+    }
+
+    const confidenceBreakdown = preliminaryConfidenceBreakdown;
+
+    let cappedQuoteAmount = invalidQuoteAmount
+      ? 0
+      : Math.min(adjustedQuoteAmount, maxByPosition, maxByRisk, remainingExposureBudget);
+    const hasHardSafetyReasonPreSizing = reasons.some((reason) => HARD_SAFETY_BLOCKERS.has(reason));
+    let paperSizeFloorReason = null;
+    const paperStrictNearMissSizeLiftEligible =
+      this.config.botMode === "paper" &&
+      !invalidQuoteAmount &&
+      cappedQuoteAmount > 0 &&
+      cappedQuoteAmount < effectiveMinTradeUsdt &&
+      cappedQuoteAmount >= effectiveMinTradeUsdt * 0.72 &&
+      safeValue(adjudicatedProbability, 0) >= safeValue(alphaThreshold, 0) - 0.015 &&
+      safeValue(setupQuality.score, 0) >= 0.64 &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.66 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.58 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.62 &&
+      !hasHardSafetyReasonPreSizing;
+    const qualityApprovedNearMinSize =
+      this.config.botMode === "paper" &&
+      !invalidQuoteAmount &&
+      cappedQuoteAmount > 0 &&
+      cappedQuoteAmount < effectiveMinTradeUsdt &&
+      cappedQuoteAmount >= effectiveMinTradeUsdt * 0.65 &&
+      safeValue(setupQuality.score, 0) >= 0.66 &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.67 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.58 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.62 &&
+      safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.58 &&
+      safeValue(newsSummary.riskScore, 0) <= 0.24 &&
+      safeValue(announcementSummary.riskScore, 0) <= 0.18 &&
+      safeValue(marketStructureSummary.riskScore, 0) <= 0.34 &&
+      !safeValue(lowConfidencePressure.featureTrustHardRisk, false) &&
+      !hasHardSafetyReasonPreSizing;
+    const boundedPaperFloorNearThreshold =
+      this.config.botMode === "paper" &&
+      !invalidQuoteAmount &&
+      !hasHardSafetyReasonPreSizing &&
+      cappedQuoteAmount > 0 &&
+      cappedQuoteAmount < effectiveMinTradeUsdt &&
+      cappedQuoteAmount >= Math.max(effectiveMinTradeUsdt * 0.52, effectiveMinTradeUsdt - 6) &&
+      safeValue(adjudicatedProbability, 0) >= safeValue(threshold, 0) - 0.02 &&
+      safeValue(setupQuality.score, 0) >= 0.68 &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.7 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.62 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.66 &&
+      safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.62 &&
+      safeValue(newsSummary.riskScore, 0) <= 0.18 &&
+      safeValue(announcementSummary.riskScore, 0) <= 0.12 &&
+      safeValue(volatilitySummary.riskScore, 0) <= 0.3 &&
+      safeValue(marketStructureSummary.riskScore, 0) <= 0.32 &&
+      !score.shouldAbstain;
+    const highAlphaPaperSizingRescue =
+      this.config.botMode === "paper" &&
+      !invalidQuoteAmount &&
+      !hasHardSafetyReasonPreSizing &&
+      cappedQuoteAmount > 0 &&
+      cappedQuoteAmount < effectiveMinTradeUsdt &&
+      cappedQuoteAmount >= Math.max(effectiveMinTradeUsdt * 0.48, effectiveMinTradeUsdt - 7) &&
+      safeValue(score.rawProbability, safeValue(score.probability, 0)) >= safeValue(baseThreshold, 0) + 0.035 &&
+      safeValue(setupQuality.score, 0) >= 0.72 &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.72 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.62 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.68 &&
+      safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.62 &&
+      safeValue(newsSummary.riskScore, 0) <= 0.2 &&
+      safeValue(announcementSummary.riskScore, 0) <= 0.14 &&
+      safeValue(volatilitySummary.riskScore, 0) <= 0.34 &&
+      !score.shouldAbstain;
+    const mildCompressionNearMiss = qualityApprovedNearMinSize && topSizeCompressionContributors.every((item) =>
+      [
+        "offline_learning",
+        "risk_clarity",
+        "drift",
+        "meta",
+        "strategy_meta",
+        "session",
+        "streak_penalty",
+        "heat_penalty",
+        "capital_ladder",
+        "trend_state"
+      ].includes(item.id)
+    );
+    let paperSizeFloorLiftApplied = false;
+    if (paperStrictNearMissSizeLiftEligible) {
+      cappedQuoteAmount = effectiveMinTradeUsdt;
+      paperSizeFloorLiftApplied = true;
+      paperSizeFloorReason = "strict_near_miss";
+    } else if (
+      mildCompressionNearMiss &&
+      this.config.enableStrictQualitySizeLift !== false
+    ) {
+      cappedQuoteAmount = effectiveMinTradeUsdt;
+      paperSizeFloorLiftApplied = true;
+      paperSizeFloorReason = "compression_near_miss";
+    } else if (boundedPaperFloorNearThreshold) {
+      cappedQuoteAmount = Math.max(effectiveMinTradeUsdt, Math.min(Math.max(maxByPosition, maxByRisk, remainingExposureBudget), effectiveMinTradeUsdt));
+      paperSizeFloorLiftApplied = true;
+      paperSizeFloorReason = "bounded_paper_floor";
+    } else if (highAlphaPaperSizingRescue) {
+      cappedQuoteAmount = Math.max(
+        effectiveMinTradeUsdt,
+        Math.min(Math.min(maxByPosition, maxByRisk, remainingExposureBudget), effectiveMinTradeUsdt + 4)
+      );
+      paperSizeFloorLiftApplied = true;
+      paperSizeFloorReason = "high_alpha_rescue";
+    } else if (!invalidQuoteAmount && cappedQuoteAmount < effectiveMinTradeUsdt) {
+      reasons.push("trade_size_below_minimum");
+    }
+    const meaningfulSizeFloor = Math.max(effectiveMinTradeUsdt * 1.4, Math.min(45, effectiveMinTradeUsdt + 20));
+    const deservesMeaningfulSize = !invalidQuoteAmount && cappedQuoteAmount >= meaningfulSizeFloor;
+
+    const normalizedReasons = normalizeDecisionReasons(reasons);
+    reasons.length = 0;
+    reasons.push(...normalizedReasons);
+    if (this.config.botMode === "paper" && reasons.length) {
+      const nearMissQualityCandidate =
+        safeValue(adjudicatedProbability, 0) >= safeValue(threshold, 0) - 0.03 &&
+        safeValue(setupQuality.score, 0) >= 0.62 &&
+        safeValue(signalQualitySummary.overallScore, 0) >= 0.64 &&
+        safeValue(dataQualitySummary.overallScore, 0) >= 0.56 &&
+        safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.6 &&
+        !score.shouldAbstain;
+      const hasHardRiskReason = reasons.some((reason) => HARD_SAFETY_BLOCKERS.has(reason));
+      if (nearMissQualityCandidate && !hasHardRiskReason) {
+        const softenedReasonSet = new Set(reasons);
+        if (
+          softenedReasonSet.has("committee_low_agreement") &&
+          (softenedReasonSet.has("committee_veto") || softenedReasonSet.has("committee_confidence_too_low"))
+        ) {
+          softenedReasonSet.delete("committee_low_agreement");
+        }
+        if (
+          softenedReasonSet.has("structure_confirmation_missing") &&
+          Math.min(safeValue(bosStrength, 0), safeValue(cvdConfirmation, 0), safeValue(fvgRespect, 0)) >= 0.24
+        ) {
+          softenedReasonSet.delete("structure_confirmation_missing");
+        }
+        if (
+          softenedReasonSet.has("cross_timeframe_misalignment") &&
+          safeValue(timeframeSummary.alignmentScore, 0) >= 0.62 &&
+          !softenedReasonSet.has("higher_tf_conflict")
+        ) {
+          softenedReasonSet.delete("cross_timeframe_misalignment");
+        }
+        if (
+          softenedReasonSet.has("model_confidence_too_low") &&
+          lowConfidencePressure.reliefEligible &&
+          ["feature_trust", "threshold_penalty_stack", "model_disagreement", "auxiliary_blend_drag"].includes(lowConfidencePressure.primaryDriver) &&
+          !safeValue(lowConfidencePressure.featureTrustHardRisk, false) &&
+          safeValue(threshold, 0) - safeValue(baseThreshold, 0) >= (
+            safeValue(lowConfidencePressure.featureTrustEchoPressure, false) ? 0.025 : 0.04
+          ) &&
+          safeValue(adjudicatedProbability, 0) >= safeValue(threshold, 0) - (
+            safeValue(lowConfidencePressure.featureTrustEchoPressure, false) ? 0.032 : 0.022
+          ) &&
+          safeValue(committeeSummary.agreement, 0) >= 0.62 &&
+          safeValue(committeeSummary.netScore, 0) >= -0.12
+        ) {
+          softenedReasonSet.delete("model_confidence_too_low");
+        }
+        if (
+          missedTradeTuningApplied.targetedBlocker &&
+          safeValue(missedTradeTuningApplied.confidence, 0) >= 0.54 &&
+          safeValue(setupQuality.score, 0) >= 0.64 &&
+          safeValue(signalQualitySummary.overallScore, 0) >= 0.66 &&
+          safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.58
+        ) {
+          if (softenedReasonSet.has("meta_followthrough_caution") && safeValue(score.rawProbability, safeValue(score.probability, 0)) >= safeValue(baseThreshold, 0) + 0.025) {
+            softenedReasonSet.delete("meta_followthrough_caution");
+          }
+          if (
+            softenedReasonSet.has("meta_neural_caution") &&
+            safeValue(score.rawProbability, safeValue(score.probability, 0)) >= safeValue(baseThreshold, 0) + 0.03 &&
+            safeValue(metaSummary.score, 0) >= this.config.metaBlockScore - 0.06
+          ) {
+            softenedReasonSet.delete("meta_neural_caution");
+          }
+          if (
+            softenedReasonSet.has("trade_size_below_minimum") &&
+            paperSizeFloorLiftApplied &&
+            safeValue(cappedQuoteAmount, 0) >= safeValue(effectiveMinTradeUsdt, 0)
+          ) {
+            softenedReasonSet.delete("trade_size_below_minimum");
+          }
+        }
+        reasons.length = 0;
+        reasons.push(...normalizeDecisionReasons([...softenedReasonSet]));
+      }
+    }
+    let allow = reasons.length === 0;
+    let entryMode = "standard";
+    let suppressedReasons = [];
+    let finalQuoteAmount = cappedQuoteAmount;
+    let paperExploration = null;
+    let paperGuardrailRelief = [];
+
+    const eligiblePaperSuppressedReasons = reasons.filter((reason) => isPaperLeniencyReason(reason, selfHealState));
+    const paperGuardrailReasons = eligiblePaperSuppressedReasons.filter((reason) =>
+      [
+        "self_heal_pause_entries",
+        "execution_cost_budget_exceeded",
+        "capital_governor_blocked",
+        "capital_governor_recovery",
+        "strategy_cooldown",
+        "strategy_budget_cooled",
+        "family_budget_cooled",
+        "cluster_budget_cooled",
+        "regime_budget_cooled",
+        "factor_budget_cooled",
+        "daily_risk_budget_cooled",
+        "regime_kill_switch_active"
+      ].includes(reason)
+    );
+    const paperGuardrailThresholdRelief = clamp(
+      paperGuardrailReasons.reduce((total, reason) => total + (
+        ["family_budget_cooled", "strategy_budget_cooled"].includes(reason)
+          ? 0.008
+          : [
+              "cluster_budget_cooled",
+              "regime_budget_cooled",
+              "factor_budget_cooled",
+              "daily_risk_budget_cooled",
+              "regime_kill_switch_active",
+              "strategy_cooldown"
+            ].includes(reason)
+            ? 0.006
+            : ["capital_governor_blocked", "capital_governor_recovery"].includes(reason)
+              ? 0.004
+              : ["execution_cost_budget_exceeded", "self_heal_pause_entries"].includes(reason)
+                ? 0.003
+                : 0
+      ), 0),
+      0,
+      0.03
+    );
+
+    const paperCalibrationProbeActive =
+      this.config.botMode === "paper" &&
+      selfHealState.mode === "paper_calibration_probe" &&
+      canRelaxPaperSelfHeal(selfHealState);
+    const paperExplorationEligibleReasonsOnly =
+      reasons.length > 0 &&
+      reasons.every((reason) => isPaperExplorationProbeReason(reason, selfHealState));
+    const mildPaperQualityOnly =
+      reasons.some((reason) => isMildPaperQualityReason(reason)) &&
+      paperExplorationEligibleReasonsOnly;
+
+    const softPaperOnlyReasons = reasons.length > 0 && reasons.every((reason) => isPaperLeniencyReason(reason, selfHealState));
+    const highQualitySoftPaperProbeCandidate =
+      softPaperOnlyReasons &&
+      (committeeVetoIds.length === 0 || softPaperCommitteeDisagreement) &&
+      (committeeSummary.netScore || 0) >= -0.08 &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.68 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.62 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.64 &&
+      safeValue(score.calibrationConfidence, 0) >= 0.68 &&
+      safeValue(score.disagreement, 1) <= Math.min(0.08, this.config.maxModelDisagreement * 0.35) &&
+      (
+        abstainReasons.length === 0 ||
+        abstainReasons.every((reason) => reason === "probability_neutral_band")
+      );
+    const paperProbeBenchmarkSoftened =
+      this.config.botMode === "paper" &&
+      paperCalibrationProbeActive &&
+      ["always_skip", "simple_exit", "safe_lane"].includes(paperLearningGuidance?.benchmarkLead || "") &&
+      (
+        offlineLearningGuidance.staleLearningPressureDampened ||
+        safeValue(offlineLearningGuidance.benchmarkPenaltyScale, 1) <= 0.2
+      );
+    const paperGuidanceProbeRelief =
+      this.config.botMode === "paper" &&
+      paperLearningGuidance?.active &&
+      paperLearningGuidance.preferredLane === "probe" &&
+      (!["always_skip", "simple_exit", "safe_lane"].includes(paperLearningGuidance.benchmarkLead || "") || paperProbeBenchmarkSoftened) &&
+      safeValue(paperLearningGuidance.cautionPenalty, 0) <= 0.08 &&
+      safeValue(offlineLearningGuidance.executionCaution, 0) <= 0.08 &&
+      safeValue(offlineLearningGuidance.featureTrustPenalty, offlineLearningGuidance.featurePenalty || 0) <= (paperProbeBenchmarkSoftened ? 0.1 : 0.08)
+        ? clamp(
+            safeValue(paperLearningGuidance.priorityBoost, 0) * 0.22 +
+            safeValue(paperLearningGuidance.probeBoost, 0) * 0.18 +
+            (paperLearningGuidance.targetScopeMatched ? 0.03 : 0) -
+            safeValue(paperLearningGuidance.cautionPenalty, 0) * 0.08,
+            0,
+            0.05
+          )
+        : 0;
+    const lowConfidenceProbeRelief =
+      this.config.botMode === "paper" &&
+      lowConfidencePressure.reliefEligible &&
+      reasons.includes("model_confidence_too_low") &&
+      paperExplorationEligibleReasonsOnly &&
+      (!["always_skip", "simple_exit", "safe_lane"].includes(paperLearningGuidance?.benchmarkLead || "") || paperProbeBenchmarkSoftened) &&
+      safeValue(offlineLearningGuidance.executionCaution, 0) <= 0.08 &&
+      safeValue(offlineLearningGuidance.featureTrustPenalty, offlineLearningGuidance.featurePenalty || 0) <= (paperProbeBenchmarkSoftened ? 0.1 : 0.08)
+        ? clamp(
+            (lowConfidencePressure.primaryDriver === "calibration_warmup"
+              ? 0.012
+              : lowConfidencePressure.primaryDriver === "calibration_confidence"
+                ? 0.01
+                : lowConfidencePressure.primaryDriver === "auxiliary_blend_drag"
+                  ? 0.008
+                : lowConfidencePressure.primaryDriver === "model_disagreement"
+                  ? 0.006
+                : lowConfidencePressure.primaryDriver === "feature_trust" && lowConfidencePressure.featureTrustNarrowPressure
+                  ? 0.007
+                : 0.008) +
+            Math.max(0, 0.03 + safeValue(lowConfidencePressure.edgeToThreshold, 0)) * 0.08,
+            0,
+            ["feature_trust", "model_disagreement"].includes(lowConfidencePressure.primaryDriver) ? 0.01 : 0.014
+          )
+        : 0;
+    const thresholdPenaltyStackProbeRelief =
+      this.config.botMode === "paper" &&
+      lowConfidencePressure.reliefEligible &&
+      lowConfidencePressure.primaryDriver === "threshold_penalty_stack" &&
+      reasons.includes("model_confidence_too_low")
+        ? clamp(
+            Math.max(0, safeValue(threshold, 0) - safeValue(baseThreshold, 0)) * 0.6,
+            0,
+            0.024
+          )
+        : 0;
+    const rawProbabilityProbeRelief =
+      paperCalibrationProbeActive &&
+      reasons.includes("model_confidence_too_low") &&
+      paperExplorationEligibleReasonsOnly &&
+      !score.shouldAbstain &&
+      Number.isFinite(score.rawProbability) &&
+      safeValue(score.rawProbability, 0) > safeValue(score.probability, 0) &&
+      safeValue(score.rawProbability, 0) >= baseThreshold - 0.03 &&
+      ["threshold_penalty_stack", "model_confidence", "calibration_confidence"].includes(lowConfidencePressure.primaryDriver) &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.68 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.66 &&
+      safeValue(committeeSummary.agreement, 0) >= 0.75 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.5 &&
+      safeValue(newsSummary.riskScore, 0) <= 0.08 &&
+      safeValue(announcementSummary.riskScore, 0) <= 0.04 &&
+      safeValue(volatilitySummary.riskScore, 0) <= 0.35
+        ? clamp(
+            (safeValue(score.rawProbability, 0) - safeValue(score.probability, 0)) * 1.2 +
+            Math.max(0, 0.03 + safeValue(lowConfidencePressure.edgeToBaseThreshold, 0)) * 0.3 +
+            0.003,
+            0,
+            0.012
+          )
+        : 0;
+    const paperProbeThresholdBuffer = this.config.paperExplorationThresholdBuffer +
+      paperGuardrailThresholdRelief +
+      paperGuidanceProbeRelief +
+      lowConfidenceProbeRelief +
+      thresholdPenaltyStackProbeRelief +
+      rawProbabilityProbeRelief +
+      (highQualitySoftPaperProbeCandidate ? 0.03 : 0) +
+      (missedTradeTuningApplied.paperProbeEligible ? 0.012 : 0);
+    const calibrationProbeConfidenceRescue =
+      paperCalibrationProbeActive &&
+      reasons.length > 0 &&
+      reasons.every((reason) => [
+        "meta_gate_caution",
+        "meta_neural_caution",
+        "execution_cost_budget_exceeded",
+        "model_confidence_too_low",
+        "trade_size_below_minimum"
+      ].includes(reason)) &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.68 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.64 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.75 &&
+      safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.68 &&
+      safeValue(setupQuality.score, 0) >= 0.63 &&
+      safeValue(score.rawProbability, safeValue(score.probability, 0)) >= 0.18 &&
+      ["feature_trust", "threshold_penalty_stack", "model_disagreement", "calibration_confidence"].includes(lowConfidencePressure.primaryDriver) &&
+      safeValue(lowConfidencePressure.featureTrustPenalty, 0) <= 0.12 &&
+      safeValue(lowConfidencePressure.executionCaution, 0) <= 0.03;
+      const calibrationProbeQuotaRescue =
+        paperCalibrationProbeActive &&
+        reasons.length > 0 &&
+        reasons.every((reason) => [
+        "meta_gate_caution",
+        "meta_neural_caution",
+        "execution_cost_budget_exceeded",
+        "model_confidence_too_low",
+        "trade_size_below_minimum"
+      ].includes(reason)) &&
+      paperLearningGuidance?.active &&
+      paperLearningGuidance.preferredLane === "probe" &&
+      paperLearningGuidance.quotaMatched !== false &&
+      (paperLearningGuidance.quotaRemaining == null || safeValue(paperLearningGuidance.quotaRemaining, 0) > 0) &&
+      safeValue(paperLearningGuidance.guidanceStrength, 0) >= 0.16 &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.66 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.64 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.76 &&
+      safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.72 &&
+      safeValue(setupQuality.score, 0) >= 0.6 &&
+      safeValue(score.probability, 0) >= 0.2 &&
+      safeValue(score.rawProbability, safeValue(score.probability, 0)) >= Math.max(0.2, safeValue(baseThreshold, 0) - 0.32) &&
+      ["feature_trust", "threshold_penalty_stack", "model_disagreement", "calibration_confidence"].includes(lowConfidencePressure.primaryDriver) &&
+      safeValue(lowConfidencePressure.featureTrustPenalty, 0) <= 0.12 &&
+        safeValue(lowConfidencePressure.executionCaution, 0) <= 0.03 &&
+        (
+          offlineLearningGuidanceApplied.staleLearningPressureDampened ||
+          safeValue(paperLearningGuidance.probeBoost, 0) >= 0.07
+        );
+      const calibrationProbeStrongSignalRescue =
+        paperCalibrationProbeActive &&
+        reasons.length > 0 &&
+        reasons.every((reason) => [
+          "meta_gate_caution",
+          "meta_neural_caution",
+          "execution_cost_budget_exceeded",
+          "model_confidence_too_low",
+          "trade_size_below_minimum"
+        ].includes(reason)) &&
+        paperLearningGuidance?.active &&
+        paperLearningGuidance.preferredLane === "probe" &&
+        paperLearningGuidance.quotaMatched !== false &&
+        (paperLearningGuidance.quotaRemaining == null || safeValue(paperLearningGuidance.quotaRemaining, 0) > 0) &&
+        safeValue(paperLearningGuidance.guidanceStrength, 0) >= 0.16 &&
+        safeValue(signalQualitySummary.overallScore, 0) >= 0.68 &&
+        safeValue(dataQualitySummary.overallScore, 0) >= 0.5 &&
+        safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.76 &&
+        safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.58 &&
+        safeValue(setupQuality.score, 0) >= 0.64 &&
+        safeValue(score.probability, 0) >= 0.22 &&
+        safeValue(score.rawProbability, safeValue(score.probability, 0)) >= 0.24 &&
+        ["feature_trust", "threshold_penalty_stack", "model_disagreement", "calibration_confidence"].includes(lowConfidencePressure.primaryDriver) &&
+        safeValue(lowConfidencePressure.featureTrustPenalty, 0) <= (
+          offlineLearningGuidanceApplied.staleLearningPressureDampened ||
+          ["pruning_drop_candidate", "inverse_attribution"].includes(lowConfidencePressure.dominantFeaturePressureSource || "")
+            ? 0.1
+            : 0.08
+        ) &&
+        safeValue(lowConfidencePressure.executionCaution, 0) <= 0.03 &&
+        !invalidQuoteAmount &&
+        safeValue(cappedQuoteAmount, 0) > 0 &&
+        safeValue(marketSnapshot.book.depthConfidence, 0) >= 0.7 &&
+        safeValue(marketSnapshot.book.spreadBps, 0) <= Math.min(this.config.maxSpreadBps * 0.25, 4) &&
+        safeValue(marketSnapshot.market.realizedVolPct, 0) <= this.config.maxRealizedVolPct * 0.45 &&
+        safeValue(marketStructureSummary.riskScore, 0) <= 0.18 &&
+        safeValue(newsSummary.riskScore, 0) <= 0.18 &&
+        safeValue(announcementSummary.riskScore, 0) <= 0.08 &&
+        safeValue(calendarSummary.riskScore, 0) <= 0.14 &&
+        !(sessionSummary.blockerReasons || []).length &&
+        !(driftSummary.blockerReasons || []).length &&
+        (
+          executionCostBudget.blocked ||
+          safeValue(executionCostBudget.averageTotalCostBps, 0) >= Math.max(12, safeValue(this.config.paperFeeBps, 0) * 1.2)
+        ) &&
+        (
+          offlineLearningGuidanceApplied.staleLearningPressureDampened ||
+          safeValue(paperLearningGuidance.probeBoost, 0) >= 0.07
+        );
+      const useRawProbabilityForPaperProbe =
+        paperCalibrationProbeActive &&
+        reasons.includes("model_confidence_too_low") &&
+      paperExplorationEligibleReasonsOnly &&
+      !score.shouldAbstain &&
+      Number.isFinite(score.rawProbability) &&
+      safeValue(score.rawProbability, 0) > safeValue(score.probability, 0) &&
+      safeValue(signalQualitySummary.overallScore, 0) >= 0.66 &&
+      safeValue(confidenceBreakdown.overallConfidence, 0) >= 0.62 &&
+      safeValue(dataQualitySummary.overallScore, 0) >= 0.46 &&
+      safeValue(newsSummary.riskScore, 0) <= 0.12 &&
+      safeValue(announcementSummary.riskScore, 0) <= 0.08 &&
+      safeValue(volatilitySummary.riskScore, 0) <= 0.46;
+    const paperProbeProbability = useRawProbabilityForPaperProbe
+      ? Math.max(safeValue(score.probability, 0), safeValue(score.rawProbability, 0))
+      : safeValue(score.probability, 0);
+      const paperProbeThresholdSatisfied =
+        paperProbeProbability >= threshold - paperProbeThresholdBuffer ||
+        calibrationProbeConfidenceRescue ||
+        calibrationProbeQuotaRescue ||
+        calibrationProbeStrongSignalRescue;
+    const targetedLowConfidenceDriver = ["feature_trust", "model_disagreement", "auxiliary_blend_drag"].includes(lowConfidencePressure.primaryDriver);
+    const untargetedLowConfidenceNearMiss =
+      reasons.includes("model_confidence_too_low") &&
+      !reasons.includes("trade_size_below_minimum") &&
+      paperExplorationEligibleReasonsOnly &&
+      targetedLowConfidenceDriver &&
+      paperGuardrailThresholdRelief === 0 &&
+      paperGuidanceProbeRelief === 0 &&
+      lowConfidenceProbeRelief === 0 &&
+      !highQualitySoftPaperProbeCandidate;
+    const paperProbeBookPressureFloor = clamp(
+      this.config.paperExplorationMinBookPressure - paperGuidanceProbeRelief * 2.2,
+      -1,
+      1
+    );
+
+    const paperCapitalRecoveryOverride = paperCalibrationProbeActive && reasons.includes("capital_governor_recovery");
+    const canOpenPaperExploration =
+      !allow &&
+      !invalidQuoteAmount &&
+      this.config.botMode === "paper" &&
+      this.config.paperExplorationEnabled &&
+      canOpenAnotherPaperLearningPosition &&
+      minutesSincePortfolioTrade >= effectivePaperExplorationCooldownMinutes &&
+      reasons.length > 0 &&
+      !untargetedLowConfidenceNearMiss &&
+      paperExplorationEligibleReasonsOnly &&
+      paperProbeThresholdSatisfied &&
+      (
+        calibrationProbeQuotaRescue ||
+        calibrationProbeStrongSignalRescue ||
+        (marketSnapshot.book.bookPressure || 0) >= paperProbeBookPressureFloor
+      ) &&
+      (marketSnapshot.book.spreadBps || 0) <= Math.min(this.config.maxSpreadBps * 0.4, 8) &&
+      (marketSnapshot.market.realizedVolPct || 0) <= this.config.maxRealizedVolPct * 0.75 &&
+      (newsSummary.riskScore || 0) <= 0.32 &&
+      (announcementSummary.riskScore || 0) <= 0.2 &&
+      (calendarSummary.riskScore || 0) <= 0.28 &&
+      (marketStructureSummary.riskScore || 0) <= 0.32 &&
+      (volatilitySummary.riskScore || 0) <= 0.72 &&
+      !(sessionSummary.blockerReasons || []).length &&
+      (
+        !(driftSummary.blockerReasons || []).length ||
+        (driftSummary.blockerReasons || []).every((reason) => isMildPaperQualityReason(reason))
+      ) &&
+      qualityQuorumSummary.observeOnly !== true &&
+      ((qualityQuorumSummary.status || "") !== "degraded" || mildPaperQualityOnly) &&
+      (
+        !mildPaperQualityOnly ||
+        safeValue(signalQualitySummary.executionViability, 0) >= 0.52 ||
+        safeValue(dataQualitySummary.overallScore, 0) >= 0.54
+      ) &&
+      canRelaxPaperSelfHeal(selfHealState);
+    if (canOpenPaperExploration) {
+        const allowCalibrationProbeMinTradeOverride =
+          paperCalibrationProbeActive &&
+          reasons.includes("trade_size_below_minimum") &&
+          !reasons.includes("trade_size_invalid");
+        const paperCalibrationProbeFloor = allowCalibrationProbeMinTradeOverride
+          ? Math.max(
+              safeValue(symbolRules?.minNotional, 0),
+              5,
+              effectiveMinTradeUsdt * Math.max(this.config.selfHealPaperCalibrationProbeSizeMultiplier || 0.22, 0.2)
+            )
+          : effectiveMinTradeUsdt;
+        const explorationBudget = Math.min(maxByPosition, maxByRisk, remainingExposureBudget);
+        const paperExplorationMult = resolvePaperExplorationSizeMultiplier(this.config);
+        const explorationQuoteAmount = Math.min(
+          explorationBudget,
+          Math.max(paperCalibrationProbeFloor, adjustedQuoteAmount * paperExplorationMult)
+        );
+        if (explorationQuoteAmount > 0 && (allowCalibrationProbeMinTradeOverride || explorationQuoteAmount >= effectiveMinTradeUsdt)) {
+          allow = true;
+          entryMode = "paper_exploration";
+          suppressedReasons = [...reasons];
+        paperGuardrailRelief = paperGuardrailReasons;
+        finalQuoteAmount = explorationQuoteAmount;
+        paperExploration = {
+          mode: "paper_exploration",
+          thresholdBuffer: paperProbeThresholdBuffer,
+          sizeMultiplier: paperExplorationMult,
+          effectiveMinTradeUsdt: num(effectiveMinTradeUsdt, 2),
+          minBookPressure: paperProbeBookPressureFloor,
+          minutesSincePortfolioTrade: Number.isFinite(minutesSincePortfolioTrade) ? minutesSincePortfolioTrade : null,
+          warmupProgress: calibrationWarmup,
+          suppressedReasons,
+          guardrailReliefReasons: paperGuardrailRelief,
+            adaptiveThresholdRelief: clamp(paperProbeThresholdBuffer - this.config.paperExplorationThresholdBuffer, 0, 0.05),
+            guidanceThresholdRelief: num(paperGuidanceProbeRelief, 4),
+            confidenceThresholdRelief: num(lowConfidenceProbeRelief, 4),
+            thresholdPenaltyStackRelief: num(thresholdPenaltyStackProbeRelief, 4),
+              rawProbabilityThresholdRelief: num(rawProbabilityProbeRelief, 4),
+              probeProbabilityUsed: num(paperProbeProbability, 4),
+              rawProbabilityUsed: useRawProbabilityForPaperProbe ? num(score.rawProbability, 4) : null,
+              allowMinTradeOverride: allowCalibrationProbeMinTradeOverride,
+              calibrationConfidenceRescue: calibrationProbeConfidenceRescue,
+              calibrationQuotaRescue: calibrationProbeQuotaRescue,
+              calibrationStrongSignalRescue: calibrationProbeStrongSignalRescue,
+              confidencePrimaryDriver: lowConfidencePressure.primaryDriver || null,
+              confidenceDriverSource: lowConfidencePressure.dominantFeaturePressureSource || null,
+              confidenceDriverGroup: lowConfidencePressure.dominantFeaturePressureGroup || null,
+          selfHealRelaxed: suppressedReasons.includes("self_heal_pause_entries"),
+          selfHealIssues: [...(selfHealState.issues || [])]
+        };
+      }
+    }
+
+    const recoveryModelConfidenceSlack =
+      reasons.includes("model_confidence_too_low") && this.config.botMode === "paper"
+        ? clamp(
+            Math.max(0, standardConfidenceThreshold - threshold) * 0.5 + 0.012,
+            0.012,
+            0.04
+          )
+        : 0;
+    const recoveryProbeProbabilityFloor =
+      threshold - this.config.paperRecoveryProbeThresholdBuffer - recoveryModelConfidenceSlack;
+
+    const paperRecoveryProbeAdmission = buildRecoveryProbePolicy({
+      config: this.config,
+      symbol,
+      capitalGovernor,
+      reasons,
+      openPositionsInMode,
+      canOpenAnotherPaperLearningPosition,
+      score,
+      threshold,
+      recoveryProbeProbabilityFloor,
+      setupQuality,
+      signalQualitySummary,
+      dataQualitySummary,
+      confidenceBreakdown,
+      lowConfidencePressure,
+      qualityQuorumSummary,
+      marketSnapshot,
+      newsSummary,
+      announcementSummary,
+      calendarSummary,
+      marketStructureSummary,
+      volatilitySummary,
+      sessionSummary,
+      driftSummary,
+      selfHealState,
+      invalidQuoteAmount,
+      strategySummary,
+      regimeSummary,
+      allow,
+      minutesSincePortfolioTrade,
+      cooldownMinutes: effectivePaperRecoveryCooldownMinutes
+    });
+
+    const recoveryProbeSuppressedReasons = reasons.filter((reason) =>
+      isRecoveryProbeSoftBlocker(reason, selfHealState, {
+        allowModelConfidenceNearMiss: paperRecoveryProbeAdmission.modelConfidenceNearMissEligible
+      })
+    );
+    const recoveryProbeGuardrailReasons = recoveryProbeSuppressedReasons.filter((reason) =>
+      [
+        "capital_governor_blocked",
+        "capital_governor_recovery",
+        "trade_size_below_minimum",
+        "meta_gate_caution",
+        "meta_neural_caution",
+        "trade_quality_caution",
+        "meta_followthrough_caution",
+        "quality_quorum_degraded",
+        "model_confidence_too_low"
+      ].includes(reason)
+    );
+
+    const canOpenExplicitRecoveryProbe = paperRecoveryProbeAdmission.eligible;
+
+    if (canOpenExplicitRecoveryProbe) {
+      const recoveryBudget = Math.min(maxByPosition, maxByRisk, remainingExposureBudget);
+      const paperRecoveryMult = resolvePaperRecoveryProbeSizeMultiplier(this.config);
+      const recoveryProbeScaledTarget = Math.max(
+        effectiveMinTradeUsdt * paperRecoveryMult,
+        adjustedQuoteAmount * paperRecoveryMult
+      );
+      const recoveryProbeFloor = this.config.paperRecoveryProbeAllowMinTradeOverride
+        ? Math.max(
+            safeValue(symbolRules?.minNotional, 0),
+            5,
+            Math.min(effectiveMinTradeUsdt, recoveryBudget),
+            recoveryProbeScaledTarget
+          )
+        : effectiveMinTradeUsdt;
+      const recoveryProbeQuoteAmount = Math.min(
+        recoveryBudget,
+        Math.max(recoveryProbeFloor, recoveryProbeScaledTarget)
+      );
+        if (recoveryProbeQuoteAmount > 0 && (this.config.paperRecoveryProbeAllowMinTradeOverride || recoveryProbeQuoteAmount >= effectiveMinTradeUsdt)) {
+          allow = true;
+        entryMode = "paper_recovery_probe";
+        suppressedReasons = [...(paperRecoveryProbeAdmission.qualifyingReasons.length ? paperRecoveryProbeAdmission.qualifyingReasons : reasons)];
+        paperGuardrailRelief = recoveryProbeGuardrailReasons;
+        finalQuoteAmount = recoveryProbeQuoteAmount;
+        paperRecoveryProbeAdmission.activated = true;
+        paperRecoveryProbeAdmission.probeRejectedReason = null;
+        paperRecoveryProbeAdmission.whyNoProbeAttempt = null;
+        paperExploration = {
+          mode: "paper_recovery_probe",
+          thresholdBuffer: this.config.paperRecoveryProbeThresholdBuffer,
+          probabilityFloor: num(recoveryProbeProbabilityFloor, 4),
+          modelConfidenceSlack: num(recoveryModelConfidenceSlack, 4),
+          quoteFloor: num(recoveryProbeFloor, 2),
+          scaledQuoteTarget: num(recoveryProbeScaledTarget, 2),
+          recoveryBudget: num(recoveryBudget, 2),
+          sizeMultiplier: paperRecoveryMult,
+          minBookPressure: this.config.paperRecoveryProbeMinBookPressure,
+          minutesSincePortfolioTrade: Number.isFinite(minutesSincePortfolioTrade) ? minutesSincePortfolioTrade : null,
+          warmupProgress: calibrationWarmup,
+          suppressedReasons,
+          guardrailReliefReasons: paperGuardrailRelief,
+          selfHealRelaxed: suppressedReasons.includes("self_heal_pause_entries"),
+          allowMinTradeOverride: Boolean(this.config.paperRecoveryProbeAllowMinTradeOverride),
+          selfHealIssues: [...(selfHealState.issues || [])],
+          softBlockedOnly: Boolean(paperRecoveryProbeAdmission.softBlockedOnly),
+          metaCautionOverrideEligible: Boolean(paperRecoveryProbeAdmission.metaCautionOverrideEligible),
+          whyNoProbeAttempt: null
+        };
+      }
+    }
+
+    const paperLearningBudget = getPaperLearningBudgetState({
+      journal,
+      runtime,
+      nowIso,
+      config: this.config
+    });
+    const paperLearningSampling = getPaperLearningSamplingState({
+      journal,
+      runtime,
+      nowIso,
+      config: this.config,
+      strategySummary,
+      regimeSummary,
+      sessionSummary,
+      marketConditionSummary
+    });
+    if (allow && ["paper_exploration", "paper_recovery_probe"].includes(entryMode) && paperLearningBudget.probeRemaining <= 0) {
+      allow = false;
+      entryMode = "standard";
+      finalQuoteAmount = 0;
+      paperExploration = null;
+      suppressedReasons = [];
+      paperGuardrailRelief = [];
+      if (paperRecoveryProbeAdmission.activated) {
+        paperRecoveryProbeAdmission.activated = false;
+        paperRecoveryProbeAdmission.probeRejectedReason = "paper_learning_probe_budget_reached";
+      }
+      if (!reasons.includes("paper_learning_probe_budget_reached")) {
+        reasons.push("paper_learning_probe_budget_reached");
+      }
+    }
+    if (
+      allow &&
+      ["paper_exploration", "paper_recovery_probe"].includes(entryMode) &&
+      !paperLearningSampling.canOpenProbe
+    ) {
+      if (
+        paperLearningSampling.probeCaps.familyLimit > 0 &&
+        paperLearningSampling.probeCaps.familyUsed >= paperLearningSampling.probeCaps.familyLimit &&
+        !reasons.includes("paper_learning_family_probe_cap_reached")
+      ) {
+        reasons.push("paper_learning_family_probe_cap_reached");
+      }
+      if (
+        paperLearningSampling.probeCaps.regimeLimit > 0 &&
+        paperLearningSampling.probeCaps.regimeUsed >= paperLearningSampling.probeCaps.regimeLimit &&
+        !reasons.includes("paper_learning_regime_probe_cap_reached")
+      ) {
+        reasons.push("paper_learning_regime_probe_cap_reached");
+      }
+      if (
+        paperLearningSampling.probeCaps.sessionLimit > 0 &&
+        paperLearningSampling.probeCaps.sessionUsed >= paperLearningSampling.probeCaps.sessionLimit &&
+        !reasons.includes("paper_learning_session_probe_cap_reached")
+      ) {
+        reasons.push("paper_learning_session_probe_cap_reached");
+      }
+      if (
+        paperLearningSampling.probeCaps.regimeFamilyLimit > 0 &&
+        paperLearningSampling.probeCaps.regimeFamilyUsed >= paperLearningSampling.probeCaps.regimeFamilyLimit &&
+        !reasons.includes("paper_learning_regime_family_probe_cap_reached")
+      ) {
+        reasons.push("paper_learning_regime_family_probe_cap_reached");
+      }
+      if (
+        paperLearningSampling.probeCaps.conditionStrategyLimit > 0 &&
+        paperLearningSampling.probeCaps.conditionStrategyUsed >= paperLearningSampling.probeCaps.conditionStrategyLimit &&
+        !reasons.includes("paper_learning_condition_strategy_probe_cap_reached")
+      ) {
+        reasons.push("paper_learning_condition_strategy_probe_cap_reached");
+      }
+      const scopeCapOverflowAllowed = this.config.botMode === "paper" && canUsePaperProbeScopeOverflow({
+        entryMode,
+        reasons,
+        score,
+        threshold,
+        paperLearningBudget,
+        paperLearningSampling,
+        signalQualitySummary,
+        dataQualitySummary,
+        confidenceBreakdown,
+        selfHealState
+      });
+      if (scopeCapOverflowAllowed) {
+        suppressedReasons = [...new Set([...suppressedReasons, ...reasons.filter((reason) => isPaperProbeCapReason(reason))])];
+        paperExploration = {
+          ...(paperExploration || {}),
+          scopeCapOverflow: {
+            family: reasons.includes("paper_learning_family_probe_cap_reached"),
+            regime: reasons.includes("paper_learning_regime_probe_cap_reached"),
+            session: reasons.includes("paper_learning_session_probe_cap_reached"),
+            regimeFamily: reasons.includes("paper_learning_regime_family_probe_cap_reached"),
+            conditionStrategy: reasons.includes("paper_learning_condition_strategy_probe_cap_reached")
+          }
+        };
+      } else {
+        allow = false;
+        entryMode = "standard";
+        finalQuoteAmount = 0;
+        paperExploration = null;
+        suppressedReasons = [];
+        paperGuardrailRelief = [];
+        if (paperRecoveryProbeAdmission.activated) {
+          paperRecoveryProbeAdmission.activated = false;
+          paperRecoveryProbeAdmission.probeRejectedReason = reasons.find((reason) => isPaperProbeCapReason(reason)) || "paper_probe_scope_cap_reached";
+        }
+      }
+    }
+    let {
+      lane: learningLane,
+      learningValueScore: paperLearningValueScore,
+      activeLearningState: paperActiveLearningState,
+      shadowQueueBlockedByCap,
+      shadowCapReasons
+    } = resolvePaperLearningLane({
+      config: this.config,
+      allow,
+      entryMode,
+      reasons,
+      score,
+      threshold,
+      signalQualitySummary,
+      confidenceBreakdown,
+      dataQualitySummary,
+      paperLearningBudget,
+      botMode: this.config.botMode,
+      samplingState: paperLearningSampling,
+      regimeSummary,
+      sessionSummary
+    });
+    if (!allow && shadowQueueBlockedByCap) {
+      for (const reason of shadowCapReasons || []) {
+        if (!reasons.includes(reason)) {
+          reasons.push(reason);
+        }
+      }
+    }
+    learningValueScore = clamp(Math.max(learningValueScore, paperLearningValueScore), 0, 1);
+    activeLearningState = {
+      ...paperActiveLearningState,
+      activeLearningScore: clamp(
+        Math.max(
+          safeValue(paperActiveLearningState.activeLearningScore, 0),
+          safeValue(activeLearningState.activeLearningScore, 0)
+        ),
+        0,
+        1
+      ),
+      focusReason: paperActiveLearningState.focusReason || activeLearningState.focusReason
+    };
+    const learningNoveltyTooLow = this.config.botMode === "paper" &&
+      ["paper_exploration", "paper_recovery_probe"].includes(entryMode) &&
+      learningLane === "probe" &&
+      safeValue(paperLearningSampling.noveltyScore, 0) < (this.config.paperLearningMinNoveltyScore || 0);
+    if (allow && learningNoveltyTooLow) {
+      allow = false;
+      entryMode = "standard";
+      finalQuoteAmount = 0;
+      paperExploration = null;
+      suppressedReasons = [];
+      paperGuardrailRelief = [];
+      if (paperRecoveryProbeAdmission.activated) {
+        paperRecoveryProbeAdmission.activated = false;
+        paperRecoveryProbeAdmission.probeRejectedReason = "paper_learning_novelty_too_low";
+      }
+      if (!reasons.includes("paper_learning_novelty_too_low")) {
+        reasons.push("paper_learning_novelty_too_low");
+      }
+      ({
+        lane: learningLane,
+        learningValueScore: paperLearningValueScore,
+        activeLearningState: paperActiveLearningState,
+        shadowQueueBlockedByCap,
+        shadowCapReasons
+      } = resolvePaperLearningLane({
+        config: this.config,
+        allow,
+        entryMode,
+        reasons,
+        score,
+        threshold,
+        signalQualitySummary,
+        confidenceBreakdown,
+        dataQualitySummary,
+        paperLearningBudget,
+        botMode: this.config.botMode,
+        samplingState: paperLearningSampling,
+        regimeSummary,
+        sessionSummary
+      }));
+      if (!allow && shadowQueueBlockedByCap) {
+        for (const reason of shadowCapReasons || []) {
+          if (!reasons.includes(reason)) {
+            reasons.push(reason);
+          }
+        }
+      }
+      learningValueScore = clamp(Math.max(learningValueScore, paperLearningValueScore), 0, 1);
+      activeLearningState = {
+        ...paperActiveLearningState,
+        activeLearningScore: clamp(
+          Math.max(
+            safeValue(paperActiveLearningState.activeLearningScore, 0),
+            safeValue(activeLearningState.activeLearningScore, 0)
+          ),
+          0,
+          1
+        ),
+        focusReason: paperActiveLearningState.focusReason || activeLearningState.focusReason
+      };
+    }
+    let strategyAllocationGovernance = buildStrategyAllocationGovernanceState({
+      config: this.config,
+      botMode: this.config.botMode,
+      allow,
+      reasons,
+      learningLane,
+      strategySummary,
+      strategyAllocationSummary,
+      paperLearningBudget,
+      samplingState: paperLearningSampling,
+      canOpenAnotherPaperLearningPosition
+    });
+    if (this.config.botMode === "paper" && strategyAllocationGovernance.applied) {
+      if (strategyAllocationGovernance.recommendedLane && strategyAllocationGovernance.recommendedLane !== learningLane) {
+        learningLane = strategyAllocationGovernance.recommendedLane;
+      }
+      if (strategyAllocationGovernance.priorityBoost > 0) {
+        learningValueScore = clamp(learningValueScore + strategyAllocationGovernance.priorityBoost, 0, 1);
+        activeLearningState = {
+          ...activeLearningState,
+          activeLearningScore: clamp(
+            safeValue(activeLearningState.activeLearningScore, 0) + strategyAllocationGovernance.priorityBoost * 0.55,
+            0,
+            1
+          ),
+          focusReason: activeLearningState.focusReason || "allocator_priority"
+        };
+      }
+    }
+    if (this.config.botMode === "paper" && missedTradeTuningApplied.active) {
+      if (missedTradeTuningApplied.paperProbeEligible && allow && learningLane === "safe" && entryMode === "standard") {
+        learningLane = "probe";
+      }
+      if (missedTradeTuningApplied.shadowPriority && !allow && learningLane === "safe") {
+        learningLane = "shadow";
+      }
+      learningValueScore = clamp(
+        learningValueScore +
+        (missedTradeTuningApplied.paperProbeEligible ? 0.06 : 0) +
+        (missedTradeTuningApplied.shadowPriority ? 0.04 : 0),
+        0,
+        1
+      );
+      activeLearningState = {
+        ...activeLearningState,
+        activeLearningScore: clamp(
+          safeValue(activeLearningState.activeLearningScore, 0) +
+          (missedTradeTuningApplied.paperProbeEligible ? 0.04 : 0) +
+          (missedTradeTuningApplied.shadowPriority ? 0.03 : 0),
+          0,
+          1
+        ),
+        focusReason: activeLearningState.focusReason || "condition_missed_trade_tuning"
+      };
+    }
+    const paperLearningGuidanceApplied = applyPaperLearningGuidance({
+      botMode: this.config.botMode,
+      guidance: paperLearningGuidance,
+      allow,
+      entryMode,
+      learningLane,
+      learningValueScore,
+      activeLearningState,
+      paperLearningBudget,
+      samplingState: paperLearningSampling,
+      score,
+      threshold
+    });
+    learningLane = paperLearningGuidanceApplied.learningLane;
+    learningValueScore = paperLearningGuidanceApplied.learningValueScore;
+    activeLearningState = paperLearningGuidanceApplied.activeLearningState;
+    const paperLearningGuidanceOpportunityBoost = this.config.botMode === "paper"
+      ? paperLearningGuidanceApplied.opportunityBoost
+      : 0;
+    const offlineLearningGuidanceOpportunityShift = offlineLearningGuidanceApplied.opportunityShift;
+    const paperPriorityOpportunityBoost =
+      this.config.botMode === "paper"
+        ? clamp(
+            (strategyAllocationGovernance.mode === "priority_probe" ? 0.08 : 0) +
+            (learningLane === "probe" && entryMode === "paper_exploration" ? 0.04 : 0) +
+            (missedTradeTuningApplied.paperProbeEligible ? 0.03 : 0) +
+            (missedTradeTuningApplied.shadowPriority && !allow ? 0.02 : 0),
+            0,
+            0.12
+          )
+        : 0;
+    const spreadStabilityScore = clamp(
+      safeValue(
+        marketSnapshot.book.spreadStabilityScore,
+        1 - safeValue(marketSnapshot.book.spreadBps, this.config.maxSpreadBps || 25) / Math.max(this.config.maxSpreadBps || 25, 1)
+      ),
+      0,
+      1
+    );
+    const depthConfidence = clamp(safeValue(marketSnapshot.book.depthConfidence, 0.5), 0, 1);
+    const cleanerContextScore = clamp(
+      1 -
+        safeValue(newsSummary.riskScore, 0) * 0.45 -
+        safeValue(announcementSummary.riskScore, 0) * 0.42 -
+        safeValue(calendarSummary.riskScore, 0) * 0.28 -
+        safeValue(marketConditionRisk, 0) * 0.22,
+      0,
+      1
+    );
+    const strategyFitDensity = clamp(
+      safeValue(strategySummary.fitScore, 0.5) * 0.7 +
+        safeValue(signalQualitySummary.overallScore, 0.5) * 0.18 +
+        Math.max(0, safeValue(strategySummary.agreementGap, 0)) * 0.12 -
+        (strategySummary.blockers || []).length * 0.04,
+      0,
+      1
+    );
+    const opportunityScore = num(clamp(
+      0.34 +
+      clamp(score.probability - threshold, -0.12, 0.12) * 2.4 +
+      safeValue(strategyAllocationSummary.convictionScore, 0) * 0.12 +
+      safeValue(signalQualitySummary.overallScore, 0) * 0.12 +
+      safeValue(confidenceBreakdown.overallConfidence, 0) * 0.08 +
+      safeValue(pairHealthSummary.score, 0.5) * 0.06 +
+      marketConditionConfidence * 0.08 +
+      Math.max(0, 0.6 - marketConditionRisk) * 0.06 +
+      Math.max(0, safeValue(portfolioSummary.diversificationScore, 0.5) - 0.5) * 0.08 +
+      (missedTradeTuningApplied.paperProbeEligible ? 0.05 : 0) +
+      (missedTradeTuningApplied.shadowPriority ? 0.03 : 0) +
+      safeValue(strategyMetaSummary.holdMultiplier, 1) * 0.02 +
+      paperPriorityOpportunityBoost +
+      paperLearningGuidanceOpportunityBoost +
+      offlineLearningGuidanceOpportunityShift +
+      Math.max(0, spreadStabilityScore - 0.55) * 0.06 +
+      Math.max(0, depthConfidence - 0.55) * 0.06 +
+      Math.max(0, strategyFitDensity - 0.55) * 0.08 +
+      Math.max(0, cleanerContextScore - 0.52) * 0.05 +
+      safeValue(policyProfile.profile?.opportunityBias, 0) +
+      (safeValue(marketProviderSummary.score, 0.5) - 0.5) * 0.1 +
+      Math.max(0, safeValue(marketProviderSummary.execution?.executionQualityScore, 0.5) - 0.5) * 0.06 +
+      Math.max(0, safeValue(marketProviderSummary.macro?.relativePerformance?.vsBtc, 0)) * 0.03 +
+      safeValue(executionQualityMemory.opportunityBias, 0) +
+      Math.max(0, 0.55 - safeValue(executionQualityMemory.blockerNoisePenalty, 0) * 10) * 0.01 -
+      safeValue(executionQualityMemory.blockerNoisePenalty, 0) * 0.18 +
+      (safeValue(expectedNetEdge.expectancyScore, 0.5) - 0.5) * 0.08 +
+      safeValue(entryTimingRefinement.rankingAdjustment, 0) +
+      safeValue(setupQuality.score, 0) * 0.08,
+      0,
+      1.4
+    ), 4);
+    const candidateApprovalReasons = buildApprovalReasons({
+      score,
+      threshold,
+      strategySummary,
+      signalQualitySummary,
+      confidenceBreakdown,
+      setupQuality,
+      acceptanceQuality,
+      replenishmentQuality,
+      relativeStrengthComposite,
+      leadershipTailwindScore,
+      lateFollowerRisk,
+      copycatBreakoutRisk,
+      marketConditionSummary
+    });
+    if (
+      expectedNetEdge.available &&
+      expectedNetEdge.decision === "positive" &&
+      safeValue(expectedNetEdge.confidence, 0) >= 0.52
+    ) {
+      candidateApprovalReasons.push("expected_net_edge_positive");
+    }
+    if (
+      entryTimingRefinement.available &&
+      entryTimingRefinement.state === "take_now" &&
+      safeValue(entryTimingRefinement.confidence, 0) >= 0.52
+    ) {
+      candidateApprovalReasons.push("entry_timing_take_now");
+    }
+    const approvalReasons = allow ? candidateApprovalReasons : [];
+    const decisionBoundary = buildDecisionBoundarySummary({
+      allow,
+      reasons,
+      score,
+      adjudicatedProbability,
+      alphaThreshold,
+      effectiveThreshold: threshold,
+      strategySummary,
+      setupQuality,
+      approvalReasons: candidateApprovalReasons,
+      lowConfidencePressure,
+      probeAdmission: paperRecoveryProbeAdmission
+    });
+    const decisionContextConfidence = buildDecisionContextConfidence({
+      signalQualitySummary,
+      dataQualitySummary,
+      confidenceBreakdown,
+      marketConditionSummary,
+      score
+    });
+    const reasonProfiles = buildReasonProfiles(reasons, {
+      classifyReasonCategory,
+      reasonSeverity
+    });
+    const blockerCategoryCounts = reasonProfiles.blockerCategoryCounts;
+    const reasonSeverityProfile = reasonProfiles.reasonSeverityProfile;
+    const sizingBreakdown = buildSizingFactorBreakdown({
+      sessionSizeMultiplier,
+      driftSizeMultiplier,
+      selfHealSizeMultiplier,
+      metaSizeMultiplier,
+      strategyMetaSizeMultiplier,
+      venueSizeMultiplier,
+      capitalGovernorSizeMultiplier,
+      capitalLadderSizeMultiplier,
+      retirementSizeMultiplier,
+      executionCostSizeMultiplier,
+      spotDowntrendPenalty,
+      trendStateSizeMultiplier: trendStateTuning.sizeMultiplier,
+      offlineLearningSizeMultiplier: offlineLearningGuidanceApplied.sizeMultiplier,
+      groupedSizing
+    });
+    const dominantSizingDrag = sizingBreakdown.dominantSizingDrag;
+    const dominantSizingBoost = sizingBreakdown.dominantSizingBoost;
+    const rankedRejectingFactors = [...reasons]
+      .sort((left, right) => {
+        const severityDelta = reasonSeverity(right) - reasonSeverity(left);
+        if (severityDelta !== 0) {
+          return severityDelta;
+        }
+        return left.localeCompare(right);
+      });
+    const canonicalRejectingFactors = [];
+    const seenRejectingCategories = new Set();
+    for (const reason of rankedRejectingFactors) {
+      const category = classifyReasonCategory(reason);
+      const dedupeKey = category || reason;
+      if (seenRejectingCategories.has(dedupeKey)) {
+        continue;
+      }
+      seenRejectingCategories.add(dedupeKey);
+      canonicalRejectingFactors.push(reason);
+    }
+    const rankedConfirmingFactors = [...candidateApprovalReasons]
+      .sort((left, right) => left.localeCompare(right));
+    const blockerDecomposition = buildBlockerDecomposition(reasons);
+    const confidenceAdjudication = buildConfidenceAdjudication({
+      score,
+      threshold,
+      baseThreshold,
+      alphaThreshold,
+      standardConfidenceThreshold,
+      lowConfidencePressure,
+      setupQuality,
+      signalQualitySummary,
+      dataQualitySummary,
+      confidenceBreakdown,
+      timeframeSummary,
+      marketStructureSummary,
+      newsSummary,
+      announcementSummary,
+      reasons,
+      policyProfile,
+      botMode: this.config.botMode
+    });
+    const topBlockerCategory = Object.entries(blockerCategoryCounts || {})
+      .sort((left, right) => right[1] - left[1])[0]?.[0] || null;
+    const blockerStage =
+      allow
+        ? entryMode === "paper_recovery_probe"
+          ? "probe_recovery_allowed"
+          : "allowed"
+        : reasons.some((reason) => ["model_confidence_too_low", "model_uncertainty_abstain", "setup_quality_too_low", "strategy_fit_too_low"].includes(reason))
+          ? "alpha_quality_gate"
+          : paperRecoveryProbeAdmission.eligible
+            ? "probe_recovery_gate"
+          : reasons.some((reason) => ["committee_veto", "committee_confidence_too_low", "committee_low_agreement", "meta_gate_reject", "meta_neural_caution"].includes(reason))
+            ? "governance_gate"
+            : reasons.some((reason) => ["cross_timeframe_misalignment", "higher_tf_conflict", "structure_confirmation_missing"].includes(reason))
+              ? "confirmation_gate"
+              : reasons.some((reason) => ["trade_size_below_minimum", "trade_size_invalid"].includes(reason))
+                ? "sizing_gate"
+                : "mixed_gate";
+    const permissioningSummary = buildPermissioningSummary({
+      allow,
+      reasons,
+      hardSafetyBlockers: HARD_SAFETY_BLOCKERS,
+      classifyReasonCategory,
+      blockerDecomposition,
+      probeAdmission: paperRecoveryProbeAdmission
+    });
+    const edgeScoreSummary = buildEdgeScore({
+      score,
+      adjudicatedProbability,
+      threshold,
+      alphaThreshold,
+      setupQuality,
+      signalQualitySummary,
+      confidenceBreakdown,
+      expectedNetEdge,
+      lowConfidencePressure,
+      policyProfile,
+      botMode: this.config.botMode
+    });
+    const permissioningScoreSummary = buildPermissioningScore({
+      allow,
+      reasons,
+      permissioningSummary,
+      capitalGovernor,
+      probeAdmission: paperRecoveryProbeAdmission,
+      entryMode,
+      learningLane,
+      missedTradeTuningApplied,
+      policyProfile,
+      botMode: this.config.botMode
+    });
+    const sizingPolicySummary = buildSizingPolicySummary({
+      groupedSizing,
+      finalQuoteAmount,
+      effectiveMinTradeUsdt,
+      meaningfulSizeFloor,
+      paperSizeFloorReason,
+      entryMode,
+      policyProfile
+    });
+    const nearMissFalseNegative =
+      !allow &&
+      confidenceAdjudication.confidenceRecoveryEligible &&
+      confidenceAdjudication.falseNegativeSuspicionScore >= 0.62;
+    const trueLowQualityReject = !allow && !nearMissFalseNegative;
+    const entryDiagnosticsBase = buildEntryDiagnosticsSummary({
+      regimeSummary,
+      strategySummary,
+      allow,
+      marketStateSummary,
+      marketConditionId,
+      marketConditionConfidence,
+      marketConditionRisk,
+      marketConditionSummary,
+      score,
+      threshold,
+      candidateApprovalReasons: rankedConfirmingFactors,
+      reasons,
+      rankedRejectingFactors: canonicalRejectingFactors,
+      blockerCategoryCounts,
+      reasonSeverityProfile,
+      ambiguityScore,
+      ambiguityThreshold,
+      decisionContextConfidence,
+      entryTimingRefinement,
+      probeAdmission: paperRecoveryProbeAdmission
+    });
+    const entryDiagnostics = {
+      ...entryDiagnosticsBase,
+      blockerStage,
+      topBlockerCategory,
+      classification: nearMissFalseNegative ? "near_miss_false_negative" : trueLowQualityReject ? "true_low_quality_reject" : "allowed",
+      edgeScore: edgeScoreSummary.edgeScore,
+      permissioningScore: permissioningScoreSummary.permissioningScore,
+      rawProbability: num(safeValue(score.rawProbability, safeValue(score.probability, 0)), 4),
+      probability: num(safeValue(score.probability, 0), 4),
+      adjudicatedProbability: num(safeValue(adjudicatedProbability, safeValue(score.probability, 0)), 4),
+      blockerSequence: blockerDecomposition.blockerSequence,
+      rootBlocker: blockerDecomposition.rootBlocker,
+      redundantBlockers: blockerDecomposition.redundantBlockers,
+      downstreamBlockers: blockerDecomposition.downstreamBlockers,
+      probeAdmission: {
+        active: Boolean(paperRecoveryProbeAdmission.active),
+        probeOnlyActive: Boolean(paperRecoveryProbeAdmission.probeOnlyActive),
+        eligible: Boolean(paperRecoveryProbeAdmission.eligible),
+        activated: Boolean(paperRecoveryProbeAdmission.activated),
+        softBlockedOnly: Boolean(paperRecoveryProbeAdmission.softBlockedOnly),
+        qualifyingReasons: [...(paperRecoveryProbeAdmission.qualifyingReasons || [])],
+        whyNoProbeAttempt: paperRecoveryProbeAdmission.whyNoProbeAttempt || null,
+        probeRejectedReason: paperRecoveryProbeAdmission.probeRejectedReason || null,
+        rootBlocker: paperRecoveryProbeAdmission.rootBlocker || null,
+        downstreamBlockers: [...(paperRecoveryProbeAdmission.downstreamBlockers || [])],
+        capitalGovernorProbeState: paperRecoveryProbeAdmission.capitalGovernorProbeState || null,
+        metaCautionOverrideEligible: Boolean(paperRecoveryProbeAdmission.metaCautionOverrideEligible)
+      },
+      permissioning: permissioningSummary,
+      decisionScores: {
+        edge: edgeScoreSummary,
+        permissioning: permissioningScoreSummary
+      },
+      policyProfile,
+      confidence: {
+        rawProbability: confidenceAdjudication.rawProbability,
+        calibratedProbability: confidenceAdjudication.calibratedProbability,
+        finalProbability: num(safeValue(confidenceAdjudication.finalProbability, safeValue(adjudicatedProbability, safeValue(score.probability, 0))), 4),
+        rawEdge: num(safeValue(confidenceAdjudication.rawEdge, 0), 4),
+        calibratedEdge: num(safeValue(confidenceAdjudication.calibratedEdge, 0), 4),
+        finalEdge: num(safeValue(confidenceAdjudication.finalEdge, 0), 4),
+        governanceDrag: num(safeValue(confidenceAdjudication.governanceDrag, 0), 4),
+        paperRelief: num(safeValue(confidenceAdjudication.paperRelief, 0), 4),
+        confidenceEvidenceScore: confidenceAdjudication.confidenceEvidenceScore,
+        falseNegativeSuspicionScore: confidenceAdjudication.falseNegativeSuspicionScore,
+        blockerRedundancyScore: confidenceAdjudication.blockerRedundancyScore,
+        confidenceRecoveryEligible: confidenceAdjudication.confidenceRecoveryEligible,
+        confidenceRecoveryApplied: safeValue(effectivePreliminaryConfidenceAdjudication.thresholdRelief, 0) > 0 && !reasons.includes("model_confidence_too_low"),
+        confidenceRecoveryReason: confidenceAdjudication.confidenceRecoveryReason,
+        thresholdReliefEligible: confidenceAdjudication.thresholdReliefEligible,
+        thresholdReliefApplied: num(safeValue(effectivePreliminaryConfidenceAdjudication.thresholdRelief, 0), 4),
+        thresholdReliefReason: confidenceAdjudication.thresholdReliefReason
+      },
+      thresholds: {
+        baseThreshold: num(baseThreshold, 4),
+        alphaThreshold: num(alphaThreshold, 4),
+        effectiveThreshold: num(threshold, 4),
+        standardConfidenceThreshold: num(standardConfidenceThreshold, 4),
+        adjudicatedConfidenceThreshold: num(adjudicatedConfidenceThreshold, 4),
+        edgeToAlphaThreshold: num(safeValue(adjudicatedProbability, safeValue(score.probability, 0)) - safeValue(alphaThreshold, 0), 4),
+        edgeToEffectiveThreshold: num(safeValue(adjudicatedProbability, safeValue(score.probability, 0)) - safeValue(threshold, 0), 4),
+        inflationVsBase: num(safeValue(threshold, 0) - safeValue(baseThreshold, 0), 4),
+        rankedContributors: rankedThresholdInflationContributors.slice(0, 6)
+      },
+      sizing: {
+        finalQuoteAmount: num(finalQuoteAmount, 2),
+        effectiveMinTradeFloor: num(effectiveMinTradeUsdt, 2),
+        topCompressionContributors: topSizeCompressionContributors,
+        groupedSizing,
+        policy: sizingPolicySummary
+      }
+    };
+    const riskVerdict = buildRiskVerdict({
+      allowed: allow,
+      reasons,
+      approvalReasons,
+      sizing: {
+        quoteAmount: finalQuoteAmount,
+        effectiveMinTradeUsdt,
+        meaningfulSizeFloor,
+        deservesMeaningfulSize
+      },
+      portfolioSummary,
+      entryMode
+    });
+
+    return {
+      allow,
+      allowed: allow,
+      reasons: allow ? [] : reasons,
+      riskVerdict,
+      approvalReasons,
+      decisionBoundary,
+      decisionScores: {
+        edge: edgeScoreSummary,
+        permissioning: permissioningScoreSummary
+      },
+      permissioningSummary,
+      entryDiagnostics,
+      suppressedReasons,
+      entryMode,
+      paperRecoveryProbeAdmission,
+      paperRecoveryProbeEligible: Boolean(paperRecoveryProbeAdmission.eligible || paperRecoveryProbeAdmission.activated),
+      probeOnlyActive: Boolean(paperRecoveryProbeAdmission.probeOnlyActive),
+      capitalGovernorProbeState: paperRecoveryProbeAdmission.capitalGovernorProbeState || null,
+      metaCautionOverrideEligible: Boolean(paperRecoveryProbeAdmission.metaCautionOverrideEligible),
+      softBlockerOnly: Boolean(paperRecoveryProbeAdmission.softBlockedOnly),
+      whyNoProbeAttempt: paperRecoveryProbeAdmission.probeRejectedReason || paperRecoveryProbeAdmission.whyNoProbeAttempt || null,
+      learningLane,
+      learningValueScore,
+      paperLearningBudget,
+      paperLearningSampling,
+      paperActiveLearning: activeLearningState,
+      strategyAllocationGovernance,
+      baselineCoreApplied: {
+        active: Boolean(baselineCoreSummary.active),
+        enforce: Boolean(baselineCoreSummary.enforce),
+        preferredStrategies: (baselineCoreSummary.preferredStrategies || []).map((item) => item?.id || item).filter(Boolean),
+        suspendedStrategies: (baselineCoreSummary.suspendedStrategies || []).map((item) => item?.id || item).filter(Boolean),
+        matchedPreferred: (baselineCoreSummary.preferredStrategies || []).length
+          ? (baselineCoreSummary.preferredStrategies || []).some((item) => (item?.id || item) === (strategySummary.activeStrategy || ""))
+          : true,
+        note: baselineCoreSummary.note || null
+      },
+      missedTradeTuningApplied,
+      paperLearningGuidance: {
+        ...(paperLearningGuidance || {}),
+        applied: paperLearningGuidanceApplied.applied,
+        opportunityBoost: paperLearningGuidanceApplied.opportunityBoost
+      },
+      offlineLearningGuidance: {
+        ...(offlineLearningGuidance || {}),
+        applied: offlineLearningGuidanceApplied.applied,
+        thresholdShiftApplied: offlineLearningGuidanceApplied.thresholdShift,
+        sizeMultiplierApplied: offlineLearningGuidanceApplied.sizeMultiplier,
+        priorityBoostApplied: offlineLearningGuidanceApplied.priorityBoost,
+        confidenceBiasApplied: offlineLearningGuidanceApplied.confidenceBias,
+        cautionPenaltyApplied: offlineLearningGuidanceApplied.cautionPenalty,
+        executionCautionApplied: offlineLearningGuidanceApplied.executionCaution,
+        featureTrustPenaltyApplied: offlineLearningGuidanceApplied.featureTrustPenalty,
+        opportunityShift: offlineLearningGuidanceApplied.opportunityShift,
+        onlineAdaptation: offlineLearningGuidanceApplied.onlineAdaptation || null,
+        strategyReweighting: offlineLearningGuidanceApplied.strategyReweighting || null
+      },
+      paperThresholdSandbox: {
+        ...paperThresholdSandbox,
+        thresholdBeforeSandbox,
+        thresholdAfterSandbox: threshold
+      },
+      paperBlockerCategories: allow ? {} : reasons.reduce((acc, reason) => {
+        const category = classifyPaperBlocker(reason);
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {}),
+      paperExploration,
+      paperPriorityOpportunityBoost,
+      paperLearningGuidanceOpportunityBoost,
+      offlineLearningGuidanceOpportunityShift,
+      paperGuardrailRelief,
+      baseThreshold,
+      alphaThreshold,
+      threshold,
+      thresholdAdjustment: optimizerAdjustments.thresholdAdjustment,
+      adaptiveThresholdContext: {
+        ...adaptiveThresholdContext,
+        alphaThresholdBeforeAdaptive: num(alphaThresholdBeforeAdaptive, 4),
+        alphaThresholdAfterAdaptive: num(alphaThreshold, 4)
+      },
+      thresholdTuningApplied: thresholdTuningAdjustment,
+      parameterGovernorApplied: parameterGovernorAdjustment,
+      trendStateTuningApplied: trendStateTuning,
+      strategyRetirementApplied: strategyRetirementPolicy,
+      executionCostBudgetApplied: {
+        ...executionCostBudget,
+        learningCaution: {
+          executionCaution: offlineLearningGuidanceApplied.executionCaution,
+          featureTrustPenalty: offlineLearningGuidanceApplied.featureTrustPenalty,
+          executionCostBufferBps: safeValue(offlineLearningGuidance.executionCostBufferBps, 0)
+        }
+      },
+      capitalGovernorApplied: capitalGovernor,
+      capitalGovernorBudgetMatch: {
+        blocked: exposureBudgetMatch.blocked,
+        strongest: exposureBudgetMatch.strongest,
+        matches: exposureBudgetMatch.matches
+      },
+      exchangeCapabilitiesApplied: exchangeCapabilities,
+      marketConditionApplied: marketConditionSummary,
+      downtrendPolicy,
+      trendStateSummary,
+      marketConditionSummary,
+      dataQualitySummary,
+      signalQualitySummary,
+      confidenceBreakdown,
+      sizeVerdict: {
+        allowTrade: allow,
+        deservesMeaningfulSize,
+        meaningfulSizeFloor: num(meaningfulSizeFloor, 2),
+        riskClarityScore: num(riskClarityScore, 4),
+        hardSafetyBlocked: reasons.some((reason) => HARD_SAFETY_BLOCKERS.has(reason))
+      },
+      setupQuality,
+      lowConfidencePressure,
+      confidenceAdjudication,
+      policyProfile,
+      executionQualityMemory,
+      expectedNetEdge,
+      entryTimingRefinement,
+      decisionContext: {
+        confidence: num(decisionContextConfidence, 4),
+        riskClarityScore: num(riskClarityScore, 4),
+        regime: regimeSummary.regime || null,
+        conditionId: marketConditionId || null
+      },
+      sizingSummary: {
+        rawQuoteAmount: Number.isFinite(quoteAmount) ? num(quoteAmount, 2) : null,
+        adjustedQuoteAmount: Number.isFinite(adjustedQuoteAmount) ? num(adjustedQuoteAmount, 2) : null,
+        cappedQuoteAmount: Number.isFinite(cappedQuoteAmount) ? num(cappedQuoteAmount, 2) : null,
+        groupedSizing,
+        policy: sizingPolicySummary,
+        maxByPosition: Number.isFinite(maxByPosition) ? num(maxByPosition, 2) : null,
+        maxByRisk: Number.isFinite(maxByRisk) ? num(maxByRisk, 2) : null,
+        remainingExposureBudget: Number.isFinite(remainingExposureBudget) ? num(remainingExposureBudget, 2) : null,
+        minTradeUsdt: num(this.config.minTradeUsdt || 0, 2),
+        invalidQuoteAmount,
+        entryReferencePrice: Number.isFinite(entryReferencePrice) ? num(entryReferencePrice, 8) : null,
+        missingExecutableEntryPrice: !Number.isFinite(entryReferencePrice) || entryReferencePrice <= 0,
+        offlineLearningSizeMultiplier: num(offlineLearningGuidanceApplied.sizeMultiplier, 4),
+        offlineLearningPriorityBoost: num(offlineLearningGuidanceApplied.priorityBoost, 4),
+        offlineLearningExecutionCaution: num(offlineLearningGuidanceApplied.executionCaution, 4),
+        offlineLearningFeatureTrustPenalty: num(offlineLearningGuidanceApplied.featureTrustPenalty, 4),
+        riskClaritySizeFactor: num(riskClaritySizeFactor, 4),
+        effectiveRiskClaritySizeFactor: num(effectiveRiskClaritySizeFactor, 4),
+        setupTierSizeFactor: num(setupTierSizeFactor, 4),
+        riskClarityScore: num(riskClarityScore, 4),
+        meaningfulSizeFloor: num(meaningfulSizeFloor, 2),
+        deservesMeaningfulSize,
+        effectiveMinTradeUsdt: num(effectiveMinTradeUsdt, 2),
+        paperSizeFloorLiftApplied,
+        paperSizeFloorReason,
+        hardSafetyBlocked: reasons.some((reason) => HARD_SAFETY_BLOCKERS.has(reason)),
+        exchangeSafetyBlockReason: runtime?.exchangeSafety?.globalFreezeEntries
+          ? "exchange_safety_blocked"
+          : exchangeSafetySymbolBlock?.reason || executionIntentBlock?.ambiguityReason || null,
+        capitalGovernorBudgetMatch: {
+          blocked: exposureBudgetMatch.blocked,
+          strongest: exposureBudgetMatch.strongest,
+          matches: exposureBudgetMatch.matches
+        },
+        topSizeCompressionContributors,
+        dominantGroupDrags: groupedSizing?.dominantGroupDrags || [],
+        dominantGroupBoosts: groupedSizing?.dominantGroupBoosts || [],
+        advisoryPortfolioReasons: [...(portfolioSummary.advisoryReasons || [])],
+        dominantSizingDrag,
+        dominantSizingBoost
+      },
+      modelAbstainReasons: abstainReasons,
+      committeeVetoObservation: {
+        vetoIds: committeeVetoIds,
+        softenedInPaper: softPaperCommitteeDisagreement || redundantCommitteeVeto || softPaperCommitteeConfidence,
+        redundantInDecision: redundantCommitteeVeto,
+        confidenceSoftenedInPaper: softPaperCommitteeConfidence
+      },
+      strategyMetaApplied: strategyMetaSummary,
+      capitalLadderApplied: capitalLadderSummary,
+      strategyConfidenceFloor,
+      strategyConfidenceAdjustment: optimizerAdjustments.strategyConfidenceAdjustment,
+      optimizerApplied: {
+        sampleSize: optimizerAdjustments.sampleSize,
+        sampleConfidence: optimizerAdjustments.sampleConfidence,
+        baseThreshold,
+        alphaThreshold,
+        effectiveThreshold: threshold,
+        thresholdAdjustment: optimizerAdjustments.thresholdAdjustment,
+        adaptiveThresholdShift: adaptiveThresholdContext.thresholdShift,
+        adaptiveThresholdDominantAdjustment: adaptiveThresholdContext.dominantAdjustmentId,
+        thresholdTuningAdjustment: thresholdTuningAdjustment.adjustment,
+        parameterGovernorThresholdShift: parameterGovernorAdjustment.thresholdShift,
+        missedTradeThresholdShift: missedTradeTuningApplied.thresholdShift,
+        trendStateThresholdShift: trendStateTuning.thresholdShift,
+        offlineLearningThresholdShift: offlineLearningGuidanceApplied.thresholdShift,
+        globalThresholdTilt: optimizerAdjustments.globalThresholdTilt,
+        familyThresholdTilt: optimizerAdjustments.familyThresholdTilt,
+        strategyThresholdTilt: optimizerAdjustments.strategyThresholdTilt,
+        strategyConfidenceFloor,
+        strategyConfidenceAdjustment: optimizerAdjustments.strategyConfidenceAdjustment,
+        globalConfidenceTilt: optimizerAdjustments.globalConfidenceTilt,
+        familyConfidenceTilt: optimizerAdjustments.familyConfidenceTilt,
+        strategyConfidenceTilt: optimizerAdjustments.strategyConfidenceTilt
+      },
+      quoteAmount: finalQuoteAmount,
+      stopLossPct: adjustedStopLossPct,
+      takeProfitPct,
+      maxHoldMinutes: Math.max(1, Math.round((this.config.maxHoldMinutes || 1) * parameterGovernorAdjustment.maxHoldMinutesMultiplier * clamp(safeValue(strategyMetaSummary.holdMultiplier || 1), 0.84, 1.14))),
+      scaleOutPlan: {
+        enabled: this.config.scaleOutFraction > 0,
+        fraction: clamp(this.config.scaleOutFraction * parameterGovernorAdjustment.scaleOutFractionMultiplier, 0.05, 0.95),
+        triggerPct: Math.max(this.config.scaleOutTriggerPct, adjustedStopLossPct * 0.9) * parameterGovernorAdjustment.scaleOutTriggerMultiplier,
+        minNotionalUsd: this.config.scaleOutMinNotionalUsd,
+        trailOffsetPct: this.config.scaleOutTrailOffsetPct
+      },
+      metaSummary,
+      regime: regimeSummary.regime,
+      committeeSummary,
+      rlAdvice,
+      strategySummary,
+      sessionSummary,
+      driftSummary,
+      selfHealState,
+      timeframeSummary,
+      pairHealthSummary,
+      onChainLiteSummary,
+      qualityQuorumSummary,
+      divergenceSummary,
+      venueConfirmationSummary,
+      rankScore:
+        score.probability -
+        threshold +
+        (safeValue(expectedNetEdge.expectancyScore, 0.5) - 0.5) * 0.07 +
+        safeValue(entryTimingRefinement.rankingAdjustment, 0) * 0.85 +
+        (safeValue(setupQuality.score, 0) - 0.5) * 0.08 +
+        (score.transformer?.probability || 0.5) * 0.04 +
+        (committeeSummary.netScore || 0) * 0.09 +
+        (committeeSummary.agreement || 0) * 0.03 +
+        (strategySummary.fitScore || 0) * 0.08 +
+        (strategySummary.agreementGap || 0) * 0.03 +
+        (strategySummary.optimizerBoost || 0) * 0.05 +
+        (newsSummary.sentimentScore || 0) * 0.03 +
+        (sessionSummary.riskScore || 0) * -0.04 +
+        (driftSummary.severity || 0) * -0.06 +
+        (newsSummary.socialSentiment || 0) * 0.01 +
+        (announcementSummary.sentimentScore || 0) * 0.02 +
+        (marketSentimentSummary.contrarianScore || 0) * 0.02 +
+        (marketStructureSummary.signalScore || 0) * 0.04 +
+        (pairHealthSummary.score || 0.5) * 0.04 +
+        (timeframeSummary.alignmentScore || 0) * 0.05 +
+        (onChainLiteSummary.liquidityScore || 0) * 0.03 +
+        (qualityQuorumSummary.quorumScore || qualityQuorumSummary.averageScore || 0) * 0.04 +
+        (signalQualitySummary.overallScore || 0) * 0.05 +
+        (dataQualitySummary.overallScore || 0) * 0.04 +
+        (confidenceBreakdown.overallConfidence || 0) * 0.03 +
+        (onChainLiteSummary.marketBreadthScore || 0) * 0.025 +
+        (onChainLiteSummary.majorsMomentumScore || 0) * 0.018 +
+        ((venueConfirmationSummary.confirmed ? 0.02 : (venueConfirmationSummary.status || "") === "blocked" ? -0.06 : 0)) +
+        (marketSnapshot.book.bookPressure || 0) * 0.04 +
+        (marketSnapshot.market.bullishPatternScore || 0) * 0.03 +
+        (metaSummary.score || 0) * 0.05 -
+        (onChainLiteSummary.stressScore || 0) * 0.03 -
+        (qualityQuorumSummary.observeOnly ? 0.06 : (qualityQuorumSummary.status || "") === "degraded" ? 0.025 : 0) -
+        (divergenceSummary.averageScore || 0) * 0.04 -
+        ((strategySummary.blockers || []).length ? 0.03 : 0) -
+        (volatilitySummary.riskScore || 0) * 0.04 -
+        (marketSnapshot.market.bearishPatternScore || 0) * 0.04 -
+        (announcementSummary.riskScore || 0) * 0.03 -
+        (calendarSummary.riskScore || 0) * 0.04 -
+        (rlAdvice.expectedReward || 0) * 0.02 -
+        marketSnapshot.book.spreadBps / 20_000 +
+        (portfolioSummary.allocatorScore || 0) * 0.03 -
+        (portfolioSummary.maxCorrelation || 0) * 0.03 +
+        (score.calibrationConfidence || 0) * 0.02 +
+        marketConditionConfidence * 0.03 -
+        marketConditionRisk * 0.02 +
+        (missedTradeTuningApplied.paperProbeEligible ? 0.02 : 0),
+      opportunityScore
+    };
+  }
+
+  evaluateExit({ position, currentPrice, newsSummary, announcementSummary = {}, marketStructureSummary = {}, calendarSummary = {}, marketSnapshot = {}, exitIntelligenceSummary = {}, exitPolicySummary = {}, parameterGovernorSummary = {}, nowIso }) {
+    const updatedHigh = Math.max(position.highestPrice || position.entryPrice, currentPrice);
+    const updatedLow = Math.min(position.lowestPrice || position.entryPrice, currentPrice);
+    const adaptiveExitPolicy = this.resolveAdaptiveExitPolicy(exitPolicySummary, position);
+    const entryDecisionContextConfidence = clamp(
+      safeValue(
+        position.entryRationale?.decisionContext?.confidence ??
+        position.entryRationale?.entryDiagnostics?.decisionContextConfidence,
+        0.5
+      ),
+      0,
+      1
+    );
+    const contextExitUrgency = clamp((0.58 - entryDecisionContextConfidence) * 0.5, 0, 0.18);
+    const parameterGovernorAdjustment = this.resolveParameterGovernor(parameterGovernorSummary, {
+      activeStrategy: position.strategyAtEntry || position.strategyDecision?.activeStrategy || position.entryRationale?.strategy?.activeStrategy || null
+    }, {
+      regime: position.regimeAtEntry || position.entryRationale?.regimeSummary?.regime || null
+    });
+    const exitTrailBias = safeValue(exitIntelligenceSummary.trailTightnessBias, 0) + safeValue(adaptiveExitPolicy.trailTightnessBias, 0);
+    const exitTrimBias = safeValue(exitIntelligenceSummary.trimBias, 0) + safeValue(adaptiveExitPolicy.trimBias, 0);
+    const holdToleranceBias = safeValue(exitIntelligenceSummary.holdTolerance, 0) + safeValue(adaptiveExitPolicy.holdTolerance, 0);
+    const maxHoldBias = safeValue(exitIntelligenceSummary.maxHoldBias, 0) + safeValue(adaptiveExitPolicy.maxHoldBias, 0);
+    const continuationQuality = clamp(safeValue(exitIntelligenceSummary.continuationQuality, 0), 0, 1);
+    const structureDeterioration = clamp(safeValue(exitIntelligenceSummary.structureDeterioration, 0), 0, 1);
+    const executionFragility = clamp(safeValue(exitIntelligenceSummary.executionFragility, 0), 0, 1);
+    const timeDecayScore = clamp(safeValue(exitIntelligenceSummary.timeDecayScore, 0), 0, 1);
+    const contextualAction = exitIntelligenceSummary.contextualAction || exitIntelligenceSummary.action || "hold";
+    const contextualReason = exitIntelligenceSummary.contextualPrimaryReason || exitIntelligenceSummary.reason || null;
+    const contextualConfidence = clamp(
+      safeValue(exitIntelligenceSummary.contextualConfidence, exitIntelligenceSummary.confidence),
+      0,
+      1
+    );
+    const contextualHoldConfidence = clamp(
+      safeValue(exitIntelligenceSummary.contextualHoldConfidence, contextualConfidence),
+      0,
+      1
+    );
+    const trailingStopPct = clamp(
+      (position.trailingStopPct || this.config.trailingStopPct) *
+      (adaptiveExitPolicy.trailingStopMultiplier || 1) *
+      (parameterGovernorAdjustment.trailingStopMultiplier || 1) *
+      (1 + clamp(exitTrailBias, -0.18, 0.18)) *
+      (1 - contextExitUrgency * 0.55),
+      0.004,
+      0.04
+    );
+    const trailingStopPrice = updatedHigh * (1 - trailingStopPct);
+    const heldMinutes = minutesBetween(position.entryAt, nowIso);
+    const scaleOutTriggerPrice =
+      (position.scaleOutTriggerPrice || position.entryPrice * (1 + this.config.scaleOutTriggerPct)) *
+      (adaptiveExitPolicy.scaleOutTriggerMultiplier || 1) *
+      (parameterGovernorAdjustment.scaleOutTriggerMultiplier || 1) *
+      (1 + clamp(-exitTrimBias * 0.35, -0.08, 0.08));
+    const notional = position.lastMarkedPrice ? position.lastMarkedPrice * position.quantity : position.notional || position.totalCost || 0;
+    const effectiveMaxHoldMinutes = Math.max(
+      1,
+      Math.round(
+        (position.maxHoldMinutes || this.config.maxHoldMinutes || 1) *
+        (adaptiveExitPolicy.maxHoldMinutesMultiplier || 1) *
+        (parameterGovernorAdjustment.maxHoldMinutesMultiplier || 1) *
+        (1 + clamp(maxHoldBias, -0.18, 0.18)) *
+        (1 - contextExitUrgency * 0.5)
+      )
+    );
+    const isRangeGrid = (position.strategyFamily || position.strategyDecision?.family || position.entryRationale?.strategy?.family || "") === "range_grid" || Boolean(position.gridContext?.gridMode);
+    const gridContext = position.gridContext || {};
+    if (isRangeGrid) {
+      const gridBand = gridContext.gridBand || "mid";
+      const rangeMid = Number(gridContext.rangeMidPrice || position.entryPrice);
+      const oppositeBand = Number(gridContext.oppositeBandPrice || position.takeProfitPrice || position.entryPrice * (1 + this.config.takeProfitPct * 0.75));
+      const gridTakeProfit = gridBand === "lower"
+        ? Math.max(rangeMid, oppositeBand * 0.92)
+        : gridBand === "upper"
+          ? Math.min(rangeMid, oppositeBand * 1.08)
+          : rangeMid;
+      if ((marketStructureSummary.liquidationTrapRisk || 0) >= 0.52) {
+        return { shouldExit: true, shouldScaleOut: false, reason: "grid_liquidation_trap_exit", updatedHigh, updatedLow };
+      }
+      if ((marketSnapshot.market?.bullishBosActive || 0) > 0 || (marketSnapshot.market?.bearishBosActive || 0) > 0) {
+        return { shouldExit: true, shouldScaleOut: false, reason: "grid_bos_invalidation_exit", updatedHigh, updatedLow };
+      }
+      if (["range_break_risk", "breakout_release"].includes(position.marketConditionAtEntry || "") && heldMinutes >= Math.max(12, Math.round(effectiveMaxHoldMinutes * 0.35))) {
+        return { shouldExit: true, shouldScaleOut: false, reason: "grid_regime_shift_exit", updatedHigh, updatedLow };
+      }
+      if (currentPrice >= gridTakeProfit) {
+        return { shouldExit: true, shouldScaleOut: false, reason: "grid_take_profit", updatedHigh, updatedLow };
+      }
+    }
+    const canScaleOut =
+      !position.scaleOutCompletedAt &&
+      !position.scaleOutInProgress &&
+      (position.scaleOutFraction || this.config.scaleOutFraction) > 0 &&
+      notional >= (position.scaleOutMinNotionalUsd || this.config.scaleOutMinNotionalUsd) * (1.2 + Math.max(0, holdToleranceBias) * 0.15) &&
+      currentPrice >= scaleOutTriggerPrice;
+    const strongContinuationHold =
+      contextualAction === "hold" &&
+      continuationQuality >= 0.66 &&
+      structureDeterioration <= 0.42 &&
+      executionFragility <= 0.5 &&
+      timeDecayScore <= 0.56 &&
+      contextualHoldConfidence >= Math.max(0.2, this.config.exitIntelligenceMinConfidence - 0.08);
+
+    if (canScaleOut && !strongContinuationHold) {
+      return {
+        shouldExit: false,
+        shouldScaleOut: true,
+        scaleOutFraction: clamp(
+          (exitIntelligenceSummary.trimFraction || position.scaleOutFraction || this.config.scaleOutFraction) *
+          (adaptiveExitPolicy.scaleOutFractionMultiplier || 1) *
+          (parameterGovernorAdjustment.scaleOutFractionMultiplier || 1) *
+          (1 + clamp(exitTrimBias, -0.18, 0.18)),
+          0.05,
+          0.95
+        ),
+        scaleOutReason: contextualAction === "trim" ? (contextualReason || "context_trim_scale_out") : "partial_take_profit",
+        updatedHigh,
+        updatedLow,
+        exitPolicy: adaptiveExitPolicy
+      };
+    }
+    if (currentPrice <= position.stopLossPrice) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "stop_loss", updatedHigh, updatedLow };
+    }
+    if (currentPrice >= position.takeProfitPrice) {
+      if (
+        (exitIntelligenceSummary.preferredExitStyle || adaptiveExitPolicy.preferredExitStyle) === "trail" &&
+        (holdToleranceBias > 0.04 || strongContinuationHold)
+      ) {
+        return {
+          shouldExit: false,
+          shouldScaleOut: false,
+          reason: null,
+          updatedHigh,
+          updatedLow,
+          exitPolicy: adaptiveExitPolicy
+        };
+      }
+      return { shouldExit: true, shouldScaleOut: false, reason: "take_profit", updatedHigh, updatedLow };
+    }
+    if (updatedHigh > position.entryPrice * 1.004 && currentPrice <= trailingStopPrice) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "trailing_stop", updatedHigh, updatedLow };
+    }
+    if (heldMinutes >= effectiveMaxHoldMinutes && (holdToleranceBias - contextExitUrgency * 0.4) <= 0.08) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "time_stop", updatedHigh, updatedLow };
+    }
+    if ((marketSnapshot.book?.spreadBps || 0) >= this.config.exitOnSpreadShockBps) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "spread_shock_exit", updatedHigh, updatedLow };
+    }
+    if ((marketSnapshot.book?.bookPressure || 0) < -0.62 && (marketSnapshot.market?.bearishPatternScore || 0) > 0.45) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "orderbook_reversal_exit", updatedHigh, updatedLow };
+    }
+    if ((marketStructureSummary.liquidationImbalance || 0) < -0.55 && (marketStructureSummary.riskScore || 0) > 0.55 && (marketStructureSummary.liquidationCount || 0) > 0) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "liquidation_shock_exit", updatedHigh, updatedLow };
+    }
+    if (newsSummary.riskScore > 0.8 && newsSummary.sentimentScore < -0.2) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "news_risk_exit", updatedHigh, updatedLow };
+    }
+    if ((announcementSummary.riskScore || 0) > 0.82) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "exchange_notice_exit", updatedHigh, updatedLow };
+    }
+    if ((calendarSummary.riskScore || 0) > 0.8 && (calendarSummary.proximityHours || 999) <= 6) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "calendar_risk_exit", updatedHigh, updatedLow };
+    }
+    if ((marketStructureSummary.riskScore || 0) > 0.85 && (marketStructureSummary.signalScore || 0) < -0.15) {
+      return { shouldExit: true, shouldScaleOut: false, reason: "market_structure_exit", updatedHigh, updatedLow };
+    }
+    if (
+      canScaleOut &&
+      contextualAction === "trim" &&
+      contextualConfidence >= Math.max(0.2, this.config.exitIntelligenceMinConfidence - 0.06) &&
+      (
+        structureDeterioration >= 0.48 ||
+        executionFragility >= 0.54 ||
+        timeDecayScore >= 0.56 ||
+        (exitIntelligenceSummary.contextualTrimScore || 0) >= 0.56
+      )
+    ) {
+      return {
+        shouldExit: false,
+        shouldScaleOut: true,
+        scaleOutFraction: clamp(
+          (exitIntelligenceSummary.trimFraction || position.scaleOutFraction || this.config.scaleOutFraction) *
+          (adaptiveExitPolicy.scaleOutFractionMultiplier || 1) *
+          (parameterGovernorAdjustment.scaleOutFractionMultiplier || 1) *
+          (1 + clamp(exitTrimBias, -0.18, 0.18)),
+          0.05,
+          0.95
+        ),
+        scaleOutReason: contextualReason || exitIntelligenceSummary.reason || "context_trim_scale_out",
+        updatedHigh,
+        updatedLow,
+        exitPolicy: adaptiveExitPolicy
+      };
+    }
+    if (
+      canScaleOut &&
+      exitIntelligenceSummary.action === "trim" &&
+      (exitIntelligenceSummary.confidence || 0) >= this.config.exitIntelligenceMinConfidence &&
+      (exitIntelligenceSummary.trimScore || 0) >= this.config.exitIntelligenceTrimScore
+    ) {
+      return {
+        shouldExit: false,
+        shouldScaleOut: true,
+        scaleOutFraction: clamp(
+          (exitIntelligenceSummary.trimFraction || position.scaleOutFraction || this.config.scaleOutFraction) *
+          (adaptiveExitPolicy.scaleOutFractionMultiplier || 1) *
+          (parameterGovernorAdjustment.scaleOutFractionMultiplier || 1) *
+          (1 + clamp(exitTrimBias, -0.18, 0.18)),
+          0.05,
+          0.95
+        ),
+        scaleOutReason: exitIntelligenceSummary.reason || "exit_ai_trim",
+        updatedHigh,
+        updatedLow,
+        exitPolicy: adaptiveExitPolicy
+      };
+    }
+    if (
+      contextualAction === "exit" &&
+      contextualConfidence >= Math.max(0.2, this.config.exitIntelligenceMinConfidence - contextExitUrgency * 0.1 - 0.04) &&
+      (
+        structureDeterioration >= 0.62 ||
+        executionFragility >= 0.66 ||
+        timeDecayScore >= 0.68 ||
+        (exitIntelligenceSummary.contextualExitScore || 0) >= 0.68
+      )
+    ) {
+      return { shouldExit: true, shouldScaleOut: false, reason: contextualReason || exitIntelligenceSummary.reason || "context_exit_signal", updatedHigh, updatedLow };
+    }
+    if (
+      exitIntelligenceSummary.action === "exit" &&
+      (exitIntelligenceSummary.confidence || 0) >= Math.max(0.2, this.config.exitIntelligenceMinConfidence - contextExitUrgency * 0.08) &&
+      (exitIntelligenceSummary.exitScore || 0) >= Math.max(0.2, this.config.exitIntelligenceExitScore - contextExitUrgency * 0.06)
+    ) {
+      return { shouldExit: true, shouldScaleOut: false, reason: exitIntelligenceSummary.reason || "exit_ai_signal", updatedHigh, updatedLow };
+    }
+
+    return {
+      shouldExit: false,
+      shouldScaleOut: false,
+      reason: null,
+      updatedHigh,
+      updatedLow,
+      exitPolicy: adaptiveExitPolicy,
+      exitContext: {
+        entryDecisionContextConfidence: num(entryDecisionContextConfidence, 4),
+        contextExitUrgency: num(contextExitUrgency, 4),
+        continuationQuality: num(continuationQuality, 4),
+        structureDeterioration: num(structureDeterioration, 4),
+        executionFragility: num(executionFragility, 4),
+        timeDecayScore: num(timeDecayScore, 4),
+        strongContinuationHold,
+        contextualAction,
+        contextualReason
+      }
+    };
+  }
+}

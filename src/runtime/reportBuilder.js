@@ -1,0 +1,1925 @@
+import { getConfiguredTradingSource, matchesBrokerMode, matchesTradingSource } from "../utils/tradingSource.js";
+
+function safeDivide(numerator, denominator, fallback = 0) {
+  return denominator ? numerator / denominator : fallback;
+}
+
+function safeNumber(value, fallback = 0) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function buildTradeStats(trades, options = {}) {
+  const realizedPnlAdjustment = safeNumber(options.realizedPnlAdjustment, 0);
+  let winCount = 0;
+  let realizedPnl = realizedPnlAdjustment;
+  let grossProfit = 0;
+  let grossLossAbs = 0;
+  let totalPnlPct = 0;
+  let bestTrade = null;
+  let worstTrade = null;
+
+  for (const trade of trades) {
+    const pnlQuote = trade.pnlQuote || 0;
+    const netPnlPct = trade.netPnlPct || 0;
+    realizedPnl += pnlQuote;
+    totalPnlPct += netPnlPct;
+    if (netPnlPct > 0) {
+      winCount += 1;
+      grossProfit += pnlQuote;
+    } else {
+      grossLossAbs += Math.abs(Math.min(pnlQuote, 0));
+    }
+    if (!bestTrade || pnlQuote > (bestTrade.pnlQuote || 0)) {
+      bestTrade = trade;
+    }
+    if (!worstTrade || pnlQuote < (worstTrade.pnlQuote || 0)) {
+      worstTrade = trade;
+    }
+  }
+
+  return {
+    tradeCount: trades.length,
+    realizedPnl,
+    winRate: safeDivide(winCount, trades.length),
+    averagePnlPct: safeDivide(totalPnlPct, trades.length),
+    profitFactor: grossLossAbs ? grossProfit / grossLossAbs : grossProfit > 0 ? Infinity : 0,
+    bestTrade,
+    worstTrade
+  };
+}
+
+function startOfLocalDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function buildScaleOutPnlSummary(scaleOuts = [], thresholds = {}) {
+  const totals = {
+    allTime: scaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0)
+  };
+  for (const name of Object.keys(thresholds)) {
+    totals[name] = 0;
+  }
+  for (const item of scaleOuts) {
+    const eventMs = parseTimestampMs(item.at || item.exitAt || item.createdAt);
+    if (!Number.isFinite(eventMs)) {
+      continue;
+    }
+    const realizedPnl = safeNumber(item.realizedPnl, 0);
+    for (const [name, startMs] of Object.entries(thresholds)) {
+      if (eventMs >= startMs) {
+        totals[name] += realizedPnl;
+      }
+    }
+  }
+  return totals;
+}
+
+function buildWindowSummaries(trades, thresholds = {}, options = {}) {
+  const scaleOutPnlSummary = options.scaleOutPnlSummary || {};
+  const buckets = Object.fromEntries(
+    Object.entries(thresholds).map(([name]) => [name, {
+      tradeCount: 0,
+      realizedPnl: safeNumber(scaleOutPnlSummary[name], 0),
+      totalPnlPct: 0,
+      winCount: 0,
+      grossProfit: 0,
+      grossLossAbs: 0
+    }])
+  );
+
+  for (const trade of trades) {
+    const tradeMs = new Date(trade.exitAt || trade.entryAt || 0).getTime();
+    if (!Number.isFinite(tradeMs)) {
+      continue;
+    }
+    const pnlQuote = trade.pnlQuote || 0;
+    const netPnlPct = trade.netPnlPct || 0;
+    for (const [name, startMs] of Object.entries(thresholds)) {
+      if (tradeMs < startMs) {
+        continue;
+      }
+      const bucket = buckets[name];
+      bucket.tradeCount += 1;
+      bucket.realizedPnl += pnlQuote;
+      bucket.totalPnlPct += netPnlPct;
+      if (netPnlPct > 0) {
+        bucket.winCount += 1;
+        bucket.grossProfit += pnlQuote;
+      } else {
+        bucket.grossLossAbs += Math.abs(Math.min(pnlQuote, 0));
+      }
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(buckets).map(([name, bucket]) => [name, {
+      tradeCount: bucket.tradeCount,
+      realizedPnl: bucket.realizedPnl,
+      winRate: safeDivide(bucket.winCount, bucket.tradeCount),
+      averagePnlPct: safeDivide(bucket.totalPnlPct, bucket.tradeCount),
+      profitFactor: bucket.grossLossAbs ? bucket.grossProfit / bucket.grossLossAbs : bucket.grossProfit > 0 ? Infinity : 0,
+      bestTrade: null,
+      worstTrade: null
+    }])
+  );
+}
+
+function buildDrawdown(equitySnapshots) {
+  let maxEquity = 0;
+  let maxDrawdownPct = 0;
+  for (const snapshot of equitySnapshots) {
+    maxEquity = Math.max(maxEquity, snapshot.equity || 0);
+    if (maxEquity > 0) {
+      const drawdownPct = (maxEquity - snapshot.equity) / maxEquity;
+      maxDrawdownPct = Math.max(maxDrawdownPct, drawdownPct);
+    }
+  }
+  return maxDrawdownPct;
+}
+
+function average(values = []) {
+  return values.length ? values.reduce((total, value) => total + value, 0) / values.length : 0;
+}
+
+function num(value, digits = 4) {
+  return Number(safeNumber(value, 0).toFixed(digits));
+}
+
+function median(values = []) {
+  if (!values.length) {
+    return 0;
+  }
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  }
+  return sorted[middle];
+}
+
+function resolveTradeDurationMinutes(trade = {}) {
+  const entryMs = new Date(trade.entryAt || 0).getTime();
+  const exitMs = new Date(trade.exitAt || trade.closedAt || trade.updatedAt || 0).getTime();
+  if (!Number.isFinite(entryMs) || !Number.isFinite(exitMs) || exitMs < entryMs) {
+    return 0;
+  }
+  return Math.max(0, (exitMs - entryMs) / 60000);
+}
+
+function bucketResolutionMinutes(minutes = 0) {
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return "unknown";
+  }
+  if (minutes <= 30) {
+    return "under_30m";
+  }
+  if (minutes <= 120) {
+    return "30m_to_2h";
+  }
+  if (minutes <= 360) {
+    return "2h_to_6h";
+  }
+  if (minutes <= 1440) {
+    return "6h_to_24h";
+  }
+  return "over_24h";
+}
+
+function bucketVolatility(trade = {}) {
+  const realizedVolPct = safeNumber(
+    trade.entryRationale?.realizedVolPct,
+    Number.NaN
+  );
+  if (!Number.isFinite(realizedVolPct)) {
+    return "unknown";
+  }
+  if (realizedVolPct < 0.0025) {
+    return "calm";
+  }
+  if (realizedVolPct < 0.0075) {
+    return "normal";
+  }
+  if (realizedVolPct < 0.015) {
+    return "elevated";
+  }
+  return "high_vol";
+}
+
+function bucketLiquidity(trade = {}) {
+  const qualityBucket = `${trade.liquidityContextAtEntry?.orderBookQualityBucket || ""}`.trim();
+  if (qualityBucket) {
+    return qualityBucket;
+  }
+  const spreadBps = safeNumber(
+    trade.entryRationale?.spreadBps,
+    safeNumber(trade.entrySpreadBps, safeNumber(trade.rawFeatures?.spread_bps, Number.NaN))
+  );
+  if (!Number.isFinite(spreadBps)) {
+    return "unknown";
+  }
+  if (spreadBps <= 1) {
+    return "deep";
+  }
+  if (spreadBps <= 4) {
+    return "normal";
+  }
+  if (spreadBps <= 12) {
+    return "thin";
+  }
+  return "fragile";
+}
+
+function bucketEntryTimeWindow(trade = {}) {
+  const entryMs = new Date(trade.entryAt || 0).getTime();
+  if (!Number.isFinite(entryMs)) {
+    return "unknown";
+  }
+  const hour = new Date(entryMs).getUTCHours();
+  if (hour < 6) {
+    return "00_06_utc";
+  }
+  if (hour < 12) {
+    return "06_12_utc";
+  }
+  if (hour < 18) {
+    return "12_18_utc";
+  }
+  return "18_24_utc";
+}
+
+function resolvePrimaryBlockerContext(trade = {}) {
+  const blocker = trade.entryRationale?.blockerReasons?.[0]
+    || trade.entryDiagnostics?.strongestRejectingFactors?.[0]
+    || trade.entryRationale?.entryDiagnostics?.strongestRejectingFactors?.[0]
+    || trade.paperLearningOutcome?.blockerReason
+    || null;
+  return blocker || "clean_context";
+}
+
+function buildExpectancyMetrics(trades = []) {
+  const wins = trades.filter((trade) => safeNumber(trade.pnlQuote, 0) > 0);
+  const losses = trades.filter((trade) => safeNumber(trade.pnlQuote, 0) < 0);
+  const durations = trades.map((trade) => resolveTradeDurationMinutes(trade)).filter((value) => value > 0);
+  const stopOutTrades = trades.filter((trade) => {
+    const reason = resolveExitReasonBucket(trade);
+    return reason === "stop_loss" || reason === "protective_stop" || reason === "trailing_stop";
+  });
+  const averageWinQuote = average(wins.map((trade) => safeNumber(trade.pnlQuote, 0)));
+  const averageLossQuoteAbs = average(losses.map((trade) => Math.abs(safeNumber(trade.pnlQuote, 0))));
+  const averageWinPct = average(wins.map((trade) => safeNumber(trade.netPnlPct, 0)));
+  const averageLossPctAbs = average(losses.map((trade) => Math.abs(safeNumber(trade.netPnlPct, 0))));
+  const winRate = safeDivide(wins.length, trades.length);
+  const lossRate = safeDivide(losses.length, trades.length);
+  const expectancyQuote = average(trades.map((trade) => safeNumber(trade.pnlQuote, 0)));
+  const expectancyPct = average(trades.map((trade) => safeNumber(trade.netPnlPct, 0)));
+  const payoffRatio = averageLossQuoteAbs ? averageWinQuote / averageLossQuoteAbs : wins.length ? Infinity : 0;
+  return {
+    tradeCount: trades.length,
+    winRate: num(winRate),
+    payoffRatio: Number.isFinite(payoffRatio) ? num(payoffRatio, 4) : null,
+    averageWinQuote: num(averageWinQuote, 2),
+    averageLossQuoteAbs: num(averageLossQuoteAbs, 2),
+    averageWinPct: num(averageWinPct),
+    averageLossPctAbs: num(averageLossPctAbs),
+    expectancyQuote: num(expectancyQuote, 2),
+    expectancyPct: num(expectancyPct),
+    averageResolutionMinutes: num(average(durations), 2),
+    medianResolutionMinutes: num(median(durations), 2),
+    stopOutRate: num(safeDivide(stopOutTrades.length, trades.length))
+  };
+}
+
+function buildExpectancyBuckets(trades = [], keyFn = () => "unknown", limit = 8) {
+  const buckets = new Map();
+  for (const trade of trades) {
+    const id = keyFn(trade) || "unknown";
+    if (!buckets.has(id)) {
+      buckets.set(id, []);
+    }
+    buckets.get(id).push(trade);
+  }
+  return [...buckets.entries()]
+    .map(([id, items]) => {
+      const summary = buildExpectancyMetrics(items);
+      return {
+        id,
+        ...summary
+      };
+    })
+    .sort((left, right) =>
+      right.expectancyQuote - left.expectancyQuote ||
+      right.tradeCount - left.tradeCount ||
+      right.winRate - left.winRate
+    )
+    .slice(0, limit);
+}
+
+function buildDistribution(trades = [], keyFn = () => "unknown", limit = 8) {
+  const buckets = new Map();
+  for (const trade of trades) {
+    const id = keyFn(trade) || "unknown";
+    if (!buckets.has(id)) {
+      buckets.set(id, []);
+    }
+    buckets.get(id).push(trade);
+  }
+  return [...buckets.entries()]
+    .map(([id, items]) => ({
+      id,
+      count: items.length,
+      share: num(safeDivide(items.length, trades.length)),
+      winRate: num(safeDivide(items.filter((trade) => safeNumber(trade.pnlQuote, 0) > 0).length, items.length)),
+      realizedPnl: num(items.reduce((sum, trade) => sum + safeNumber(trade.pnlQuote, 0), 0), 2),
+      averagePnlPct: num(average(items.map((trade) => safeNumber(trade.netPnlPct, 0))))
+    }))
+    .sort((left, right) => right.count - left.count || right.realizedPnl - left.realizedPnl)
+    .slice(0, limit);
+}
+
+function deriveOutcomeAttributionTags(trade = {}) {
+  const tags = new Set();
+  const pnlQuote = safeNumber(trade.pnlQuote, 0);
+  const netPnlPct = safeNumber(trade.netPnlPct, 0);
+  const captureEfficiency = safeNumber(trade.captureEfficiency, 0);
+  const mfePct = safeNumber(trade.mfePct, 0);
+  const slippageDeltaBps = Math.max(
+    safeNumber(trade.entryExecutionAttribution?.slippageDeltaBps, 0),
+    safeNumber(trade.exitExecutionAttribution?.slippageDeltaBps, 0)
+  );
+  const spreadBps = safeNumber(
+    trade.liquidityContextAtEntry?.spreadBps,
+    safeNumber(trade.entryRationale?.spreadBps, safeNumber(trade.entrySpreadBps, 0))
+  );
+  const newsRisk = Math.max(
+    safeNumber(trade.eventShockAtEntry?.newsRisk, 0),
+    safeNumber(trade.eventShockAtEntry?.announcementRisk, 0),
+    safeNumber(trade.eventShockAtExit?.newsRisk, 0),
+    safeNumber(trade.entryRationale?.newsRisk, safeNumber(trade.newsSummary?.riskScore, 0))
+  );
+  const realizedVolPct = safeNumber(trade.entryRationale?.realizedVolPct, Number.NaN);
+  const category = `${trade.learningAttribution?.category || ""}`.trim();
+  const reasons = Array.isArray(trade.learningAttribution?.reasons) ? trade.learningAttribution.reasons : [];
+  const breakoutPct = safeNumber(trade.rawFeatures?.breakout_pct, 0);
+  const correlationRisk = safeNumber(
+    trade.entryRationale?.portfolio?.maxCorrelation,
+    safeNumber(trade.entryRationale?.portfolio?.correlationClusterRisk, Number.NaN)
+  );
+  const lifecycleIssue = Boolean(
+    trade.lifecycleOutcome?.hadLifecycleIssue ||
+    trade.reconcileRequired ||
+    trade.manualReviewRequired ||
+    reasons.includes("execution_drag") && `${trade.exitSource || ""}`.includes("reconcile")
+  );
+
+  if (category === "regime_problem" || reasons.includes("regime_fit_soft")) {
+    tags.add("wrong_regime");
+  }
+  if (category === "timing_problem" || reasons.includes("missed_follow_through")) {
+    tags.add("late_entry");
+  }
+  if (pnlQuote < 0 && breakoutPct > 0.12 && (trade.reason === "stop_loss" || trade.reason === "trailing_stop")) {
+    tags.add("false_breakout");
+  }
+  if (pnlQuote < 0 && mfePct >= Math.abs(Math.min(netPnlPct, 0)) * 1.5 && captureEfficiency < 0.2) {
+    tags.add("stop_too_tight");
+  }
+  if (
+    pnlQuote < 0 &&
+    (
+      spreadBps > 4 ||
+      ["fragile", "thin"].includes(`${trade.liquidityContextAtEntry?.orderBookQualityBucket || ""}`)
+    )
+  ) {
+    tags.add("low_liquidity_whipsaw");
+  }
+  if (
+    pnlQuote < 0 &&
+    (
+      newsRisk >= 0.12 ||
+      safeNumber(trade.eventShockAtExit?.shockScore, 0) >= 0.18
+    )
+  ) {
+    tags.add("news_event_shock");
+  }
+  if (category === "execution_problem" || reasons.includes("execution_drag") || slippageDeltaBps >= 4) {
+    tags.add("spread_execution_cost_issue");
+  }
+  if (pnlQuote < 0 && Number.isFinite(correlationRisk) && correlationRisk >= 0.75) {
+    tags.add("correlation_cluster_exposure");
+  }
+  if (
+    pnlQuote < 0 &&
+    safeNumber(trade.entryRationale?.probability, 0) > safeNumber(trade.entryRationale?.threshold, 0) &&
+    !tags.has("wrong_regime") &&
+    !tags.has("spread_execution_cost_issue")
+  ) {
+    tags.add("model_false_positive");
+  }
+  if (lifecycleIssue) {
+    tags.add("protective_reconcile_lifecycle_issue");
+  }
+  if (pnlQuote < 0 && Number.isFinite(realizedVolPct) && realizedVolPct >= 0.015 && spreadBps > 2) {
+    tags.add("low_liquidity_whipsaw");
+  }
+  return [...tags];
+}
+
+function buildOutcomeAttributionSummary(trades = []) {
+  const buckets = new Map();
+  for (const trade of trades) {
+    for (const tag of deriveOutcomeAttributionTags(trade)) {
+      const bucket = buckets.get(tag) || {
+        id: tag,
+        count: 0,
+        realizedPnl: 0,
+        totalPnlPct: 0,
+        winCount: 0,
+        averageResolutionMinutes: 0
+      };
+      bucket.count += 1;
+      bucket.realizedPnl += safeNumber(trade.pnlQuote, 0);
+      bucket.totalPnlPct += safeNumber(trade.netPnlPct, 0);
+      bucket.winCount += safeNumber(trade.pnlQuote, 0) > 0 ? 1 : 0;
+      bucket.averageResolutionMinutes += resolveTradeDurationMinutes(trade);
+      buckets.set(tag, bucket);
+    }
+  }
+  const byTag = [...buckets.values()]
+    .map((bucket) => ({
+      id: bucket.id,
+      count: bucket.count,
+      winRate: num(safeDivide(bucket.winCount, bucket.count)),
+      realizedPnl: num(bucket.realizedPnl, 2),
+      averagePnlPct: num(safeDivide(bucket.totalPnlPct, bucket.count)),
+      averageResolutionMinutes: num(safeDivide(bucket.averageResolutionMinutes, bucket.count), 2)
+    }))
+    .sort((left, right) => right.count - left.count || left.realizedPnl - right.realizedPnl);
+  return {
+    byTag: byTag.slice(0, 10),
+    topNegativeTags: byTag
+      .filter((item) => item.realizedPnl < 0)
+      .sort((left, right) => left.realizedPnl - right.realizedPnl || right.count - left.count)
+      .slice(0, 5),
+    notes: [
+      byTag[0]
+        ? `${byTag[0].id} komt momenteel het vaakst terug in outcome attribution.`
+        : "Nog geen outcome attribution tags beschikbaar.",
+      byTag.find((item) => item.realizedPnl < 0)
+        ? `${byTag.find((item) => item.realizedPnl < 0).id} drukt momenteel het zwaarst op de gerealiseerde PnL.`
+        : "Geen duidelijke negatieve attribution-tag zichtbaar."
+    ]
+  };
+}
+
+function buildExecutionQualityAnalytics(trades = []) {
+  const entrySlippageSamples = trades
+    .map((trade) => safeNumber(trade.entryExecutionAttribution?.slippageDeltaBps, Number.NaN))
+    .filter((value) => Number.isFinite(value));
+  const exitSlippageSamples = trades
+    .map((trade) => safeNumber(trade.exitExecutionAttribution?.slippageDeltaBps, Number.NaN))
+    .filter((value) => Number.isFinite(value));
+  const executionQualitySamples = trades
+    .map((trade) => safeNumber(trade.executionQualityScore, Number.NaN))
+    .filter((value) => Number.isFinite(value));
+  const captureEfficiencySamples = trades
+    .map((trade) => safeNumber(trade.captureEfficiency, Number.NaN))
+    .filter((value) => Number.isFinite(value));
+  return {
+    averageExecutionQualityScore: num(average(executionQualitySamples)),
+    averageCaptureEfficiency: num(average(captureEfficiencySamples)),
+    averageEntrySlippageDeltaBps: num(average(entrySlippageSamples), 3),
+    averageExitSlippageDeltaBps: num(average(exitSlippageSamples), 3),
+    averageEntrySpreadBps: num(average(trades.map((trade) => safeNumber(trade.entrySpreadBps, 0))), 3),
+    averageExitSpreadBps: num(average(trades.map((trade) => safeNumber(trade.exitSpreadBps, 0))), 3),
+    entrySlippageSampleCount: entrySlippageSamples.length,
+    exitSlippageSampleCount: exitSlippageSamples.length
+  };
+}
+
+function buildPostTradeAnalytics(trades = []) {
+  return {
+    summary: buildExpectancyMetrics(trades),
+    resolutionDistribution: buildDistribution(trades, (trade) => bucketResolutionMinutes(resolveTradeDurationMinutes(trade))),
+    stopOutDistribution: buildDistribution(
+      trades.filter((trade) => {
+        const reason = resolveExitReasonBucket(trade);
+        return reason === "stop_loss" || reason === "protective_stop" || reason === "trailing_stop";
+      }),
+      (trade) => resolveExitReasonBucket(trade)
+    ),
+    exitTypeDistribution: buildDistribution(trades, (trade) => resolveExitReasonBucket(trade)),
+    executionQuality: buildExecutionQualityAnalytics(trades),
+    byStrategy: buildExpectancyBuckets(trades, (trade) => trade.strategyAtEntry || trade.entryRationale?.strategy?.activeStrategy || "unknown"),
+    bySetup: buildExpectancyBuckets(trades, (trade) => trade.marketConditionAtEntry || trade.entryRationale?.marketCondition?.conditionId || trade.entryRationale?.strategy?.activeStrategy || "unknown"),
+    byRegime: buildExpectancyBuckets(trades, (trade) => trade.regimeAtEntry || trade.entryRationale?.regimeSummary?.regime || "unknown"),
+    bySession: buildExpectancyBuckets(trades, (trade) => trade.sessionAtEntry || trade.entryRationale?.session?.session || "unknown"),
+    byTimeWindow: buildExpectancyBuckets(trades, (trade) => bucketEntryTimeWindow(trade)),
+    byVolatilityBucket: buildExpectancyBuckets(trades, (trade) => bucketVolatility(trade)),
+    byLiquidityBucket: buildExpectancyBuckets(trades, (trade) => bucketLiquidity(trade)),
+    byBlockerContext: buildExpectancyBuckets(trades, (trade) => resolvePrimaryBlockerContext(trade)),
+    outcomeAttribution: buildOutcomeAttributionSummary(trades)
+  };
+}
+
+function buildGroupedPerformance(trades = [], keyFn = () => "unknown") {
+  const buckets = new Map();
+  for (const trade of trades) {
+    const id = keyFn(trade) || "unknown";
+    if (!buckets.has(id)) {
+      buckets.set(id, {
+        id,
+        count: 0,
+        realizedPnl: 0,
+        grossMovePnl: 0,
+        totalFees: 0,
+        winCount: 0,
+        totalPnlPct: 0,
+        executionQuality: 0,
+        captureEfficiency: 0
+      });
+    }
+    const bucket = buckets.get(id);
+    bucket.count += 1;
+    bucket.realizedPnl += safeNumber(trade.pnlQuote, 0);
+    bucket.grossMovePnl += safeNumber(trade.grossMovePnl, 0);
+    bucket.totalFees += safeNumber(trade.totalFees, 0);
+    bucket.winCount += safeNumber(trade.pnlQuote, 0) > 0 ? 1 : 0;
+    bucket.totalPnlPct += safeNumber(trade.netPnlPct, 0);
+    bucket.executionQuality += safeNumber(trade.executionQualityScore, 0);
+    bucket.captureEfficiency += safeNumber(trade.captureEfficiency, 0);
+  }
+  return [...buckets.values()]
+    .map((bucket) => ({
+      id: bucket.id,
+      tradeCount: bucket.count,
+      realizedPnl: bucket.realizedPnl,
+      grossMovePnl: bucket.grossMovePnl,
+      totalFees: bucket.totalFees,
+      winRate: safeDivide(bucket.winCount, bucket.count),
+      averagePnlPct: safeDivide(bucket.totalPnlPct, bucket.count),
+      averageExecutionQuality: safeDivide(bucket.executionQuality, bucket.count),
+      averageCaptureEfficiency: safeDivide(bucket.captureEfficiency, bucket.count)
+    }))
+    .sort((left, right) => left.realizedPnl - right.realizedPnl);
+}
+
+function resolveExitReasonBucket(trade = {}) {
+  const rawReason = trade.reason || trade.exitReason || "unknown";
+  if (rawReason === "stop_loss" && safeNumber(trade.exitPrice, 0) > safeNumber(trade.entryPrice, 0)) {
+    return "protective_stop";
+  }
+  return rawReason;
+}
+
+function buildBaselineCorePolicy({
+  groupedStrategies = [],
+  groupedRegimes = [],
+  groupedSessions = [],
+  reportStats = {},
+  config = {}
+} = {}) {
+  const minTradeCount = Math.max(1, Math.round(safeNumber(config.baselineCoreMinTradeCount, 8)));
+  const minPreferredTrades = Math.max(1, Math.round(safeNumber(config.baselineCoreMinPreferredTrades, 4)));
+  const minSuspendTrades = Math.max(1, Math.round(safeNumber(config.baselineCoreMinSuspendTrades, 3)));
+  const preferredStrategyCount = Math.max(1, Math.round(safeNumber(config.baselineCorePreferredStrategyCount, 3)));
+  const lossCutoff = safeNumber(config.baselineCoreStrategyLossCutoff, -0.5);
+  const catastrophicLossCutoff = safeNumber(config.baselineCoreCatastrophicStrategyLossCutoff, -5);
+  const maxSuspendWinRate = safeNumber(config.baselineCoreMaxSuspendWinRate, 0.2);
+  const severeNegativeEdge =
+    (reportStats.tradeCount || 0) >= minTradeCount &&
+    safeNumber(reportStats.realizedPnl, 0) < 0 &&
+    safeNumber(reportStats.winRate, 0) <= 0.22 &&
+    safeNumber(reportStats.profitFactor, 0) < 0.75;
+  const preferredStrategies = groupedStrategies
+    .filter((item) =>
+      item.tradeCount >= minPreferredTrades &&
+      item.realizedPnl >= 0 &&
+      item.winRate >= 0.25
+    )
+    .sort((left, right) => right.realizedPnl - left.realizedPnl || right.winRate - left.winRate)
+    .slice(0, preferredStrategyCount)
+    .map((item) => ({
+      id: item.id,
+      tradeCount: item.tradeCount,
+      realizedPnl: Number(item.realizedPnl.toFixed(2)),
+      winRate: Number(item.winRate.toFixed(4))
+    }));
+  const suspendedStrategies = groupedStrategies
+    .filter((item) =>
+      item.id !== "unknown" && (
+        item.realizedPnl <= catastrophicLossCutoff ||
+        (
+          item.tradeCount >= minSuspendTrades &&
+          item.realizedPnl <= lossCutoff &&
+          item.winRate <= maxSuspendWinRate
+        )
+      )
+    )
+    .sort((left, right) => left.realizedPnl - right.realizedPnl)
+    .slice(0, 8)
+    .map((item) => ({
+      id: item.id,
+      tradeCount: item.tradeCount,
+      realizedPnl: Number(item.realizedPnl.toFixed(2)),
+      winRate: Number(item.winRate.toFixed(4))
+    }));
+  const watchRegimes = groupedRegimes
+    .filter((item) => item.tradeCount >= Math.max(4, Math.floor(minTradeCount / 2)))
+    .slice(0, 4)
+    .map((item) => ({
+      id: item.id,
+      tradeCount: item.tradeCount,
+      realizedPnl: Number(item.realizedPnl.toFixed(2)),
+      winRate: Number(item.winRate.toFixed(4))
+    }));
+  const weakestSessions = groupedSessions
+    .filter((item) => item.tradeCount >= 3)
+    .slice(0, 4)
+    .map((item) => ({
+      id: item.id,
+      tradeCount: item.tradeCount,
+      realizedPnl: Number(item.realizedPnl.toFixed(2)),
+      winRate: Number(item.winRate.toFixed(4))
+    }));
+  const enforce = Boolean(config.baselineCoreEnabled !== false) && severeNegativeEdge && preferredStrategies.length > 0;
+  return {
+    active: Boolean(config.baselineCoreEnabled !== false) && severeNegativeEdge,
+    enforce,
+    reason: severeNegativeEdge ? "recent_negative_edge" : "monitor_only",
+    preferredStrategies,
+    suspendedStrategies,
+    watchRegimes,
+    weakestSessions,
+    note: enforce
+      ? `Baseline core dwingt nu ${preferredStrategies.map((item) => item.id).join(", ")} af en houdt ${suspendedStrategies.map((item) => item.id).join(", ")} buiten de paper-kern.`
+      : severeNegativeEdge
+        ? "Baseline core ziet negatieve edge, maar er is nog geen kleine voorkeursset met genoeg positief bewijs."
+        : "Baseline core blijft observerend; de recente sample is niet negatief genoeg voor harde reductie."
+  };
+}
+
+function resolveBaselineCoreTradeState(trade = {}) {
+  const baseline = trade.entryRationale?.baselineCore || trade.baselineCore || {};
+  const hasMetadata = Object.keys(baseline || {}).length > 0;
+  const active = Boolean(baseline.active);
+  const enforce = Boolean(baseline.enforce);
+  return {
+    hasMetadata,
+    active,
+    enforce,
+    isBaselineCore: active && enforce,
+    matchedPreferred: baseline.matchedPreferred !== false,
+    selectedStrategy: baseline.selectedStrategy || trade.strategyAtEntry || trade.entryRationale?.strategy?.activeStrategy || null,
+    originalStrategy: baseline.originalStrategy || null
+  };
+}
+
+function buildSegmentPerformanceWindow(trades = []) {
+  const reportStats = buildTradeStats(trades);
+  const pnlDecomposition = buildPnlDecomposition(trades);
+  const groupedStrategies = buildGroupedPerformance(trades, (trade) => trade.strategyAtEntry || trade.entryRationale?.strategy?.activeStrategy || "unknown");
+  const topLoser = groupedStrategies[0] || null;
+  const alphaNegativeBeforeCosts = safeNumber(pnlDecomposition.grossMovePnl, 0) < 0;
+  const realizedPnl = safeNumber(reportStats.realizedPnl, 0);
+  const status = !trades.length
+    ? "empty"
+    : alphaNegativeBeforeCosts && realizedPnl < 0
+      ? "negative"
+      : realizedPnl < 0
+        ? "warning"
+        : "stable";
+  return {
+    tradeCount: reportStats.tradeCount || 0,
+    realizedPnl: Number(realizedPnl.toFixed(2)),
+    winRate: Number(safeNumber(reportStats.winRate, 0).toFixed(4)),
+    profitFactor: Number.isFinite(reportStats.profitFactor)
+      ? Number(reportStats.profitFactor.toFixed(3))
+      : null,
+    grossMovePnl: Number(safeNumber(pnlDecomposition.grossMovePnl, 0).toFixed(2)),
+    totalFees: Number(safeNumber(pnlDecomposition.totalFees, 0).toFixed(2)),
+    executionDragEstimate: Number(safeNumber(pnlDecomposition.executionDragEstimate, 0).toFixed(2)),
+    alphaNegativeBeforeCosts,
+    latestTradeAt: resolveLatestTradeAt(trades),
+    weakestStrategy: topLoser
+      ? {
+          id: topLoser.id,
+          tradeCount: topLoser.tradeCount,
+          realizedPnl: Number(safeNumber(topLoser.realizedPnl, 0).toFixed(2)),
+          winRate: Number(safeNumber(topLoser.winRate, 0).toFixed(4))
+        }
+      : null,
+    status
+  };
+}
+
+function buildBaselineSegmentation(trades = []) {
+  const taggedStates = trades.map((trade) => ({ trade, state: resolveBaselineCoreTradeState(trade) }));
+  const taggedTradeCount = taggedStates.filter(({ state }) => state.hasMetadata).length;
+  const baselineTrades = taggedStates.filter(({ state }) => state.isBaselineCore).map(({ trade }) => trade);
+  const legacyTrades = taggedStates.filter(({ state }) => !state.isBaselineCore).map(({ trade }) => trade);
+  const baseline = buildSegmentPerformanceWindow(baselineTrades);
+  const legacy = buildSegmentPerformanceWindow(legacyTrades);
+  const taggedTradeShare = safeDivide(taggedTradeCount, trades.length);
+  const mixedWindow = baseline.tradeCount > 0 && legacy.tradeCount > 0;
+  const negativeSegments = [
+    { id: "baseline", realizedPnl: baseline.realizedPnl },
+    { id: "legacy", realizedPnl: legacy.realizedPnl }
+  ].filter((item) => item.realizedPnl < 0);
+  const dominantLossSegment = negativeSegments
+    .sort((left, right) => Math.abs(right.realizedPnl) - Math.abs(left.realizedPnl))[0]?.id || null;
+  const coverageStatus = !trades.length
+    ? "empty"
+    : taggedTradeCount === 0
+      ? "untagged"
+      : taggedTradeCount < trades.length
+        ? "mixed"
+        : "complete";
+  const note = baseline.tradeCount === 0
+    ? "Er zijn nog geen gesloten baseline-core trades in de rapport-window; legacy-PnL domineert de huidige waarheid."
+    : mixedWindow
+      ? `De rapport-window mengt ${baseline.tradeCount} baseline-core trade(s) met ${legacy.tradeCount} legacy trade(s); beoordeel de simplificatie dus apart.`
+      : "De huidige rapport-window bestaat volledig uit baseline-core trades.";
+  return {
+    coverageStatus,
+    taggedTradeCount,
+    taggedTradeShare: Number(taggedTradeShare.toFixed(4)),
+    mixedWindow,
+    dominantLossSegment,
+    baseline,
+    legacy,
+    note
+  };
+}
+
+function buildPerformanceDiagnosis({
+  trades = [],
+  reportStats = {},
+  pnlDecomposition = {},
+  executionCostSummary = {},
+  config = {}
+} = {}) {
+  const groupedStrategies = buildGroupedPerformance(trades, (trade) => trade.strategyAtEntry || trade.entryRationale?.strategy?.activeStrategy || "unknown");
+  const groupedFamilies = buildGroupedPerformance(trades, (trade) => trade.strategyDecision?.family || trade.entryRationale?.strategy?.family || "unknown");
+  const groupedRegimes = buildGroupedPerformance(trades, (trade) => trade.regimeAtEntry || "unknown");
+  const groupedSessions = buildGroupedPerformance(trades, (trade) => trade.entryRationale?.session?.session || trade.sessionAtEntry || "unknown");
+  const groupedExits = buildGroupedPerformance(trades, resolveExitReasonBucket);
+  const grossMovePnl = safeNumber(pnlDecomposition.grossMovePnl, 0);
+  const totalFees = safeNumber(pnlDecomposition.totalFees, 0);
+  const executionDragEstimate = safeNumber(pnlDecomposition.executionDragEstimate, 0);
+  const realizedPnl = safeNumber(reportStats.realizedPnl, 0);
+  const alphaNegativeBeforeCosts = grossMovePnl < 0;
+  const costShare = Math.abs(realizedPnl) > 0 ? (totalFees + executionDragEstimate) / Math.abs(realizedPnl) : 0;
+  const mainLossDriver = alphaNegativeBeforeCosts
+    ? "weak_trade_alpha"
+    : costShare >= 0.45
+      ? "execution_and_fee_drag"
+      : "mixed";
+  const segmentation = buildBaselineSegmentation(trades);
+  const baselineCore = buildBaselineCorePolicy({
+    groupedStrategies,
+    groupedRegimes,
+    groupedSessions,
+    reportStats,
+    config
+  });
+  const status = alphaNegativeBeforeCosts && safeNumber(reportStats.winRate, 0) <= 0.22
+    ? "critical"
+    : safeNumber(reportStats.realizedPnl, 0) < 0
+      ? "warning"
+      : "stable";
+  return {
+    status,
+    edgeStatus: alphaNegativeBeforeCosts ? "negative_before_costs" : "not_proven_positive",
+    mainLossDriver,
+    alphaNegativeBeforeCosts,
+    costShare: Number(costShare.toFixed(4)),
+    realizedPnl: Number(realizedPnl.toFixed(2)),
+    grossMovePnl: Number(grossMovePnl.toFixed(2)),
+    totalFees: Number(totalFees.toFixed(2)),
+    executionDragEstimate: Number(executionDragEstimate.toFixed(2)),
+    averageTotalCostBps: Number(safeNumber(executionCostSummary.averageTotalCostBps, 0).toFixed(2)),
+    topLosers: {
+      strategies: groupedStrategies.slice(0, 5),
+      families: groupedFamilies.slice(0, 5),
+      regimes: groupedRegimes.slice(0, 4),
+      sessions: groupedSessions.slice(0, 4),
+      exitReasons: groupedExits.slice(0, 4)
+    },
+    segmentation,
+    baselineCore,
+    notes: [
+      alphaNegativeBeforeCosts
+        ? "De recente sample verliest al geld voor fees en execution drag; de trading core heeft dus geen bewezen edge."
+        : "De recente sample heeft nog geen overtuigende positieve edge voor kosten.",
+      groupedStrategies[0]
+        ? `${groupedStrategies[0].id} is momenteel de grootste strategieverliezer in de rapport-window.`
+        : "Nog geen duidelijke strategieverliezer zichtbaar.",
+      groupedRegimes[0]
+        ? `${groupedRegimes[0].id} is momenteel het zwakste regime in de rapport-window.`
+        : "Nog geen duidelijke regimeverliezer zichtbaar.",
+      groupedExits[0]
+        ? `${groupedExits[0].id} is momenteel de duurste exit-reason in gerealiseerde PnL.`
+        : "Nog geen duidelijke exit-concentratie zichtbaar.",
+      segmentation.note
+    ]
+  };
+}
+
+function buildScaleOutSummary(scaleOuts = []) {
+  return {
+    count: scaleOuts.length,
+    realizedPnl: scaleOuts.reduce((total, item) => total + (item.realizedPnl || 0), 0),
+    averageFraction: average(scaleOuts.map((item) => item.fraction || 0))
+  };
+}
+
+function buildRecentScaleOuts(scaleOuts = [], lookbackTrades = [], limit = 50) {
+  if (!scaleOuts.length || limit <= 0) {
+    return [];
+  }
+  if (!lookbackTrades.length) {
+    return scaleOuts.slice(-limit);
+  }
+  const lookbackTradeIds = new Set(lookbackTrades.map((trade) => trade.id).filter(Boolean));
+  const linked = lookbackTradeIds.size
+    ? scaleOuts.filter((item) => item.positionId && lookbackTradeIds.has(item.positionId))
+    : [];
+  const lookbackStartMs = lookbackTrades.reduce((min, trade) => {
+    const tradeMs = parseTimestampMs(trade.exitAt || trade.entryAt);
+    return Number.isFinite(tradeMs) ? Math.min(min, tradeMs) : min;
+  }, Number.POSITIVE_INFINITY);
+  if (!Number.isFinite(lookbackStartMs)) {
+    return linked.length ? linked : scaleOuts.slice(-limit);
+  }
+  const matched = scaleOuts.filter((item) => parseTimestampMs(item.at || item.exitAt || item.createdAt) >= lookbackStartMs);
+  if (linked.length) {
+    const merged = [...linked];
+    for (const item of matched) {
+      if (!merged.includes(item)) {
+        merged.push(item);
+      }
+    }
+    return merged;
+  }
+  return matched.length ? matched : scaleOuts.slice(-limit);
+}
+
+function parseTimestampMs(value) {
+  if (!value) {
+    return Number.NaN;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Number.NaN;
+}
+
+function resolveLatestTradeAt(trades = []) {
+  const latestMs = trades
+    .map((trade) => parseTimestampMs(trade.exitAt || trade.entryAt))
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => right - left)[0];
+  return Number.isFinite(latestMs) ? new Date(latestMs).toISOString() : null;
+}
+
+function resolveReportReferenceNow({ providedNow = null, runtime = {}, journal = {} } = {}) {
+  if (providedNow instanceof Date && Number.isFinite(providedNow.getTime())) {
+    return providedNow;
+  }
+  const explicitNowMs = parseTimestampMs(providedNow);
+  if (Number.isFinite(explicitNowMs)) {
+    return new Date(explicitNowMs);
+  }
+  const candidateMs = [
+    parseTimestampMs(runtime.lastCycleAt),
+    parseTimestampMs(runtime.lastAnalysisAt),
+    parseTimestampMs(runtime.lastPortfolioUpdateAt),
+    parseTimestampMs(runtime.health?.lastSuccessAt),
+    ...[...(journal.trades || [])].map((trade) => parseTimestampMs(trade.exitAt || trade.entryAt)),
+    ...[...(journal.scaleOuts || [])].map((item) => parseTimestampMs(item.at || item.exitAt || item.createdAt)),
+    ...[...(journal.equitySnapshots || [])].map((item) => parseTimestampMs(item.at || item.timestamp || item.createdAt))
+  ]
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => right - left);
+  return candidateMs.length ? new Date(candidateMs[0]) : new Date();
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function buildRecentEvents(events = [], runtime = {}, now = new Date()) {
+  const referenceMs = Math.max(
+    parseTimestampMs(runtime.lastCycleAt),
+    parseTimestampMs(runtime.lastAnalysisAt),
+    parseTimestampMs(runtime.lastPortfolioUpdateAt),
+    parseTimestampMs(runtime.health?.lastSuccessAt)
+  );
+
+  if (!Number.isFinite(referenceMs)) {
+    return [...events].slice(-25).reverse();
+  }
+
+  const recentWindowStartMs = Math.min(now.getTime(), referenceMs) - 15 * 60 * 1000;
+  return [...events]
+    .filter((event) => parseTimestampMs(event.at || event.timestamp || event.createdAt) >= recentWindowStartMs)
+    .slice(-25)
+    .reverse();
+}
+
+function buildExecutionSummary(trades) {
+  const entryStyles = {};
+  const strategyBuckets = {};
+  let totalPreventedQuantity = 0;
+  let preventedMatchCount = 0;
+  let peggedCount = 0;
+  let sorCount = 0;
+  const entrySlippages = [];
+  const exitSlippages = [];
+  const makerRatios = [];
+  const expectedEntrySlippages = [];
+  const slippageDeltas = [];
+  const executionQualityScores = [];
+
+  for (const trade of trades) {
+    const entry = trade.entryExecutionAttribution || {};
+    const exit = trade.exitExecutionAttribution || {};
+    const style = entry.entryStyle || "unknown";
+    const strategyId = trade.strategyAtEntry || trade.entryRationale?.strategy?.activeStrategy || "unknown";
+    if (!entryStyles[style]) {
+      entryStyles[style] = {
+        style,
+        tradeCount: 0,
+        realizedPnl: 0,
+        avgEntryTouchSlippageBps: 0,
+        avgMakerFillRatio: 0,
+        peggedCount: 0,
+        preventedQuantity: 0
+      };
+    }
+    if (!strategyBuckets[strategyId]) {
+      strategyBuckets[strategyId] = {
+        id: strategyId,
+        tradeCount: 0,
+        realizedPnl: 0,
+        avgExpectedEntrySlippageBps: 0,
+        avgEntryTouchSlippageBps: 0,
+        avgSlippageDeltaBps: 0,
+        avgMakerFillRatio: 0,
+        averageExecutionQuality: 0
+      };
+    }
+    entryStyles[style].tradeCount += 1;
+    entryStyles[style].realizedPnl += trade.pnlQuote || 0;
+    entryStyles[style].avgEntryTouchSlippageBps += entry.realizedTouchSlippageBps || 0;
+    entryStyles[style].avgMakerFillRatio += entry.makerFillRatio || 0;
+    entryStyles[style].preventedQuantity += entry.preventedQuantity || 0;
+    if (entry.peggedOrder) {
+      entryStyles[style].peggedCount += 1;
+      peggedCount += 1;
+    }
+    if (entry.usedSor || exit.usedSor) {
+      sorCount += 1;
+    }
+
+    const strategy = strategyBuckets[strategyId];
+    strategy.tradeCount += 1;
+    strategy.realizedPnl += trade.pnlQuote || 0;
+    strategy.avgExpectedEntrySlippageBps += entry.expectedSlippageBps || entry.expectedImpactBps || 0;
+    strategy.avgEntryTouchSlippageBps += entry.realizedTouchSlippageBps || 0;
+    strategy.avgSlippageDeltaBps += entry.slippageDeltaBps || ((entry.realizedTouchSlippageBps || 0) - (entry.expectedSlippageBps || entry.expectedImpactBps || 0));
+    strategy.avgMakerFillRatio += entry.makerFillRatio || 0;
+    strategy.averageExecutionQuality += trade.executionQualityScore || 0;
+
+    totalPreventedQuantity += (entry.preventedQuantity || 0) + (exit.preventedQuantity || 0);
+    preventedMatchCount += (entry.preventedMatchCount || 0) + (exit.preventedMatchCount || 0);
+    if (entry.expectedSlippageBps != null || entry.expectedImpactBps != null) {
+      expectedEntrySlippages.push(entry.expectedSlippageBps || entry.expectedImpactBps || 0);
+    }
+    if (entry.realizedTouchSlippageBps != null) {
+      entrySlippages.push(entry.realizedTouchSlippageBps || 0);
+    }
+    if (exit.realizedTouchSlippageBps != null) {
+      exitSlippages.push(exit.realizedTouchSlippageBps || 0);
+    }
+    if (entry.slippageDeltaBps != null) {
+      slippageDeltas.push(entry.slippageDeltaBps || 0);
+    } else if (entry.realizedTouchSlippageBps != null) {
+      slippageDeltas.push((entry.realizedTouchSlippageBps || 0) - (entry.expectedSlippageBps || entry.expectedImpactBps || 0));
+    }
+    if (entry.makerFillRatio != null) {
+      makerRatios.push(entry.makerFillRatio || 0);
+    }
+    if (trade.executionQualityScore != null) {
+      executionQualityScores.push(trade.executionQualityScore || 0);
+    }
+  }
+
+  const styles = Object.values(entryStyles)
+    .map((item) => ({
+      ...item,
+      avgEntryTouchSlippageBps: item.tradeCount ? item.avgEntryTouchSlippageBps / item.tradeCount : 0,
+      avgMakerFillRatio: item.tradeCount ? item.avgMakerFillRatio / item.tradeCount : 0
+    }))
+    .sort((left, right) => right.tradeCount - left.tradeCount);
+
+  const strategies = Object.values(strategyBuckets)
+    .map((item) => ({
+      ...item,
+      avgExpectedEntrySlippageBps: item.tradeCount ? item.avgExpectedEntrySlippageBps / item.tradeCount : 0,
+      avgEntryTouchSlippageBps: item.tradeCount ? item.avgEntryTouchSlippageBps / item.tradeCount : 0,
+      avgSlippageDeltaBps: item.tradeCount ? item.avgSlippageDeltaBps / item.tradeCount : 0,
+      avgMakerFillRatio: item.tradeCount ? item.avgMakerFillRatio / item.tradeCount : 0,
+      averageExecutionQuality: item.tradeCount ? item.averageExecutionQuality / item.tradeCount : 0
+    }))
+    .sort((left, right) => right.realizedPnl - left.realizedPnl)
+    .slice(0, 8);
+
+  return {
+    avgExpectedEntrySlippageBps: average(expectedEntrySlippages),
+    avgEntryTouchSlippageBps: average(entrySlippages),
+    avgExitTouchSlippageBps: average(exitSlippages),
+    avgSlippageDeltaBps: average(slippageDeltas),
+    avgMakerFillRatio: average(makerRatios),
+    avgExecutionQualityScore: average(executionQualityScores),
+    totalPreventedQuantity,
+    preventedMatchCount,
+    peggedCount,
+    sorCount,
+    styles,
+    strategies
+  };
+}
+
+function estimateEntryFee(trade = {}) {
+  if (Number.isFinite(trade.entryFee)) {
+    return Math.max(0, trade.entryFee);
+  }
+  const grossEntry = (trade.entryPrice || 0) * (trade.quantity || 0);
+  return Math.max(0, (trade.totalCost || 0) - grossEntry);
+}
+
+function estimateExitFee(trade = {}) {
+  const grossExit = (trade.exitPrice || 0) * (trade.quantity || 0);
+  const realizedProceeds = Number.isFinite(trade.proceeds) ? trade.proceeds : grossExit;
+  return Math.max(0, grossExit - realizedProceeds);
+}
+
+function resolveExpectedRoundTripFeeBps(trade = {}, config = {}) {
+  if (Number.isFinite(config.executionCostBudgetIncludedFeeBps)) {
+    return Math.max(0, config.executionCostBudgetIncludedFeeBps);
+  }
+  const brokerMode = trade.brokerMode || config.botMode || "paper";
+  if (brokerMode === "paper") {
+    return Math.max(0, safeNumber(config.paperFeeBps, 0) * 2);
+  }
+  return 0;
+}
+
+function resolveExpectedPaperFeeQuote(trade = {}, config = {}, side = "entry") {
+  const brokerMode = trade.brokerMode || config.botMode || "paper";
+  if (brokerMode !== "paper") {
+    return 0;
+  }
+  const feeRate = Math.max(0, safeNumber(config.paperFeeBps, 0)) / 10_000;
+  if (side === "entry") {
+    const attribution = trade.entryExecutionAttribution || {};
+    const executedQuote = Math.max(0, safeNumber(attribution.executedQuote, 0));
+    const executedQuantity = Math.max(0, safeNumber(attribution.executedQuantity, 0));
+    const closedQuantity = Math.max(0, safeNumber(trade.quantity, 0));
+    if (executedQuote > 0 && executedQuantity > 0 && closedQuantity > 0) {
+      return Math.max(0, executedQuote * Math.min(1, closedQuantity / executedQuantity) * feeRate);
+    }
+  }
+  const quantity = Math.max(0, safeNumber(trade.quantity, 0));
+  const price = side === "exit" ? safeNumber(trade.exitPrice, 0) : safeNumber(trade.entryPrice, 0);
+  return Math.max(0, quantity * price * feeRate);
+}
+
+export function buildExecutionCostBreakdown(trade = {}, config = {}) {
+  const entry = trade.entryExecutionAttribution || {};
+  const exit = trade.exitExecutionAttribution || {};
+  const notional = Math.max(trade.totalCost || trade.quantity * trade.entryPrice || 0, 1);
+  const brokerMode = trade.brokerMode || config.botMode || "paper";
+  const observedEntryFee = estimateEntryFee(trade);
+  const observedExitFee = estimateExitFee(trade);
+  const expectedEntryFee = resolveExpectedPaperFeeQuote(trade, config, "entry");
+  const expectedExitFee = resolveExpectedPaperFeeQuote(trade, config, "exit");
+  const entryFee = brokerMode === "paper"
+    ? (Number.isFinite(trade.entryFee) ? Math.max(observedEntryFee, expectedEntryFee) : expectedEntryFee)
+    : observedEntryFee;
+  const exitFee = brokerMode === "paper"
+    ? (Number.isFinite(trade.exitFee) ? Math.max(observedExitFee, expectedExitFee) : Math.max(observedExitFee, expectedExitFee))
+    : observedExitFee;
+  const feeBps = safeDivide(entryFee + exitFee, notional) * 10_000;
+  const feeBudgetBps = resolveExpectedRoundTripFeeBps(trade, config);
+  const excessFeeBps = Math.max(0, feeBps - feeBudgetBps);
+  const touchSlippageBps = Math.max(0, entry.realizedTouchSlippageBps || 0) + Math.max(0, exit.realizedTouchSlippageBps || 0);
+  const slippageDeltaBps = Math.max(0, entry.slippageDeltaBps || 0) + Math.max(0, exit.slippageDeltaBps || 0);
+  const latencyBps = Math.max(0, entry.latencyBps || 0) + Math.max(0, exit.latencyBps || 0);
+  const queueBps = Math.max(0, entry.queueDecayBps || 0) + Math.max(0, exit.queueDecayBps || 0);
+  const spreadShockBps = Math.max(0, entry.spreadShockBps || 0) + Math.max(0, exit.spreadShockBps || 0);
+  const liquidityShockBps = Math.max(0, entry.liquidityShockBps || 0) + Math.max(0, exit.liquidityShockBps || 0);
+  return {
+    entryFee,
+    exitFee,
+    totalFees: entryFee + exitFee,
+    feeBps,
+    feeBudgetBps,
+    excessFeeBps,
+    touchSlippageBps,
+    slippageDeltaBps,
+    latencyBps,
+    queueBps,
+    spreadShockBps,
+    liquidityShockBps,
+    totalCostBps: feeBps + touchSlippageBps,
+    budgetCostBps: excessFeeBps + touchSlippageBps,
+    feeInference: brokerMode === "paper"
+      ? {
+          entry: Number.isFinite(trade.entryFee) ? "observed" : "expected_from_config",
+          exit: Number.isFinite(trade.exitFee) ? "observed" : "expected_or_observed_residual"
+        }
+      : null
+  };
+}
+
+function buildExecutionCostBuckets(trades = [], keyFn, config = {}) {
+  const buckets = new Map();
+  const warnBps = config.executionCostBudgetWarnBps || 12;
+  const blockBps = config.executionCostBudgetBlockBps || 18;
+  const minScopedTrades = Math.max(1, Math.round(safeNumber(config.executionCostBudgetMinScopedTrades, 3)));
+  for (const trade of trades) {
+    const id = keyFn(trade) || "unknown";
+    if (!buckets.has(id)) {
+      buckets.set(id, {
+        id,
+        tradeCount: 0,
+        realizedPnl: 0,
+        totalCostBps: 0,
+        totalFeeBps: 0,
+        totalBudgetCostBps: 0,
+        totalExcessFeeBps: 0,
+        totalTouchSlippageBps: 0,
+        totalSlippageDeltaBps: 0
+      });
+    }
+    const bucket = buckets.get(id);
+    const cost = buildExecutionCostBreakdown(trade, config);
+    bucket.tradeCount += 1;
+    bucket.realizedPnl += trade.pnlQuote || 0;
+    bucket.totalCostBps += cost.totalCostBps;
+    bucket.totalFeeBps += cost.feeBps;
+    bucket.totalBudgetCostBps += cost.budgetCostBps;
+    bucket.totalExcessFeeBps += cost.excessFeeBps;
+    bucket.totalTouchSlippageBps += cost.touchSlippageBps;
+    bucket.totalSlippageDeltaBps += cost.slippageDeltaBps;
+  }
+  return [...buckets.values()]
+    .map((bucket) => {
+      const averageTotalCostBps = safeDivide(bucket.totalCostBps, bucket.tradeCount);
+      const averageFeeBps = safeDivide(bucket.totalFeeBps, bucket.tradeCount);
+      const averageBudgetCostBps = safeDivide(bucket.totalBudgetCostBps, bucket.tradeCount);
+      const averageExcessFeeBps = safeDivide(bucket.totalExcessFeeBps, bucket.tradeCount);
+      const averageTouchSlippageBps = safeDivide(bucket.totalTouchSlippageBps, bucket.tradeCount);
+      const averageSlippageDeltaBps = safeDivide(bucket.totalSlippageDeltaBps, bucket.tradeCount);
+      const sampleReady = bucket.tradeCount >= minScopedTrades;
+      return {
+        id: bucket.id,
+        tradeCount: bucket.tradeCount,
+        realizedPnl: bucket.realizedPnl,
+        averageTotalCostBps,
+        averageFeeBps,
+        averageBudgetCostBps,
+        averageExcessFeeBps,
+        averageTouchSlippageBps,
+        averageSlippageDeltaBps,
+        sampleReady,
+        status: !sampleReady
+          ? "warmup"
+          : averageBudgetCostBps >= blockBps
+            ? "blocked"
+            : averageBudgetCostBps >= warnBps || averageSlippageDeltaBps >= warnBps * 0.35
+              ? "caution"
+              : "ready"
+      };
+    })
+    .sort((left, right) => (right.averageTotalCostBps || 0) - (left.averageTotalCostBps || 0))
+    .slice(0, 8);
+}
+
+function buildExecutionCostSummary(trades = [], config = {}, nowIso = new Date().toISOString()) {
+  const costs = trades.map((trade) => buildExecutionCostBreakdown(trade, config));
+  const styles = buildExecutionCostBuckets(trades, (trade) => trade.entryExecutionAttribution?.entryStyle || "unknown", config);
+  const strategies = buildExecutionCostBuckets(trades, (trade) => trade.strategyAtEntry || "unknown", config);
+  const regimes = buildExecutionCostBuckets(trades, (trade) => trade.regimeAtEntry || "unknown", config);
+  const minScopedTrades = Math.max(1, Math.round(safeNumber(config.executionCostBudgetMinScopedTrades, 3)));
+  const minGlobalTrades = Math.max(minScopedTrades, Math.round(safeNumber(config.executionCostBudgetMinGlobalTrades, minScopedTrades)));
+  const averageTotalCostBps = average(costs.map((item) => item.totalCostBps || 0));
+  const averageFeeBps = average(costs.map((item) => item.feeBps || 0));
+  const averageBudgetCostBps = average(costs.map((item) => item.budgetCostBps || 0));
+  const averageExcessFeeBps = average(costs.map((item) => item.excessFeeBps || 0));
+  const averageTouchSlippageBps = average(costs.map((item) => item.touchSlippageBps || 0));
+  const averageSlippageDeltaBps = average(costs.map((item) => item.slippageDeltaBps || 0));
+  const reconstructedPaperEntryFeeCount = costs.filter((item) => item.feeInference?.entry === "expected_from_config").length;
+  const matureStyles = styles.filter((item) => item.sampleReady);
+  const matureStrategies = strategies.filter((item) => item.sampleReady);
+  const worstStyle = matureStyles[0] || styles[0] || null;
+  const worstStrategy = matureStrategies[0] || strategies[0] || null;
+  const latestTradeAt = resolveLatestTradeAt(trades);
+  const freshnessHours = latestTradeAt
+    ? (parseTimestampMs(nowIso) - parseTimestampMs(latestTradeAt)) / 3_600_000
+    : Number.POSITIVE_INFINITY;
+  const stale = trades.length > 0 && freshnessHours > safeNumber(config.executionCostBudgetFreshnessHours, 72);
+  const globalSampleReady = trades.length >= minGlobalTrades;
+  const status = stale
+    ? "warmup"
+    : !globalSampleReady
+      ? "warmup"
+    : worstStyle?.status === "blocked" || worstStrategy?.status === "blocked"
+      ? "blocked"
+      : worstStyle?.status === "caution" || worstStrategy?.status === "caution"
+        ? "caution"
+        : trades.length
+          ? "ready"
+          : "warmup";
+  return {
+    status,
+    stale,
+    tradeCount: trades.length,
+    recentTradeCount: trades.length,
+    minScopedTrades,
+    minGlobalTrades,
+    latestTradeAt,
+    freshnessHours: Number.isFinite(freshnessHours) ? freshnessHours : null,
+    averageTotalCostBps,
+    averageFeeBps,
+    averageBudgetCostBps,
+    averageExcessFeeBps,
+    averageTouchSlippageBps,
+    averageSlippageDeltaBps,
+    reconstructedPaperFeeSample: reconstructedPaperEntryFeeCount > 0,
+    reconstructedPaperEntryFeeCount,
+    worstStyle: worstStyle?.id || null,
+    worstStrategy: worstStrategy?.id || null,
+    styles,
+    strategies,
+    regimes,
+    notes: [
+      stale
+        ? `Execution-cost sample is stale; last trade was ${freshnessHours.toFixed(1)}h ago, so hard blocking is disabled until new fills arrive.`
+        : !globalSampleReady
+          ? `Execution-cost sample heeft nog maar ${trades.length} recente fill(s); blokken starten pas vanaf ${minGlobalTrades} fills.`
+        : null,
+      worstStyle
+        ? `${worstStyle.id} heeft momenteel de duurste execution-cost profile.`
+        : "Nog geen execution-cost budget data beschikbaar.",
+      averageFeeBps
+        ? `Gemiddelde fee-impact: ${averageFeeBps.toFixed(2)} bps.`
+        : "Fee-impact is nog niet zichtbaar in de huidige sample.",
+      averageExcessFeeBps
+        ? `Fee-impact boven budget: ${averageExcessFeeBps.toFixed(2)} bps.`
+        : "Fee-impact valt binnen het verwachte budget.",
+      averageTouchSlippageBps
+        ? `Gemiddelde touch slippage: ${averageTouchSlippageBps.toFixed(2)} bps.`
+        : "Touch slippage is nog niet zichtbaar in de huidige sample.",
+      costs.some((item) => item.feeInference?.entry === "expected_from_config")
+        ? "Een deel van de paper entry-fees werd gereconstrueerd uit de actieve fee-config omdat oudere trades geen entryFee opsloegen."
+        : null
+    ].filter(Boolean)
+  };
+}
+
+export function buildTradePnlBreakdown(trade = {}, config = {}) {
+  const cost = buildExecutionCostBreakdown(trade, config);
+  const grossMovePnl = ((trade.exitPrice || 0) - (trade.entryPrice || 0)) * (trade.quantity || 0);
+  return {
+    netRealizedPnl: trade.pnlQuote || 0,
+    grossMovePnl,
+    netAfterFees: grossMovePnl - cost.totalFees,
+    entryFee: cost.entryFee,
+    exitFee: cost.exitFee,
+    totalFees: cost.totalFees,
+    feeBps: cost.feeBps,
+    feeBudgetBps: cost.feeBudgetBps,
+    excessFeeBps: cost.excessFeeBps,
+    touchSlippageBps: cost.touchSlippageBps,
+    slippageDeltaBps: cost.slippageDeltaBps,
+    latencyBps: cost.latencyBps,
+    queueBps: cost.queueBps,
+    executionDragEstimate: ((trade.totalCost || 0) * (cost.touchSlippageBps || 0)) / 10_000,
+    latencyDragEstimate: ((trade.totalCost || 0) * (cost.latencyBps || 0)) / 10_000,
+    queueDragEstimate: ((trade.totalCost || 0) * (cost.queueBps || 0)) / 10_000,
+    captureEfficiency: trade.captureEfficiency || 0
+  };
+}
+
+function buildPnlDecomposition(trades = [], config = {}) {
+  const breakdowns = trades.map((trade) => buildTradePnlBreakdown(trade, config));
+  return {
+    netRealizedPnl: breakdowns.reduce((total, item) => total + item.netRealizedPnl, 0),
+    grossMovePnl: breakdowns.reduce((total, item) => total + item.grossMovePnl, 0),
+    totalFees: breakdowns.reduce((total, item) => total + item.totalFees, 0),
+    executionDragEstimate: breakdowns.reduce((total, item) => total + item.executionDragEstimate, 0),
+    latencyDragEstimate: breakdowns.reduce((total, item) => total + item.latencyDragEstimate, 0),
+    queueDragEstimate: breakdowns.reduce((total, item) => total + item.queueDragEstimate, 0),
+    averageCaptureEfficiency: average(breakdowns.map((item) => item.captureEfficiency || 0)),
+    notes: [
+      breakdowns.length
+        ? `${breakdowns.length} trades voeden de PnL-decomposition.`
+        : "Nog geen trades beschikbaar voor PnL-decomposition.",
+      breakdowns.length
+        ? "Execution drag is een schatting op basis van slippage- en latency-attributie."
+        : "Execution drag schattingen volgen zodra er trades beschikbaar zijn."
+    ]
+  };
+}
+
+function buildModeStats(trades = [], brokerMode = "paper", scaleOuts = []) {
+  const filtered = trades.filter((trade) => (trade.brokerMode || "paper") === brokerMode);
+  const realizedPnlAdjustment = scaleOuts
+    .filter((item) => (item.brokerMode || "paper") === brokerMode)
+    .reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
+  const stats = buildTradeStats(filtered, { realizedPnlAdjustment });
+  return {
+    ...stats,
+    averageExecutionQuality: average(filtered.map((trade) => trade.executionQualityScore || 0))
+  };
+}
+
+function buildAttributionBuckets(trades = [], keyFn) {
+  const buckets = new Map();
+  for (const trade of trades) {
+    const id = keyFn(trade) || "unknown";
+    if (!buckets.has(id)) {
+      buckets.set(id, { id, tradeCount: 0, winCount: 0, realizedPnl: 0, pnlPctSum: 0, durationMinutes: 0 });
+    }
+    const bucket = buckets.get(id);
+    bucket.tradeCount += 1;
+    bucket.winCount += (trade.pnlQuote || 0) > 0 ? 1 : 0;
+    bucket.realizedPnl += trade.pnlQuote || 0;
+    bucket.pnlPctSum += trade.netPnlPct || 0;
+    if (trade.entryAt && trade.exitAt) {
+      bucket.durationMinutes += Math.max(0, (new Date(trade.exitAt).getTime() - new Date(trade.entryAt).getTime()) / 60000);
+    }
+  }
+  return [...buckets.values()]
+    .map((bucket) => ({
+      id: bucket.id,
+      tradeCount: bucket.tradeCount,
+      winRate: safeDivide(bucket.winCount, bucket.tradeCount),
+      realizedPnl: bucket.realizedPnl,
+      averagePnlPct: safeDivide(bucket.pnlPctSum, bucket.tradeCount),
+      averageDurationMinutes: safeDivide(bucket.durationMinutes, bucket.tradeCount)
+    }))
+    .sort((left, right) => right.realizedPnl - left.realizedPnl)
+    .slice(0, 8);
+}
+
+function topNewsProvider(trade) {
+  return trade.entryRationale?.providerBreakdown?.[0]?.name || trade.newsSummary?.providerBreakdown?.[0]?.name || "none";
+}
+
+function buildAttributionSummary(trades = []) {
+  return {
+    strategies: buildAttributionBuckets(trades, (trade) => trade.strategyAtEntry || "unknown"),
+    regimes: buildAttributionBuckets(trades, (trade) => trade.regimeAtEntry || "unknown"),
+    symbols: buildAttributionBuckets(trades, (trade) => trade.symbol || "unknown"),
+    executionStyles: buildAttributionBuckets(trades, (trade) => trade.entryExecutionAttribution?.entryStyle || "unknown"),
+    newsProviders: buildAttributionBuckets(trades, topNewsProvider)
+  };
+}
+
+export function buildTradeQualityReview(trade = {}) {
+  const entry = trade.entryExecutionAttribution || {};
+  const rationale = trade.entryRationale || {};
+  const signalEdge = (rationale.probability || trade.probabilityAtEntry || 0) - (rationale.threshold || 0);
+  const setupScore = clamp(
+    0.34 +
+      (trade.labelScore || 0.5) * 0.22 +
+      Math.max(0, signalEdge) * 1.2 * 0.18 +
+      (rationale.strategy?.fitScore || 0) * 0.14 +
+      (rationale.meta?.qualityScore || rationale.meta?.score || 0) * 0.12 +
+      (rationale.timeframe?.alignmentScore || 0) * 0.08 -
+      (rationale.newsRisk || 0) * 0.08 -
+      ((rationale.blockerReasons || []).length ? 0.04 : 0),
+    0,
+    1
+  );
+  const executionScore = clamp(
+    0.34 +
+      (trade.executionQualityScore || 0) * 0.32 +
+      Math.max(0, 1 - Math.min(Math.abs(entry.slippageDeltaBps || 0) / 8, 1)) * 0.18 +
+      Math.max(0, 1 - Math.min((entry.realizedTouchSlippageBps || 0) / 12, 1)) * 0.08 +
+      (entry.makerFillRatio || 0) * 0.08,
+    0,
+    1
+  );
+  const outcomeScore = clamp(
+    0.32 +
+      clamp(0.5 + (trade.netPnlPct || 0) * 10, 0, 1) * 0.34 +
+      clamp(0.5 + (trade.captureEfficiency || 0) * 0.35, 0, 1) * 0.16 +
+      clamp(0.5 + ((trade.mfePct || 0) - Math.abs(trade.maePct || 0)) * 6, 0, 1) * 0.18,
+    0,
+    1
+  );
+  const compositeScore = clamp(setupScore * 0.38 + executionScore * 0.28 + outcomeScore * 0.34, 0, 1);
+  let verdict = "acceptable";
+  if (compositeScore >= 0.74 && (trade.pnlQuote || 0) >= 0) {
+    verdict = "great_trade";
+  } else if (executionScore < 0.45 && setupScore >= 0.56) {
+    verdict = "execution_drag";
+  } else if (setupScore < 0.45 && (trade.pnlQuote || 0) <= 0) {
+    verdict = "weak_setup";
+  } else if (outcomeScore < 0.4 && setupScore >= 0.56) {
+    verdict = "follow_through_failed";
+  } else if (compositeScore < 0.45) {
+    verdict = "needs_review";
+  }
+  const notes = [];
+  if (setupScore >= 0.62) {
+    notes.push("setup_quality_strong");
+  }
+  if (setupScore < 0.45) {
+    notes.push("setup_quality_weak");
+  }
+  if (executionScore < 0.46) {
+    notes.push("execution_quality_soft");
+  }
+  if ((entry.slippageDeltaBps || 0) > 2.5) {
+    notes.push("slippage_above_expectation");
+  }
+  if (outcomeScore < 0.42) {
+    notes.push("outcome_capture_soft");
+  }
+  if ((trade.captureEfficiency || 0) > 0.75) {
+    notes.push("capture_efficiency_strong");
+  }
+  return {
+    setupScore: Number(setupScore.toFixed(4)),
+    executionScore: Number(executionScore.toFixed(4)),
+    outcomeScore: Number(outcomeScore.toFixed(4)),
+    compositeScore: Number(compositeScore.toFixed(4)),
+    verdict,
+    notes: notes.slice(0, 4)
+  };
+}
+
+function buildTradeQualitySummary(trades = [], counterfactuals = []) {
+  const reviews = trades.map((trade) => ({ trade, review: buildTradeQualityReview(trade) }));
+  const verdictCounts = {};
+  const strategyBuckets = new Map();
+  for (const item of reviews) {
+    verdictCounts[item.review.verdict] = (verdictCounts[item.review.verdict] || 0) + 1;
+    const id = item.trade.strategyAtEntry || item.trade.entryRationale?.strategy?.activeStrategy || "unknown";
+    if (!strategyBuckets.has(id)) {
+      strategyBuckets.set(id, {
+        id,
+        tradeCount: 0,
+        reviewScore: 0,
+        setupScore: 0,
+        executionScore: 0,
+        outcomeScore: 0,
+        winCount: 0,
+        realizedPnl: 0,
+        falseNegativeCount: 0
+      });
+    }
+    const bucket = strategyBuckets.get(id);
+    bucket.tradeCount += 1;
+    bucket.reviewScore += item.review.compositeScore;
+    bucket.setupScore += item.review.setupScore;
+    bucket.executionScore += item.review.executionScore;
+    bucket.outcomeScore += item.review.outcomeScore;
+    bucket.winCount += (item.trade.pnlQuote || 0) > 0 ? 1 : 0;
+    bucket.realizedPnl += item.trade.pnlQuote || 0;
+  }
+  for (const item of counterfactuals.filter((entry) => entry.outcome === "missed_winner")) {
+    const id = item.strategy || item.strategyAtEntry || "blocked_setup";
+    if (!strategyBuckets.has(id)) {
+      strategyBuckets.set(id, {
+        id,
+        tradeCount: 0,
+        reviewScore: 0,
+        setupScore: 0,
+        executionScore: 0,
+        outcomeScore: 0,
+        winCount: 0,
+        realizedPnl: 0,
+        falseNegativeCount: 0
+      });
+    }
+    strategyBuckets.get(id).falseNegativeCount += 1;
+  }
+  const strategyScorecards = [...strategyBuckets.values()]
+    .map((bucket) => ({
+      id: bucket.id,
+      tradeCount: bucket.tradeCount,
+      winRate: Number(safeDivide(bucket.winCount, bucket.tradeCount).toFixed(4)),
+      realizedPnl: Number(bucket.realizedPnl.toFixed(2)),
+      avgReviewScore: Number(safeDivide(bucket.reviewScore, bucket.tradeCount).toFixed(4)),
+      avgSetupScore: Number(safeDivide(bucket.setupScore, bucket.tradeCount).toFixed(4)),
+      avgExecutionScore: Number(safeDivide(bucket.executionScore, bucket.tradeCount).toFixed(4)),
+      avgOutcomeScore: Number(safeDivide(bucket.outcomeScore, bucket.tradeCount).toFixed(4)),
+      falseNegativeCount: bucket.falseNegativeCount,
+      governanceScore: Number(clamp(safeDivide(bucket.reviewScore, bucket.tradeCount, 0.42) * 0.66 + safeDivide(bucket.winCount, bucket.tradeCount, 0.5) * 0.2 + clamp(0.5 + bucket.realizedPnl / Math.max(bucket.tradeCount * 60, 60), 0, 1) * 0.14 - Math.min(bucket.falseNegativeCount, 3) * 0.03, 0, 1).toFixed(4))
+    }))
+    .sort((left, right) => right.governanceScore - left.governanceScore)
+    .slice(0, 8);
+  return {
+    averageCompositeScore: average(reviews.map((item) => item.review.compositeScore)),
+    averageSetupScore: average(reviews.map((item) => item.review.setupScore)),
+    averageExecutionScore: average(reviews.map((item) => item.review.executionScore)),
+    averageOutcomeScore: average(reviews.map((item) => item.review.outcomeScore)),
+    verdictCounts,
+    bestTrade: reviews.sort((left, right) => right.review.compositeScore - left.review.compositeScore)[0] || null,
+    worstTrade: reviews.sort((left, right) => left.review.compositeScore - right.review.compositeScore)[0] || null,
+    strategyScorecards,
+    notes: [
+      strategyScorecards[0]
+        ? `${strategyScorecards[0].id} leidt momenteel in trade quality review.`
+        : "Nog geen trade quality review data beschikbaar.",
+      verdictCounts.execution_drag
+        ? `${verdictCounts.execution_drag} trades verloren kwaliteit door execution.`
+        : "Geen duidelijke execution drag in de recente trades.",
+      verdictCounts.follow_through_failed
+        ? `${verdictCounts.follow_through_failed} trades hadden goede setup maar zwakke follow-through.`
+        : "Follow-through ziet er voorlopig stabiel uit."
+    ]
+  };
+}
+
+function classifyBlockedReasonCategory(reason = "") {
+  if (!reason) {
+    return "other";
+  }
+  if (reason.includes("confidence") || reason.includes("abstain") || reason.includes("quality")) {
+    return "quality";
+  }
+  if (reason.includes("committee") || reason.includes("meta") || reason.includes("governor")) {
+    return "governance";
+  }
+  if (reason.includes("volatility") || reason.includes("spread") || reason.includes("orderbook") || reason.includes("liquidity")) {
+    return "execution";
+  }
+  if (reason.includes("news") || reason.includes("event") || reason.includes("calendar") || reason.includes("announcement")) {
+    return "event";
+  }
+  if (reason.includes("portfolio") || reason.includes("exposure") || reason.includes("position") || reason.includes("trade_size")) {
+    return "risk";
+  }
+  if (reason.includes("regime") || reason.includes("trend") || reason.includes("breakout") || reason.includes("session")) {
+    return "regime";
+  }
+  if (reason.startsWith("paper_learning_") || reason.includes("shadow")) {
+    return "learning";
+  }
+  return "other";
+}
+
+function buildBlockedSetupLifecycleSummary(blockedSetups = [], counterfactuals = []) {
+  const items = [...(blockedSetups || [])];
+  const resolved = items.filter((item) => item?.counterfactualStatus === "resolved").length;
+  const failed = items.filter((item) => item?.counterfactualStatus === "failed").length;
+  const queued = Math.max(0, items.length - resolved - failed);
+  const verdictCounts = { good_veto: 0, bad_veto: 0, mixed: 0 };
+  const blockerMap = new Map();
+  const scopeMap = new Map();
+  const nowMs = Date.now();
+  const sevenDaysAgoMs = nowMs - (7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgoMs = nowMs - (30 * 24 * 60 * 60 * 1000);
+  const categoryTrend = {
+    total: {},
+    last7d: {},
+    last30d: {}
+  };
+  for (const item of counterfactuals || []) {
+    const verdict = `${item?.vetoVerdict || ""}`.trim().toLowerCase();
+    if (verdict && verdict in verdictCounts) {
+      verdictCounts[verdict] += 1;
+    }
+    const blocker = item?.dominantBlocker || (item?.blockerReasons || [])[0] || null;
+    if (!blocker) {
+      // still process scope-level patterns even without dominant blocker
+    } else {
+      const bucket = blockerMap.get(blocker) || { id: blocker, total: 0, badVetoCount: 0, goodVetoCount: 0 };
+      bucket.total += 1;
+      if (verdict === "bad_veto") {
+        bucket.badVetoCount += 1;
+      } else if (verdict === "good_veto") {
+        bucket.goodVetoCount += 1;
+      }
+      blockerMap.set(blocker, bucket);
+    }
+    const family = item?.strategyFamily || "na_family";
+    const regime = item?.regime || "na_regime";
+    const session = item?.sessionAtEntry || "na_session";
+    const scopeKey = `${family}::${regime}::${session}`;
+    const scopeBucket = scopeMap.get(scopeKey) || {
+      id: scopeKey,
+      family,
+      regime,
+      session,
+      total: 0,
+      badVetoCount: 0,
+      goodVetoCount: 0
+    };
+    scopeBucket.total += 1;
+    if (verdict === "bad_veto") {
+      scopeBucket.badVetoCount += 1;
+    } else if (verdict === "good_veto") {
+      scopeBucket.goodVetoCount += 1;
+    }
+    scopeMap.set(scopeKey, scopeBucket);
+  }
+  for (const item of items) {
+    const reasons = item?.blockerReasons || [];
+    const primaryReason = item?.dominantBlocker || reasons[0] || null;
+    const category = classifyBlockedReasonCategory(primaryReason);
+    const eventMs = new Date(item?.queuedAt || item?.createdAt || item?.at || 0).getTime();
+    categoryTrend.total[category] = (categoryTrend.total[category] || 0) + 1;
+    if (Number.isFinite(eventMs) && eventMs >= sevenDaysAgoMs) {
+      categoryTrend.last7d[category] = (categoryTrend.last7d[category] || 0) + 1;
+    }
+    if (Number.isFinite(eventMs) && eventMs >= thirtyDaysAgoMs) {
+      categoryTrend.last30d[category] = (categoryTrend.last30d[category] || 0) + 1;
+    }
+  }
+  const topCategoryTrend = Object.entries(categoryTrend.last7d)
+    .map(([id, count]) => ({ id, count }))
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 4);
+  const topSuspiciousBlocker = [...blockerMap.values()]
+    .map((item) => ({
+      ...item,
+      badVetoRate: item.total ? item.badVetoCount / item.total : 0
+    }))
+    .sort((left, right) => (right.badVetoRate || 0) - (left.badVetoRate || 0))[0] || null;
+  const topOverblockedScopes = [...scopeMap.values()]
+    .map((item) => ({
+      ...item,
+      badVetoRate: item.total ? item.badVetoCount / item.total : 0,
+      goodVetoRate: item.total ? item.goodVetoCount / item.total : 0
+    }))
+    .sort((left, right) => (right.badVetoRate || 0) - (left.badVetoRate || 0))
+    .slice(0, 4);
+  return {
+    total: items.length,
+    queued,
+    resolved,
+    failed,
+    verdictCounts,
+    topSuspiciousBlocker: topSuspiciousBlocker?.id || null,
+    topSuspiciousBlockerBadVetoRate: safeNumber(topSuspiciousBlocker?.badVetoRate, 0),
+    blockedByCategoryTrend: {
+      total: categoryTrend.total,
+      last7d: categoryTrend.last7d,
+      last30d: categoryTrend.last30d,
+      topLast7d: topCategoryTrend
+    },
+    topOverblockedScopes: topOverblockedScopes.map((item) => ({
+      id: item.id,
+      family: item.family,
+      regime: item.regime,
+      session: item.session,
+      total: item.total,
+      badVetoRate: safeNumber(item.badVetoRate, 0),
+      goodVetoRate: safeNumber(item.goodVetoRate, 0)
+    }))
+  };
+}
+
+export function buildPerformanceReport({ journal, runtime, config, now = null }) {
+  const referenceNow = resolveReportReferenceNow({ providedNow: now, runtime, journal });
+  const botMode = config.botMode || "paper";
+  const currentTradingSource = getConfiguredTradingSource(config, botMode);
+  const trades = [...(journal.trades || [])];
+  const scaleOuts = [...(journal.scaleOuts || [])];
+  const blockedSetups = [...(journal.blockedSetups || [])];
+  const researchRuns = [...(journal.researchRuns || [])];
+  const equitySnapshots = [...(journal.equitySnapshots || [])];
+  const openPositions = [...(runtime.openPositions || [])].filter((position) => matchesTradingSource(position, currentTradingSource, botMode));
+  const sourceScopedTrades = trades.filter((trade) => matchesTradingSource(trade, currentTradingSource, botMode));
+  const sourceScopedScaleOuts = scaleOuts.filter((item) => matchesTradingSource(item, currentTradingSource, botMode));
+  const sourceScopedEquitySnapshots = equitySnapshots.filter((item) => matchesTradingSource(item, currentTradingSource, botMode));
+  const lookbackTrades = trades.slice(-config.reportLookbackTrades);
+  const sourceScopedLookbackTrades = sourceScopedTrades.slice(-config.reportLookbackTrades);
+  const shouldScopePrimary = botMode === "paper" && currentTradingSource !== "paper:internal";
+  const primaryTrades = shouldScopePrimary ? sourceScopedTrades : trades;
+  const primaryLookbackTrades = shouldScopePrimary ? sourceScopedLookbackTrades : lookbackTrades;
+  const primaryScaleOuts = shouldScopePrimary ? sourceScopedScaleOuts : scaleOuts;
+  const primaryEquitySnapshots = shouldScopePrimary ? sourceScopedEquitySnapshots : equitySnapshots;
+  const openExposure = openPositions.reduce(
+    (total, position) => {
+      const notional = safeNumber(position?.notional, Number.NaN);
+      const quantity = safeNumber(position?.quantity, 0);
+      const entryPrice = safeNumber(position?.entryPrice, 0);
+      const fallbackNotional = quantity * entryPrice;
+      return total + (Number.isFinite(notional) ? notional : fallbackNotional);
+    },
+    0
+  );
+  const nowMs = referenceNow.getTime();
+  const localDayStartMs = startOfLocalDay(referenceNow);
+  const primaryScaleOutPnlSummary = buildScaleOutPnlSummary(primaryScaleOuts, {
+    today: localDayStartMs,
+    days7: nowMs - 7 * 86_400_000,
+    days15: nowMs - 15 * 86_400_000,
+    days30: nowMs - 30 * 86_400_000
+  });
+  const lookbackScaleOuts = buildRecentScaleOuts(primaryScaleOuts, primaryLookbackTrades, config.reportLookbackTrades || 0);
+  const lookbackScaleOutPnl = lookbackScaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
+  const sourceScopedLookbackScaleOuts = buildRecentScaleOuts(sourceScopedScaleOuts, sourceScopedLookbackTrades, config.reportLookbackTrades || 0);
+  const sourceScopedLookbackScaleOutPnl = sourceScopedLookbackScaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
+  const tradeQualityReview = buildTradeQualitySummary(primaryTrades, journal.counterfactuals || []);
+  const blockedSetupLifecycle = buildBlockedSetupLifecycleSummary(blockedSetups, journal.counterfactuals || []);
+  const executionCostSummary = buildExecutionCostSummary(primaryLookbackTrades, config, referenceNow.toISOString());
+  const pnlDecomposition = buildPnlDecomposition(primaryLookbackTrades, config);
+  const reportStats = buildTradeStats(primaryLookbackTrades, { realizedPnlAdjustment: lookbackScaleOutPnl });
+  const sourceScopedStats = buildTradeStats(sourceScopedLookbackTrades, { realizedPnlAdjustment: sourceScopedLookbackScaleOutPnl });
+  const postTradeAnalytics = buildPostTradeAnalytics(primaryTrades);
+  const performanceDiagnosis = buildPerformanceDiagnosis({
+    trades: primaryLookbackTrades,
+    reportStats,
+    pnlDecomposition,
+    executionCostSummary,
+    config
+  });
+  const openExposureReview = buildOpenExposureReview(openPositions);
+  const windowSummaries = buildWindowSummaries(primaryTrades, {
+    today: localDayStartMs,
+    days7: nowMs - 7 * 86_400_000,
+    days15: nowMs - 15 * 86_400_000,
+    days30: nowMs - 30 * 86_400_000
+  }, {
+    scaleOutPnlSummary: primaryScaleOutPnlSummary
+  });
+  const sourceMixActive = botMode === "paper" && currentTradingSource !== "paper:internal" && (
+    trades.some((trade) => !matchesTradingSource(trade, currentTradingSource, botMode) && matchesBrokerMode(trade, botMode)) ||
+    equitySnapshots.some((snapshot) => !matchesTradingSource(snapshot, currentTradingSource, botMode) && matchesBrokerMode(snapshot, botMode))
+  );
+
+  return {
+    ...reportStats,
+    reportScope: shouldScopePrimary ? "source_scoped" : "aggregate",
+    currentTradingSource,
+    maxDrawdownPct: buildDrawdown(primaryEquitySnapshots),
+    sourceScoped: {
+      tradingSource: currentTradingSource,
+      tradeCount: sourceScopedStats.tradeCount || 0,
+      realizedPnl: sourceScopedStats.realizedPnl,
+      winRate: sourceScopedStats.winRate,
+      averagePnlPct: sourceScopedStats.averagePnlPct,
+      profitFactor: sourceScopedStats.profitFactor,
+      maxDrawdownPct: buildDrawdown(sourceScopedEquitySnapshots),
+      recentTradeCount: sourceScopedLookbackTrades.length,
+      latestTradeAt: resolveLatestTradeAt(sourceScopedTrades),
+      notes: sourceMixActive
+        ? [
+            `Current paper source ${currentTradingSource} wordt apart gerapporteerd naast legacy paper-history.`,
+            `Source-scoped report gebruikt ${sourceScopedTrades.length} trade(s) en ${sourceScopedEquitySnapshots.length} equity snapshot(s).`
+          ]
+        : []
+    },
+    sourceMix: {
+      active: sourceMixActive,
+      tradingSource: currentTradingSource,
+      aggregateTradeCount: trades.length,
+      sourceScopedTradeCount: sourceScopedTrades.length,
+      aggregateEquitySnapshotCount: equitySnapshots.length,
+      sourceScopedEquitySnapshotCount: sourceScopedEquitySnapshots.length,
+      aggregateMaxDrawdownPct: buildDrawdown(equitySnapshots),
+      sourceScopedMaxDrawdownPct: buildDrawdown(sourceScopedEquitySnapshots)
+    },
+    openExposure,
+    openPositions: openPositions.length,
+    openExposureReview,
+    recentTrades: primaryLookbackTrades.slice(-25).reverse(),
+    executionSummary: buildExecutionSummary(primaryLookbackTrades),
+    executionCostSummary,
+    pnlDecomposition,
+    postTradeAnalytics,
+    performanceDiagnosis,
+    attribution: buildAttributionSummary(primaryTrades),
+    tradeQualityReview,
+    recentReviews: primaryLookbackTrades.slice(-20).reverse().map((trade) => ({
+      id: trade.id,
+      symbol: trade.symbol,
+      strategy: trade.strategyAtEntry || trade.entryRationale?.strategy?.activeStrategy || null,
+      pnlQuote: trade.pnlQuote || 0,
+      netPnlPct: trade.netPnlPct || 0,
+      ...buildTradeQualityReview(trade)
+    })),
+    scaleOutSummary: buildScaleOutSummary(primaryScaleOuts),
+    windows: {
+      today: windowSummaries.today,
+      days7: windowSummaries.days7,
+      days15: windowSummaries.days15,
+      days30: windowSummaries.days30,
+      allTime: buildTradeStats(primaryTrades, { realizedPnlAdjustment: primaryScaleOutPnlSummary.allTime })
+    },
+    modes: {
+      paper: buildModeStats(trades, "paper", scaleOuts),
+      live: buildModeStats(trades, "live", scaleOuts)
+    },
+    equitySeries: primaryEquitySnapshots.slice(-(config.dashboardEquityPointLimit || 240)),
+    cycleSeries: [...(journal.cycles || [])].slice(-(config.dashboardCyclePointLimit || 120)),
+    recentEvents: buildRecentEvents(journal.events || [], runtime, referenceNow),
+    recentScaleOuts: primaryScaleOuts.slice(-20).reverse(),
+    recentBlockedSetups: blockedSetups.slice(-20).reverse(),
+    blockedSetupLifecycle,
+    recentResearchRuns: researchRuns.slice(-8).reverse()
+  };
+}
+
+function buildOpenExposureReview(openPositions = []) {
+  const summary = {
+    manualReviewCount: 0,
+    protectOnlyCount: 0,
+    reconcileRequiredCount: 0,
+    protectionPendingCount: 0,
+    unreconciledCount: 0,
+    manualReviewExposure: 0,
+    protectOnlyExposure: 0,
+    reconcileRequiredExposure: 0,
+    protectionPendingExposure: 0,
+    unreconciledExposure: 0,
+    autoReconcileDecisionCounts: {},
+    topReconcileCases: [],
+    oldestManualReviewAgeMinutes: null,
+    notes: []
+  };
+  for (const position of openPositions || []) {
+    const quantity = safeNumber(position?.quantity, 0);
+    const entryPrice = safeNumber(position?.entryPrice, 0);
+    const notional = safeNumber(position?.notional, quantity * entryPrice);
+    const exposure = Number.isFinite(notional) ? notional : 0;
+    const manualReview = Boolean(position?.manualReviewRequired);
+    const protectOnly = `${position?.operatorMode || ""}` === "protect_only" || `${position?.lifecycleState || ""}` === "protect_only";
+    const reconcileRequired = Boolean(position?.reconcileRequired);
+    const protectionPending = `${position?.lifecycleState || ""}` === "protection_pending";
+    const queuedAt = position?.lastReconcileCheckAt || position?.entryAt || null;
+    const ageMinutes = queuedAt ? Math.max(0, Math.round((Date.now() - new Date(queuedAt).getTime()) / 60_000)) : null;
+    if (manualReview) {
+      summary.manualReviewCount += 1;
+      summary.manualReviewExposure += exposure;
+      if (ageMinutes != null) {
+        summary.oldestManualReviewAgeMinutes = summary.oldestManualReviewAgeMinutes == null
+          ? ageMinutes
+          : Math.max(summary.oldestManualReviewAgeMinutes, ageMinutes);
+      }
+    }
+    if (protectOnly) {
+      summary.protectOnlyCount += 1;
+      summary.protectOnlyExposure += exposure;
+    }
+    if (reconcileRequired) {
+      summary.reconcileRequiredCount += 1;
+      summary.reconcileRequiredExposure += exposure;
+    }
+    if (protectionPending) {
+      summary.protectionPendingCount += 1;
+      summary.protectionPendingExposure += exposure;
+    }
+    if (manualReview || reconcileRequired || protectionPending) {
+      summary.unreconciledCount += 1;
+      summary.unreconciledExposure += exposure;
+      const decision = position?.autoReconcileDecision || null;
+      if (decision) {
+        summary.autoReconcileDecisionCounts[decision] = (summary.autoReconcileDecisionCounts[decision] || 0) + 1;
+      }
+      summary.topReconcileCases.push({
+        symbol: position?.symbol || null,
+        exposure: Number(exposure.toFixed(2)),
+        state: position?.lifecycleState || null,
+        operatorMode: position?.operatorMode || "normal",
+        decision,
+        reason: position?.reconcileReason || null,
+        checkedAt: position?.lastReconcileCheckAt || null,
+        attemptCount: position?.autoReconcileAttemptCount || 0,
+        ageMinutes
+      });
+    }
+  }
+  summary.manualReviewExposure = Number(summary.manualReviewExposure.toFixed(2));
+  summary.protectOnlyExposure = Number(summary.protectOnlyExposure.toFixed(2));
+  summary.reconcileRequiredExposure = Number(summary.reconcileRequiredExposure.toFixed(2));
+  summary.protectionPendingExposure = Number(summary.protectionPendingExposure.toFixed(2));
+  summary.unreconciledExposure = Number(summary.unreconciledExposure.toFixed(2));
+  summary.notes = [
+    summary.unreconciledCount
+      ? `${summary.unreconciledCount} open posities vragen reconcile, manual review of protection-herstel.`
+      : "Alle open exposure staat momenteel zonder reconcile-signalen.",
+    summary.manualReviewCount
+      ? `${summary.manualReviewCount} positie(s) wachten op operator review.`
+      : "Geen open posities in manual review.",
+    summary.protectOnlyCount
+      ? `${summary.protectOnlyCount} positie(s) staan in protect-only monitoring.`
+      : "Geen protect-only posities actief.",
+    summary.protectionPendingCount
+      ? `${summary.protectionPendingCount} positie(s) wachten nog op protection rebuild.`
+      : "Geen protection-pending posities actief."
+  ];
+  summary.topReconcileCases = summary.topReconcileCases
+    .sort((left, right) => (right.exposure || 0) - (left.exposure || 0))
+    .slice(0, 6);
+  return summary;
+}
