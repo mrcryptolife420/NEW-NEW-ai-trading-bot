@@ -60,6 +60,16 @@ The default goal is to inspect the real code, identify root causes, apply high-c
 
 
 
+\## Git workflow for this project
+
+This local workspace must stay synchronized with:
+
+\- `https://github.com/mrcryptolife420/NEW-NEW-ai-trading-bot`
+
+Use `main` only. Do not create feature branches unless the user explicitly overrides this rule. Commit and push completed safe changes directly to `origin/main`. Never push `.env`, secrets, runtime data, logs, `node_modules`, or ignored local artifacts.
+
+
+
 \---
 
 
