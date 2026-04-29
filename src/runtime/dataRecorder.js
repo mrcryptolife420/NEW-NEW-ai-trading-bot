@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { appendJsonLine, ensureDir, listFiles, removeFile } from "../utils/fs.js";
+import { classifyReasonCategory } from "../risk/reasonRegistry.js";
 
 const FEATURE_STORE_SCHEMA_VERSION = 8;
 
@@ -42,35 +43,7 @@ function average(values = [], fallback = 0) {
 }
 
 function classifyBlockerCategory(reason = "") {
-  const normalized = `${reason || ""}`.toLowerCase();
-  if (!normalized) {
-    return "other";
-  }
-  if (normalized.startsWith("model_")) {
-    return "model";
-  }
-  if (normalized.startsWith("committee_")) {
-    return "committee";
-  }
-  if (normalized.includes("timeframe") || normalized.includes("higher_tf_conflict")) {
-    return "timeframe";
-  }
-  if (normalized.includes("cooldown") || normalized.includes("weekend") || normalized.includes("session")) {
-    return "session";
-  }
-  if (normalized.includes("spread") || normalized.includes("execution") || normalized.includes("book")) {
-    return "execution";
-  }
-  if (normalized.includes("exposure") || normalized.includes("portfolio") || normalized.includes("correlation")) {
-    return "portfolio";
-  }
-  if (normalized.includes("trade_size") || normalized.includes("minimum")) {
-    return "sizing";
-  }
-  if (normalized.includes("capital") || normalized.includes("meta_") || normalized.includes("retire") || normalized.includes("quality_quorum")) {
-    return "governance";
-  }
-  return "market";
+  return classifyReasonCategory(reason);
 }
 
 function makeIndicatorFrame(source = {}) {

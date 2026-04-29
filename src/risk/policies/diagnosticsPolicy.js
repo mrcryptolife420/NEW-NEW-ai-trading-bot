@@ -1,5 +1,10 @@
 import { HARD_SAFETY_BLOCKERS } from "./hardSafetyPolicy.js";
 import { buildSimplifiedConfidenceAdjudication } from "../confidenceAdjudication.js";
+import {
+  classifyDecisionPlane,
+  classifyReasonCategory as registryClassifyReasonCategory,
+  sortReasonsByRootPriority
+} from "../reasonRegistry.js";
 
 function safeValue(value, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
@@ -14,34 +19,7 @@ function clamp(value, min = 0, max = 1) {
 }
 
 function classifyReasonCategory(reason = "") {
-  if (!reason) {
-    return "other";
-  }
-  if (reason.includes("confidence") || reason.includes("abstain") || reason.includes("quality")) {
-    return "quality";
-  }
-  if (reason.includes("committee") || reason.includes("meta") || reason.includes("governor")) {
-    return "governance";
-  }
-  if (reason.includes("volatility") || reason.includes("spread") || reason.includes("orderbook") || reason.includes("liquidity")) {
-    return "execution";
-  }
-  if (reason.includes("news") || reason.includes("event") || reason.includes("calendar") || reason.includes("announcement")) {
-    return "event";
-  }
-  if (reason.includes("portfolio") || reason.includes("exposure") || reason.includes("position") || reason.includes("trade_size")) {
-    return "risk";
-  }
-  if (reason.includes("exchange_safety") || reason.includes("exchange_truth") || reason.includes("reconcile")) {
-    return "safety";
-  }
-  if (reason.includes("regime") || reason.includes("trend") || reason.includes("breakout") || reason.includes("session")) {
-    return "regime";
-  }
-  if (reason.startsWith("paper_learning_") || reason.includes("shadow")) {
-    return "learning";
-  }
-  return "other";
+  return registryClassifyReasonCategory(reason);
 }
 
 function classifyPermissioningCategory(reason = "") {
@@ -59,79 +37,12 @@ function classifyPermissioningCategory(reason = "") {
 }
 
 function classifyDecisionBoundaryPlane(reason = "") {
-  if (!reason) {
-    return "other";
-  }
-  if (reason.includes("meta_followthrough")) {
-    return "alpha";
-  }
-  if (
-    [
-      "committee_veto",
-      "committee_confidence_too_low",
-      "committee_low_agreement",
-      "meta_gate_caution",
-      "meta_neural_caution",
-      "trade_quality_caution",
-      "event_risk_blocked",
-      "calendar_risk_blocked",
-      "announcement_risk_blocked",
-      "entry_cooldown_active",
-      "strategy_cooldown",
-      "position_already_open",
-      "max_open_positions_reached",
-      "duplicate_trade_prevention",
-      "pair_correlation_too_high",
-      "self_heal_pause_entries",
-      "capital_governor_blocked",
-      "capital_governor_recovery",
-      "trade_size_below_minimum",
-      "trade_size_invalid",
-      "execution_cost_budget_exceeded"
-    ].includes(reason)
-  ) {
-    return "permissioning";
-  }
-  if (
-    reason.includes("model") ||
-    reason.includes("confidence") ||
-    reason.includes("abstain") ||
-    reason.includes("calibration") ||
-    reason.includes("setup") ||
-    reason.includes("strategy_fit") ||
-    reason.includes("strategy_context") ||
-    reason.includes("cross_timeframe") ||
-    reason.includes("trade_quality") ||
-    reason.includes("ambiguous_setup")
-  ) {
-    return "alpha";
-  }
-  if (
-    reason.includes("session") ||
-    reason.includes("cooldown") ||
-    reason.includes("correlation") ||
-    reason.includes("capital_governor") ||
-    reason.includes("budget") ||
-    reason.includes("trade_size") ||
-    reason.includes("execution_cost") ||
-    reason.includes("self_heal") ||
-    reason.includes("position_") ||
-    reason.includes("duplicate")
-  ) {
-    return "permissioning";
-  }
-  const category = classifyReasonCategory(reason);
-  if (category === "quality") {
-    return "alpha";
-  }
-  if (["governance", "event", "execution", "risk"].includes(category)) {
-    return "permissioning";
-  }
-  return "other";
+  const plane = classifyDecisionPlane(reason);
+  return plane === "sizing" ? "permissioning" : plane === "hard_safety" ? "permissioning" : plane;
 }
 
 export function buildBlockerDecomposition(reasons = []) {
-  const blockerSequence = [...new Set((reasons || []).filter(Boolean))];
+  const blockerSequence = sortReasonsByRootPriority(reasons);
   const redundantPairs = [
     ["committee_low_agreement", "committee_veto"],
     ["committee_low_agreement", "committee_confidence_too_low"],

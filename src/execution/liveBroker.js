@@ -56,22 +56,10 @@ import {
   buildPortfolioOverlapAtEntry,
   buildStopPlanAtEntry
 } from "./tradeAnalyticsContext.js";
+import { summarizeTradeFees } from "./feeAccounting.js";
 
 function sumTradeCommissionsToQuote(trades, baseAsset, quoteAsset) {
-  return (trades || []).reduce((total, trade) => {
-    const commission = Number(trade.commission || 0);
-    const price = Number(trade.price || 0);
-    if (!commission) {
-      return total;
-    }
-    if (trade.commissionAsset === quoteAsset) {
-      return total + commission;
-    }
-    if (trade.commissionAsset === baseAsset) {
-      return total + commission * price;
-    }
-    return total;
-  }, 0);
+  return summarizeTradeFees({ trades, baseAsset, quoteAsset }).feeQuote;
 }
 
 function sumTradeCommissionsInAsset(trades, asset) {
@@ -1390,7 +1378,19 @@ export class LiveBroker {
     if (!quantity || !quoteSpent) {
       throw new Error("Live buy returned empty fills.");
     }
-    const fee = normalized.reduce((total, item) => total + sumTradeCommissionsToQuote(item.trades, rules.baseAsset, rules.quoteAsset), 0);
+    const entryFeeSummary = summarizeTradeFees({
+      trades: normalized.flatMap((item) => item.trades || []),
+      baseAsset: rules.baseAsset,
+      quoteAsset: rules.quoteAsset
+    });
+    if (entryFeeSummary.unconvertedCount > 0) {
+      this.logger?.warn?.("Live entry fee has unconverted commission asset", {
+        symbol,
+        unconvertedCount: entryFeeSummary.unconvertedCount,
+        breakdown: entryFeeSummary.breakdown
+      });
+    }
+    const fee = entryFeeSummary.feeQuote;
     const averagePrice = quoteSpent / quantity;
     const executionQualityScore = normalized.reduce((total, item) => {
       const fillPrice = Number(item.order.cummulativeQuoteQty || 0) / Math.max(Number(item.order.executedQty || 0), 1e-9);
@@ -1436,6 +1436,10 @@ export class LiveBroker {
       notional: quoteSpent,
       totalCost: quoteSpent + fee,
       entryFee: fee,
+      entryFeeQuote: fee,
+      entryFeeQuoteStatus: entryFeeSummary.feeQuoteStatus,
+      entryFeeAssetBreakdown: entryFeeSummary.breakdown,
+      observedEntryFeeBps: entryFeeSummary.observedFeeBps,
       highestPrice: averagePrice,
       lowestPrice: averagePrice,
       lastMarkedPrice: marketSnapshot.book.mid,
@@ -1967,7 +1971,20 @@ export class LiveBroker {
     const executedQty = Number(order.executedQty || position.quantity);
     const quoteReceived = Number(order.cummulativeQuoteQty || 0);
     const averagePrice = executedQty ? quoteReceived / executedQty : position.lastMarkedPrice;
-    const fee = sumTradeCommissionsToQuote(trades, rules.baseAsset, rules.quoteAsset);
+    const exitFeeSummary = summarizeTradeFees({
+      trades,
+      baseAsset: rules.baseAsset,
+      quoteAsset: rules.quoteAsset
+    });
+    if (exitFeeSummary.unconvertedCount > 0) {
+      this.logger?.warn?.("Live exit fee has unconverted commission asset", {
+        symbol: position.symbol,
+        orderId: order.orderId,
+        unconvertedCount: exitFeeSummary.unconvertedCount,
+        breakdown: exitFeeSummary.breakdown
+      });
+    }
+    const fee = exitFeeSummary.feeQuote;
     const proceeds = quoteReceived - fee;
     const pnlQuote = proceeds - position.totalCost;
     const netPnlPct = position.totalCost ? pnlQuote / position.totalCost : 0;
@@ -2003,7 +2020,17 @@ export class LiveBroker {
       exitPrice: averagePrice,
       quantity: executedQty,
       totalCost: position.totalCost,
+      entryFee: position.entryFee || 0,
+      entryFeeQuote: position.entryFeeQuote ?? position.entryFee ?? 0,
+      entryFeeAssetBreakdown: position.entryFeeAssetBreakdown || [],
+      observedEntryFeeBps: position.observedEntryFeeBps ?? null,
       proceeds,
+      grossProceeds: quoteReceived,
+      exitFee: fee,
+      exitFeeQuote: fee,
+      exitFeeQuoteStatus: exitFeeSummary.feeQuoteStatus,
+      exitFeeAssetBreakdown: exitFeeSummary.breakdown,
+      observedExitFeeBps: exitFeeSummary.observedFeeBps,
       pnlQuote,
       netPnlPct,
       mfePct,
@@ -2798,7 +2825,12 @@ export class LiveBroker {
       }
       const quoteReceived = Number(order.cummulativeQuoteQty || 0);
       const averagePrice = executedQty ? quoteReceived / executedQty : marketSnapshot.book.bid;
-      const fee = sumTradeCommissionsToQuote(trades, rules.baseAsset, rules.quoteAsset);
+      const feeSummary = summarizeTradeFees({
+        trades,
+        baseAsset: rules.baseAsset,
+        quoteAsset: rules.quoteAsset
+      });
+      const fee = feeSummary.feeQuote;
       const netProceeds = quoteReceived - fee;
       const proportion = executedQty / Math.max(originalQuantity, 1e-9);
       const allocatedCost = position.totalCost * proportion;
@@ -2842,6 +2874,10 @@ export class LiveBroker {
         grossProceeds: quoteReceived,
         netProceeds,
         fee,
+        feeQuote: fee,
+        feeQuoteStatus: feeSummary.feeQuoteStatus,
+        feeAssetBreakdown: feeSummary.breakdown,
+        observedFeeBps: feeSummary.observedFeeBps,
         allocatedCost,
         realizedPnl,
         reason,

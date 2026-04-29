@@ -21,6 +21,45 @@ function ensurePaperState(runtime, startingCash) {
   }
 }
 
+export function validatePaperPosition(position = {}) {
+  const required = ["symbol", "id", "entryAt"];
+  for (const key of required) {
+    if (!position[key]) {
+      throw new Error(`Paper portfolio invariant failed: position missing ${key}.`);
+    }
+  }
+  for (const key of ["quantity", "entryPrice", "notional", "totalCost"]) {
+    if (!Number.isFinite(Number(position[key]))) {
+      throw new Error(`Paper portfolio invariant failed: ${position.symbol} ${key} is not finite.`);
+    }
+  }
+  if (Number(position.quantity) <= 0) {
+    throw new Error(`Paper portfolio invariant failed: ${position.symbol} quantity must be positive.`);
+  }
+  if (Number(position.notional) < 0 || Number(position.totalCost) < 0) {
+    throw new Error(`Paper portfolio invariant failed: ${position.symbol} negative notional/cost.`);
+  }
+  return true;
+}
+
+export function validatePaperPortfolioState(runtime = {}) {
+  const portfolio = runtime.paperPortfolio || {};
+  for (const key of ["quoteFree", "feesPaid", "realizedPnl"]) {
+    if (!Number.isFinite(Number(portfolio[key]))) {
+      throw new Error(`Paper portfolio invariant failed: ${key} is not finite.`);
+    }
+  }
+  if (Number(portfolio.quoteFree) < -1e-8) {
+    throw new Error("Paper portfolio invariant failed: quoteFree is negative.");
+  }
+  for (const position of runtime.openPositions || []) {
+    if ((position.brokerMode || "paper") === "paper") {
+      validatePaperPosition(position);
+    }
+  }
+  return true;
+}
+
 function buildExitPlan(position) {
   return {
     ...(position.executionPlan || {}),
@@ -356,6 +395,7 @@ export class PaperBroker {
     };
 
     runtime.openPositions.push(position);
+    validatePaperPortfolioState(runtime);
     return position;
   }
 
@@ -408,6 +448,7 @@ export class PaperBroker {
     runtime.paperPortfolio.quoteFree += netProceeds;
     runtime.paperPortfolio.feesPaid += fee;
     runtime.paperPortfolio.realizedPnl += realizedPnl;
+    validatePaperPortfolioState(runtime);
 
     position.quantity -= executedQuantity;
     position.totalCost -= allocatedCost;
@@ -498,6 +539,7 @@ export class PaperBroker {
     runtime.paperPortfolio.quoteFree += netProceeds;
     runtime.paperPortfolio.feesPaid += fee;
     runtime.paperPortfolio.realizedPnl += pnlQuote;
+    validatePaperPortfolioState(runtime);
     if (executedQuantity >= originalQuantity) {
       runtime.openPositions = runtime.openPositions.filter((item) => item.id !== position.id);
     } else {

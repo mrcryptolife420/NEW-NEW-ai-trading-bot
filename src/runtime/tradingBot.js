@@ -9034,6 +9034,10 @@ function buildHistoryFocusInputs({
 
 export class TradingBot {
   constructor({ config, logger }) {
+    config = {
+      ...config,
+      runtimeDir: config?.runtimeDir || path.join(process.cwd(), "data", "runtime")
+    };
     this.config = config;
     this.logger = logger || NOOP_LOGGER;
     this.store = new StateStore(config.runtimeDir);
@@ -13182,7 +13186,10 @@ export class TradingBot {
         attemptCount: item.attemptCount || 0
       }))
     );
-    const fromTruth = arr(this.runtime.exchangeTruth?.autoReconcileAudits || []).map((item) => ({
+    const fromTruth = [
+      ...arr(this.runtime.exchangeTruth?.autoReconcileAudits || []),
+      ...arr(this.runtime.exchangeSafety?.autoReconcileAudits || [])
+    ].map((item) => ({
       at: item.checkedAt || null,
       symbol: item.symbol || null,
       source: "exchange_truth",
@@ -13197,10 +13204,6 @@ export class TradingBot {
     const deduped = [];
     const seen = new Set();
     for (const item of [...fromHistory, ...fromTruth]) {
-      const atMs = new Date(item.at || 0).getTime();
-      if (!Number.isFinite(atMs) || atMs < cutoffMs) {
-        continue;
-      }
       const key = [
         item.symbol || "",
         item.at || "",
@@ -13215,7 +13218,11 @@ export class TradingBot {
       seen.add(key);
       deduped.push(item);
     }
-    return deduped
+    const fresh = deduped.filter((item) => {
+      const atMs = new Date(item.at || 0).getTime();
+      return Number.isFinite(atMs) && atMs >= cutoffMs;
+    });
+    return (fresh.length ? fresh : deduped)
       .sort((left, right) => new Date(right.at || 0).getTime() - new Date(left.at || 0).getTime())
       .slice(0, limit);
   }
@@ -21767,7 +21774,7 @@ export class TradingBot {
   }
 
   async updatePortfolioSnapshot(midPrices = {}) {
-    this.runtime.requestWeight = this.client.getRateLimitState ? this.client.getRateLimitState() : this.runtime.requestWeight;
+    this.runtime.requestWeight = this.client?.getRateLimitState ? this.client.getRateLimitState() : this.runtime.requestWeight;
     if (this.runtime.requestWeight?.banActive) {
       const balance = { quoteFree: Number(this.runtime.lastKnownBalance || 0) };
       const equity = Number(this.runtime.lastKnownEquity || balance.quoteFree || 0);
@@ -21841,7 +21848,7 @@ export class TradingBot {
 
   async refreshAnalysis() {
     try {
-      this.runtime.requestWeight = this.client.getRateLimitState ? this.client.getRateLimitState() : null;
+      this.runtime.requestWeight = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
       if (this.runtime.requestWeight?.banActive) {
         const analysisAt = nowIso();
         this.runtime.lastAnalysisAt = analysisAt;
@@ -24223,11 +24230,14 @@ export class TradingBot {
     const calendarOverview = topDecision.calendar || leadPosition?.entryRationale?.calendar || summarizeCalendarSummary(EMPTY_CALENDAR);
     const dashboardTopDecisions = fullTopDecisions.map((decision) => this.buildDashboardDecisionView(decision));
     const dashboardBlockedSetups = fullBlockedSetups.map((decision) => this.buildDashboardDecisionView(decision));
-    const marketProvidersSummary = summarizeMarketProviders(this.marketProviderHub.buildRuntimeHealth({
+    const marketProvidersHealth = this.marketProviderHub?.buildRuntimeHealth
+      ? this.marketProviderHub.buildRuntimeHealth({
       symbolSummaries: [...fullTopDecisions, ...fullBlockedSetups]
         .map((decision) => decision.marketProviderSummary)
         .filter(Boolean)
-    }));
+      })
+      : { status: "unavailable", providers: [], degradedProviders: [], reason: "market_provider_hub_unavailable" };
+    const marketProvidersSummary = summarizeMarketProviders(marketProvidersHealth);
     this.runtime.marketProviders = marketProvidersSummary;
     const tradeReplays = report.recentTrades.slice(0, 6).map((trade) => this.buildTradeReplayView(trade));
     const sourceReliabilitySummary = this.buildSourceReliabilitySnapshot();

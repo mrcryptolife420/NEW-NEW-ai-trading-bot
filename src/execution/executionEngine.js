@@ -212,6 +212,14 @@ export class ExecutionEngine {
     const entryStyle = preferPegged ? "pegged_limit_maker" : preferMaker ? "limit_maker" : "market";
     const fallbackStyle = preferMaker ? "cancel_replace_market" : "none";
     const strategyTags = buildStrategyTags(symbol, strategySummary.activeStrategy);
+    const rejectedPeggedBecause = preferMaker && !preferPegged
+      ? [
+          !this.config.enablePeggedOrders ? "pegged_orders_disabled" : null,
+          !localBook.synced ? "local_book_not_synced" : null,
+          depthConfidence < 0.42 ? "depth_confidence_too_low" : null,
+          expectedImpactBps > this.config.maxPeggedImpactBps ? "impact_too_high" : null
+        ].filter(Boolean)
+      : [];
 
     return {
       symbol,
@@ -264,6 +272,22 @@ export class ExecutionEngine {
       strategyFit: strategySummary.fitScore || 0,
       strategyId: strategyTags.strategyId,
       strategyType: strategyTags.strategyType,
+      explain: {
+        basePreferMaker,
+        strategyMakerBias,
+        rlPreferMakerShift,
+        neuralPreferMakerShift,
+        strategyMetaMakerShift,
+        venueMakerShift,
+        governorMakerShift,
+        committeeTailwind,
+        microstructureTailwind,
+        preferMakerScore,
+        preferMaker,
+        preferPegged,
+        rejectedPeggedBecause,
+        finalEntryStyle: entryStyle
+      },
       rationale: [
         `regime:${regimeSummary.regime}`,
         `strategy:${strategySummary.activeStrategy || "hybrid"}`,

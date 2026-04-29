@@ -1,57 +1,17 @@
+import {
+  classifyReasonCategory,
+  getDashboardLabel,
+  getOperatorAction,
+  getReasonSeverity,
+  sortReasonsByRootPriority
+} from "./reasonRegistry.js";
+
 function inferCategory(code = "") {
-  const normalized = `${code || ""}`.trim().toLowerCase();
-  if (!normalized) {
-    return "other";
-  }
-  if (normalized.includes("confidence") || normalized.includes("quality") || normalized.includes("setup")) {
-    return "quality";
-  }
-  if (normalized.includes("portfolio") || normalized.includes("drawdown") || normalized.includes("correlation") || normalized.includes("exposure")) {
-    return "portfolio";
-  }
-  if (normalized.includes("committee") || normalized.includes("governor") || normalized.includes("meta") || normalized.includes("retired")) {
-    return "governance";
-  }
-  if (normalized.includes("spread") || normalized.includes("execution") || normalized.includes("quote") || normalized.includes("trade_size")) {
-    return "execution";
-  }
-  if (normalized.includes("session") || normalized.includes("trend") || normalized.includes("timeframe") || normalized.includes("market")) {
-    return "market";
-  }
-  if (normalized.includes("event") || normalized.includes("news") || normalized.includes("calendar") || normalized.includes("announcement")) {
-    return "event";
-  }
-  if (normalized.startsWith("paper_learning_") || normalized.includes("shadow")) {
-    return "learning";
-  }
-  return "other";
+  return classifyReasonCategory(code);
 }
 
 function inferSeverity(code = "") {
-  const normalized = `${code || ""}`.trim().toLowerCase();
-  if (!normalized) {
-    return "info";
-  }
-  if (
-    [
-      "exchange_truth_freeze",
-      "health_circuit_open",
-      "capital_governor_blocked",
-      "regime_kill_switch_active",
-      "position_already_open",
-      "max_total_exposure_reached",
-      "trade_size_invalid"
-    ].includes(normalized)
-  ) {
-    return "critical";
-  }
-  if (normalized.includes("manual_review") || normalized.includes("reconcile") || normalized.includes("blocked")) {
-    return "high";
-  }
-  if (normalized.includes("confidence") || normalized.includes("quality") || normalized.includes("cooldown")) {
-    return "medium";
-  }
-  return "low";
+  return getReasonSeverity(code);
 }
 
 function humanize(code = "") {
@@ -100,8 +60,8 @@ export function buildReasonCodeEntry(code, {
     category,
     severity,
     messageTemplate: message || humanize(code),
-    operatorAction: inferOperatorAction(category, severity),
-    dashboardLabel: humanize(code)
+    operatorAction: getOperatorAction(code) || inferOperatorAction(category, severity),
+    dashboardLabel: getDashboardLabel(code) || humanize(code)
   };
 }
 
@@ -118,7 +78,8 @@ export function buildRiskVerdict({
   portfolioSummary = {},
   entryMode = "standard"
 } = {}) {
-  const rejections = allowed ? [] : normalizeReasonCodeEntries(reasons, { kind: "rejection" });
+  const sortedReasons = sortReasonsByRootPriority(reasons);
+  const rejections = allowed ? [] : normalizeReasonCodeEntries(sortedReasons, { kind: "rejection" });
   const warnings = normalizeReasonCodeEntries(approvalReasons, { kind: "approval" });
   return {
     allowed,

@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import crypto from "node:crypto";
 import path from "node:path";
 import { ensureDir, listFiles, loadJson, removeFile, saveJson } from "../utils/fs.js";
 
@@ -297,7 +298,7 @@ export class StateStore {
       { path: this.modelBackupsPath, data: modelBackups }
     ];
     const staged = [];
-    const nonce = `${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
+    const nonce = `${Date.now()}-${crypto.randomUUID()}`;
     try {
       for (const item of payloads) {
         const tempPath = `${item.path}.staging-${nonce}.tmp`;

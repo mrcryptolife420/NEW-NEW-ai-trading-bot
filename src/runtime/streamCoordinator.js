@@ -166,6 +166,13 @@ function shouldUsePrivateUserStream(config = {}) {
   );
 }
 
+function getWebSocketAvailability() {
+  return {
+    available: typeof WebSocket !== "undefined",
+    reason: typeof WebSocket === "undefined" ? "global_websocket_unavailable" : null
+  };
+}
+
 function toEventTimeMs(value) {
   if (value == null) {
     return Number.NaN;
@@ -220,6 +227,7 @@ export class StreamCoordinator {
       publicStreamConnected: false,
       futuresStreamConnected: false,
       userStreamConnected: false,
+      unavailableReason: null,
       lastPublicMessageAt: null,
       lastFuturesMessageAt: null,
       lastUserMessageAt: null,
@@ -482,6 +490,7 @@ export class StreamCoordinator {
       publicStreamConnected: this.state.publicStreamConnected,
       futuresStreamConnected: this.state.futuresStreamConnected,
       userStreamConnected: this.state.userStreamConnected,
+      unavailableReason: this.state.unavailableReason,
       lastPublicMessageAt: this.state.lastPublicMessageAt,
       lastFuturesMessageAt: this.state.lastFuturesMessageAt,
       lastUserMessageAt: this.state.lastUserMessageAt,
@@ -666,7 +675,11 @@ export class StreamCoordinator {
   }
 
   scheduleRestart(kind, restart, reason) {
-    if (this.isClosing || !this.state.enabled || typeof WebSocket === "undefined") {
+    const ws = getWebSocketAvailability();
+    if (!ws.available) {
+      this.state.unavailableReason = ws.reason;
+    }
+    if (this.isClosing || !this.state.enabled || !ws.available) {
       return Promise.resolve();
     }
     this.clearRestartTimer(kind);
@@ -685,7 +698,7 @@ export class StreamCoordinator {
           } catch (error) {
             this.state.lastError = error.message;
             this.noteRestartFailure(kind, reason, error);
-            const retryScheduled = !this.isClosing && this.state.enabled && typeof WebSocket !== "undefined";
+            const retryScheduled = !this.isClosing && this.state.enabled && getWebSocketAvailability().available;
             this.logger?.warn?.(`${kind} stream restart failed`, {
               reason,
               error: error.message,
@@ -704,7 +717,11 @@ export class StreamCoordinator {
 
   async init() {
     this.isClosing = false;
-    if (!this.config.enableEventDrivenData || typeof WebSocket === "undefined") {
+    const ws = getWebSocketAvailability();
+    if (!ws.available) {
+      this.state.unavailableReason = ws.reason;
+    }
+    if (!this.config.enableEventDrivenData || !ws.available) {
       return this.getStatus();
     }
 
@@ -834,6 +851,11 @@ export class StreamCoordinator {
 
   async startPublicStream() {
     this.clearRestartTimer("public");
+    const ws = getWebSocketAvailability();
+    if (!ws.available) {
+      this.state.unavailableReason = ws.reason;
+      return;
+    }
     const streams = this.config.watchlist.flatMap((symbol) => {
       const lower = symbol.toLowerCase();
       const base = [`${lower}@bookTicker`, `${lower}@trade`];
@@ -852,6 +874,7 @@ export class StreamCoordinator {
         return;
       }
       this.state.publicStreamConnected = true;
+      this.state.unavailableReason = null;
       this.logger?.info?.("Public market stream connected", { streams: streams.length });
     });
     socket.addEventListener("message", (event) => {
@@ -1161,7 +1184,11 @@ export class StreamCoordinator {
     this.clearRestartTimer("public");
     this.publicRestartPromise = this.publicRestartPromise.catch(() => {}).then(async () => {
       await this.stopPublicStream();
-      if (!this.state.enabled || typeof WebSocket === "undefined" || !this.config.watchlist.length) {
+      const ws = getWebSocketAvailability();
+      if (!ws.available) {
+        this.state.unavailableReason = ws.reason;
+      }
+      if (!this.state.enabled || !ws.available || !this.config.watchlist.length) {
         return;
       }
       await this.startPublicStream();
