@@ -1,5 +1,7 @@
 ﻿import { runBacktest } from "../runtime/backtestRunner.js";
 import { runHistoryCommand } from "../runtime/marketHistory.js";
+import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayEngine.js";
+import { runReadModelCommand } from "../storage/readModelStore.js";
 import { TradingBot } from "../runtime/tradingBot.js";
 import { BotManager } from "../runtime/botManager.js";
 
@@ -137,6 +139,28 @@ export default async function runCli({
   if (command === "backtest") {
     const symbol = (args[0] || config.watchlist[0] || "BTCUSDT").toUpperCase();
     const result = await runBacktest({ config, logger, symbol });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "readmodel:rebuild" || command === "readmodel:status") {
+    const result = await runReadModelCommand({
+      config,
+      logger,
+      action: command === "readmodel:rebuild" ? "rebuild" : "status"
+    });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "replay:market") {
+    const result = await runMarketReplay({
+      config,
+      logger,
+      ...parseMarketReplayArgs(args, config)
+    });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;

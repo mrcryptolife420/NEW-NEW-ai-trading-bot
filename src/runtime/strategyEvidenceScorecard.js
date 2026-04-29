@@ -96,3 +96,56 @@ export function buildStrategyEvidenceScorecard({
     status
   };
 }
+
+export function buildStrategyEvidenceScorecards({
+  trades = [],
+  source = null,
+  minSampleSize = 8
+} = {}) {
+  const groups = new Map();
+  for (const trade of arr(trades)) {
+    if (!trade.exitAt && !trade.closedAt) {
+      continue;
+    }
+    const groupSource = getSource(trade);
+    if (source && groupSource !== source) {
+      continue;
+    }
+    const strategy = trade.strategyAtEntry || trade.strategy || {};
+    const strategyId = typeof strategy === "object"
+      ? strategy.strategy || strategy.id || trade.strategyId || trade.activeStrategy || "unknown"
+      : strategy || trade.strategyId || "unknown";
+    const strategyFamily = typeof strategy === "object"
+      ? strategy.family || trade.strategyFamily || trade.setupFamily || "unknown"
+      : trade.strategyFamily || trade.setupFamily || "unknown";
+    const regime = trade.regimeAtEntry || trade.regime || "unknown";
+    const marketCondition = trade.marketConditionAtEntry || trade.conditionIdAtEntry || "unknown";
+    const session = trade.sessionAtEntry || trade.session || "unknown";
+    const key = [groupSource, strategyId, strategyFamily, regime, marketCondition, session].join("|");
+    if (!groups.has(key)) {
+      groups.set(key, {
+        source: groupSource,
+        strategyId,
+        strategyFamily,
+        regime,
+        marketCondition,
+        session
+      });
+    }
+  }
+  return [...groups.values()].map((scope) => ({
+    id: [
+      scope.source,
+      scope.strategyId,
+      scope.strategyFamily,
+      scope.regime,
+      scope.marketCondition,
+      scope.session
+    ].join("|"),
+    ...buildStrategyEvidenceScorecard({
+      trades,
+      ...scope,
+      minSampleSize
+    })
+  }));
+}

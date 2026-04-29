@@ -151,6 +151,7 @@ import { registerReplayDeterminismTests } from "./replayDeterminism.tests.js";
 import { registerMarketProvidersTests } from "./marketProviders.tests.js";
 import { registerBinanceRestArchitectureTests } from "./binanceRestArchitecture.tests.js";
 import { registerOperationalHardeningTests } from "./operationalHardening.tests.js";
+import { registerLargeFoundationsTests } from "./largeFoundations.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -31786,6 +31787,15 @@ await registerBinanceRestArchitectureTests({
 await registerOperationalHardeningTests({
   runCheck,
   assert
+});
+
+await registerLargeFoundationsTests({
+  runCheck,
+  assert,
+  fs,
+  os,
+  path,
+  makeConfig
 });
 
 console.log("All checks passed.");
