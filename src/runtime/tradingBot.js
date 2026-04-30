@@ -29,6 +29,7 @@ import { RiskManager } from "../risk/riskManager.js";
 import { ParameterGovernor } from "../ai/parameterGovernor.js";
 import { AuditLogStore } from "../storage/auditLogStore.js";
 import { StateStore, migrateJournal, migrateRuntime } from "../storage/stateStore.js";
+import { ReadModelStore } from "../storage/readModelStore.js";
 import { buildPerformanceReport, buildTradePnlBreakdown, buildTradeQualityReview } from "./reportBuilder.js";
 import { DataRecorder } from "./dataRecorder.js";
 import { ModelRegistry } from "./modelRegistry.js";
@@ -9149,6 +9150,23 @@ export class TradingBot {
     this.observabilityCache.reportBuiltVersion = this.observabilityCache.reportVersion;
     this.observabilityCache.reportGeneratedAt = nowIso();
     return report;
+  }
+
+  async buildReadModelDashboardSummary() {
+    const store = new ReadModelStore({ runtimeDir: this.config.runtimeDir, logger: this.logger });
+    try {
+      await store.init();
+      return store.dashboardSummary();
+    } catch (error) {
+      return {
+        status: "unavailable",
+        source: "sqlite_read_model",
+        fallbackAvailable: true,
+        error: error?.message || "read_model_unavailable"
+      };
+    } finally {
+      store.close();
+    }
   }
 
   buildPublicReportView(report = this.getPerformanceReport()) {
@@ -24419,6 +24437,7 @@ export class TradingBot {
       manualReviewQueue,
       schemaVersion: 3
     });
+    const readModelSummary = await this.buildReadModelDashboardSummary();
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),
       generatedAt: referenceNow,
@@ -24608,6 +24627,7 @@ export class TradingBot {
       requestWeight: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
       offlineTrainer: offlineTrainerSummary,
       marketHistory: marketHistorySummary,
+      readModel: readModelSummary,
       upcomingEvents: arr(topDecision.calendarEvents || leadPosition?.entryRationale?.calendarEvents || []).slice(0, 4),
       officialNotices: arr(topDecision.officialNotices || leadPosition?.entryRationale?.officialNotices || []).slice(0, 4),
       watchlist: this.runtime.watchlistSummary || null,
@@ -24748,6 +24768,7 @@ export class TradingBot {
       ops: dashboard.ops,
       coreMetrics: dashboard.coreMetrics || buildCoreMetricsView({ report: dashboard.report, overview: dashboard.overview }),
       sourceOfTruth: dashboard.sourceOfTruth || null,
+      readModel: dashboard.readModel || null,
       report: dashboard.report,
       modelWeights: dashboard.modelWeights
     };
@@ -24779,6 +24800,8 @@ export class TradingBot {
     if (this.shouldRefreshPortfolioSnapshot(referenceNow)) {
       await this.updatePortfolioSnapshot();
     }
-    return this.buildPublicReportView(this.getPerformanceReport());
+    const view = this.buildPublicReportView(this.getPerformanceReport());
+    view.readModel = await this.buildReadModelDashboardSummary();
+    return view;
   }
 }

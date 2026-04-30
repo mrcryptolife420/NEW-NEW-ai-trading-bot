@@ -32,6 +32,14 @@ function tableCount(db, table) {
   return db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count || 0;
 }
 
+function parseJson(value, fallback = null) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 function isSqliteBusy(error) {
   const message = `${error?.message || ""}`.toLowerCase();
   return error?.code === "SQLITE_BUSY" || message.includes("database is locked") || message.includes("resource busy");
@@ -201,6 +209,8 @@ export class ReadModelStore {
       );
       CREATE INDEX IF NOT EXISTS idx_audit_cycle ON audit_events(cycle_id);
       CREATE INDEX IF NOT EXISTS idx_audit_decision ON audit_events(decision_id);
+      CREATE INDEX IF NOT EXISTS idx_audit_symbol ON audit_events(symbol);
+      CREATE INDEX IF NOT EXISTS idx_audit_type ON audit_events(type);
       CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
       CREATE INDEX IF NOT EXISTS idx_decisions_symbol ON decisions(symbol);
     `);
@@ -432,6 +442,144 @@ export class ReadModelStore {
       }
     };
   }
+
+  dashboardSummary({ limit = 8 } = {}) {
+    const db = this.open();
+    this.ensureSchema();
+    const status = this.status();
+    const topBlockers = db.prepare(`
+      SELECT reason, COUNT(*) AS count
+      FROM blockers
+      GROUP BY reason
+      ORDER BY count DESC, reason ASC
+      LIMIT ?
+    `).all(limit);
+    const topScorecards = db.prepare(`
+      SELECT strategy_id AS strategyId, strategy_family AS strategyFamily, regime, session, status, sample_size AS sampleSize, expectancy_pct AS expectancyPct, confidence
+      FROM scorecards
+      ORDER BY confidence DESC, sample_size DESC, expectancy_pct DESC
+      LIMIT ?
+    `).all(limit);
+    const latestReplay = db.prepare(`
+      SELECT id, symbol, at, status
+      FROM replay_traces
+      ORDER BY COALESCE(at, '') DESC, id DESC
+      LIMIT 1
+    `).get() || null;
+    return {
+      ...status,
+      source: "sqlite_read_model",
+      fallbackAvailable: true,
+      topBlockers,
+      topScorecards,
+      latestReplay
+    };
+  }
+
+  requestBudgetSummary({ limit = 8 } = {}) {
+    const db = this.open();
+    this.ensureSchema();
+    const rows = db.prepare(`
+      SELECT type, json
+      FROM audit_events
+      WHERE LOWER(COALESCE(type, '')) LIKE '%request%'
+         OR LOWER(COALESCE(type, '')) LIKE '%rate_limit%'
+         OR LOWER(COALESCE(type, '')) LIKE '%rest%'
+         OR LOWER(COALESCE(json, '')) LIKE '%requestweight%'
+         OR LOWER(COALESCE(json, '')) LIKE '%usedweight%'
+      ORDER BY COALESCE(at, '') DESC
+      LIMIT 250
+    `).all();
+    const callers = new Map();
+    let rateLimitEvents = 0;
+    let latestWeight1m = null;
+    let latestAt = null;
+    for (const row of rows) {
+      const event = parseJson(row.json, {});
+      latestAt ||= event?.at || null;
+      const state = event.requestWeight || event.rateLimitState || event.payload?.requestWeight || {};
+      if (Number.isFinite(Number(state.usedWeight1m))) {
+        latestWeight1m = Number(state.usedWeight1m);
+      }
+      if (event.status === 429 || event.status === 418 || state.lastRateLimitStatus) {
+        rateLimitEvents += 1;
+      }
+      const top = state.topRestCallers || event.topRestCallers || {};
+      for (const [key, value] of Object.entries(top)) {
+        const prev = callers.get(key) || { caller: key, count: 0, weight: 0 };
+        prev.count += Number(value?.count || 0);
+        prev.weight += Number(value?.weight || value?.usedWeight || 0);
+        callers.set(key, prev);
+      }
+    }
+    return {
+      status: rows.length ? "ready" : "no_recent_request_budget_events",
+      latestAt,
+      latestWeight1m,
+      rateLimitEvents,
+      topCallers: [...callers.values()]
+        .sort((left, right) => (right.weight - left.weight) || (right.count - left.count) || left.caller.localeCompare(right.caller))
+        .slice(0, limit)
+    };
+  }
+
+  readDecisionTrace(decisionId) {
+    const db = this.open();
+    this.ensureSchema();
+    const decision = db.prepare("SELECT * FROM decisions WHERE id = ?").get(decisionId) || null;
+    const auditEvents = db.prepare("SELECT * FROM audit_events WHERE decision_id = ? ORDER BY COALESCE(at, '') ASC").all(decisionId);
+    const blockers = db.prepare("SELECT * FROM blockers WHERE decision_id = ? ORDER BY root DESC, reason ASC").all(decisionId);
+    return {
+      status: decision || auditEvents.length || blockers.length ? "ready" : "not_found",
+      decisionId,
+      decision: decision ? parseJson(decision.json, decision) : null,
+      blockers: blockers.map((row) => parseJson(row.json, row)),
+      auditEvents: auditEvents.map((row) => parseJson(row.json, row)),
+      warnings: decision ? [] : ["decision_record_not_found"]
+    };
+  }
+
+  readCycleTrace(cycleId) {
+    const db = this.open();
+    this.ensureSchema();
+    const auditEvents = db.prepare("SELECT * FROM audit_events WHERE cycle_id = ? ORDER BY COALESCE(at, '') ASC").all(cycleId);
+    const decisionIds = [...new Set(auditEvents.map((row) => row.decision_id).filter(Boolean))];
+    return {
+      status: auditEvents.length ? "ready" : "not_found",
+      cycleId,
+      decisionIds,
+      auditEvents: auditEvents.map((row) => parseJson(row.json, row)),
+      warnings: auditEvents.length ? [] : ["cycle_events_not_found"]
+    };
+  }
+
+  readSymbolTrace(symbol, { limit = 100 } = {}) {
+    const normalized = `${symbol || ""}`.toUpperCase();
+    const db = this.open();
+    this.ensureSchema();
+    const auditEvents = db.prepare("SELECT * FROM audit_events WHERE symbol = ? ORDER BY COALESCE(at, '') DESC LIMIT ?").all(normalized, limit);
+    const trades = db.prepare("SELECT * FROM trades WHERE symbol = ? ORDER BY COALESCE(exit_at, entry_at, '') DESC LIMIT ?").all(normalized, limit);
+    const decisions = db.prepare("SELECT * FROM decisions WHERE symbol = ? ORDER BY COALESCE(at, '') DESC LIMIT ?").all(normalized, limit);
+    return {
+      status: auditEvents.length || trades.length || decisions.length ? "ready" : "not_found",
+      symbol: normalized,
+      trades: trades.map((row) => parseJson(row.json, row)),
+      decisions: decisions.map((row) => parseJson(row.json, row)),
+      auditEvents: auditEvents.map((row) => parseJson(row.json, row)),
+      warnings: auditEvents.length || trades.length || decisions.length ? [] : ["symbol_trace_not_found"]
+    };
+  }
+
+  upsertReplayTrace(trace = {}) {
+    const db = this.open();
+    this.ensureSchema();
+    const id = safeString(trace.id || trace.replayId, `replay:${Date.now()}`);
+    db.prepare(`
+      INSERT OR REPLACE INTO replay_traces(id, symbol, at, status, json)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, safeString(trace.symbol), safeString(trace.at || new Date().toISOString()), safeString(trace.status || "ready"), json(trace));
+    return id;
+  }
 }
 
 export async function runReadModelCommand({ config, logger = null, action = "status" } = {}) {
@@ -441,7 +589,32 @@ export async function runReadModelCommand({ config, logger = null, action = "sta
       return await store.rebuildFromSources();
     }
     await store.init();
+    if (action === "request-budget") {
+      return store.requestBudgetSummary();
+    }
+    if (action === "dashboard") {
+      return store.dashboardSummary();
+    }
     return store.status();
+  } finally {
+    store.close();
+  }
+}
+
+export async function runReadModelTraceCommand({ config, kind, value, logger = null } = {}) {
+  const store = new ReadModelStore({ runtimeDir: config.runtimeDir, logger });
+  try {
+    await store.init();
+    if (kind === "decision") {
+      return store.readDecisionTrace(value);
+    }
+    if (kind === "cycle") {
+      return store.readCycleTrace(value);
+    }
+    if (kind === "symbol") {
+      return store.readSymbolTrace(value);
+    }
+    throw new Error(`Unknown read-model trace kind: ${kind}`);
   } finally {
     store.close();
   }

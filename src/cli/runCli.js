@@ -1,7 +1,7 @@
 ﻿import { runBacktest } from "../runtime/backtestRunner.js";
 import { runHistoryCommand } from "../runtime/marketHistory.js";
 import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayEngine.js";
-import { runReadModelCommand } from "../storage/readModelStore.js";
+import { runReadModelCommand, runReadModelTraceCommand } from "../storage/readModelStore.js";
 import { TradingBot } from "../runtime/tradingBot.js";
 import { BotManager } from "../runtime/botManager.js";
 
@@ -100,6 +100,10 @@ function parseReplayArgs(args = []) {
   return options;
 }
 
+function parseTraceValue(args = []) {
+  return `${args?.[0] || ""}`.trim();
+}
+
 export default async function runCli({
   command,
   args,
@@ -144,11 +148,29 @@ export default async function runCli({
     return;
   }
 
-  if (command === "readmodel:rebuild" || command === "readmodel:status") {
+  if (command === "readmodel:rebuild" || command === "readmodel:status" || command === "readmodel:dashboard" || command === "request-budget") {
     const result = await runReadModelCommand({
       config,
       logger,
-      action: command === "readmodel:rebuild" ? "rebuild" : "status"
+      action: command === "readmodel:rebuild"
+        ? "rebuild"
+        : command === "readmodel:dashboard"
+          ? "dashboard"
+          : command === "request-budget"
+            ? "request-budget"
+            : "status"
+    });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "replay-decision" || command === "trace-cycle" || command === "trace-symbol") {
+    const result = await runReadModelTraceCommand({
+      config,
+      logger,
+      kind: command === "replay-decision" ? "decision" : command === "trace-cycle" ? "cycle" : "symbol",
+      value: parseTraceValue(args)
     });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
@@ -159,7 +181,8 @@ export default async function runCli({
     const result = await runMarketReplay({
       config,
       logger,
-      ...parseMarketReplayArgs(args, config)
+      ...parseMarketReplayArgs(args, config),
+      persistTrace: true
     });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);

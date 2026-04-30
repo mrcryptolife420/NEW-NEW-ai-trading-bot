@@ -1,5 +1,6 @@
 import path from "node:path";
 import { MarketHistoryStore } from "../storage/marketHistoryStore.js";
+import { ReadModelStore } from "../storage/readModelStore.js";
 import { runBacktest } from "./backtestRunner.js";
 
 function parseDateMs(value, fallback = null) {
@@ -72,6 +73,54 @@ function buildTrace({ symbol, candles = [], result = {}, status = "ready" }) {
   };
 }
 
+async function buildHistoryReadiness({ store, symbol, interval, startTime, endTime, candles }) {
+  if (!store?.verifySeries) {
+    return {
+      status: candles.length ? "unknown" : "missing",
+      candleCount: candles.length,
+      warnings: candles.length ? ["history_store_verification_unavailable"] : ["no_local_candles"]
+    };
+  }
+  const verification = await store.verifySeries({ symbol, interval }).catch((error) => ({
+    status: "degraded",
+    error: error?.message || "history_verification_failed"
+  }));
+  const selected = candles.filter((candle) => {
+    const openTime = Number(candle.openTime);
+    return (!Number.isFinite(startTime) || openTime >= startTime) && (!Number.isFinite(endTime) || openTime <= endTime);
+  });
+  const warnings = [];
+  if (!selected.length) warnings.push("no_local_candles");
+  if (verification.stale) warnings.push("history_stale");
+  if ((verification.gapCount || 0) > 0) warnings.push("history_gaps_present");
+  if ((verification.coverageRatio ?? 1) < 0.85) warnings.push("history_low_coverage");
+  return {
+    status: warnings.length ? "degraded" : "ready",
+    candleCount: selected.length,
+    coverageRatio: verification.coverageRatio ?? null,
+    gapCount: verification.gapCount || 0,
+    stale: Boolean(verification.stale),
+    partitionCount: verification.partitionCount || 0,
+    warnings
+  };
+}
+
+async function persistReplayTrace({ config, trace, persistTrace = false, logger = null }) {
+  if (!persistTrace || !config?.runtimeDir || !trace) {
+    return null;
+  }
+  const store = new ReadModelStore({ runtimeDir: config.runtimeDir, logger });
+  try {
+    await store.init();
+    return store.upsertReplayTrace(trace);
+  } catch (error) {
+    logger?.warn?.("Market replay trace persistence failed", { error: error?.message });
+    return null;
+  } finally {
+    store.close();
+  }
+}
+
 export async function runMarketReplay({
   config,
   logger = null,
@@ -80,7 +129,8 @@ export async function runMarketReplay({
   to = null,
   interval = null,
   historyStore = null,
-  candles = null
+  candles = null,
+  persistTrace = false
 } = {}) {
   const replaySymbol = `${symbol || config?.watchlist?.[0] || "BTCUSDT"}`.toUpperCase();
   const replayInterval = interval || config.klineInterval || "15m";
@@ -99,8 +149,21 @@ export async function runMarketReplay({
     startTime,
     endTime
   })).filter((candle) => Number.isFinite(Number(candle?.openTime)) && Number.isFinite(Number(candle?.close)));
+  const historyReadiness = await buildHistoryReadiness({
+    store,
+    symbol: replaySymbol,
+    interval: replayInterval,
+    startTime,
+    endTime,
+    candles: replayCandles
+  });
 
   if (!replayCandles.length) {
+    const trace = {
+      ...buildTrace({ symbol: replaySymbol, candles: [], status: "empty_history" }),
+      historyReadiness
+    };
+    await persistReplayTrace({ config, trace, persistTrace, logger });
     return {
       status: "empty_history",
       symbol: replaySymbol,
@@ -109,7 +172,8 @@ export async function runMarketReplay({
       trades: [],
       blockedSetups: [],
       equityCurve: [],
-      trace: buildTrace({ symbol: replaySymbol, candles: [], status: "empty_history" }),
+      historyReadiness,
+      trace,
       warnings: ["No local candles found for replay range. Run history download/backfill first."]
     };
   }
@@ -134,6 +198,18 @@ export async function runMarketReplay({
     candles: replayCandles
   });
 
+  const trace = {
+    ...buildTrace({ symbol: replaySymbol, candles: replayCandles, result }),
+    historyReadiness,
+    policyReplay: {
+      available: true,
+      source: "backtestRunner",
+      includesSignalRiskIntentExecution: true,
+      note: "Replay gebruikt dezelfde backtest decision path en blijft orderloos/offline."
+    }
+  };
+  await persistReplayTrace({ config, trace, persistTrace, logger });
+
   return {
     status: "ready",
     symbol: replaySymbol,
@@ -145,8 +221,9 @@ export async function runMarketReplay({
     blockedSetups: result.blockedSetupLifecycle?.recent || [],
     equityCurve: result.equityCurve || [],
     performance: result,
-    trace: buildTrace({ symbol: replaySymbol, candles: replayCandles, result }),
-    warnings: []
+    historyReadiness,
+    trace,
+    warnings: historyReadiness.warnings || []
   };
 }
 

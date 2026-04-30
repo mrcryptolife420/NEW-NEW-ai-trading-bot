@@ -74,6 +74,10 @@ export async function registerLargeFoundationsTests({
 
     const readModel = new ReadModelStore({ runtimeDir });
     const status = await readModel.rebuildFromSources({ stateStore, auditStore });
+    const dashboard = readModel.dashboardSummary();
+    const decisionTrace = readModel.readDecisionTrace("decision-1");
+    const cycleTrace = readModel.readCycleTrace("cycle-1");
+    const symbolTrace = readModel.readSymbolTrace("ETHUSDT");
     readModel.close();
 
     assert.equal(status.tables.trades, 1);
@@ -81,6 +85,12 @@ export async function registerLargeFoundationsTests({
     assert.equal(status.tables.blockers, 2);
     assert.equal(status.tables.auditEvents, 1);
     assert.equal(status.tables.scorecards, 1);
+    assert.equal(dashboard.source, "sqlite_read_model");
+    assert.equal(dashboard.topBlockers[0].reason, "exchange_safety_blocked");
+    assert.equal(decisionTrace.status, "ready");
+    assert.equal(decisionTrace.blockers.length, 2);
+    assert.equal(cycleTrace.decisionIds.includes("decision-1"), true);
+    assert.equal(symbolTrace.decisions.length, 1);
   });
 
   await runCheck("sqlite read model can discard corrupt local cache and rebuild empty", async () => {
@@ -102,6 +112,7 @@ export async function registerLargeFoundationsTests({
     const result = await runMarketReplay({ config, symbol: "BTCUSDT", from: "2026-01-01", to: "2026-01-02" });
     assert.equal(result.status, "empty_history");
     assert.equal(result.trace.diagnostics.noLiveOrders, true);
+    assert.equal(result.historyReadiness.status, "degraded");
     assert.ok(result.warnings.some((item) => item.includes("No local candles")));
   });
 
@@ -123,6 +134,31 @@ export async function registerLargeFoundationsTests({
     assert.equal(second.status, "ready");
     assert.deepEqual(first.trace.summary, second.trace.summary);
     assert.equal(first.trace.diagnostics.noLiveOrders, true);
+    assert.equal(first.trace.policyReplay.includesSignalRiskIntentExecution, true);
+  });
+
+  await runCheck("market replay can persist replay traces into the read model", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-market-replay-trace-"));
+    const historyDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-market-replay-history-"));
+    const config = makeConfig({
+      runtimeDir,
+      historyDir,
+      watchlist: ["BTCUSDT"],
+      klineInterval: "15m",
+      modelThreshold: 0.99,
+      minTradeUsdt: 1,
+      paperFeeBps: 10,
+      startingCash: 1000
+    });
+    const result = await runMarketReplay({ config, symbol: "BTCUSDT", candles: buildCandles(70), persistTrace: true });
+    const readModel = new ReadModelStore({ runtimeDir });
+    await readModel.init();
+    const status = readModel.status();
+    const dashboard = readModel.dashboardSummary();
+    readModel.close();
+    assert.equal(result.status, "ready");
+    assert.equal(status.tables.replayTraces, 1);
+    assert.equal(dashboard.latestReplay.symbol, "BTCUSDT");
   });
 
   await runCheck("trading bot decomposition service map covers target services", async () => {
