@@ -36,6 +36,8 @@ const STABLE_OR_FIAT_ASSETS = new Set([
 
 const LEVERAGED_TOKEN_SUFFIXES = ["UP", "DOWN", "BULL", "BEAR"];
 const FIAT_CODE_SUFFIXES = ["USD", "EUR", "GBP", "AUD", "BRL", "TRY", "JPY", "RUB", "UAH", "ZAR"];
+const BINANCE_VOLUME_RANKING_CACHE = new Map();
+const BINANCE_VOLUME_RANKING_CLIENT_CACHE = new WeakMap();
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -194,10 +196,28 @@ async function fetchCoinGeckoTopMarkets({ config, fetchImpl, requestBudget = nul
   return Array.isArray(payload) ? payload : [];
 }
 
-async function fetchBinanceVolumeRanking({ client, tradableMap, quoteAsset = "USDT" }) {
-  const payload = await client.publicRequest("GET", "/api/v3/ticker/24hr", {}, {
-    caller: "watchlist.ticker_24hr"
-  });
+async function fetchBinanceVolumeRanking({ client, tradableMap, quoteAsset = "USDT", config = {} }) {
+  const ttlMs = Math.max(15_000, Number(config.watchlistTicker24hCacheMs || config.restMarketDataFallbackMinMs || 60_000));
+  const cacheBucket = client && typeof client === "object"
+    ? (BINANCE_VOLUME_RANKING_CLIENT_CACHE.get(client) || new Map())
+    : BINANCE_VOLUME_RANKING_CACHE;
+  if (client && typeof client === "object" && !BINANCE_VOLUME_RANKING_CLIENT_CACHE.has(client)) {
+    BINANCE_VOLUME_RANKING_CLIENT_CACHE.set(client, cacheBucket);
+  }
+  const cacheKey = `${client?.baseUrl || "binance"}:${quoteAsset}:ticker24h`;
+  const now = Date.now();
+  const cached = cacheBucket.get(cacheKey);
+  const payload = cached && cached.expiresAt > now
+    ? cached.payload
+    : await client.publicRequest("GET", "/api/v3/ticker/24hr", {}, {
+      caller: "watchlist.ticker_24hr"
+    });
+  if (!cached || cached.expiresAt <= now) {
+    cacheBucket.set(cacheKey, {
+      payload,
+      expiresAt: now + ttlMs
+    });
+  }
   const tickers = Array.isArray(payload) ? payload : [];
   return tickers
     .map((ticker) => {
@@ -344,7 +364,7 @@ export async function resolveDynamicWatchlist({ client, config, logger, fetchImp
 
   if (selectedEntries.length < minimumCount) {
     source = "binance_quote_volume_fallback";
-    const volumeRanking = await fetchBinanceVolumeRanking({ client, tradableMap, quoteAsset: config.baseQuoteAsset });
+    const volumeRanking = await fetchBinanceVolumeRanking({ client, tradableMap, quoteAsset: config.baseQuoteAsset, config });
     selectedEntries = volumeRanking
       .slice(0, targetCount)
       .map((item, index) => ({

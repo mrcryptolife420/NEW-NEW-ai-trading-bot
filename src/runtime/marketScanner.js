@@ -9,8 +9,33 @@ import { mapWithConcurrency } from "../utils/async.js";
 import { clamp } from "../utils/math.js";
 import { buildTradableUniverse, getSymbolHygieneFlags } from "./watchlistResolver.js";
 
+const BINANCE_TICKER_24H_CACHE = new Map();
+const BINANCE_TICKER_24H_CLIENT_CACHE = new WeakMap();
+
 function arr(value) {
   return Array.isArray(value) ? value : [];
+}
+
+async function fetchCachedBinanceTicker24h({ client, config = {}, caller = "scanner.ticker_24hr" } = {}) {
+  const ttlMs = Math.max(15_000, Number(config.scannerTicker24hCacheMs || config.restMarketDataFallbackMinMs || 60_000));
+  const cacheBucket = client && typeof client === "object"
+    ? (BINANCE_TICKER_24H_CLIENT_CACHE.get(client) || new Map())
+    : BINANCE_TICKER_24H_CACHE;
+  if (client && typeof client === "object" && !BINANCE_TICKER_24H_CLIENT_CACHE.has(client)) {
+    BINANCE_TICKER_24H_CLIENT_CACHE.set(client, cacheBucket);
+  }
+  const key = `${client?.baseUrl || "binance"}:ticker24h`;
+  const now = Date.now();
+  const cached = cacheBucket.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.payload;
+  }
+  const payload = await client.publicRequest("GET", "/api/v3/ticker/24hr", {}, { caller });
+  cacheBucket.set(key, {
+    payload,
+    expiresAt: now + ttlMs
+  });
+  return payload;
 }
 
 function num(value, digits = 4) {
@@ -1028,7 +1053,11 @@ export async function buildMarketScannerUniverse({
 }) {
   const exchangeInfo = await client.getExchangeInfo();
   const tradableMap = buildTradableUniverse(exchangeInfo, quoteAsset);
-  const tickersPayload = await client.publicRequest("GET", "/api/v3/ticker/24hr");
+  const tickersPayload = await fetchCachedBinanceTicker24h({
+    client,
+    config,
+    caller: "scanner.universe.ticker_24hr"
+  });
   const tickers = new Map(arr(tickersPayload).map((ticker) => [`${ticker.symbol || ""}`.toUpperCase(), ticker]));
   const requestedSymbols = uniq(symbols.map((symbol) => `${symbol}`.trim().toUpperCase()).filter(Boolean));
   const entries = [];
@@ -1162,7 +1191,9 @@ export async function rankMarketScannerCandidates({
         Math.max(1, Math.min(6, Number(config.marketSnapshotConcurrency || 6))),
         async (symbol) => {
           try {
-            return [symbol, await client.getOrderBook(symbol, deepBookLevels)];
+            return [symbol, await client.getOrderBook(symbol, deepBookLevels, {
+              requestMeta: { caller: "scanner.deep_book" }
+            })];
           } catch (error) {
             logger?.warn?.("Scanner deep book fetch failed", { symbol, error: error.message });
             return [symbol, null];

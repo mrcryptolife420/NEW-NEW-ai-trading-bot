@@ -496,6 +496,80 @@ function buildExecutionQualityAnalytics(trades = []) {
   };
 }
 
+function isRangeGridTrade(trade = {}) {
+  const strategy = trade.strategyAtEntry || trade.entryRationale?.strategy || trade.strategy || {};
+  const family = `${strategy.family || strategy.strategyFamily || trade.strategyFamily || ""}`.toLowerCase();
+  const id = `${strategy.strategy || strategy.id || trade.strategyId || trade.activeStrategy || ""}`.toLowerCase();
+  return family.includes("range_grid") || id.includes("range_grid") || id.includes("grid");
+}
+
+function buildRangeGridDamageReview(trades = [], { limit = 6 } = {}) {
+  const rangeTrades = trades.filter(isRangeGridTrade);
+  if (!rangeTrades.length) {
+    return {
+      status: "insufficient_sample",
+      tradeCount: 0,
+      lossCount: 0,
+      realizedPnl: 0,
+      lateExitCount: 0,
+      rangeBreakSuspectCount: 0,
+      averageMfePct: 0,
+      averageMaePct: 0,
+      averageCaptureEfficiency: 0,
+      worstRecent: [],
+      recommendedAction: "No range-grid closed trade evidence yet."
+    };
+  }
+  const lossTrades = rangeTrades.filter((trade) => safeNumber(trade.pnlQuote, 0) < 0);
+  const lateExits = rangeTrades.filter((trade) => {
+    const mfePct = safeNumber(trade.mfePct, 0);
+    const netPnlPct = safeNumber(trade.netPnlPct, 0);
+    const captureEfficiency = safeNumber(trade.captureEfficiency, 0);
+    return mfePct > Math.max(0.003, Math.abs(Math.min(netPnlPct, 0)) * 1.25) && captureEfficiency < 0.25;
+  });
+  const rangeBreakSuspects = lossTrades.filter((trade) => {
+    const reasonText = `${trade.reason || trade.exitReason || trade.learningAttribution?.category || ""}`.toLowerCase();
+    const regime = `${trade.regimeAtEntry || trade.entryRationale?.regime || ""}`.toLowerCase();
+    return reasonText.includes("break") || reasonText.includes("trend") || regime.includes("breakout") || regime.includes("high_vol");
+  });
+  const realizedPnl = rangeTrades.reduce((sum, trade) => sum + safeNumber(trade.pnlQuote, 0), 0);
+  const status = rangeTrades.length < 5
+    ? "insufficient_sample"
+    : lossTrades.length / rangeTrades.length >= 0.55 && realizedPnl < 0
+      ? "review_required"
+      : lateExits.length >= Math.max(2, Math.ceil(rangeTrades.length * 0.25))
+        ? "exit_review"
+        : "normal";
+  return {
+    status,
+    tradeCount: rangeTrades.length,
+    lossCount: lossTrades.length,
+    realizedPnl: num(realizedPnl, 2),
+    lateExitCount: lateExits.length,
+    rangeBreakSuspectCount: rangeBreakSuspects.length,
+    averageMfePct: num(average(rangeTrades.map((trade) => safeNumber(trade.mfePct, 0)))),
+    averageMaePct: num(average(rangeTrades.map((trade) => safeNumber(trade.maePct, 0)))),
+    averageCaptureEfficiency: num(average(rangeTrades.map((trade) => safeNumber(trade.captureEfficiency, 0)))),
+    worstRecent: lossTrades
+      .slice()
+      .sort((left, right) => safeNumber(left.pnlQuote, 0) - safeNumber(right.pnlQuote, 0))
+      .slice(0, limit)
+      .map((trade) => ({
+        id: trade.id || null,
+        symbol: trade.symbol || null,
+        pnlQuote: num(safeNumber(trade.pnlQuote, 0), 2),
+        netPnlPct: num(safeNumber(trade.netPnlPct, 0)),
+        mfePct: num(safeNumber(trade.mfePct, 0)),
+        maePct: num(safeNumber(trade.maePct, 0)),
+        captureEfficiency: num(safeNumber(trade.captureEfficiency, 0)),
+        exitReason: trade.reason || trade.exitReason || null
+      })),
+    recommendedAction: status === "review_required" || status === "exit_review"
+      ? "Review range-grid late exits, range-break detection and capture efficiency before adding allocation."
+      : "Monitor range-grid exit quality; no behavior change recommended from this sample alone."
+  };
+}
+
 function buildPostTradeAnalytics(trades = []) {
   return {
     summary: buildExpectancyMetrics(trades),
@@ -1730,6 +1804,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
   const sourceScopedLookbackScaleOuts = buildRecentScaleOuts(sourceScopedScaleOuts, sourceScopedLookbackTrades, config.reportLookbackTrades || 0);
   const sourceScopedLookbackScaleOutPnl = sourceScopedLookbackScaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
   const tradeQualityReview = buildTradeQualitySummary(primaryTrades, journal.counterfactuals || []);
+  const rangeGridDamageReview = buildRangeGridDamageReview(primaryTrades);
   const blockedSetupLifecycle = buildBlockedSetupLifecycleSummary(blockedSetups, journal.counterfactuals || []);
   const executionCostSummary = buildExecutionCostSummary(primaryLookbackTrades, config, referenceNow.toISOString());
   const pnlDecomposition = buildPnlDecomposition(primaryLookbackTrades, config);
@@ -1800,6 +1875,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
     performanceDiagnosis,
     attribution: buildAttributionSummary(primaryTrades),
     tradeQualityReview,
+    rangeGridDamageReview,
     recentReviews: primaryLookbackTrades.slice(-20).reverse().map((trade) => ({
       id: trade.id,
       symbol: trade.symbol,

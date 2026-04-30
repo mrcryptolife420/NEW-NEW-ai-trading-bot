@@ -121,6 +121,7 @@ import {
   buildScannerPriorityView,
   buildFeatureUsefulnessView
 } from "./viewMappers.js";
+import { buildOperatorActionResult } from "./operatorRunbookGenerator.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -9166,7 +9167,8 @@ export class TradingBot {
     });
   }
 
-  scheduleReadModelRefresh({ type = "persist" } = {}) {
+  scheduleReadModelRefresh(payload = {}) {
+    const type = payload?.type || "persist";
     this.readModelRefreshState = this.readModelRefreshState || {
       running: false,
       lastStartedAt: null,
@@ -12545,6 +12547,19 @@ export class TradingBot {
     return state;
   }
 
+  resolveOperatorRootBlocker() {
+    const exchangeSafety = this.runtime.exchangeSafety || {};
+    const exchangeTruth = this.runtime.exchangeTruth || {};
+    if (exchangeSafety.globalFreezeEntries || exchangeSafety.freezeEntries) {
+      return "exchange_safety_blocked";
+    }
+    if (exchangeTruth.freezeEntries) {
+      return "exchange_truth_freeze";
+    }
+    const latestDecision = arr(this.runtime.latestDecisions).find((item) => item?.rootBlocker || item?.dominantRootBlocker);
+    return latestDecision?.rootBlocker || latestDecision?.dominantRootBlocker || this.runtime.functionalStatus?.dominantRootBlocker || null;
+  }
+
   resetExternalFeedHealth({ group = null, feed = null, note = null, at = nowIso() } = {}) {
     const bucket = this.runtime.externalFeedHealth && typeof this.runtime.externalFeedHealth === "object"
       ? this.runtime.externalFeedHealth
@@ -12785,7 +12800,8 @@ export class TradingBot {
       return this.persistRuntimeAndSnapshot();
     }
     if (normalizedAction === "force_reconcile") {
-      await this.forceReconcile({ note, at });
+      const rootBlockerBefore = this.resolveOperatorRootBlocker();
+      const dashboard = await this.forceReconcile({ note, at });
       this.recordDiagnosticsAction({
         action: normalizedAction,
         target,
@@ -12793,11 +12809,32 @@ export class TradingBot {
         detail: "Exchange truth op freeze gezet voor reconcile.",
         at
       });
-      return this.persistRuntimeAndSnapshot();
+      const rootBlockerAfter = this.resolveOperatorRootBlocker();
+      return {
+        ...dashboard,
+        diagnosticsActionResult: buildOperatorActionResult({
+          action: normalizedAction,
+          target,
+          allowed: true,
+          preflightChecks: [
+            { id: "action_is_diagnostic", passed: true },
+            { id: "no_order_submission", passed: true }
+          ],
+          changedState: {
+            forceReconcileRequested: true,
+            freezeEntries: Boolean(this.runtime.exchangeTruth?.freezeEntries),
+            lastForceReconcileAt: this.runtime.exchangeTruth?.lastForceReconcileAt || at,
+            lastForceReconcileError: this.runtime.exchangeTruth?.lastForceReconcileError || null
+          },
+          rootBlockerBefore,
+          rootBlockerAfter
+        })
+      };
     }
     if (normalizedAction === "enable_probe_only") {
+      const rootBlockerBefore = this.resolveOperatorRootBlocker();
       const durationMinutes = Math.max(1, Number(minutes ?? 90));
-      await this.setProbeOnly({ enabled: true, minutes: durationMinutes, note, at });
+      const dashboard = await this.setProbeOnly({ enabled: true, minutes: durationMinutes, note, at });
       this.recordDiagnosticsAction({
         action: normalizedAction,
         target,
@@ -12805,7 +12842,26 @@ export class TradingBot {
         detail: `Probe-only actief voor ${durationMinutes} minuten.`,
         at
       });
-      return this.persistRuntimeAndSnapshot();
+      const rootBlockerAfter = this.resolveOperatorRootBlocker();
+      return {
+        ...dashboard,
+        diagnosticsActionResult: buildOperatorActionResult({
+          action: normalizedAction,
+          target,
+          allowed: true,
+          preflightChecks: [
+            { id: "paper_lane_only", passed: this.config.botMode === "paper" },
+            { id: "no_live_safety_relief", passed: true }
+          ],
+          changedState: {
+            probeOnlyEnabled: Boolean(this.runtime.probeOnly?.enabled),
+            until: this.runtime.probeOnly?.until || null,
+            durationMinutes
+          },
+          rootBlockerBefore,
+          rootBlockerAfter
+        })
+      };
     }
     if (normalizedAction === "resolve_flat_manual_review_position") {
       return this.resolveFlatManualReviewPosition(target, { note, at });
@@ -16397,6 +16453,7 @@ export class TradingBot {
       throw new Error("Positie niet gevonden.");
     }
     const beforeSafety = this.runtime.exchangeSafety || {};
+    const rootBlockerBefore = this.resolveOperatorRootBlocker();
     const beforeBlockedSymbols = arr(beforeSafety.blockedSymbols || []).map((item) => item?.symbol).filter(Boolean);
     if (!this.broker?.resolveFlatManualReviewPosition) {
       throw new Error("Broker ondersteunt deze diagnostics action niet.");
@@ -16465,10 +16522,35 @@ export class TradingBot {
     this.syncOrderLifecycleState("operator_resolve_flat_manual_review_position");
     this.refreshOperationalViews({ nowIso: at });
     const afterSafety = this.runtime.exchangeSafety || {};
+    const rootBlockerAfter = this.resolveOperatorRootBlocker();
+    const denialReasons = result.allowed
+      ? []
+      : [result.diagnostics?.status, result.diagnostics?.detail].filter(Boolean);
+    const preflightChecks = [
+      { id: "broker_supports_flat_resolution", passed: true },
+      { id: "venue_flat_check", passed: Boolean(result.allowed || result.diagnostics?.venueFlat || result.diagnostics?.flatVenue) },
+      { id: "open_orders_clear", passed: Boolean(result.allowed || result.diagnostics?.openOrdersClear) },
+      { id: "demo_or_paper_safe_path", passed: this.config.botMode !== "live" }
+    ];
     const dashboard = await this.persistRuntimeAndSnapshot();
     return {
       ...dashboard,
       diagnosticsActionResult: {
+        ...result,
+        ...buildOperatorActionResult({
+          action: "resolve_flat_manual_review_position",
+          target: positionId,
+          allowed: Boolean(result.allowed),
+          preflightChecks,
+          denialReasons,
+          changedState: {
+            closedTradeCreated: Boolean(result.closedTrade),
+            cleanupApplied: Boolean(cleanup),
+            localPositionClosed: Boolean(result.closedTrade)
+          },
+          rootBlockerBefore,
+          rootBlockerAfter
+        }),
         action: "resolve_flat_manual_review_position",
         target: positionId,
         symbol: position.symbol,
@@ -16482,8 +16564,7 @@ export class TradingBot {
           afterBlockedSymbols: arr(afterSafety.blockedSymbols || []).map((item) => item?.symbol).filter(Boolean),
           symbolBlockedBefore: beforeBlockedSymbols.includes(position.symbol),
           symbolBlockedAfter: arr(afterSafety.blockedSymbols || []).some((item) => item?.symbol === position.symbol)
-        },
-        ...result
+        }
       }
     };
   }

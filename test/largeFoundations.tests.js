@@ -2,7 +2,10 @@ import { AuditLogStore } from "../src/storage/auditLogStore.js";
 import { ReadModelStore } from "../src/storage/readModelStore.js";
 import { StateStore } from "../src/storage/stateStore.js";
 import { PersistenceCoordinator } from "../src/runtime/persistenceCoordinator.js";
+import { TradingBot } from "../src/runtime/tradingBot.js";
 import { runMarketReplay } from "../src/runtime/marketReplayEngine.js";
+import { buildMarketScannerUniverse } from "../src/runtime/marketScanner.js";
+import { buildPerformanceReport } from "../src/runtime/reportBuilder.js";
 import {
   assertTradingBotServiceCoverage,
   buildTradingBotServiceMap
@@ -227,6 +230,101 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.topCallers[0].weight, 50);
   });
 
+  await runCheck("market scanner universe caches 24h ticker REST ranking", async () => {
+    let publicCalls = 0;
+    const client = {
+      baseUrl: `scanner-cache-${Date.now()}`,
+      async getExchangeInfo() {
+        return {
+          symbols: [
+            { symbol: "BTCUSDT", status: "TRADING", baseAsset: "BTC", quoteAsset: "USDT", isSpotTradingAllowed: true },
+            { symbol: "ETHUSDT", status: "TRADING", baseAsset: "ETH", quoteAsset: "USDT", isSpotTradingAllowed: true }
+          ]
+        };
+      },
+      async publicRequest(method, pathname, params, requestMeta = {}) {
+        publicCalls += 1;
+        assert.equal(method, "GET");
+        assert.equal(pathname, "/api/v3/ticker/24hr");
+        assert.equal(requestMeta.caller, "scanner.universe.ticker_24hr");
+        return [
+          {
+            symbol: "BTCUSDT",
+            quoteVolume: "25000000",
+            volume: "500",
+            count: "5000",
+            lastPrice: "50000",
+            weightedAvgPrice: "50000",
+            bidPrice: "49999",
+            askPrice: "50001",
+            bidQty: "1.2",
+            askQty: "1.1",
+            priceChangePercent: "1.5"
+          },
+          {
+            symbol: "ETHUSDT",
+            quoteVolume: "22000000",
+            volume: "10000",
+            count: "4500",
+            lastPrice: "3000",
+            weightedAvgPrice: "3000",
+            bidPrice: "2999.8",
+            askPrice: "3000.2",
+            bidQty: "8",
+            askQty: "7",
+            priceChangePercent: "0.8"
+          }
+        ];
+      }
+    };
+    const config = makeConfig({
+      scannerTicker24hCacheMs: 60_000,
+      scannerMinQuoteVolumeUsd: 1,
+      scannerMinTradeCount24h: 1,
+      scannerMinDepthNotionalUsd: 1,
+      scannerMaxSpreadBps: 100
+    });
+
+    const first = await buildMarketScannerUniverse({ client, config, quoteAsset: "USDT", maxUniverseSize: 10 });
+    const second = await buildMarketScannerUniverse({ client, config, quoteAsset: "USDT", maxUniverseSize: 10 });
+
+    assert.equal(publicCalls, 1);
+    assert.equal(first.entries.length, 2);
+    assert.equal(second.entries.length, 2);
+    assert.equal(first.entries[0].symbol, "BTCUSDT");
+  });
+
+  await runCheck("performance report exposes range-grid damage review", async () => {
+    const trades = Array.from({ length: 6 }, (_, index) => ({
+      id: `range-grid-${index}`,
+      symbol: index % 2 ? "ETHUSDT" : "BTCUSDT",
+      brokerMode: "paper",
+      tradingSource: "paper:internal",
+      entryAt: `2026-01-01T0${index}:00:00.000Z`,
+      exitAt: `2026-01-01T0${index}:30:00.000Z`,
+      strategyAtEntry: { strategy: "range_grid_v2", family: "range_grid" },
+      regimeAtEntry: index < 4 ? "breakout_release" : "range",
+      reason: index < 4 ? "range_break_stop" : "stop_loss",
+      pnlQuote: index < 5 ? -12 - index : 3,
+      netPnlPct: index < 5 ? -0.012 - index * 0.001 : 0.004,
+      mfePct: index < 5 ? 0.025 : 0.006,
+      maePct: index < 5 ? -0.018 : -0.003,
+      captureEfficiency: index < 5 ? 0.08 : 0.4
+    }));
+    const report = buildPerformanceReport({
+      journal: { trades, scaleOuts: [], blockedSetups: [], researchRuns: [], equitySnapshots: [], events: [] },
+      runtime: { openPositions: [] },
+      config: makeConfig({ botMode: "paper", reportLookbackTrades: 20 }),
+      now: new Date("2026-01-02T00:00:00.000Z")
+    });
+
+    assert.equal(report.rangeGridDamageReview.tradeCount, 6);
+    assert.equal(report.rangeGridDamageReview.status, "review_required");
+    assert.equal(report.rangeGridDamageReview.lateExitCount >= 2, true);
+    assert.equal(report.rangeGridDamageReview.rangeBreakSuspectCount >= 4, true);
+    assert.ok(report.rangeGridDamageReview.recommendedAction.includes("Review range-grid"));
+  });
+
   await runCheck("persistence coordinator notifies read-model refresh hook after bundle save", async () => {
     let saved = false;
     let notifiedType = null;
@@ -243,6 +341,41 @@ export async function registerLargeFoundationsTests({
     await coordinator.persistSnapshotBundle({ runtime: { ok: true }, journal: { trades: [] } });
     assert.equal(saved, true);
     assert.equal(notifiedType, "snapshot_bundle");
+  });
+
+  await runCheck("trading bot read-model refresh consumes persisted journal payload", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-readmodel-refresh-hook-"));
+    let reportMarkedDirty = false;
+    const fakeBot = {
+      config: { runtimeDir, readModelRefreshMinIntervalMs: 1 },
+      logger: { warn() {} },
+      runtime: {},
+      readModelRefreshState: null,
+      markReportDirty() {
+        reportMarkedDirty = true;
+      }
+    };
+    const state = TradingBot.prototype.scheduleReadModelRefresh.call(fakeBot, {
+      type: "snapshot_bundle",
+      journal: {
+        trades: [{
+          id: "trade-1",
+          symbol: "BTCUSDT",
+          brokerMode: "paper",
+          entryAt: "2026-01-01T00:00:00.000Z",
+          exitAt: "2026-01-01T01:00:00.000Z",
+          pnlQuote: 1.5,
+          netPnlPct: 0.01,
+          strategyAtEntry: { strategy: "breakout", family: "breakout" }
+        }]
+      }
+    });
+    await state.promise;
+
+    assert.equal(fakeBot.runtime.readModelRefresh.status, "ready");
+    assert.equal(fakeBot.runtime.readModelRefresh.reason, "snapshot_bundle");
+    assert.equal(fakeBot.runtime.readModelRefresh.tables.trades, 1);
+    assert.equal(reportMarkedDirty, true);
   });
 
   await runCheck("market replay safely returns empty-history without live orders", async () => {
