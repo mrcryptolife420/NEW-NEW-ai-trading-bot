@@ -1,0 +1,17 @@
+{
+  "fixtureVersion": 1,
+  "incidentId": "ETHUSDT::meta_neural_caution::2026-04-30T00:15:00",
+  "symbol": "ETHUSDT",
+  "reason": "meta_neural_caution",
+  "rootBlocker": "meta_neural_caution",
+  "blockerStage": "governance_gate",
+  "finalEdge": 0.61,
+  "permissioningScore": 0.48,
+  "threshold": 0.58,
+  "allow": false,
+  "paperRecoveryProbeEligible": true,
+  "expectedDiff": {
+    "paperOnly": true,
+    "softBlocker": true
+  }
+}

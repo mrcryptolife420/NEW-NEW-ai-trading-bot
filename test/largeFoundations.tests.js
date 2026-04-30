@@ -7,6 +7,7 @@ import {
   assertTradingBotServiceCoverage,
   buildTradingBotServiceMap
 } from "../src/runtime/tradingBotDecomposition.js";
+import { buildOperatorRunbookForReason, buildStrategyLifecycleDiagnostics } from "../src/runtime/operatorRunbookGenerator.js";
 
 function buildCandles(count = 70) {
   const start = Date.parse("2026-01-01T00:00:00.000Z");
@@ -125,6 +126,44 @@ export async function registerLargeFoundationsTests({
     readModel.close();
     assert.equal(status.status, "ready");
     assert.equal(status.tables.trades, 0);
+  });
+
+  await runCheck("sqlite read model refreshes journal snapshots without dropping replay traces", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-readmodel-refresh-"));
+    const readModel = new ReadModelStore({ runtimeDir });
+    await readModel.init();
+    readModel.upsertReplayTrace({ id: "replay-1", symbol: "BTCUSDT", at: "2026-01-01T00:00:00.000Z", status: "ready" });
+    const status = readModel.refreshFromJournalSnapshot({
+      journal: {
+        trades: [{
+          id: "trade-1",
+          symbol: "BTCUSDT",
+          brokerMode: "paper",
+          entryAt: "2026-01-01T00:00:00.000Z",
+          exitAt: "2026-01-01T01:00:00.000Z",
+          pnlQuote: 5,
+          netPnlPct: 0.01,
+          strategyAtEntry: { strategy: "breakout", family: "breakout" }
+        }]
+      }
+    });
+    const dashboard = readModel.dashboardSummary();
+    readModel.close();
+    assert.equal(status.tables.trades, 1);
+    assert.equal(status.tables.replayTraces, 1);
+    assert.equal(dashboard.latestReplay.id, "replay-1");
+  });
+
+  await runCheck("operator runbooks and strategy lifecycle diagnostics are action-oriented", async () => {
+    const runbook = buildOperatorRunbookForReason("exchange_safety_blocked");
+    const lifecycle = buildStrategyLifecycleDiagnostics([
+      { strategyId: "range_grid", status: "dangerous" },
+      { strategyId: "breakout", status: "positive_edge" }
+    ]);
+    assert.equal(runbook.severity, "negative");
+    assert.ok(runbook.forbiddenActions.includes("force_live_entry"));
+    assert.equal(lifecycle.status, "review_required");
+    assert.equal(lifecycle.dangerousCount, 1);
   });
 
   await runCheck("persistence coordinator notifies read-model refresh hook after bundle save", async () => {

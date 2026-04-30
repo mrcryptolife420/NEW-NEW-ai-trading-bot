@@ -183,7 +183,8 @@ export class BinanceClient {
     clockSyncMaxRttMs = 1500,
     exchangeInfoCacheMs = 6 * 60 * 60_000,
     requestWeightBackoffMaxMs = 60_000,
-    requestWeightWarnThreshold1m = 4800
+    requestWeightWarnThreshold1m = 4800,
+    onRequestWeightUpdate = null
   }) {
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
@@ -200,6 +201,7 @@ export class BinanceClient {
     this.exchangeInfoCacheMs = Math.max(60_000, Number(exchangeInfoCacheMs || 6 * 60 * 60_000));
     this.requestWeightBackoffMaxMs = Math.max(1_000, Number(requestWeightBackoffMaxMs || 60_000));
     this.requestWeightWarnThreshold1m = Math.max(100, Number(requestWeightWarnThreshold1m || 4800));
+    this.onRequestWeightUpdate = typeof onRequestWeightUpdate === "function" ? onRequestWeightUpdate : null;
     this.clockState = {
       offsetMs: 0,
       estimatedDriftMs: Number.POSITIVE_INFINITY,
@@ -233,6 +235,21 @@ export class BinanceClient {
       topRestCallers: {}
     };
     this.maxRetries = 3;
+  }
+
+  emitRequestWeightUpdate(event = {}) {
+    if (!this.onRequestWeightUpdate) {
+      return;
+    }
+    try {
+      this.onRequestWeightUpdate({
+        at: new Date(this.nowFn()).toISOString(),
+        event,
+        state: this.getRateLimitState()
+      });
+    } catch (error) {
+      this.logger?.debug?.("Request weight callback failed", { error: error?.message || `${error}` });
+    }
   }
 
   getStreamBaseUrl() {
@@ -323,6 +340,13 @@ export class BinanceClient {
       scope,
       endpoint: next.endpoint
     };
+    this.emitRequestWeightUpdate({
+      type: "request_observed",
+      scope,
+      method: `${method || "GET"}`.toUpperCase(),
+      pathname,
+      caller: key
+    });
   }
 
   updateRequestWeightFromResponse(response, { status = null, payload = null, rawBody = "", scope = "spot", method = "GET", pathname = "", requestMeta = {} } = {}) {
@@ -333,6 +357,17 @@ export class BinanceClient {
     state.usedWeight1m = parseHeaderNumber(response?.headers, "x-mbx-used-weight-1m") ?? state.usedWeight1m;
     state.orderCount10s = parseHeaderNumber(response?.headers, "x-mbx-order-count-10s") ?? state.orderCount10s;
     state.warningActive = Number(state.usedWeight1m || 0) >= this.requestWeightWarnThreshold1m;
+    if (state.warningActive) {
+      this.emitRequestWeightUpdate({
+        type: "request_weight_warning",
+        scope,
+        method: `${method || "GET"}`.toUpperCase(),
+        pathname,
+        caller: toRequestCallerKey({ scope, method, pathname, requestMeta }),
+        usedWeight1m: state.usedWeight1m,
+        threshold: this.requestWeightWarnThreshold1m
+      });
+    }
     const retryAfterMs = parseRetryAfterMs(response?.headers, payload);
     if (Number.isFinite(retryAfterMs) && retryAfterMs >= 0) {
       state.retryAfterMs = retryAfterMs;
@@ -354,6 +389,15 @@ export class BinanceClient {
         usedWeight1m: state.usedWeight1m,
         usedWeight: state.usedWeight
       });
+      this.emitRequestWeightUpdate({
+        type: "rate_limit_429",
+        scope,
+        method: `${method || "GET"}`.toUpperCase(),
+        pathname,
+        caller: toRequestCallerKey({ scope, method, pathname, requestMeta }),
+        retryAfterMs: backoffMs,
+        usedWeight1m: state.usedWeight1m
+      });
       return;
     }
     if (status === 418) {
@@ -372,6 +416,16 @@ export class BinanceClient {
         usedWeight1m: state.usedWeight1m,
         message: state.lastBanMessage
       });
+      this.emitRequestWeightUpdate({
+        type: "rate_limit_418",
+        scope,
+        method: `${method || "GET"}`.toUpperCase(),
+        pathname,
+        caller: toRequestCallerKey({ scope, method, pathname, requestMeta }),
+        banUntil: state.banUntil,
+        usedWeight1m: state.usedWeight1m,
+        message: state.lastBanMessage
+      });
       return;
     }
     if (status && status < 400) {
@@ -382,6 +436,15 @@ export class BinanceClient {
       if (!this.isRateLimitBanActive()) {
         state.backoffUntil = Number(state.backoffUntil || 0) > this.nowFn() ? state.backoffUntil : null;
       }
+      this.emitRequestWeightUpdate({
+        type: "response_observed",
+        scope,
+        method: `${method || "GET"}`.toUpperCase(),
+        pathname,
+        caller: toRequestCallerKey({ scope, method, pathname, requestMeta }),
+        usedWeight1m: state.usedWeight1m,
+        usedWeight: state.usedWeight
+      });
     }
   }
 

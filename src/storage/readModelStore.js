@@ -4,6 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { StateStore } from "./stateStore.js";
 import { AuditLogStore } from "./auditLogStore.js";
 import { buildStrategyEvidenceScorecards } from "../runtime/strategyEvidenceScorecard.js";
+import { buildOperatorRunbookForReason, buildStrategyLifecycleDiagnostics } from "../runtime/operatorRunbookGenerator.js";
 import { ensureDir } from "../utils/fs.js";
 
 const READ_MODEL_SCHEMA_VERSION = 1;
@@ -45,6 +46,10 @@ function isSqliteBusy(error) {
   return error?.code === "SQLITE_BUSY" || message.includes("database is locked") || message.includes("resource busy");
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function readAllAuditEvents(auditDir) {
   const events = [];
   const files = (await fs.readdir(auditDir, { withFileTypes: true }).catch(() => []))
@@ -70,39 +75,50 @@ async function readAllAuditEvents(auditDir) {
 }
 
 export class ReadModelStore {
-  constructor({ runtimeDir, dbPath = null, logger = null } = {}) {
+  constructor({ runtimeDir, dbPath = null, logger = null, busyRetryCount = 5, busyRetryMs = 80 } = {}) {
     this.runtimeDir = runtimeDir || path.join(process.cwd(), "data", "runtime");
     this.dbPath = dbPath || path.join(this.runtimeDir, "read-model.sqlite");
     this.logger = logger;
+    this.busyRetryCount = Math.max(0, Number(busyRetryCount || 0));
+    this.busyRetryMs = Math.max(10, Number(busyRetryMs || 80));
     this.db = null;
   }
 
   async init({ recreateCorrupt = true } = {}) {
     await ensureDir(path.dirname(this.dbPath));
-    try {
-      this.open();
-      this.ensureSchema();
-    } catch (error) {
-      this.close();
-      if (isSqliteBusy(error)) {
-        throw new Error(`Read model SQLite is currently locked; retry after active readers finish: ${this.dbPath}`);
+    for (let attempt = 0; attempt <= this.busyRetryCount; attempt += 1) {
+      try {
+        this.open();
+        this.ensureSchema();
+        return;
+      } catch (error) {
+        this.close();
+        if (isSqliteBusy(error)) {
+          if (attempt < this.busyRetryCount) {
+            await sleep(this.busyRetryMs * (attempt + 1));
+            continue;
+          }
+          throw new Error(`Read model SQLite is currently locked after retries; retry after active readers finish: ${this.dbPath}`);
+        }
+        if (!recreateCorrupt || this.dbPath === ":memory:") {
+          throw error;
+        }
+        this.logger?.warn?.("Read model SQLite was corrupt or incompatible; rebuilding from source-of-truth files", {
+          dbPath: this.dbPath,
+          error: error?.message
+        });
+        await fs.rm(this.dbPath, { force: true });
+        this.open();
+        this.ensureSchema();
+        return;
       }
-      if (!recreateCorrupt || this.dbPath === ":memory:") {
-        throw error;
-      }
-      this.logger?.warn?.("Read model SQLite was corrupt or incompatible; rebuilding from source-of-truth files", {
-        dbPath: this.dbPath,
-        error: error?.message
-      });
-      await fs.rm(this.dbPath, { force: true });
-      this.open();
-      this.ensureSchema();
     }
   }
 
   open() {
     if (!this.db) {
       this.db = new DatabaseSync(this.dbPath);
+      this.db.exec("PRAGMA busy_timeout = 5000;");
       this.db.exec("PRAGMA journal_mode = WAL;");
       this.db.exec("PRAGMA synchronous = NORMAL;");
     }
@@ -428,6 +444,20 @@ export class ReadModelStore {
     return this.rebuild({ journal, auditEvents });
   }
 
+  refreshFromJournalSnapshot({ journal = {}, at = new Date().toISOString() } = {}) {
+    const db = this.open();
+    this.ensureSchema();
+    const auditEvents = db.prepare("SELECT json FROM audit_events ORDER BY COALESCE(at, '') ASC")
+      .all()
+      .map((row) => parseJson(row.json, null))
+      .filter(Boolean);
+    const replayTraces = db.prepare("SELECT json FROM replay_traces ORDER BY COALESCE(at, '') ASC")
+      .all()
+      .map((row) => parseJson(row.json, null))
+      .filter(Boolean);
+    return this.rebuild({ journal, auditEvents, replayTraces, at });
+  }
+
   status() {
     const db = this.open();
     this.ensureSchema();
@@ -475,6 +505,9 @@ export class ReadModelStore {
       ORDER BY COALESCE(at, '') DESC, id DESC
       LIMIT 1
     `).get() || null;
+    const operatorRunbooks = topBlockers
+      .slice(0, 3)
+      .map((item) => buildOperatorRunbookForReason(item.reason, { count: item.count }));
     return {
       ...status,
       source: "sqlite_read_model",
@@ -482,7 +515,9 @@ export class ReadModelStore {
       topBlockers,
       topScorecards,
       latestReplay,
-      requestBudget: this.requestBudgetSummary({ limit })
+      requestBudget: this.requestBudgetSummary({ limit }),
+      operatorRunbooks,
+      strategyLifecycleDiagnostics: buildStrategyLifecycleDiagnostics(topScorecards)
     };
   }
 

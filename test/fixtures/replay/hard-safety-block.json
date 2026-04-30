@@ -1,0 +1,16 @@
+{
+  "fixtureVersion": 1,
+  "incidentId": "BTCUSDT::exchange_safety_blocked::2026-04-30T00:00:00",
+  "symbol": "BTCUSDT",
+  "reason": "exchange_safety_blocked",
+  "rootBlocker": "exchange_safety_blocked",
+  "blockerStage": "hard_safety",
+  "finalEdge": 0.67,
+  "permissioningScore": 0,
+  "threshold": 0.52,
+  "allow": false,
+  "expectedDiff": {
+    "rootBlocker": "exchange_safety_blocked",
+    "liveSafetyPreserved": true
+  }
+}

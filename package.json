@@ -17,6 +17,7 @@
     "readmodel:dashboard": "node src/cli.js readmodel:dashboard",
     "replay:market": "node src/cli.js replay:market",
     "request-budget": "node src/cli.js request-budget",
+    "rest:audit": "node src/cli.js rest:audit",
     "replay-decision": "node src/cli.js replay-decision",
     "trace-cycle": "node src/cli.js trace-cycle",
     "trace-symbol": "node src/cli.js trace-symbol",

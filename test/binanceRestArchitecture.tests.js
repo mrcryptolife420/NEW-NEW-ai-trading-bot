@@ -1,5 +1,6 @@
 import { BinanceClient } from "../src/binance/client.js";
 import { TradingBot } from "../src/runtime/tradingBot.js";
+import { buildRestArchitectureAudit } from "../src/runtime/restArchitectureAudit.js";
 
 function makeHeaders(values = {}) {
   const normalized = Object.fromEntries(
@@ -119,6 +120,33 @@ export async function registerBinanceRestArchitectureTests({
     assert.ok(state.totalRateLimitHits >= 1);
     assert.ok(state.usedWeight1m >= 1200);
     assert.equal(state.topRestCallers["test.request_weight"].count, 2);
+  });
+
+  await runCheck("binance client emits request-weight update callbacks", async () => {
+    const updates = [];
+    const client = new BinanceClient({
+      apiKey: "",
+      apiSecret: "",
+      baseUrl: "https://api.binance.com",
+      onRequestWeightUpdate(update) {
+        updates.push(update);
+      },
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        headers: makeHeaders({
+          "x-mbx-used-weight-1m": "99",
+          "x-mbx-used-weight": "7"
+        }),
+        async text() {
+          return JSON.stringify({ ok: true });
+        }
+      })
+    });
+    await client.publicRequest("GET", "/api/v3/ping", {}, { caller: "test.callback" });
+    assert.ok(updates.length >= 1);
+    assert.equal(updates.at(-1).state.usedWeight1m, 99);
+    assert.equal(updates.at(-1).state.topRestCallers["test.callback"].count, 1);
   });
 
   await runCheck("binance client hard-pauses requests on 418 until ban expiry", async () => {
@@ -307,5 +335,23 @@ export async function registerBinanceRestArchitectureTests({
     assert.equal(klineCalls, 1);
     assert.equal(first.length, 40);
     assert.equal(second.length, 40);
+  });
+
+  await runCheck("rest architecture audit classifies stream and cached REST paths", async () => {
+    const audit = buildRestArchitectureAudit({
+      config: makeConfig({
+        enableEventDrivenData: true,
+        enableLocalOrderBook: true,
+        restMarketDataFallbackMinMs: 60_000
+      }),
+      requestBudget: {
+        status: "ready",
+        topCallers: [{ caller: "spot:GET:/api/v3/klines", count: 3 }]
+      }
+    });
+    assert.equal(audit.status, "stream_first");
+    assert.ok(audit.hotspots.some((item) => item.id === "klines" && item.streamReplacement));
+    assert.ok(audit.hotspots.some((item) => item.id === "exchange_info" && item.cachePolicy));
+    assert.equal(audit.topRestCallers[0].caller, "spot:GET:/api/v3/klines");
   });
 }

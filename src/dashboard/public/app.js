@@ -931,6 +931,8 @@ function renderHealth(snapshot) {
   const topReadModelBlocker = arr(readModel.topBlockers || [])[0] || null;
   const dangerousScorecards = arr(readModel.topScorecards || []).filter((item) => ["dangerous", "negative_edge"].includes(item.status));
   const latestReplay = readModel.latestReplay || null;
+  const readModelRunbook = arr(readModel.operatorRunbooks || [])[0] || null;
+  const lifecycleDiagnostics = readModel.strategyLifecycleDiagnostics || {};
   const mode = ops.mode || {};
   const topRejections = arr(ops.topRejections || []);
   const riskLocks = ops.riskLocks || {};
@@ -1054,9 +1056,20 @@ function renderHealth(snapshot) {
       title: "Read-model blockers",
       detail: compactJoin([
         topReadModelBlocker ? `${humanizeReason(topReadModelBlocker.reason)} x${topReadModelBlocker.count || 0}` : "Geen blocker-historie in read-model.",
-        dangerousScorecards.length ? `${dangerousScorecards.length} risky scorecard(s)` : null
+        dangerousScorecards.length ? `${dangerousScorecards.length} risky scorecard(s)` : null,
+        readModelRunbook?.action || null
       ]),
       tone: dangerousScorecards.length || topReadModelBlocker ? "warning" : "neutral"
+    },
+    {
+      title: "Strategy lifecycle",
+      detail: compactJoin([
+        titleize(lifecycleDiagnostics.status || "unknown"),
+        lifecycleDiagnostics.dangerousCount != null ? `${lifecycleDiagnostics.dangerousCount} dangerous` : null,
+        lifecycleDiagnostics.positiveCount != null ? `${lifecycleDiagnostics.positiveCount} positive` : null,
+        lifecycleDiagnostics.recommendedAction || null
+      ]),
+      tone: lifecycleDiagnostics.dangerousCount ? "warning" : lifecycleDiagnostics.positiveCount ? "positive" : "neutral"
     },
     {
       title: "Latest replay trace",

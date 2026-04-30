@@ -2,6 +2,38 @@ import {
   buildReplayRegressionFixture,
   compareReplayPackToFixture
 } from "../src/runtime/incidentReplayLab.js";
+import fs from "node:fs/promises";
+import path from "node:path";
+
+const FIXTURE_DIR = path.join(process.cwd(), "test", "fixtures", "replay");
+
+function packFromGoldenFixture(fixture = {}) {
+  return {
+    incidentId: fixture.incidentId,
+    status: "ready",
+    symbol: fixture.symbol,
+    reason: fixture.reason,
+    summary: {
+      cycleCount: 1,
+      decisionCount: 1,
+      tradeCount: 0,
+      topDecisionReasons: [fixture.reason],
+      topAdaptiveCandidates: []
+    },
+    decisionReconstruction: {
+      rootBlocker: fixture.rootBlocker,
+      blockerStage: fixture.blockerStage,
+      decisionScores: {
+        edge: fixture.finalEdge,
+        permissioning: fixture.permissioningScore
+      },
+      threshold: fixture.threshold,
+      thresholdEdge: fixture.finalEdge - fixture.threshold,
+      expectedNetEdge: { expectancyScore: fixture.finalEdge }
+    },
+    timeline: []
+  };
+}
 
 export async function registerReplayDeterminismTests({
   runCheck,
@@ -43,5 +75,18 @@ export async function registerReplayDeterminismTests({
     assert.equal(same.deterministic, true);
     assert.equal(changed.deterministic, false);
     assert.ok(changed.differences.includes("final_edge_changed"));
+  });
+
+  await runCheck("golden replay fixtures are present and deterministic", async () => {
+    const files = (await fs.readdir(FIXTURE_DIR)).filter((fileName) => fileName.endsWith(".json")).sort();
+    assert.ok(files.length >= 2);
+    for (const fileName of files) {
+      const fixture = JSON.parse(await fs.readFile(path.join(FIXTURE_DIR, fileName), "utf8"));
+      const pack = packFromGoldenFixture(fixture);
+      const golden = buildReplayRegressionFixture(pack);
+      const comparison = compareReplayPackToFixture(pack, golden);
+      assert.equal(comparison.deterministic, true);
+      assert.equal(pack.decisionReconstruction.rootBlocker, fixture.expectedDiff.rootBlocker || fixture.rootBlocker);
+    }
   });
 }

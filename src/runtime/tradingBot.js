@@ -9054,6 +9054,7 @@ export class TradingBot {
       exchangeInfoCacheMs: config.exchangeInfoCacheMs,
       requestWeightBackoffMaxMs: config.requestWeightBackoffMaxMs,
       requestWeightWarnThreshold1m: config.requestWeightWarnThreshold1m,
+      onRequestWeightUpdate: (update) => this.recordRequestWeightBudgetEvent("binance_client", update?.state, update?.event),
       logger: this.logger
     });
     this.risk = new RiskManager(config);
@@ -9197,7 +9198,10 @@ export class TradingBot {
     const task = (async () => {
       const store = new ReadModelStore({ runtimeDir: this.config.runtimeDir, logger: this.logger });
       try {
-        const status = await store.rebuildFromSources();
+        await store.init();
+        const status = payload?.journal
+          ? store.refreshFromJournalSnapshot({ journal: payload.journal })
+          : await store.rebuildFromSources();
         const completedAt = nowIso();
         this.readModelRefreshState.lastCompletedAt = completedAt;
         this.runtime.readModelRefresh = {
@@ -11446,8 +11450,8 @@ export class TradingBot {
     this.markReportDirty();
   }
 
-  recordRequestWeightBudgetEvent(context = "runtime") {
-    const state = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
+  recordRequestWeightBudgetEvent(context = "runtime", stateOverride = null, sourceEvent = null) {
+    const state = stateOverride || (this.client?.getRateLimitState ? this.client.getRateLimitState() : null);
     if (!state) {
       return null;
     }
@@ -11490,6 +11494,7 @@ export class TradingBot {
       category: "runtime",
       scope: "binance_rest",
       context,
+      sourceEvent: sourceEvent || null,
       requestWeight: {
         lastUpdatedAt: state.lastUpdatedAt || null,
         usedWeight: state.usedWeight ?? null,
