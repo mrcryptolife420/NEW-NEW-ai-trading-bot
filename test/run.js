@@ -25310,6 +25310,52 @@ await runCheck("decision funnel inactivity warning explains when governance bloc
   assert.match(bot.runtime.ops.signalFlow.tradingFlowHealth.inactivityWarning || "", /Alpha wanted 1 trade-qualified candidate/i);
 });
 
+await runCheck("decision funnel exposes why paper probe attempts were not admitted", async () => {
+  const bot = Object.create(TradingBot.prototype);
+  bot.runtime = {
+    signalFlow: {},
+    ops: {}
+  };
+  bot.journal = { events: [] };
+  bot.markReportDirty = () => {};
+  bot.logger = { info() {}, warn() {} };
+  bot.ensureSignalFlowMetrics = TradingBot.prototype.ensureSignalFlowMetrics;
+  bot.noteCandidateSignalFlow = TradingBot.prototype.noteCandidateSignalFlow;
+
+  bot.noteCandidateSignalFlow([], "2026-05-01T09:05:00.000Z", {
+    symbolsScanned: 4,
+    candidatesScored: 1,
+    decisionFunnel: {
+      at: "2026-05-01T09:05:00.000Z",
+      watchlistCount: 4,
+      candidatesCreated: 1,
+      viableCandidates: 0,
+      symbolFunnels: [{
+        symbol: "BTCUSDT",
+        alpha: { status: "rejected", wantedTrade: false, probability: 0.51, alphaThreshold: 0.55, primaryReason: "model_confidence_too_low", reasons: ["model_confidence_too_low"] },
+        permissioning: { status: "not_reached", allowed: true, primaryReason: null, reasons: [], categories: [] },
+        probe: {
+          status: "soft_blocked",
+          eligible: false,
+          softBlockerOnly: true,
+          primaryReason: "model_confidence_too_low",
+          reasons: ["model_confidence_too_low"],
+          rootBlocker: "model_confidence_too_low",
+          whyNoProbeAttempt: "paper_probe_probability_floor_missed"
+        },
+        finalStatus: "blocked_by_alpha",
+        primaryReason: "model_confidence_too_low",
+        categories: ["quality"]
+      }]
+    }
+  });
+
+  const funnel = bot.runtime.ops.signalFlow.lastCycle.decisionFunnel;
+  assert.equal(funnel.topProbeBlockedSymbols[0].symbol, "BTCUSDT");
+  assert.equal(funnel.topProbeBlockedSymbols[0].whyNoProbeAttempt, "paper_probe_probability_floor_missed");
+  assert.equal(funnel.probeBlockerReasons[0].id, "paper_probe_probability_floor_missed");
+});
+
 await runCheck("dashboard feed failures increment signal-flow funnel counters", async () => {
   const bot = Object.create(TradingBot.prototype);
   bot.runtime = {
@@ -31315,7 +31361,28 @@ await runCheck("dashboard smoke render accepts provider and bad-veto diagnostics
         health: { status: "ready", runtimeDegradationReasons: [], tradeEntryBlockingReasons: [] },
         riskLocks: {},
         exchangeConnectivity: { blockedSymbols: [] },
-        learningInsights: { missedTrades: {}, blockerFriction: { paperSizing: {} } }
+        learningInsights: { missedTrades: {}, blockerFriction: { paperSizing: {} } },
+        lowConfidenceAudit: {
+          status: "priority",
+          dominantDriver: "threshold_penalty_stack",
+          nearMissCount: 4,
+          topDrivers: [{ id: "threshold_penalty_stack", count: 4 }],
+          note: "Threshold penalties dominate confidence near misses."
+        },
+        signalFlow: {
+          tradingFlowHealth: {
+            decisionFunnel: {
+              probeEligibleSoftBlockedCandidates: 0,
+              probeAttemptedCandidates: 0,
+              probeOpenedCandidates: 0,
+              topProbeBlockedSymbols: [{
+                symbol: "BTCUSDT",
+                whyNoProbeAttempt: "paper_probe_probability_floor_missed"
+              }],
+              probeBlockerReasons: [{ id: "paper_probe_probability_floor_missed", count: 1 }]
+            }
+          }
+        }
       }
     }
   });

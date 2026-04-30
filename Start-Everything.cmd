@@ -61,6 +61,31 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo Runtime snapshot wordt gecontroleerd...
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$snapshotUri='%DASHBOARD_URL%/api/snapshot';" ^
+  "$deadline=(Get-Date).AddSeconds(45);" ^
+  "$lastError=$null;" ^
+  "while((Get-Date) -lt $deadline) {" ^
+  "  try {" ^
+  "    $response=Invoke-RestMethod -Uri $snapshotUri -Method Get -TimeoutSec 15;" ^
+  "    $snapshot=if($response.dashboard){$response}elseif($response.payload){$response.payload}else{$response};" ^
+  "    $generatedAt=[datetime]::Parse($snapshot.generatedAt).ToUniversalTime();" ^
+  "    $age=[math]::Abs(((Get-Date).ToUniversalTime()-$generatedAt).TotalSeconds);" ^
+  "    $runState=$snapshot.manager.runState;" ^
+  "    $readiness=$snapshot.dashboard.ops.readiness.status;" ^
+  "    if($age -le 180) { Write-Host ('Snapshot OK: age=' + [math]::Round($age,0) + 's runState=' + $runState + ' readiness=' + $readiness); exit 0 }" ^
+  "    $lastError='snapshot stale: ' + [math]::Round($age,0) + 's';" ^
+  "  } catch { $lastError=$_.Exception.Message }" ^
+  "  Start-Sleep -Seconds 2" ^
+  "}" ^
+  "throw ('Runtime snapshot is niet vers na start. Laatste fout: ' + $lastError)"
+if errorlevel 1 (
+  echo Bot draait mogelijk, maar de dashboard snapshot werd niet vers bevestigd.
+  echo Open %DASHBOARD_URL% en controleer Snapshot, Readiness en Functional inactivity.
+  exit /b 1
+)
+
 start "" "%DASHBOARD_URL%"
 echo Dashboard en bot draaien nu met de huidige code uit deze map.
 endlocal

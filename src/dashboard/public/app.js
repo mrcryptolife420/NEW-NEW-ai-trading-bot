@@ -344,6 +344,7 @@ function buildLearningDigest(snapshot) {
   const onlineAdaptation = dashboard.onlineAdaptation || dashboard.ops?.onlineAdaptation || {};
   const missedTradeTuning = dashboard.ops?.missedTradeTuning || {};
   const missedTrades = dashboard.ops?.learningInsights?.missedTrades || {};
+  const lowConfidenceAudit = dashboard.ops?.lowConfidenceAudit || {};
   const blockerFriction = dashboard.ops?.learningInsights?.blockerFriction || {};
   const paperSizing = blockerFriction.paperSizing || {};
   const thresholdPolicy = offlineTrainer.thresholdPolicy || {};
@@ -379,6 +380,17 @@ function buildLearningDigest(snapshot) {
       ]),
       tone: missedTrades.status === "priority" ? "negative" : "neutral",
       metrics: buildMissedTradeMetricTags(missedTrades, { compact: true })
+    },
+    {
+      title: "Confidence drivers",
+      detail: compactJoin([
+        titleize(lowConfidenceAudit.status || "quiet"),
+        lowConfidenceAudit.dominantDriver ? `driver ${titleize(lowConfidenceAudit.dominantDriver)}` : null,
+        Number.isFinite(lowConfidenceAudit.nearMissCount) ? `${lowConfidenceAudit.nearMissCount} near-miss` : null,
+        lowConfidenceAudit.topDrivers?.[0]?.id ? `top ${titleize(lowConfidenceAudit.topDrivers[0].id)} x${lowConfidenceAudit.topDrivers[0].count || 0}` : null,
+        lowConfidenceAudit.note || null
+      ]),
+      tone: lowConfidenceAudit.status === "priority" ? "warning" : lowConfidenceAudit.status === "watch" ? "neutral" : "positive"
     },
     {
       title: "Optimization",
@@ -1129,6 +1141,24 @@ function renderHealth(snapshot) {
         decisionFunnel.inactivityWarning || null
       ]),
       tone: flowHealth.status === "blocked" ? "negative" : flowHealth.status === "inactive" ? "warning" : "neutral"
+    },
+    {
+      title: "Probe lane",
+      detail: compactJoin([
+        decisionFunnel.probeEligibleSoftBlockedCandidates != null ? `${decisionFunnel.probeEligibleSoftBlockedCandidates || 0} eligible` : null,
+        decisionFunnel.probeAttemptedCandidates != null ? `${decisionFunnel.probeAttemptedCandidates || 0} attempted` : null,
+        decisionFunnel.probeOpenedCandidates != null ? `${decisionFunnel.probeOpenedCandidates || 0} opened` : null,
+        decisionFunnel.topProbeEligibleSymbols?.[0]?.symbol ? `eligible ${decisionFunnel.topProbeEligibleSymbols[0].symbol}` : null,
+        decisionFunnel.topProbeBlockedSymbols?.[0]?.symbol
+          ? `blocked ${decisionFunnel.topProbeBlockedSymbols[0].symbol}: ${humanizeReason(decisionFunnel.topProbeBlockedSymbols[0].whyNoProbeAttempt)}`
+          : null,
+        decisionFunnel.probeBlockerReasons?.[0]?.id ? `reason ${humanizeReason(decisionFunnel.probeBlockerReasons[0].id)} x${decisionFunnel.probeBlockerReasons[0].count || 0}` : null
+      ]) || "Geen probe-lane kandidaten in deze snapshot.",
+      tone: (decisionFunnel.probeOpenedCandidates || 0) > 0
+        ? "positive"
+        : (decisionFunnel.topProbeBlockedSymbols || []).length
+          ? "warning"
+          : "neutral"
     },
     {
       title: "Risk locks",

@@ -7912,6 +7912,16 @@ function summarizeDecisionFunnel(funnel = {}) {
   }
   const topReasons = summarizeCountMap(reasonCounter, 6);
   const topCategories = summarizeCountMap(categoryCounter, 6);
+  const probeBlockerReasons = summarizeCountMap(
+    symbolFunnels.reduce((acc, item) => {
+      const reason = item.probe?.whyNoProbeAttempt || item.probe?.probeRejectedReason || null;
+      if (reason) {
+        incrementCount(acc, reason);
+      }
+      return acc;
+    }, {}),
+    6
+  );
   const dominantDenialPlane = normalized.dominantDenialPlane || summarizeCountMap(denialPlaneCounter, 1)[0]?.id || null;
   const dominantReason = normalized.dominantReason || topReasons[0]?.id || null;
   const dominantCategory = normalized.dominantCategory || topCategories[0]?.id || null;
@@ -7968,6 +7978,7 @@ function summarizeDecisionFunnel(funnel = {}) {
     dominantStage,
     topReasons,
     topCategories,
+    probeBlockerReasons,
     inactivityWarning,
     topProbeEligibleSymbols: symbolFunnels
       .filter((item) => ["eligible", "activated", "attempted", "opened", "rejected_after_sizing", "probe_allowed"].includes(item.probe?.status || ""))
@@ -7977,6 +7988,16 @@ function summarizeDecisionFunnel(funnel = {}) {
         status: item.probe?.status || "eligible",
         primaryReason: item.probe?.primaryReason || item.primaryReason || null,
         whyNoProbeAttempt: item.probe?.whyNoProbeAttempt || null
+      })),
+    topProbeBlockedSymbols: symbolFunnels
+      .filter((item) => item.probe?.whyNoProbeAttempt || item.probe?.probeRejectedReason)
+      .slice(0, 6)
+      .map((item) => ({
+        symbol: item.symbol || null,
+        status: item.probe?.status || "blocked",
+        primaryReason: item.probe?.primaryReason || item.primaryReason || null,
+        whyNoProbeAttempt: item.probe?.whyNoProbeAttempt || item.probe?.probeRejectedReason || null,
+        rootBlocker: item.probe?.rootBlocker || item.primaryReason || null
       })),
     symbolFunnels: symbolFunnels.slice(0, 16)
   };
