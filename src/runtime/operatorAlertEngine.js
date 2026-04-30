@@ -216,7 +216,7 @@ export function buildOperatorAlerts({
           : "medium",
       "Bot draait maar trading path blijft functioneel inactief",
       inactivityWatchdog.detail || inactivityWatchdog.headline || "De inactivity watchdog ziet langdurige functionele stilstand.",
-      inactivityWatchdog.activeCases?.[0]?.action || "Gebruik status/doctor signalFlow en de watchdog-case om de dominante blokkade gericht te herstellen.",
+      inactivityWatchdog.recommendedAction || inactivityWatchdog.activeCases?.[0]?.action || "Gebruik status/doctor signalFlow en de watchdog-case om de dominante blokkade gericht te herstellen.",
       {
         source: "signal_flow",
         cause: inactivityWatchdog.dominantCause || null,

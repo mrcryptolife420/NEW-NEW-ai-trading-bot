@@ -17163,6 +17163,52 @@ await runCheck("operator alerts surface functional inactivity watchdog with dura
   assert.match(watchdogAlert.action || "", /veto\/blockerfamilie/);
 });
 
+await runCheck("operator alerts prefer watchdog recommended action over stale active-case order", async () => {
+  const alerts = buildOperatorAlerts({
+    runtime: {
+      health: {},
+      orderLifecycle: { pendingActions: [] },
+      selfHeal: {},
+      thresholdTuning: {},
+      signalFlow: {
+        tradingFlowHealth: {
+          inactivityWatchdog: {
+            active: true,
+            status: "high",
+            headline: "Overblocking gedurende 2.4u",
+            detail: "24 candidates werden gemaakt maar geen enkele kwam door de gate.",
+            dominantCause: "overblocking",
+            durationHours: 2.4,
+            recommendedAction: "Controleer of alpha zwak is of dat een veto/blockerfamilie te lang dominant blijft.",
+            activeCases: [
+              {
+                id: "dashboard_drift",
+                action: "Controleer dashboard snapshot refresh, feed aggregation en frontend polling."
+              },
+              {
+                id: "overblocking",
+                action: "Controleer of alpha zwak is of dat een veto/blockerfamilie te lang dominant blijft."
+              }
+            ]
+          }
+        }
+      },
+      ops: { alertState: {} }
+    },
+    readiness: { status: "ready", reasons: [] },
+    exchangeSafety: { status: "ready" },
+    strategyRetirement: { retireCount: 0, policies: [] },
+    executionCost: { status: "ready", notes: [] },
+    capitalGovernor: { status: "ready", notes: [] },
+    config: makeConfig({ botMode: "paper" }),
+    nowIso: "2026-04-17T10:00:00.000Z"
+  });
+  const watchdogAlert = alerts.alerts.find((item) => item.id === "functional_inactivity_watchdog");
+  assert.ok(watchdogAlert);
+  assert.match(watchdogAlert.action || "", /veto\/blockerfamilie/);
+  assert.doesNotMatch(watchdogAlert.action || "", /dashboard snapshot refresh/i);
+});
+
 await runCheck("operator alerts auto-resolve readiness_degraded when readiness recovers", async () => {
   const runtime = {
     health: {},
@@ -25520,6 +25566,52 @@ await runCheck("dashboard operator deck includes inactivity watchdog attention",
     capitalPolicy: {}
   });
   assert.ok(deck.attention.some((item) => item.id === "inactivity_watchdog"));
+});
+
+await runCheck("dashboard operator deck uses watchdog recommended action for dominant inactivity cause", async () => {
+  const deck = buildDashboardOperatorDeck({
+    overview: { mode: "paper", equity: 1000, effectiveBudget: { deployableBudget: 250 }, sizingGuide: {} },
+    readiness: { status: "ready", reasons: [] },
+    alerts: { alerts: [] },
+    signalFlow: {
+      tradingFlowHealth: {
+        status: "inactive",
+        inactivityWatchdog: {
+          active: true,
+          status: "high",
+          headline: "Overblocking gedurende 11.9u",
+          detail: "24 candidates werden gemaakt, maar geen enkele kwam door de gate; dominant Model Confidence Too Low.",
+          dominantCause: "overblocking",
+          recommendedAction: "Controleer of alpha zwak is of dat een veto/blockerfamilie te lang dominant blijft.",
+          activeCases: [
+            {
+              id: "dashboard_drift",
+              action: "Controleer dashboard snapshot refresh, feed aggregation en frontend polling."
+            },
+            {
+              id: "overblocking",
+              action: "Controleer of alpha zwak is of dat een veto/blockerfamilie te lang dominant blijft."
+            }
+          ]
+        },
+        decisionFunnel: {}
+      },
+      paperPathDiagnosis: { status: "blocked_pre_execution", headline: "Paper path blocked", reason: "model_confidence_too_low" }
+    },
+    topDecisions: [],
+    blockedSetups: [],
+    positions: [],
+    report: { recentTrades: [], executionCostSummary: {} },
+    service: {},
+    safety: { orderLifecycle: {}, exchangeTruth: {} },
+    operatorDiagnostics: { actionItems: [] },
+    marketHistory: {},
+    capitalPolicy: {}
+  });
+  const inactivityCard = deck.attention.find((item) => item.id === "inactivity_watchdog");
+  assert.ok(inactivityCard);
+  assert.match(inactivityCard.detail || "", /veto\/blockerfamilie/);
+  assert.doesNotMatch(inactivityCard.detail || "", /dashboard snapshot refresh/i);
 });
 
 await runCheck("trading bot paper learning summary uses runtime journal truth for shadow budget instead of stale decision snapshots", async () => {

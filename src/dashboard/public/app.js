@@ -530,7 +530,7 @@ function buildOperatorDeckFromSnapshot(snapshot) {
             detail: compactJoin([
               inactivityWatchdog.headline || null,
               inactivityWatchdog.detail || null,
-              inactivityWatchdog.activeCases?.[0]?.action || null
+              inactivityWatchdog.recommendedAction || inactivityWatchdog.activeCases?.[0]?.action || null
             ]),
             tone: ["critical", "high"].includes(inactivityWatchdog.status) ? "negative" : "warning"
           }
@@ -631,7 +631,7 @@ function renderHero(snapshot) {
   const children = [
     summaryPill("Status", deck.headline, deck.tradeState?.status === "can_trade" ? "positive" : deck.tradeState?.status === "blocked" ? "negative" : "neutral"),
     summaryPill("Belangrijkste reden", deck.dominantBlocker ? humanizeReason(deck.dominantBlocker) : "Geen kritieke blocker", deck.dominantBlocker ? "negative" : "positive"),
-    summaryPill("Nu doen", deck.actions?.[0]?.title || "Monitoren", deck.actions?.[0]?.detail || deck.subline || "Geen directe operatoractie nodig.", "neutral")
+    summaryPill("Nu doen", deck.actions?.[0]?.detail || deck.actions?.[0]?.title || deck.subline || "Monitoren", "neutral")
   ];
   replaceChildren(elements.operatorSummary, children);
 }
@@ -1198,7 +1198,7 @@ function renderHealth(snapshot) {
         ? compactJoin([
             inactivityWatchdog.headline || null,
             inactivityWatchdog.detail || null,
-            inactivityWatchdog.activeCases?.[0]?.action || null
+            inactivityWatchdog.recommendedAction || inactivityWatchdog.activeCases?.[0]?.action || null
           ])
         : "Geen langdurige functionele inactiviteit gedetecteerd.",
       tone: inactivityWatchdog.active

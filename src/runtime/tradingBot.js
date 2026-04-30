@@ -710,6 +710,7 @@ function buildInactivityWatchdogSummary(summary = {}, { nowReference = nowIso(),
       return `${left.id}`.localeCompare(`${right.id}`);
     });
   const dominantCase = activeCases[0] || null;
+  const recommendedAction = dominantCase?.action || "Gebruik status/doctor signalFlow en de watchdog-case om de dominante blokkade gericht te herstellen.";
   const technicalHealthClear = Boolean(summary.healthTechnicalClear ?? state.healthTechnicalClear);
   const headline = dominantCase
     ? `${titleize(dominantCase.id)} gedurende ${num(dominantCase.durationHours || 0, 1)}u`
@@ -737,6 +738,7 @@ function buildInactivityWatchdogSummary(summary = {}, { nowReference = nowIso(),
     dominantReason: dominantCase?.reason || null,
     dominantCategory: dominantCase?.category || null,
     durationHours: dominantCase?.durationHours ?? null,
+    recommendedAction,
     technicalHealthClear,
     activeCases: activeCases.slice(0, 6).map((item) => ({
       id: item.id,
@@ -7052,7 +7054,7 @@ export function buildDashboardOperatorDeck({
           detail: compactJoin([
             inactivityWatchdog.headline || null,
             inactivityWatchdog.detail || null,
-            inactivityWatchdog.activeCases?.[0]?.action || null
+            inactivityWatchdog.recommendedAction || inactivityWatchdog.activeCases?.[0]?.action || null
           ]),
           tone: ["critical", "high"].includes(inactivityWatchdog.status) ? "negative" : "warning"
         }
