@@ -29749,6 +29749,22 @@ await runCheck("operational readiness mapper escalates blocked reasons consisten
   assert.ok(readiness.reasons.includes("exchange_truth_freeze"));
 });
 
+await runCheck("operational readiness mapper degrades precomputed runtime reasons", async () => {
+  const readiness = computeOperationalReadiness({
+    snapshotReadiness: {
+      status: "ready",
+      reasons: ["market_data_stream_gap_using_rest_fallback"]
+    },
+    checkedAt: "2026-04-09T12:00:00.000Z",
+    mode: "paper",
+    lastAnalysisAt: "2026-04-09T11:59:00.000Z",
+    alerts: []
+  });
+  assert.equal(readiness.status, "degraded");
+  assert.equal(readiness.ok, false);
+  assert.ok(readiness.reasons.includes("market_data_stream_gap_using_rest_fallback"));
+});
+
 await runCheck("core metrics mapper normalizes rounded values", async () => {
   const view = buildCoreMetricsView({
     report: { tradeCount: 3, realizedPnl: 12.3456, winRate: 0.666666, averagePnlPct: 0.012345, maxDrawdownPct: 0.087654, openExposure: 155.5555 },
@@ -30505,6 +30521,26 @@ await runCheck("dashboard quick action result summary exposes preflight and root
   assert.equal(summary.failedChecks[0], "venue_flat");
   assert.equal(summary.rootBefore, "exchange_safety_blocked");
   assert.equal(summary.nextRecommendedAction, "Resolve exchange truth first.");
+});
+
+await runCheck("dashboard smoke render shows quick action result in operator controls", async () => {
+  const result = __dashboardSmokeRender({
+    dashboard: {
+      diagnosticsActionResult: {
+        action: "force_reconcile",
+        allowed: false,
+        rootBlockerBefore: "exchange_safety_blocked",
+        rootBlockerAfter: "exchange_safety_blocked",
+        preflightChecks: [{ id: "venue_flat", passed: false }],
+        nextRecommendedAction: "Resolve exchange truth first."
+      },
+      operatorDiagnostics: {
+        quickActions: []
+      }
+    }
+  });
+  assert.match(result.quickActionsText, /Laatste actie: force_reconcile/);
+  assert.match(result.quickActionsText, /Geweigerd/);
 });
 
 await runCheck("trade attribution classifies good and execution-problem trades with feature snapshots", async () => {

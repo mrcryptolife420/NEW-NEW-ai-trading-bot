@@ -101,6 +101,9 @@ export function computeOperationalReadiness({
     ensureReason(readiness, "lifecycle_attention_required", "degraded");
   }
   readiness.reasons = [...new Set(readiness.reasons)];
+  if (readiness.status === "ready" && readiness.reasons.length > 0) {
+    readiness.status = "degraded";
+  }
   readiness.ok = readiness.status === "ready" && readiness.reasons.length === 0;
   return readiness;
 }

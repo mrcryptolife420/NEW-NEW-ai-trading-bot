@@ -69,6 +69,15 @@ function buildHistoryActionPlan({ symbol, interval, from, to, status = "missing"
     blocking: status === "missing_history",
     coverageTarget: ">= 95% candle coverage and no material gaps for the replay window",
     backfillArgs,
+    autoBackfillPlan: {
+      safe: true,
+      mutatesLiveState: false,
+      placesOrders: false,
+      source: "local_history_only",
+      command: recommendedCommand,
+      validationCommand,
+      note: "Backfill schrijft alleen lokale candle-history; replay blijft read-only voor trading state."
+    },
     recommendedCommand,
     validationCommand,
     steps: [

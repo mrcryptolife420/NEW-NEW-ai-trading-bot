@@ -10846,6 +10846,9 @@ export class TradingBot {
     if (kind === "timeframe") {
       return Math.max(1_000, Number(this.config.restTimeframeFallbackMinMs || 60_000));
     }
+    if (kind === "book_ticker") {
+      return Math.max(5_000, Number(this.config.restBookTickerFallbackMinMs || 60_000));
+    }
     if (kind === "depth") {
       return Math.max(10_000, Number(this.config.restDepthFallbackMinMs || 120_000));
     }
@@ -10893,10 +10896,30 @@ export class TradingBot {
       .sort((left, right) => Number(left.ageMs ?? Infinity) - Number(right.ageMs ?? Infinity))
       .slice(0, 12);
     const depthFallbacks = fallbackEntries.filter((entry) => entry.kind === "depth");
+    const bookTickerFallbacks = fallbackEntries.filter((entry) => entry.kind === "book_ticker");
     const publicConnected = streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected ?? false;
+    const userStreamConnected = Boolean(streamStatus?.userStreamConnected);
+    const userStreamExpected = Boolean(this.config?.binanceApiKey) && (
+      this.config?.botMode === "live" ||
+      this.config?.paperExecutionVenue === "binance_demo_spot"
+    );
+    const userStreamAuthoritative = streamStatus?.connectivityAuthoritative !== false;
     const localBookHealthy = Number(streamStatus?.localBook?.healthySymbols || streamStatus?.localBook?.syncedSymbols || 0);
+    const topRestCallers = rateLimitState?.topRestCallers || {};
+    const privateRestWeight = Object.entries(topRestCallers).reduce((total, [caller, value]) => (
+      /openOrders|open_orders|openOrderList|open_order_list|account_info|\/api\/v3\/account/i.test(caller)
+        ? total + Number(value?.weight || 0)
+        : total
+    ), 0);
+    const publicFallbackWeight = Object.entries(topRestCallers).reduce((total, [caller, value]) => (
+      /depth_fallback|book_ticker_fallback|\/api\/v3\/depth|\/api\/v3\/ticker\/bookTicker/i.test(caller)
+        ? total + Number(value?.weight || 0)
+        : total
+    ), 0);
     const status = rateLimitState?.banActive
       ? "paused_rate_limit_ban"
+      : (userStreamExpected && userStreamAuthoritative && !userStreamConnected && privateRestWeight > 0)
+        ? "private_stream_gap_using_rest"
       : pressure >= 0.8
         ? "rest_pressure_guarded"
         : (!publicConnected && depthFallbacks.length)
@@ -10906,6 +10929,8 @@ export class TradingBot {
             : "ready";
     const recommendedAction = status === "paused_rate_limit_ban"
       ? "Wacht tot Binance REST ban afloopt; gebruik streams en vermijd handmatige refreshes."
+      : status === "private_stream_gap_using_rest"
+        ? "Controleer user-data stream; private REST open-order/account checks moeten sanity fallback blijven."
       : status === "rest_pressure_guarded"
         ? "Laat publieke marketdata uit streams komen en stel niet-kritieke scanner/depth REST calls uit."
         : status === "stream_gap_using_rest_fallback"
@@ -10920,6 +10945,11 @@ export class TradingBot {
       pressure: Number.isFinite(pressure) ? Number(pressure.toFixed(4)) : null,
       fallbackCount: fallbackEntries.length,
       depthFallbackCount: depthFallbacks.length,
+      bookTickerFallbackCount: bookTickerFallbacks.length,
+      userStreamExpected,
+      userStreamConnected,
+      privateRestWeight,
+      publicFallbackWeight,
       recentFallbacks: fallbackEntries,
       recommendedAction
     };
@@ -13860,6 +13890,19 @@ export class TradingBot {
     if (serviceState.bootstrapDegraded) {
       runtimeReasons.push("service_bootstrap_degraded");
     }
+    const streamFallbackHealth = this.buildStreamFallbackHealth(
+      decorateStreamStatus(this.stream?.getStatus ? this.stream.getStatus() : {}, this.runtime.service || {}),
+      referenceNow
+    );
+    if (streamFallbackHealth.status === "rest_pressure_guarded") {
+      runtimeReasons.push("market_data_rest_pressure_guarded");
+    }
+    if (streamFallbackHealth.status === "stream_gap_using_rest_fallback") {
+      runtimeReasons.push("market_data_stream_gap_using_rest_fallback");
+    }
+    if (streamFallbackHealth.status === "private_stream_gap_using_rest") {
+      runtimeReasons.push("private_stream_gap_using_rest");
+    }
     if (["paused", "paper_fallback"].includes(selfHealSummary.mode || "")) {
       runtimeReasons.push("self_heal_paused");
     }
@@ -13903,7 +13946,8 @@ export class TradingBot {
       checkedAt: readiness.checkedAt,
       ready: readiness.ok,
       status: readiness.status,
-      reasons: readiness.reasons
+      reasons: readiness.reasons,
+      streamFallbackHealth
     };
   }
 
@@ -16916,7 +16960,9 @@ export class TradingBot {
         : null;
       const cachedOrderBook = cachedSnapshot?.book?.orderBook || null;
       const canRestBookTickerFallback = !hasFreshStreamBookTicker &&
-        this.shouldUseRestFallback(this.getRestFallbackKey("book_ticker", symbol), this.getRestFallbackMinMs("market"));
+        this.shouldUseRestFallback(this.getRestFallbackKey("book_ticker", symbol), this.getRestFallbackMinMs("book_ticker"), {
+          pressureSensitive: true
+        });
       const canRestDepthFallback = !useLocalBook &&
         !cachedOrderBook &&
         this.shouldUseRestFallback(this.getRestFallbackKey("depth", symbol), this.getRestFallbackMinMs("depth"), {

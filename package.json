@@ -15,6 +15,7 @@
     "readmodel:rebuild": "node src/cli.js readmodel:rebuild",
     "readmodel:status": "node src/cli.js readmodel:status",
     "readmodel:dashboard": "node src/cli.js readmodel:dashboard",
+    "readmodel:request-budget": "node src/cli.js request-budget",
     "replay:market": "node src/cli.js replay:market",
     "request-budget": "node src/cli.js request-budget",
     "rest:audit": "node src/cli.js rest:audit",

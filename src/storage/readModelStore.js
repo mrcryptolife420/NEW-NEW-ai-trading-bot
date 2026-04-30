@@ -709,8 +709,42 @@ export class ReadModelStore {
             ? "elevated"
             : "normal";
     const criticalCallers = topCallers
-      .filter((caller) => caller.weight >= 25 || /depth|orderBook|openOrders|allOrders|account/i.test(caller.caller))
+      .filter((caller) => caller.weight >= 25 || /depth|orderBook|openOrders|open_orders|allOrders|account/i.test(caller.caller))
       .slice(0, Math.max(1, Math.min(5, limit)));
+    const callerGroups = topCallers.reduce((groups, caller) => {
+      const group = /depth|orderBook/i.test(caller.caller)
+        ? "public_depth"
+        : /bookTicker|ticker\/bookTicker/i.test(caller.caller)
+          ? "public_book_ticker"
+          : /klines/i.test(caller.caller)
+            ? "public_klines"
+            : /openOrders|open_orders|openOrderList|open_order_list/i.test(caller.caller)
+              ? "private_orders"
+              : /account/i.test(caller.caller)
+                ? "private_account"
+                : "other";
+      groups[group] = groups[group] || { group, count: 0, weight: 0, callers: [] };
+      groups[group].count += Number(caller.count || 0);
+      groups[group].weight += Number(caller.weight || 0);
+      groups[group].callers.push(caller.caller);
+      return groups;
+    }, {});
+    const incidentCandidates = criticalCallers
+      .filter((caller) => caller.weight >= 1000 || /depth|openOrders|open_orders|openOrderList|open_order_list/i.test(caller.caller))
+      .map((caller) => ({
+        at: latestAt,
+        type: "request_budget_hot_caller",
+        status: null,
+        usedWeight1m: latestWeight1m,
+        caller: caller.caller,
+        weight: caller.weight,
+        count: caller.count,
+        recommendation: /depth|orderBook/i.test(caller.caller)
+          ? "move_public_depth_to_stream_or_raise_fallback_ttl"
+          : /openOrders|open_orders|openOrderList|open_order_list|account/i.test(caller.caller)
+            ? "prefer_user_data_stream_and_reduce_private_rest_sanity_checks"
+            : "review_rest_call_frequency"
+      }));
     const recommendedActions = [];
     if (pressureLevel === "critical" || pressureLevel === "warning") {
       recommendedActions.push("Pauzeer niet-kritieke dashboard/research/scanner REST acties tot weight normaliseert.");
@@ -718,7 +752,7 @@ export class ReadModelStore {
     if (criticalCallers.some((caller) => /depth|orderBook/i.test(caller.caller))) {
       recommendedActions.push("Vervang hot depth/orderbook polling door WebSocket/local book of verhoog fallback TTL.");
     }
-    if (criticalCallers.some((caller) => /openOrders|allOrders|account/i.test(caller.caller))) {
+    if (criticalCallers.some((caller) => /openOrders|open_orders|allOrders|account/i.test(caller.caller))) {
       recommendedActions.push("Gebruik user-data stream voor private order/account updates en beperk REST sanity checks.");
     }
     return {
@@ -729,7 +763,10 @@ export class ReadModelStore {
       rateLimitEvents,
       topCallers,
       criticalCallers,
-      incidents: incidents.slice(0, limit),
+      callerGroups: Object.values(callerGroups)
+        .sort((left, right) => right.weight - left.weight)
+        .slice(0, limit),
+      incidents: [...incidents, ...incidentCandidates].slice(0, limit),
       recommendedActions
     };
   }

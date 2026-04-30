@@ -1630,7 +1630,8 @@ export function __dashboardSmokeRender(snapshot) {
       recentTradesText: flattenNodeText(elements.recentTradesList),
       healthText: flattenNodeText(elements.healthList),
       focusText: flattenNodeText(elements.focusList),
-      positionsText: flattenNodeText(elements.positionsList)
+      positionsText: flattenNodeText(elements.positionsList),
+      quickActionsText: flattenNodeText(elements.quickActionsList)
     };
   } finally {
     renderFallbackSections.clear();

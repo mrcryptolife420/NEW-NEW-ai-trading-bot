@@ -230,7 +230,9 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.topCallers[0].caller, "scanner.depth");
     assert.equal(summary.topCallers[0].weight, 50);
     assert.equal(summary.criticalCallers[0].caller, "scanner.depth");
-    assert.equal(summary.incidents.length, 1);
+    assert.equal(summary.callerGroups[0].group, "public_depth");
+    assert.equal(summary.incidents.length >= 1, true);
+    assert.equal(summary.incidents.some((incident) => incident.type === "request_budget_hot_caller"), true);
     assert.equal(summary.recommendedActions.some((action) => action.includes("depth")), true);
   });
 
@@ -281,6 +283,37 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.status, "rest_pressure_guarded");
     assert.equal(summary.depthFallbackCount, 1);
     assert.equal(summary.recommendedAction.includes("streams"), true);
+  });
+
+  await runCheck("stream fallback health surfaces private stream gaps before private REST becomes normal", async () => {
+    const fakeBot = {
+      config: {
+        botMode: "paper",
+        paperExecutionVenue: "binance_demo_spot",
+        binanceApiKey: "test-key",
+        requestWeightWarnThreshold1m: 4800
+      },
+      runtime: {},
+      restFallbackState: {},
+      client: {
+        getRateLimitState() {
+          return {
+            usedWeight1m: 100,
+            topRestCallers: {
+              "live_broker.reconcile.open_orders": { count: 2, weight: 160 }
+            }
+          };
+        }
+      }
+    };
+    const summary = TradingBot.prototype.buildStreamFallbackHealth.call(fakeBot, {
+      publicStreamConnected: true,
+      userStreamConnected: false,
+      connectivityAuthoritative: true
+    }, "2026-01-01T00:00:01.000Z");
+    assert.equal(summary.status, "private_stream_gap_using_rest");
+    assert.equal(summary.userStreamExpected, true);
+    assert.equal(summary.privateRestWeight, 160);
   });
 
   await runCheck("market scanner universe caches 24h ticker REST ranking", async () => {
@@ -442,6 +475,7 @@ export async function registerLargeFoundationsTests({
     assert.equal(result.historyActionPlan.blocking, true);
     assert.equal(result.historyActionPlan.backfillArgs.symbol, "BTCUSDT");
     assert.equal(result.historyActionPlan.steps[0].action, "backfill_local_history");
+    assert.equal(result.historyActionPlan.autoBackfillPlan.placesOrders, false);
     assert.ok(result.historyActionPlan.recommendedCommand.includes("download-history"));
     assert.ok(result.warnings.some((item) => item.includes("No local candles")));
   });
