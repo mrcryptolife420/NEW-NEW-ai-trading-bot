@@ -11460,11 +11460,12 @@ export class TradingBot {
       .map(([caller, value]) => ({
         caller,
         count: Number(value?.count || 0),
+        weight: Number(value?.weight || 0),
         endpoint: value?.endpoint || null,
         scope: value?.scope || null,
         lastAt: value?.lastAt || null
       }))
-      .sort((left, right) => (right.count - left.count) || left.caller.localeCompare(right.caller))
+      .sort((left, right) => (right.weight - left.weight) || (right.count - left.count) || left.caller.localeCompare(right.caller))
       .slice(0, 8);
     if (!Number(state.totalRequests || 0) && !state.banActive && !state.backoffActive && !state.warningActive) {
       return state;

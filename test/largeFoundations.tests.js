@@ -7,7 +7,11 @@ import {
   assertTradingBotServiceCoverage,
   buildTradingBotServiceMap
 } from "../src/runtime/tradingBotDecomposition.js";
-import { buildOperatorRunbookForReason, buildStrategyLifecycleDiagnostics } from "../src/runtime/operatorRunbookGenerator.js";
+import {
+  buildOperatorActionResult,
+  buildOperatorRunbookForReason,
+  buildStrategyLifecycleDiagnostics
+} from "../src/runtime/operatorRunbookGenerator.js";
 
 function buildCandles(count = 70) {
   const start = Date.parse("2026-01-01T00:00:00.000Z");
@@ -166,6 +170,61 @@ export async function registerLargeFoundationsTests({
     assert.equal(runbook.actionLinks[0].command, "npm run status");
     assert.equal(lifecycle.status, "review_required");
     assert.equal(lifecycle.dangerousCount, 1);
+  });
+
+  await runCheck("operator action result exposes preflight denials and root blocker delta", async () => {
+    const denied = buildOperatorActionResult({
+      action: "resolve_flat_close",
+      target: "BTCUSDT",
+      allowed: true,
+      preflightChecks: [{ id: "venue_flat", passed: false }],
+      denialReasons: ["venue_not_flat"],
+      rootBlockerBefore: "exchange_truth_freeze",
+      rootBlockerAfter: "exchange_truth_freeze"
+    });
+    const allowed = buildOperatorActionResult({
+      action: "force_reconcile",
+      allowed: true,
+      preflightChecks: [{ id: "safe_mode", passed: true }],
+      changedState: { reconciled: true },
+      rootBlockerBefore: "exchange_safety_blocked",
+      rootBlockerAfter: null
+    });
+    assert.equal(denied.allowed, false);
+    assert.ok(denied.denialReasons.includes("venue_not_flat"));
+    assert.equal(allowed.allowed, true);
+    assert.equal(allowed.rootBlockerChanged, true);
+    assert.equal(allowed.changedState.reconciled, true);
+  });
+
+  await runCheck("read model request-budget summary ranks callers by estimated weight", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-request-budget-"));
+    const readModel = new ReadModelStore({ runtimeDir });
+    await readModel.init();
+    readModel.rebuild({
+      journal: {},
+      auditEvents: [{
+        id: "budget-1",
+        at: "2026-01-01T00:00:00.000Z",
+        type: "binance_request_weight_budget",
+        requestWeight: {
+          usedWeight1m: 6100,
+          totalRateLimitHits: 1,
+          lastRateLimitStatus: 429,
+          topRestCallers: {
+            "scanner.depth": { count: 2, weight: 50 },
+            "ticker.light": { count: 10, weight: 10 }
+          }
+        }
+      }]
+    });
+    const summary = readModel.requestBudgetSummary();
+    readModel.close();
+    assert.equal(summary.status, "ready");
+    assert.equal(summary.latestWeight1m, 6100);
+    assert.equal(summary.rateLimitEvents, 1);
+    assert.equal(summary.topCallers[0].caller, "scanner.depth");
+    assert.equal(summary.topCallers[0].weight, 50);
   });
 
   await runCheck("persistence coordinator notifies read-model refresh hook after bundle save", async () => {

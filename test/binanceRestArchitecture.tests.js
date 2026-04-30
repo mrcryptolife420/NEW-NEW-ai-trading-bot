@@ -123,6 +123,7 @@ export async function registerBinanceRestArchitectureTests({
     assert.ok(state.totalRateLimitHits >= 1);
     assert.ok(state.usedWeight1m >= 1200);
     assert.equal(state.topRestCallers["test.request_weight"].count, 2);
+    assert.ok(state.topRestCallers["test.request_weight"].weight >= 2);
   });
 
   await runCheck("binance client emits request-weight update callbacks", async () => {
@@ -150,6 +151,7 @@ export async function registerBinanceRestArchitectureTests({
     assert.ok(updates.length >= 1);
     assert.equal(updates.at(-1).state.usedWeight1m, 99);
     assert.equal(updates.at(-1).state.topRestCallers["test.callback"].count, 1);
+    assert.ok(updates.at(-1).state.topRestCallers["test.callback"].weight >= 1);
   });
 
   await runCheck("binance client hard-pauses requests on 418 until ban expiry", async () => {
@@ -363,6 +365,7 @@ export async function registerBinanceRestArchitectureTests({
     const srcDir = path.join(projectRoot, "src", "runtime");
     await fs.mkdir(srcDir, { recursive: true });
     await fs.writeFile(path.join(srcDir, "scanner.js"), `
+      async function getKlines() { return []; }
       await client.getKlines("BTCUSDT", "1m", 100);
       await client.getBookTicker("BTCUSDT");
       await client.getExchangeInfo([]);
@@ -372,5 +375,6 @@ export async function registerBinanceRestArchitectureTests({
     assert.equal(scan.familyCounts.klines, 1);
     assert.equal(scan.familyCounts.book_ticker, 1);
     assert.equal(scan.familyCounts.exchange_info, 1);
+    assert.ok(scan.callers.every((caller) => caller.role === "runtime_call" || caller.role === "reference"));
   });
 }

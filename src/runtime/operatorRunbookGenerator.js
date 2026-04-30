@@ -27,6 +27,37 @@ function attachActionLinks(runbook = {}) {
   };
 }
 
+export function buildOperatorActionResult({
+  action,
+  target = null,
+  allowed = false,
+  preflightChecks = [],
+  denialReasons = [],
+  changedState = {},
+  rootBlockerBefore = null,
+  rootBlockerAfter = null,
+  nextRecommendedAction = null
+} = {}) {
+  const checks = Array.isArray(preflightChecks) ? preflightChecks : [];
+  const denials = Array.isArray(denialReasons) ? denialReasons : [];
+  const effectiveAllowed = Boolean(allowed) && denials.length === 0 && !checks.some((check) => check?.passed === false);
+  const rootChanged = rootBlockerBefore !== rootBlockerAfter;
+  return {
+    action: action || "unknown",
+    target,
+    allowed: effectiveAllowed,
+    preflightChecks: checks,
+    denialReasons: denials,
+    changedState: changedState || {},
+    rootBlockerBefore: rootBlockerBefore || null,
+    rootBlockerAfter: rootBlockerAfter || null,
+    rootBlockerChanged: rootChanged,
+    nextRecommendedAction: nextRecommendedAction || (effectiveAllowed
+      ? "Refresh status/dashboard and verify root blocker cleared before taking another action."
+      : "Resolve denial reasons first; do not force live actions around failed preflight checks.")
+  };
+}
+
 export function buildOperatorRunbookForReason(reason, context = {}) {
   const code = `${reason || ""}`.trim();
   if (!code) {

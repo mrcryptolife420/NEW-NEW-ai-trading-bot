@@ -135,6 +135,40 @@ function classifyCodeCaller(text = "", filePath = "") {
   };
 }
 
+function isMethodDefinition(line = "") {
+  return /^\s*(?:async\s+)?(?:function\s+)?(?:publicRequest|signedRequest|getKlines|getBookTicker|getOrderBook|getExchangeInfo|getOpenOrders|getOrder|getMyTrades|placeOrder|cancelOrder|cancelReplaceOrder)\s*\(/.test(line);
+}
+
+function isScannerImplementationLine(line = "", filePath = "") {
+  const normalized = filePath.replace(/\\/g, "/");
+  return normalized.endsWith("/src/runtime/restArchitectureAudit.js") && (
+    line.includes("\"publicRequest(") ||
+    line.includes("\"signedRequest(") ||
+    line.includes("\"getKlines(") ||
+    line.includes("\"getBookTicker(") ||
+    line.includes("\"getOrderBook(") ||
+    line.includes("\"getExchangeInfo(") ||
+    line.includes("\"getOpenOrders(") ||
+    line.includes("\"getOrder(") ||
+    line.includes("\"getMyTrades(") ||
+    line.includes("\"placeOrder(") ||
+    line.includes("\"cancelOrder(")
+  );
+}
+
+function classifyCallRole(line = "") {
+  if (/await\s+|return\s+|=\s*await\s+/.test(line)) {
+    return "runtime_call";
+  }
+  if (/\.catch\(|Promise\.all|map\(/.test(line)) {
+    return "runtime_call";
+  }
+  if (/\b(?:this\.)?client\.(?:publicRequest|signedRequest|getKlines|getBookTicker|getOrderBook|getExchangeInfo|getOpenOrders|getOrder|getMyTrades|placeOrder|cancelOrder|cancelReplaceOrder)\s*\(/.test(line)) {
+    return "runtime_call";
+  }
+  return "reference";
+}
+
 async function listJavaScriptFiles(rootDir) {
   const results = [];
   const entries = await fs.readdir(rootDir, { withFileTypes: true }).catch(() => []);
@@ -176,11 +210,19 @@ export async function scanRestCallers({ projectRoot = process.cwd(), limit = 80 
       if (!patterns.some((pattern) => line.includes(pattern))) {
         return;
       }
+      if (isMethodDefinition(line) || isScannerImplementationLine(line, filePath)) {
+        return;
+      }
       const classified = classifyCodeCaller(line, filePath);
+      const role = classifyCallRole(line);
+      if (role !== "runtime_call") {
+        return;
+      }
       callers.push({
         file: path.relative(projectRoot, filePath).replace(/\\/g, "/"),
         line: index + 1,
         snippet: line.trim().slice(0, 180),
+        role,
         ...classified
       });
     });

@@ -35,6 +35,33 @@ function packFromGoldenFixture(fixture = {}) {
   };
 }
 
+function regressionFixtureFromGoldenFixture(fixture = {}) {
+  return {
+    incidentId: fixture.incidentId,
+    status: "ready",
+    symbol: fixture.symbol,
+    reason: fixture.reason,
+    summary: {
+      cycleCount: 1,
+      decisionCount: 1,
+      tradeCount: 0,
+      topDecisionReasons: [fixture.reason],
+      topAdaptiveCandidates: []
+    },
+    decisionReconstruction: {
+      rootBlocker: fixture.rootBlocker,
+      blockerStage: fixture.blockerStage,
+      decisionScores: {
+        edge: fixture.finalEdge,
+        permissioning: fixture.permissioningScore
+      },
+      threshold: fixture.threshold,
+      thresholdEdge: fixture.finalEdge - fixture.threshold,
+      expectedNetEdge: { expectancyScore: fixture.finalEdge }
+    }
+  };
+}
+
 export async function registerReplayDeterminismTests({
   runCheck,
   assert
@@ -83,10 +110,30 @@ export async function registerReplayDeterminismTests({
     for (const fileName of files) {
       const fixture = JSON.parse(await fs.readFile(path.join(FIXTURE_DIR, fileName), "utf8"));
       const pack = packFromGoldenFixture(fixture);
-      const golden = buildReplayRegressionFixture(pack);
+      const golden = regressionFixtureFromGoldenFixture(fixture);
       const comparison = compareReplayPackToFixture(pack, golden);
       assert.equal(comparison.deterministic, true);
       assert.equal(pack.decisionReconstruction.rootBlocker, fixture.expectedDiff.rootBlocker || fixture.rootBlocker);
     }
+  });
+
+  await runCheck("golden replay fixtures catch root blocker and final edge drift", async () => {
+    const fixture = JSON.parse(await fs.readFile(path.join(FIXTURE_DIR, "exchange-truth-freeze.json"), "utf8"));
+    const pack = packFromGoldenFixture(fixture);
+    const golden = regressionFixtureFromGoldenFixture(fixture);
+    const changed = compareReplayPackToFixture({
+      ...pack,
+      decisionReconstruction: {
+        ...pack.decisionReconstruction,
+        rootBlocker: "model_confidence_too_low",
+        decisionScores: {
+          ...pack.decisionReconstruction.decisionScores,
+          edge: 0.51
+        }
+      }
+    }, golden);
+    assert.equal(changed.deterministic, false);
+    assert.ok(changed.differences.includes("root_blocker_changed"));
+    assert.ok(changed.differences.includes("final_edge_changed"));
   });
 }

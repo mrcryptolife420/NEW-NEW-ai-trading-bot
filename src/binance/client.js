@@ -142,13 +142,38 @@ function toRequestCallerKey({ scope = "spot", method = "GET", pathname = "", req
   return `${scope}:${`${method || "GET"}`.toUpperCase()} ${pathname || "/"}`;
 }
 
+function estimateRequestWeight({ pathname = "", params = {} } = {}) {
+  const normalized = `${pathname || ""}`.toLowerCase();
+  if (normalized.includes("/api/v3/depth")) {
+    const limit = Number(params?.limit || 100);
+    if (limit > 1000) return 250;
+    if (limit > 500) return 50;
+    if (limit > 100) return 25;
+    return 5;
+  }
+  if (normalized.includes("/api/v3/ticker/24hr") && !params?.symbol) {
+    return 80;
+  }
+  if (normalized.includes("/api/v3/openorders") && !params?.symbol) {
+    return 80;
+  }
+  if (normalized.includes("/api/v3/exchangeinfo")) {
+    return 20;
+  }
+  if (normalized.includes("/api/v3/mytrades")) {
+    return 20;
+  }
+  return 1;
+}
+
 function cloneTopCallerMap(map = {}) {
   return Object.fromEntries(
     Object.entries(map || {})
-      .sort((left, right) => Number(right[1]?.count || 0) - Number(left[1]?.count || 0))
+      .sort((left, right) => (Number(right[1]?.weight || 0) - Number(left[1]?.weight || 0)) || (Number(right[1]?.count || 0) - Number(left[1]?.count || 0)))
       .slice(0, 16)
       .map(([key, value]) => [key, {
         count: Number(value?.count || 0),
+        weight: Number(value?.weight || 0),
         lastAt: value?.lastAt || null,
         scope: value?.scope || null,
         endpoint: value?.endpoint || null
@@ -320,16 +345,18 @@ export class BinanceClient {
     return Number(this.requestWeightState.banUntil || 0) > this.nowFn();
   }
 
-  noteRequestDiagnostics({ scope = "spot", method = "GET", pathname = "", requestMeta = {} } = {}) {
+  noteRequestDiagnostics({ scope = "spot", method = "GET", pathname = "", requestMeta = {}, params = {} } = {}) {
     const key = toRequestCallerKey({ scope, method, pathname, requestMeta });
     const state = this.requestWeightState;
     const next = state.topRestCallers[key] || {
       count: 0,
+      weight: 0,
       lastAt: null,
       scope,
       endpoint: `${`${method || "GET"}`.toUpperCase()} ${pathname || "/"}`
     };
     next.count += 1;
+    next.weight += estimateRequestWeight({ pathname, params });
     next.lastAt = new Date(this.nowFn()).toISOString();
     next.scope = scope;
     state.topRestCallers[key] = next;
@@ -345,7 +372,8 @@ export class BinanceClient {
       scope,
       method: `${method || "GET"}`.toUpperCase(),
       pathname,
-      caller: key
+      caller: key,
+      estimatedWeight: estimateRequestWeight({ pathname, params })
     });
   }
 
@@ -482,7 +510,7 @@ export class BinanceClient {
         const queryString = createQueryString(payload);
         const signature = signed ? this.sign(queryString) : null;
         const url = `${this.baseUrl}${pathname}${queryString ? `?${queryString}` : ""}${signature ? `${queryString ? "&" : "?"}signature=${signature}` : ""}`;
-        this.noteRequestDiagnostics({ scope, method, pathname, requestMeta });
+        this.noteRequestDiagnostics({ scope, method, pathname, requestMeta, params });
 
         const response = await this.fetchImpl(url, {
           method,
@@ -546,7 +574,7 @@ export class BinanceClient {
         await this.respectActiveRateLimits();
         const queryString = createQueryString(params);
         const url = `${cleanBaseUrl}${pathname}${queryString ? `?${queryString}` : ""}`;
-        this.noteRequestDiagnostics({ scope, method, pathname, requestMeta });
+        this.noteRequestDiagnostics({ scope, method, pathname, requestMeta, params });
         const response = await this.fetchImpl(url, {
           method,
           headers: {
@@ -610,7 +638,7 @@ export class BinanceClient {
         await this.respectActiveRateLimits();
         const queryString = createQueryString(params);
         const url = `${this.baseUrl}${pathname}${queryString ? `?${queryString}` : ""}`;
-        this.noteRequestDiagnostics({ scope: "api_key", method, pathname, requestMeta });
+        this.noteRequestDiagnostics({ scope: "api_key", method, pathname, requestMeta, params });
         const response = await this.fetchImpl(url, {
           method,
           headers: buildUserDataHeaders(this.apiKey),
