@@ -4,7 +4,7 @@ import { StateStore } from "../src/storage/stateStore.js";
 import { PersistenceCoordinator } from "../src/runtime/persistenceCoordinator.js";
 import { TradingBot } from "../src/runtime/tradingBot.js";
 import { runMarketReplay } from "../src/runtime/marketReplayEngine.js";
-import { buildMarketScannerUniverse } from "../src/runtime/marketScanner.js";
+import { buildMarketScannerUniverse, resolveScannerDeepBookPlan } from "../src/runtime/marketScanner.js";
 import { buildPerformanceReport } from "../src/runtime/reportBuilder.js";
 import {
   assertTradingBotServiceCoverage,
@@ -225,9 +225,62 @@ export async function registerLargeFoundationsTests({
     readModel.close();
     assert.equal(summary.status, "ready");
     assert.equal(summary.latestWeight1m, 6100);
+    assert.equal(summary.pressureLevel, "critical");
     assert.equal(summary.rateLimitEvents, 1);
     assert.equal(summary.topCallers[0].caller, "scanner.depth");
     assert.equal(summary.topCallers[0].weight, 50);
+    assert.equal(summary.criticalCallers[0].caller, "scanner.depth");
+    assert.equal(summary.incidents.length, 1);
+    assert.equal(summary.recommendedActions.some((action) => action.includes("depth")), true);
+  });
+
+  await runCheck("scanner deep-book enrichment backs off under request-weight pressure", async () => {
+    const pressuredPlan = resolveScannerDeepBookPlan({
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 4500, warningActive: false };
+        }
+      },
+      config: { scannerDeepBookSymbols: 20, requestWeightWarnThreshold1m: 4800 },
+      rankedCount: 30
+    });
+    const normalPlan = resolveScannerDeepBookPlan({
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 1200, warningActive: false };
+        }
+      },
+      config: { scannerDeepBookSymbols: 20, requestWeightWarnThreshold1m: 4800 },
+      rankedCount: 30
+    });
+    assert.equal(pressuredPlan.limit, 0);
+    assert.equal(pressuredPlan.reason, "request_weight_pressure");
+    assert.equal(normalPlan.limit, 20);
+    assert.equal(normalPlan.reason, "normal");
+  });
+
+  await runCheck("stream fallback health marks depth REST fallback as guarded under pressure", async () => {
+    const fakeBot = {
+      config: { requestWeightWarnThreshold1m: 4800 },
+      runtime: {},
+      restFallbackState: {
+        "depth:BTCUSDT": {
+          lastAt: "2026-01-01T00:00:00.000Z"
+        }
+      },
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 4200, banActive: false, backoffActive: false };
+        }
+      }
+    };
+    const summary = TradingBot.prototype.buildStreamFallbackHealth.call(fakeBot, {
+      public: { connected: false },
+      localBook: { healthySymbols: 0 }
+    }, "2026-01-01T00:00:01.000Z");
+    assert.equal(summary.status, "rest_pressure_guarded");
+    assert.equal(summary.depthFallbackCount, 1);
+    assert.equal(summary.recommendedAction.includes("streams"), true);
   });
 
   await runCheck("market scanner universe caches 24h ticker REST ranking", async () => {
@@ -386,6 +439,9 @@ export async function registerLargeFoundationsTests({
     assert.equal(result.trace.diagnostics.noLiveOrders, true);
     assert.equal(result.historyReadiness.status, "degraded");
     assert.equal(result.historyActionPlan.status, "missing_history");
+    assert.equal(result.historyActionPlan.blocking, true);
+    assert.equal(result.historyActionPlan.backfillArgs.symbol, "BTCUSDT");
+    assert.equal(result.historyActionPlan.steps[0].action, "backfill_local_history");
     assert.ok(result.historyActionPlan.recommendedCommand.includes("download-history"));
     assert.ok(result.warnings.some((item) => item.includes("No local candles")));
   });

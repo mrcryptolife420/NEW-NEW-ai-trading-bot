@@ -532,6 +532,12 @@ function buildRangeGridDamageReview(trades = [], { limit = 6 } = {}) {
     const regime = `${trade.regimeAtEntry || trade.entryRationale?.regime || ""}`.toLowerCase();
     return reasonText.includes("break") || reasonText.includes("trend") || regime.includes("breakout") || regime.includes("high_vol");
   });
+  const suspectRegimes = buildDistribution(rangeBreakSuspects, (trade) => (
+    trade.regimeAtEntry ||
+    trade.entryRationale?.regime ||
+    trade.entryRationale?.regimeSummary?.regime ||
+    "unknown"
+  ));
   const realizedPnl = rangeTrades.reduce((sum, trade) => sum + safeNumber(trade.pnlQuote, 0), 0);
   const status = rangeTrades.length < 5
     ? "insufficient_sample"
@@ -547,6 +553,15 @@ function buildRangeGridDamageReview(trades = [], { limit = 6 } = {}) {
     realizedPnl: num(realizedPnl, 2),
     lateExitCount: lateExits.length,
     rangeBreakSuspectCount: rangeBreakSuspects.length,
+    suspectRegimes,
+    diagnosticRestrictionCandidates: rangeBreakSuspects.length
+      ? Object.keys(suspectRegimes).slice(0, 4).map((regime) => ({
+          family: "range_grid",
+          regime,
+          mode: "diagnostic_only",
+          reason: "range_grid_loss_in_breakout_or_high_vol_context"
+        }))
+      : [],
     averageMfePct: num(average(rangeTrades.map((trade) => safeNumber(trade.mfePct, 0)))),
     averageMaePct: num(average(rangeTrades.map((trade) => safeNumber(trade.maePct, 0)))),
     averageCaptureEfficiency: num(average(rangeTrades.map((trade) => safeNumber(trade.captureEfficiency, 0)))),
@@ -565,7 +580,7 @@ function buildRangeGridDamageReview(trades = [], { limit = 6 } = {}) {
         exitReason: trade.reason || trade.exitReason || null
       })),
     recommendedAction: status === "review_required" || status === "exit_review"
-      ? "Review range-grid late exits, range-break detection and capture efficiency before adding allocation."
+      ? "Review range-grid late exits, range-break detection and capture efficiency before adding allocation; consider paper-only regime restrictions for suspect contexts."
       : "Monitor range-grid exit quality; no behavior change recommended from this sample alone."
   };
 }

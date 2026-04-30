@@ -10846,15 +10846,25 @@ export class TradingBot {
     if (kind === "timeframe") {
       return Math.max(1_000, Number(this.config.restTimeframeFallbackMinMs || 60_000));
     }
+    if (kind === "depth") {
+      return Math.max(10_000, Number(this.config.restDepthFallbackMinMs || 120_000));
+    }
     return Math.max(1_000, Number(this.config.restMarketDataFallbackMinMs || 30_000));
   }
 
-  shouldUseRestFallback(key, minMs) {
+  shouldUseRestFallback(key, minMs, options = {}) {
     const state = this.restFallbackState?.[key];
     const now = Date.now();
-    const rateLimitState = this.client.getRateLimitState ? this.client.getRateLimitState() : null;
+    const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
     if (rateLimitState?.banActive || rateLimitState?.backoffActive) {
       return false;
+    }
+    if (options?.pressureSensitive) {
+      const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
+      const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
+      if (rateLimitState?.warningActive || (Number.isFinite(usedWeight1m) && usedWeight1m >= warnThreshold * 0.8)) {
+        return false;
+      }
     }
     return !state || (now - Number(state.lastAtMs || 0)) >= Math.max(1_000, Number(minMs || 0));
   }
@@ -10864,6 +10874,54 @@ export class TradingBot {
     this.restFallbackState[key] = {
       lastAtMs: Date.now(),
       lastAt: nowIso()
+    };
+  }
+
+  buildStreamFallbackHealth(streamStatus = {}, referenceNow = nowIso()) {
+    const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : (this.runtime.requestWeight || {});
+    const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
+    const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
+    const pressure = Number.isFinite(usedWeight1m) ? usedWeight1m / warnThreshold : 0;
+    const fallbackEntries = Object.entries(this.restFallbackState || {})
+      .map(([key, value]) => ({
+        key,
+        kind: `${key}`.split(":")[0] || "unknown",
+        symbol: `${key}`.split(":")[1] || null,
+        lastAt: value?.lastAt || null,
+        ageMs: Number.isFinite(Date.parse(value?.lastAt || "")) ? Math.max(0, Date.parse(referenceNow) - Date.parse(value.lastAt)) : null
+      }))
+      .sort((left, right) => Number(left.ageMs ?? Infinity) - Number(right.ageMs ?? Infinity))
+      .slice(0, 12);
+    const depthFallbacks = fallbackEntries.filter((entry) => entry.kind === "depth");
+    const publicConnected = streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected ?? false;
+    const localBookHealthy = Number(streamStatus?.localBook?.healthySymbols || streamStatus?.localBook?.syncedSymbols || 0);
+    const status = rateLimitState?.banActive
+      ? "paused_rate_limit_ban"
+      : pressure >= 0.8
+        ? "rest_pressure_guarded"
+        : (!publicConnected && depthFallbacks.length)
+          ? "stream_gap_using_rest_fallback"
+          : depthFallbacks.length
+            ? "watch"
+            : "ready";
+    const recommendedAction = status === "paused_rate_limit_ban"
+      ? "Wacht tot Binance REST ban afloopt; gebruik streams en vermijd handmatige refreshes."
+      : status === "rest_pressure_guarded"
+        ? "Laat publieke marketdata uit streams komen en stel niet-kritieke scanner/depth REST calls uit."
+        : status === "stream_gap_using_rest_fallback"
+          ? "Controleer stream-connectiviteit; REST depth fallback is alleen noodpad."
+          : "Geen actie nodig.";
+    return {
+      status,
+      generatedAt: referenceNow,
+      publicStreamConnected: Boolean(publicConnected),
+      localBookHealthySymbols: Number.isFinite(localBookHealthy) ? localBookHealthy : 0,
+      usedWeight1m: Number.isFinite(usedWeight1m) ? usedWeight1m : null,
+      pressure: Number.isFinite(pressure) ? Number(pressure.toFixed(4)) : null,
+      fallbackCount: fallbackEntries.length,
+      depthFallbackCount: depthFallbacks.length,
+      recentFallbacks: fallbackEntries,
+      recommendedAction
     };
   }
 
@@ -16861,7 +16919,9 @@ export class TradingBot {
         this.shouldUseRestFallback(this.getRestFallbackKey("book_ticker", symbol), this.getRestFallbackMinMs("market"));
       const canRestDepthFallback = !useLocalBook &&
         !cachedOrderBook &&
-        this.shouldUseRestFallback(this.getRestFallbackKey("depth", symbol), this.getRestFallbackMinMs("market"));
+        this.shouldUseRestFallback(this.getRestFallbackKey("depth", symbol), this.getRestFallbackMinMs("depth"), {
+          pressureSensitive: true
+        });
       const [candles, restBookTicker, restOrderBook, lowerTimeframeSnapshot, higherTimeframeSnapshot, dailyTimeframeSnapshot] = await Promise.all([
         this.getKlineSeries(symbol, this.config.klineInterval, this.config.klineLimit, {
           requestKey: "market_snapshot.primary_klines",
@@ -24669,6 +24729,8 @@ export class TradingBot {
       schemaVersion: 3
     });
     const readModelSummary = await this.buildReadModelDashboardSummary();
+    const decoratedStreamStatus = decorateStreamStatus(this.stream.getStatus(), this.runtime.service || {});
+    const streamFallbackHealth = this.buildStreamFallbackHealth(decoratedStreamStatus, referenceNow);
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),
       generatedAt: referenceNow,
@@ -24709,7 +24771,8 @@ export class TradingBot {
       },
       exchangeCapabilities: summarizeExchangeCapabilities(this.runtime.exchangeCapabilities || this.config.exchangeCapabilities || {}),
       health: this.health.getStatus(this.runtime),
-      stream: decorateStreamStatus(this.stream.getStatus(), this.runtime.service || {}),
+      stream: decoratedStreamStatus,
+      streamFallbackHealth,
       ai: {
         calibration: this.model.getCalibrationSummary(),
         deployment: this.model.getDeploymentSummary(),
@@ -24768,6 +24831,7 @@ export class TradingBot {
         exchangeConnectivity: {
           clockSync: this.client?.getClockSyncState ? this.client.getClockSyncState() : null,
           requestWeight: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
+          streamFallbackHealth,
           exchangeTruthStatus: exchangeTruthSummary.status || "unknown",
           freezeEntries: Boolean(exchangeTruthSummary.freezeEntries),
           globalFreezeEntries: Boolean(exchangeSafetySummary.globalFreezeEntries),

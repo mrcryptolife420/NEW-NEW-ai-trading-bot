@@ -11,6 +11,8 @@ import { buildTradableUniverse, getSymbolHygieneFlags } from "./watchlistResolve
 
 const BINANCE_TICKER_24H_CACHE = new Map();
 const BINANCE_TICKER_24H_CLIENT_CACHE = new WeakMap();
+const SCANNER_DEEP_BOOK_CACHE = new Map();
+const SCANNER_DEEP_BOOK_CLIENT_CACHE = new WeakMap();
 
 function arr(value) {
   return Array.isArray(value) ? value : [];
@@ -32,6 +34,71 @@ async function fetchCachedBinanceTicker24h({ client, config = {}, caller = "scan
   }
   const payload = await client.publicRequest("GET", "/api/v3/ticker/24hr", {}, { caller });
   cacheBucket.set(key, {
+    payload,
+    expiresAt: now + ttlMs
+  });
+  return payload;
+}
+
+function getObjectScopedCache({ object, weakMap, fallbackMap }) {
+  if (!object || typeof object !== "object") {
+    return fallbackMap;
+  }
+  let bucket = weakMap.get(object);
+  if (!bucket) {
+    bucket = new Map();
+    weakMap.set(object, bucket);
+  }
+  return bucket;
+}
+
+export function resolveScannerDeepBookPlan({ client = null, config = {}, rankedCount = 0 } = {}) {
+  const configuredLimit = Math.max(0, Number(config.scannerDeepBookSymbols || 30));
+  const baseLimit = Math.min(configuredLimit, Math.max(0, Number(rankedCount || 0)));
+  const state = client?.getRateLimitState ? client.getRateLimitState() : null;
+  const warnThreshold = Math.max(100, Number(config.requestWeightWarnThreshold1m || 4800));
+  const usedWeight1m = Number(state?.usedWeight1m || 0);
+  const pressure = Number.isFinite(usedWeight1m) && warnThreshold > 0 ? usedWeight1m / warnThreshold : 0;
+  if (!baseLimit) {
+    return { limit: 0, baseLimit, pressure: num(pressure), reason: "disabled_or_no_ranked_symbols" };
+  }
+  if (state?.banActive || state?.backoffActive) {
+    return { limit: 0, baseLimit, pressure: num(pressure), reason: "rate_limit_pause_active" };
+  }
+  if (pressure >= 0.8 || state?.warningActive) {
+    return { limit: 0, baseLimit, pressure: num(pressure), reason: "request_weight_pressure" };
+  }
+  if (pressure >= 0.5) {
+    return {
+      limit: Math.max(1, Math.floor(baseLimit * Math.max(0.15, 1 - pressure))),
+      baseLimit,
+      pressure: num(pressure),
+      reason: "request_weight_reduced"
+    };
+  }
+  return { limit: baseLimit, baseLimit, pressure: num(pressure), reason: "normal" };
+}
+
+async function fetchCachedScannerOrderBook({ client, symbol, levels, config = {} }) {
+  const ttlMs = Math.max(
+    30_000,
+    Number(config.scannerDeepBookCacheMs || config.restDepthFallbackMinMs || config.restMarketDataFallbackMinMs || 120_000)
+  );
+  const cache = getObjectScopedCache({
+    object: client,
+    weakMap: SCANNER_DEEP_BOOK_CLIENT_CACHE,
+    fallbackMap: SCANNER_DEEP_BOOK_CACHE
+  });
+  const key = `${client?.baseUrl || "binance"}:${symbol}:${levels}`;
+  const now = Date.now();
+  const cached = cache.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.payload;
+  }
+  const payload = await client.getOrderBook(symbol, levels, {
+    requestMeta: { caller: "scanner.deep_book" }
+  });
+  cache.set(key, {
     payload,
     expiresAt: now + ttlMs
   });
@@ -1139,7 +1206,6 @@ export async function rankMarketScannerCandidates({
   const historyLimit = Math.max(96, Number(config.scannerHistoryLookbackCandles || 160));
   const maxAnalysisSymbols = Math.max(25, Number(config.scannerHistoryAnalysisSymbols || 140));
   const topCandidateLimit = Math.max(10, Number(config.scannerTopCandidateLimit || 40));
-  const deepBookLimit = Math.max(0, Number(config.scannerDeepBookSymbols || 30));
   const deepBookLevels = Math.max(10, Number(config.scannerDeepBookLevels || 20));
   const analysisEntries = arr(universe.entries || []).slice(0, maxAnalysisSymbols);
   const sessionLabel = (() => {
@@ -1183,7 +1249,8 @@ export async function rankMarketScannerCandidates({
     .map((item) => scoreScannerCandidate(item, initialScoreContext))
     .sort((left, right) => right.finalScore - left.finalScore || right.tradabilityScore - left.tradabilityScore);
 
-  const deepBookSymbols = ranked.slice(0, Math.min(deepBookLimit, ranked.length)).map((item) => item.symbol);
+  const deepBookPlan = resolveScannerDeepBookPlan({ client, config, rankedCount: ranked.length });
+  const deepBookSymbols = ranked.slice(0, Math.min(deepBookPlan.limit, ranked.length)).map((item) => item.symbol);
   if (deepBookSymbols.length && client?.getOrderBook) {
     const deepBookMap = new Map(
       await mapWithConcurrency(
@@ -1191,9 +1258,7 @@ export async function rankMarketScannerCandidates({
         Math.max(1, Math.min(6, Number(config.marketSnapshotConcurrency || 6))),
         async (symbol) => {
           try {
-            return [symbol, await client.getOrderBook(symbol, deepBookLevels, {
-              requestMeta: { caller: "scanner.deep_book" }
-            })];
+            return [symbol, await fetchCachedScannerOrderBook({ client, symbol, levels: deepBookLevels, config })];
           } catch (error) {
             logger?.warn?.("Scanner deep book fetch failed", { symbol, error: error.message });
             return [symbol, null];
@@ -1256,6 +1321,8 @@ export async function rankMarketScannerCandidates({
   }
   if (deepBookSymbols.length) {
     notes.push(`${deepBookSymbols.length} top symbols kregen een tweede-pass deep book check voor betere execution scoring.`);
+  } else if (deepBookPlan.baseLimit > 0 && deepBookPlan.reason !== "disabled_or_no_ranked_symbols") {
+    notes.push(`Deep book tweede-pass overgeslagen door ${deepBookPlan.reason}; scanner gebruikt ticker-proxy om REST weight te sparen.`);
   }
   const laneCandidates = {
     safe: ranked.filter((item) => item.recommendedLane === "safe").slice(0, 4),
@@ -1276,6 +1343,7 @@ export async function rankMarketScannerCandidates({
     analyzedCount: enriched.length,
     rankedCount: ranked.length,
     deepBookEnrichedCount: ranked.filter((item) => item.deepBookEnriched).length,
+    deepBookPlan,
     laneCounts,
     actionCounts,
     laneCandidates,
@@ -1344,6 +1412,7 @@ export function summarizeMarketScannerRun(run = {}) {
       bearishReasons: arr(item.bearishReasons || []).slice(0, 3)
     })),
     deepBookEnrichedCount: run.deepBookEnrichedCount || 0,
+    deepBookPlan: run.deepBookPlan || null,
     notes: arr(run.notes || []).slice(0, 4)
   };
 }

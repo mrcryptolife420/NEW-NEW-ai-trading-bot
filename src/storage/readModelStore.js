@@ -666,6 +666,7 @@ export class ReadModelStore {
       LIMIT 250
     `).all();
     const callers = new Map();
+    const incidents = [];
     let rateLimitEvents = 0;
     let latestWeight1m = null;
     let latestAt = null;
@@ -678,6 +679,14 @@ export class ReadModelStore {
       }
       if (event.status === 429 || event.status === 418 || state.lastRateLimitStatus) {
         rateLimitEvents += 1;
+        incidents.push({
+          at: event.at || latestAt || null,
+          type: event.type || row.type || "request_budget_event",
+          status: event.status || state.lastRateLimitStatus || null,
+          banUntil: state.banUntil || event.banUntil || null,
+          usedWeight1m: Number.isFinite(Number(state.usedWeight1m)) ? Number(state.usedWeight1m) : null,
+          caller: event.caller || event.requestMeta?.caller || null
+        });
       }
       const top = state.topRestCallers || event.topRestCallers || {};
       for (const [key, value] of Object.entries(top)) {
@@ -687,14 +696,41 @@ export class ReadModelStore {
         callers.set(key, prev);
       }
     }
+    const topCallers = [...callers.values()]
+      .sort((left, right) => (right.weight - left.weight) || (right.count - left.count) || left.caller.localeCompare(right.caller))
+      .slice(0, limit);
+    const pressureLevel = latestWeight1m == null
+      ? "unknown"
+      : latestWeight1m >= 6000
+        ? "critical"
+        : latestWeight1m >= 4800
+          ? "warning"
+          : latestWeight1m >= 3000
+            ? "elevated"
+            : "normal";
+    const criticalCallers = topCallers
+      .filter((caller) => caller.weight >= 25 || /depth|orderBook|openOrders|allOrders|account/i.test(caller.caller))
+      .slice(0, Math.max(1, Math.min(5, limit)));
+    const recommendedActions = [];
+    if (pressureLevel === "critical" || pressureLevel === "warning") {
+      recommendedActions.push("Pauzeer niet-kritieke dashboard/research/scanner REST acties tot weight normaliseert.");
+    }
+    if (criticalCallers.some((caller) => /depth|orderBook/i.test(caller.caller))) {
+      recommendedActions.push("Vervang hot depth/orderbook polling door WebSocket/local book of verhoog fallback TTL.");
+    }
+    if (criticalCallers.some((caller) => /openOrders|allOrders|account/i.test(caller.caller))) {
+      recommendedActions.push("Gebruik user-data stream voor private order/account updates en beperk REST sanity checks.");
+    }
     return {
       status: rows.length ? "ready" : "no_recent_request_budget_events",
       latestAt,
       latestWeight1m,
+      pressureLevel,
       rateLimitEvents,
-      topCallers: [...callers.values()]
-        .sort((left, right) => (right.weight - left.weight) || (right.count - left.count) || left.caller.localeCompare(right.caller))
-        .slice(0, limit)
+      topCallers,
+      criticalCallers,
+      incidents: incidents.slice(0, limit),
+      recommendedActions
     };
   }
 

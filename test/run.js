@@ -109,7 +109,7 @@ import {
 } from "../src/runtime/exchangeSafetyReconciler.js";
 import { buildOperatorAlerts } from "../src/runtime/operatorAlertEngine.js";
 import { buildOperatorAlertDispatchPlan, dispatchOperatorAlerts } from "../src/runtime/operatorAlertDispatcher.js";
-import { __dashboardSmokeRender, resolveQuickActionRequest } from "../src/dashboard/public/app.js";
+import { __dashboardSmokeRender, resolveQuickActionRequest, summarizeQuickActionResult } from "../src/dashboard/public/app.js";
 import { buildStrategyRetirementSnapshot } from "../src/runtime/strategyRetirementEngine.js";
 import { buildReplayChaosSummary } from "../src/runtime/replayChaosLab.js";
 import { MultiAgentCommittee } from "../src/ai/multiAgentCommittee.js";
@@ -30484,6 +30484,27 @@ await runCheck("dashboard quick actions keep diagnostics actions on the audited 
       body: { action: "research_focus_symbol", target: "BTCUSDT", note: "dashboard quick action" }
     }
   );
+});
+
+await runCheck("dashboard quick action result summary exposes preflight and root blocker delta", async () => {
+  const summary = summarizeQuickActionResult({
+    action: "force_reconcile",
+    allowed: false,
+    target: "BTCUSDT",
+    preflightChecks: [
+      { id: "venue_flat", passed: false },
+      { id: "open_orders_clear", passed: true }
+    ],
+    denialReasons: ["venue_not_flat"],
+    rootBlockerBefore: "exchange_safety_blocked",
+    rootBlockerAfter: "exchange_safety_blocked",
+    nextRecommendedAction: "Resolve exchange truth first."
+  });
+  assert.equal(summary.status, "denied");
+  assert.equal(summary.failedCheckCount, 1);
+  assert.equal(summary.failedChecks[0], "venue_flat");
+  assert.equal(summary.rootBefore, "exchange_safety_blocked");
+  assert.equal(summary.nextRecommendedAction, "Resolve exchange truth first.");
 });
 
 await runCheck("trade attribution classifies good and execution-problem trades with feature snapshots", async () => {

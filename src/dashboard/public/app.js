@@ -48,6 +48,7 @@ let searchQuery = "";
 let allowedOnly = false;
 let showAllDecisions = readStoredBoolean(STORAGE_KEYS.showAllDecisions, false);
 let lastSnapshotReceivedAt = null;
+let latestActionResult = null;
 const renderFallbackSections = new Set();
 
 function makeNode(tag, { className = "", text = "", attrs = {} } = {}) {
@@ -1360,16 +1361,71 @@ function arr(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function extractActionResult(response) {
+  return response?.diagnosticsActionResult ||
+    response?.dashboard?.diagnosticsActionResult ||
+    response?.data?.diagnosticsActionResult ||
+    response?.result ||
+    null;
+}
+
+export function summarizeQuickActionResult(result = null) {
+  if (!result || typeof result !== "object") return null;
+  const preflightChecks = arr(result.preflightChecks);
+  const failedChecks = preflightChecks.filter((check) => check?.passed === false || check?.status === "failed");
+  const changedState = result.changedState && typeof result.changedState === "object" ? result.changedState : {};
+  const status = result.allowed === false ? "denied" : "applied";
+  const rootBefore = result.rootBlockerBefore || result.before?.rootBlocker || null;
+  const rootAfter = result.rootBlockerAfter || result.after?.rootBlocker || null;
+  const changedKeys = Object.keys(changedState).filter((key) => changedState[key] !== false && changedState[key] != null);
+  return {
+    action: result.action || "quick_action",
+    target: result.target || null,
+    status,
+    allowed: result.allowed !== false,
+    failedCheckCount: failedChecks.length,
+    failedChecks: failedChecks.map((check) => check.id || check.name || check.reason || "preflight_check_failed").slice(0, 4),
+    denialReasons: arr(result.denialReasons || result.reasons).slice(0, 4),
+    changedKeys: changedKeys.slice(0, 5),
+    rootBefore,
+    rootAfter,
+    nextRecommendedAction: result.nextRecommendedAction || result.recommendedAction || null,
+    detail: result.detail || result.message || null
+  };
+}
+
+function renderQuickActionResultCard(result) {
+  const summary = summarizeQuickActionResult(result);
+  if (!summary) return null;
+  const article = makeNode("article", { className: `quick-action quick-action-result ${toneClass(summary.allowed ? "good" : "danger")}` });
+  const head = makeNode("div", { className: "quick-action-text" });
+  const meta = [
+    summary.target ? `target ${summary.target}` : null,
+    summary.failedCheckCount ? `${summary.failedCheckCount} preflight fail` : null,
+    summary.rootBefore || summary.rootAfter ? `root ${summary.rootBefore || "none"} -> ${summary.rootAfter || "none"}` : null,
+    summary.nextRecommendedAction || summary.detail || summary.denialReasons.join(", ")
+  ].filter(Boolean).join(" | ");
+  head.append(
+    makeNode("h3", { text: `Laatste actie: ${summary.action}` }),
+    makeNode("p", { text: `${summary.allowed ? "Toegestaan" : "Geweigerd"}${meta ? ` - ${meta}` : ""}` })
+  );
+  article.append(head);
+  return article;
+}
+
 function renderQuickActions(snapshot) {
   if (!elements.quickActionsList) return;
   const rows = buildQuickActionRows(snapshot);
+  const resultCard = renderQuickActionResultCard(latestActionResult || snapshot?.dashboard?.diagnosticsActionResult || snapshot?.diagnosticsActionResult);
   if (!rows.length) {
-    replaceChildren(elements.quickActionsList, [makeEmptyState("Geen snelle acties beschikbaar.")]);
+    replaceChildren(elements.quickActionsList, [resultCard || makeEmptyState("Geen snelle acties beschikbaar.")].filter(Boolean));
     return;
   }
   replaceChildren(
     elements.quickActionsList,
-    rows.map((item) => {
+    [
+      resultCard,
+      ...rows.map((item) => {
       const tone = item.tone || "neutral";
       const article = makeNode("article", { className: `quick-action ${toneClass(tone)}` });
       const head = makeNode("div", { className: "quick-action-text" });
@@ -1381,7 +1437,8 @@ function renderQuickActions(snapshot) {
       btn.addEventListener("click", () => dispatchQuickAction(item.action, item.target).catch((error) => console.error?.("quick_action_failed", error)));
       article.append(head, btn);
       return article;
-    })
+      })
+    ].filter(Boolean)
   );
 }
 
@@ -1389,9 +1446,13 @@ async function mutateAndRefresh(path, body = {}) {
   if (busy) return;
   busy = true;
   try {
-    await api(path, { method: "POST", body });
+    const response = await api(path, { method: "POST", body });
+    latestActionResult = extractActionResult(response);
+    const actionSummary = summarizeQuickActionResult(latestActionResult);
     if (elements.controlHint) {
-      elements.controlHint.textContent = "Actie uitgevoerd. Snapshot vernieuwd.";
+      elements.controlHint.textContent = actionSummary
+        ? `Actie ${actionSummary.status}: ${actionSummary.action}${actionSummary.nextRecommendedAction ? ` - ${actionSummary.nextRecommendedAction}` : ""}`
+        : "Actie uitgevoerd. Snapshot vernieuwd.";
     }
     await fetchSnapshot();
   } catch (error) {
@@ -1549,6 +1610,7 @@ export function __dashboardSmokeRender(snapshot) {
   const previousSearch = searchQuery;
   const previousAllowed = allowedOnly;
   const previousShowAll = showAllDecisions;
+  const previousActionResult = latestActionResult;
   renderFallbackSections.clear();
   try {
     activeDocument = createFakeDashboardDocument();
@@ -1557,6 +1619,7 @@ export function __dashboardSmokeRender(snapshot) {
     searchQuery = "";
     allowedOnly = false;
     showAllDecisions = false;
+    latestActionResult = null;
     render(snapshot);
     return {
       renderIssueCount: renderFallbackSections.size,
@@ -1577,6 +1640,7 @@ export function __dashboardSmokeRender(snapshot) {
     searchQuery = previousSearch;
     allowedOnly = previousAllowed;
     showAllDecisions = previousShowAll;
+    latestActionResult = previousActionResult;
   }
 }
 

@@ -52,10 +52,30 @@ function buildHistoryActionPlan({ symbol, interval, from, to, status = "missing"
     symbol,
     interval
   ];
+  const backfillArgs = {
+    symbol,
+    interval,
+    from: from || null,
+    to: to || null
+  };
+  const recommendedCommand = args.join(" ");
+  const validationCommand = `npm run replay:market -- ${symbol}${from ? ` --from=${from}` : ""}${to ? ` --to=${to}` : ""}${interval ? ` --interval=${interval}` : ""}`;
   return {
     status,
-    recommendedCommand: args.join(" "),
-    validationCommand: `npm run replay:market -- ${symbol}${from ? ` --from=${from}` : ""}${to ? ` --to=${to}` : ""}${interval ? ` --interval=${interval}` : ""}`,
+    symbol,
+    interval,
+    from: from || null,
+    to: to || null,
+    blocking: status === "missing_history",
+    coverageTarget: ">= 95% candle coverage and no material gaps for the replay window",
+    backfillArgs,
+    recommendedCommand,
+    validationCommand,
+    steps: [
+      { order: 1, action: "backfill_local_history", command: recommendedCommand },
+      { order: 2, action: "validate_replay_window", command: validationCommand },
+      { order: 3, action: "review_replay_outputs", fields: ["trades", "blockedSetups", "equityCurve", "rootBlockers", "exitQuality"] }
+    ],
     note: "Replay gebruikt alleen lokale history; backfill history voordat je conclusies uit empty_history trekt."
   };
 }
