@@ -10898,6 +10898,7 @@ export class TradingBot {
     const depthFallbacks = fallbackEntries.filter((entry) => entry.kind === "depth");
     const bookTickerFallbacks = fallbackEntries.filter((entry) => entry.kind === "book_ticker");
     const publicConnected = streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected ?? false;
+    const publicStreamAuthoritative = streamStatus?.connectivityAuthoritative !== false;
     const userStreamConnected = Boolean(streamStatus?.userStreamConnected);
     const userStreamExpected = Boolean(this.config?.binanceApiKey) && (
       this.config?.botMode === "live" ||
@@ -10922,7 +10923,7 @@ export class TradingBot {
         ? "private_stream_gap_using_rest"
       : pressure >= 0.8
         ? "rest_pressure_guarded"
-        : (!publicConnected && depthFallbacks.length)
+      : (publicStreamAuthoritative && !publicConnected && depthFallbacks.length)
           ? "stream_gap_using_rest_fallback"
           : depthFallbacks.length
             ? "watch"
@@ -10940,6 +10941,7 @@ export class TradingBot {
       status,
       generatedAt: referenceNow,
       publicStreamConnected: Boolean(publicConnected),
+      publicStreamAuthoritative,
       localBookHealthySymbols: Number.isFinite(localBookHealthy) ? localBookHealthy : 0,
       usedWeight1m: Number.isFinite(usedWeight1m) ? usedWeight1m : null,
       pressure: Number.isFinite(pressure) ? Number(pressure.toFixed(4)) : null,

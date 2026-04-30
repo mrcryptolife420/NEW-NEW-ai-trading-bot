@@ -118,7 +118,7 @@ import { runBacktest } from "../src/runtime/backtestRunner.js";
 import { buildCapitalGovernor } from "../src/runtime/capitalGovernor.js";
 import { TradingBot, annotateCandidateExecutionRanking, buildCandidateQualityQuorum, buildDashboardOperatorDeck, compareCandidateExecutionRank, resolveMarketHistoryCoverageSymbols, resolveSignalFlowLastEntryAttempt } from "../src/runtime/tradingBot.js";
 import { BotManager } from "../src/runtime/botManager.js";
-import { StreamCoordinator } from "../src/runtime/streamCoordinator.js";
+import { StreamCoordinator, buildPublicStreamNames, chunkPublicStreams } from "../src/runtime/streamCoordinator.js";
 import { normalizeSymbolList, readRequestBody, startDashboardServer } from "../src/dashboard/server.js";
 import { createLogger } from "../src/utils/logger.js";
 import { matchesBrokerMode as matchesTradingSourceBrokerMode } from "../src/utils/tradingSource.js";
@@ -25839,6 +25839,84 @@ await runCheck("stream coordinator status does not expose the raw listen key", a
   const status = coordinator.getStatus();
   assert.equal(Object.prototype.hasOwnProperty.call(status, "listenKey"), false);
   assert.equal(status.userStreamSessionActive, true);
+});
+
+await runCheck("stream coordinator builds bounded public stream chunks", async () => {
+  const names = buildPublicStreamNames({
+    symbols: ["BTCUSDT", "ETHUSDT"],
+    klineIntervals: ["15m", "1h"],
+    enableLocalOrderBook: true
+  });
+  assert.ok(names.includes("btcusdt@bookTicker"));
+  assert.ok(names.includes("btcusdt@depth@100ms"));
+  assert.ok(names.includes("ethusdt@kline_1h"));
+  const chunks = chunkPublicStreams(names, 3);
+  assert.equal(chunks.length > 1, true);
+  assert.equal(chunks.every((chunk) => chunk.length <= 3), true);
+  assert.equal(new Set(chunks.flat()).size, names.length);
+});
+
+await runCheck("stream coordinator splits large public subscriptions across multiple sockets", async () => {
+  const sockets = [];
+  const originalWebSocket = globalThis.WebSocket;
+  class FakeWebSocket {
+    constructor(url) {
+      this.url = url;
+      this.listeners = new Map();
+      this.closed = false;
+      sockets.push(this);
+    }
+
+    addEventListener(type, handler) {
+      const bucket = this.listeners.get(type) || [];
+      bucket.push(handler);
+      this.listeners.set(type, bucket);
+    }
+
+    emit(type, payload = {}) {
+      for (const handler of this.listeners.get(type) || []) {
+        handler(payload);
+      }
+    }
+
+    close() {
+      this.closed = true;
+    }
+  }
+  globalThis.WebSocket = FakeWebSocket;
+  try {
+    const watchlist = Array.from({ length: 24 }, (_, index) => `T${index}USDT`);
+    const coordinator = new StreamCoordinator({
+      client: {
+        getStreamBaseUrl() {
+          return "wss://stream.binance.com:9443";
+        },
+        getFuturesStreamBaseUrl() {
+          return "wss://fstream.binance.com";
+        },
+        closeUserDataListenKey: async () => {}
+      },
+      config: makeConfig({
+        watchlist,
+        enableLocalOrderBook: true,
+        publicStreamMaxStreamsPerConnection: 20
+      }),
+      logger: { warn() {}, info() {} }
+    });
+    await coordinator.startPublicStream();
+    assert.equal(sockets.length > 1, true);
+    const status = coordinator.getStatus();
+    assert.equal(status.publicStreamChunkCount, sockets.length);
+    assert.equal(status.publicStreamMaxStreamsPerConnection, 20);
+    sockets[0].emit("open");
+    assert.equal(coordinator.getStatus().publicStreamConnected, true);
+    assert.equal(coordinator.getStatus().publicStreamConnectionCount, 1);
+    await coordinator.close();
+    assert.equal(sockets.every((socket) => socket.closed), true);
+    assert.equal(coordinator.getStatus().publicStreamConnected, false);
+  } finally {
+    globalThis.WebSocket = originalWebSocket;
+  }
 });
 
 await runCheck("stream coordinator restarts the public stream when the watchlist changes", async () => {

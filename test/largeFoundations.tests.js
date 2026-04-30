@@ -285,6 +285,31 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.recommendedAction.includes("streams"), true);
   });
 
+  await runCheck("stream fallback health does not treat read-only status snapshots as live stream gaps", async () => {
+    const fakeBot = {
+      config: { requestWeightWarnThreshold1m: 4800 },
+      runtime: {},
+      restFallbackState: {
+        "depth:BTCUSDT": {
+          lastAt: "2026-01-01T00:00:00.000Z"
+        }
+      },
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 100, banActive: false, backoffActive: false };
+        }
+      }
+    };
+    const summary = TradingBot.prototype.buildStreamFallbackHealth.call(fakeBot, {
+      publicStreamConnected: false,
+      connectivityAuthoritative: false,
+      localBook: { healthySymbols: 12 }
+    }, "2026-01-01T00:00:01.000Z");
+    assert.equal(summary.status, "watch");
+    assert.equal(summary.publicStreamAuthoritative, false);
+    assert.equal(summary.depthFallbackCount, 1);
+  });
+
   await runCheck("stream fallback health surfaces private stream gaps before private REST becomes normal", async () => {
     const fakeBot = {
       config: {

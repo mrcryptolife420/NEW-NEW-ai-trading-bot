@@ -7,6 +7,37 @@ function toCombinedStreamPath(streams) {
   return `stream?streams=${streams.join("/")}`;
 }
 
+export function buildPublicStreamNames({
+  symbols = [],
+  klineIntervals = [],
+  enableLocalOrderBook = false
+} = {}) {
+  return unique(symbols).flatMap((symbol) => {
+    const lower = `${symbol}`.trim().toLowerCase();
+    if (!lower) {
+      return [];
+    }
+    const base = [`${lower}@bookTicker`, `${lower}@trade`];
+    if (enableLocalOrderBook) {
+      base.push(`${lower}@depth@100ms`);
+    }
+    for (const interval of unique(klineIntervals)) {
+      base.push(`${lower}@kline_${interval}`);
+    }
+    return base;
+  });
+}
+
+export function chunkPublicStreams(streams = [], maxStreamsPerConnection = 180) {
+  const normalized = unique(streams.map((stream) => `${stream || ""}`.trim()).filter(Boolean));
+  const size = Math.max(1, Math.floor(Number(maxStreamsPerConnection || 180)));
+  const chunks = [];
+  for (let index = 0; index < normalized.length; index += size) {
+    chunks.push(normalized.slice(index, index + size));
+  }
+  return chunks;
+}
+
 function parseIntervalToMs(interval = "") {
   const match = `${interval || ""}`.trim().match(/^(\d+)([mhdw])$/i);
   if (!match) {
@@ -235,6 +266,10 @@ export class StreamCoordinator {
       listenKey: null,
       userStreamTransport: null,
       userStreamSubscriptionId: null,
+      publicStreamConnectionCount: 0,
+      publicStreamChunkCount: 0,
+      publicStreamStreamCount: 0,
+      publicStreamMaxStreamsPerConnection: Math.max(1, Number(config.publicStreamMaxStreamsPerConnection || 180)),
       restartHealth: {
         public: {
           attempts: 0,
@@ -271,6 +306,8 @@ export class StreamCoordinator {
       symbols: {}
     };
     this.publicSocket = null;
+    this.publicSockets = new Set();
+    this.publicOpenSockets = new Set();
     this.futuresSocket = null;
     this.userSocket = null;
     this.keepAliveTimer = null;
@@ -440,7 +477,7 @@ export class StreamCoordinator {
     const changed = normalized.length !== previousSymbols.length || normalized.some((symbol, index) => symbol !== previousSymbols[index]);
     this.config.watchlist = normalized;
     this.state.symbols = Object.fromEntries(normalized.map((symbol) => [symbol, previous[symbol] || this.createSymbolState()]));
-    if (changed && this.publicSocket && this.state.enabled) {
+    if (changed && (this.publicSocket || this.publicSockets?.size) && this.state.enabled) {
       void this.restartPublicStream("watchlist_update").catch((error) => {
         this.state.lastError = error.message;
         this.logger?.warn?.("Public market stream restart failed", { error: error.message });
@@ -497,6 +534,10 @@ export class StreamCoordinator {
       lastError: this.state.lastError,
       userStreamSessionActive: Boolean(this.state.listenKey || this.state.userStreamSubscriptionId != null),
       userStreamTransport: this.state.userStreamTransport,
+      publicStreamConnectionCount: this.state.publicStreamConnectionCount,
+      publicStreamChunkCount: this.state.publicStreamChunkCount,
+      publicStreamStreamCount: this.state.publicStreamStreamCount,
+      publicStreamMaxStreamsPerConnection: this.state.publicStreamMaxStreamsPerConnection,
       restartHealth: this.state.restartHealth,
       localBook: this.state.localBook
     };
@@ -620,6 +661,17 @@ export class StreamCoordinator {
     return this.state.publicStreamConnected;
   }
 
+  getPublicStreamMaxStreamsPerConnection() {
+    return Math.max(1, Math.floor(Number(this.config.publicStreamMaxStreamsPerConnection || 180)));
+  }
+
+  updatePublicStreamConnectivity() {
+    this.state.publicStreamConnectionCount = this.publicOpenSockets?.size || 0;
+    this.state.publicStreamConnected = this.state.publicStreamConnectionCount > 0;
+    this.publicSocket = this.publicSockets?.values?.().next?.().value || null;
+    return this.state.publicStreamConnected;
+  }
+
   getStreamReconnectDelayMs() {
     return Math.max(250, Number(this.config.streamReconnectDelayMs || 1_500));
   }
@@ -726,6 +778,15 @@ export class StreamCoordinator {
     }
 
     await this.startPublicStream();
+    const startupWaitMs = Math.max(250, Number(this.config.publicStreamStartupWaitMs || 3_500));
+    const publicConnected = await this.waitForPublicStreamOpen(startupWaitMs);
+    if (!publicConnected) {
+      this.logger?.warn?.("Public market stream did not confirm open during startup wait", {
+        startupWaitMs,
+        chunks: this.state.publicStreamChunkCount,
+        streams: this.state.publicStreamStreamCount
+      });
+    }
     if (this.config.enableLocalOrderBook) {
       void (async () => {
         await this.waitForPublicStreamOpen(Math.max(250, Number(this.config.localBookBootstrapWaitMs || 0) + 500));
@@ -856,55 +917,76 @@ export class StreamCoordinator {
       this.state.unavailableReason = ws.reason;
       return;
     }
-    const streams = this.config.watchlist.flatMap((symbol) => {
-      const lower = symbol.toLowerCase();
-      const base = [`${lower}@bookTicker`, `${lower}@trade`];
-      if (this.config.enableLocalOrderBook) {
-        base.push(`${lower}@depth@100ms`);
-      }
-      for (const interval of this.klineIntervals) {
-        base.push(`${lower}@kline_${interval}`);
-      }
-      return base;
+    await this.stopPublicStream();
+    const streams = buildPublicStreamNames({
+      symbols: this.config.watchlist,
+      klineIntervals: this.klineIntervals,
+      enableLocalOrderBook: this.config.enableLocalOrderBook
     });
-    const socket = new WebSocket(`${this.client.getStreamBaseUrl()}/${toCombinedStreamPath(streams)}`);
-    this.publicSocket = socket;
-    socket.addEventListener("open", () => {
-      if (this.publicSocket !== socket) {
-        return;
+    const chunks = chunkPublicStreams(streams, this.getPublicStreamMaxStreamsPerConnection());
+    this.state.publicStreamStreamCount = streams.length;
+    this.state.publicStreamChunkCount = chunks.length;
+    this.state.publicStreamMaxStreamsPerConnection = this.getPublicStreamMaxStreamsPerConnection();
+    if (!chunks.length) {
+      this.updatePublicStreamConnectivity();
+      return;
+    }
+    const baseUrl = this.client.getStreamBaseUrl();
+    chunks.forEach((chunk, index) => {
+      const socket = new WebSocket(`${baseUrl}/${toCombinedStreamPath(chunk)}`);
+      this.publicSockets.add(socket);
+      if (!this.publicSocket) {
+        this.publicSocket = socket;
       }
-      this.state.publicStreamConnected = true;
-      this.state.unavailableReason = null;
-      this.logger?.info?.("Public market stream connected", { streams: streams.length });
-    });
-    socket.addEventListener("message", (event) => {
-      if (this.publicSocket !== socket) {
-        return;
-      }
-      try {
-        this.handlePublicMessage(JSON.parse(event.data));
-      } catch (error) {
-        this.state.lastError = error.message;
-      }
-    });
-    socket.addEventListener("close", () => {
-      if (this.publicSocket !== socket) {
-        return;
-      }
-      this.state.publicStreamConnected = false;
-      this.clearPublicBookTickers();
-      this.publicSocket = null;
-      void this.scheduleRestart("public", () => this.startPublicStream(), "socket_close");
-    });
-    socket.addEventListener("error", (error) => {
-      if (this.publicSocket !== socket) {
-        return;
-      }
-      this.state.lastError = error.message || "public_stream_error";
-      this.state.publicStreamConnected = false;
-      this.clearPublicBookTickers();
-      this.publicSocket = null;
-      void this.scheduleRestart("public", () => this.startPublicStream(), "socket_error");
+      socket.addEventListener("open", () => {
+        if (!this.publicSockets.has(socket)) {
+          return;
+        }
+        this.publicOpenSockets.add(socket);
+        this.updatePublicStreamConnectivity();
+        this.state.unavailableReason = null;
+        this.logger?.info?.("Public market stream chunk connected", {
+          chunk: index + 1,
+          chunks: chunks.length,
+          streams: chunk.length,
+          totalStreams: streams.length
+        });
+      });
+      socket.addEventListener("message", (event) => {
+        if (!this.publicSockets.has(socket)) {
+          return;
+        }
+        try {
+          this.handlePublicMessage(JSON.parse(event.data));
+        } catch (error) {
+          this.state.lastError = error.message;
+        }
+      });
+      socket.addEventListener("close", () => {
+        if (!this.publicSockets.has(socket)) {
+          return;
+        }
+        this.publicSockets.delete(socket);
+        this.publicOpenSockets.delete(socket);
+        this.updatePublicStreamConnectivity();
+        if (!this.state.publicStreamConnected) {
+          this.clearPublicBookTickers();
+        }
+        void this.scheduleRestart("public", () => this.startPublicStream(), "socket_close");
+      });
+      socket.addEventListener("error", (error) => {
+        if (!this.publicSockets.has(socket)) {
+          return;
+        }
+        this.state.lastError = error.message || "public_stream_error";
+        this.publicSockets.delete(socket);
+        this.publicOpenSockets.delete(socket);
+        this.updatePublicStreamConnectivity();
+        if (!this.state.publicStreamConnected) {
+          this.clearPublicBookTickers();
+        }
+        void this.scheduleRestart("public", () => this.startPublicStream(), "socket_error");
+      });
     });
   }
 
@@ -1171,11 +1253,16 @@ export class StreamCoordinator {
 
   async stopPublicStream() {
     this.clearRestartTimer("public");
-    const socket = this.publicSocket;
+    const sockets = new Set(this.publicSockets || []);
+    if (this.publicSocket) {
+      sockets.add(this.publicSocket);
+    }
     this.publicSocket = null;
-    this.state.publicStreamConnected = false;
+    this.publicSockets = new Set();
+    this.publicOpenSockets = new Set();
+    this.updatePublicStreamConnectivity();
     this.clearPublicBookTickers();
-    if (socket) {
+    for (const socket of sockets) {
       socket.close();
     }
   }
@@ -1194,7 +1281,9 @@ export class StreamCoordinator {
       await this.startPublicStream();
       this.logger?.info?.("Public market stream restarted", {
         reason,
-        symbols: this.config.watchlist.length
+        symbols: this.config.watchlist.length,
+        chunks: this.state.publicStreamChunkCount,
+        streams: this.state.publicStreamStreamCount
       });
     });
     return this.publicRestartPromise;
@@ -1209,17 +1298,24 @@ export class StreamCoordinator {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
     }
-    const publicSocket = this.publicSocket;
+    const publicSockets = new Set(this.publicSockets || []);
+    if (this.publicSocket) {
+      publicSockets.add(this.publicSocket);
+    }
     const futuresSocket = this.futuresSocket;
     const userSocket = this.userSocket;
     this.publicSocket = null;
+    this.publicSockets = new Set();
+    this.publicOpenSockets = new Set();
     this.futuresSocket = null;
     this.userSocket = null;
     const listenKey = this.state.listenKey;
-    shutdownSocket(publicSocket);
+    for (const publicSocket of publicSockets) {
+      shutdownSocket(publicSocket);
+    }
     shutdownSocket(futuresSocket);
     shutdownSocket(userSocket);
-    this.state.publicStreamConnected = false;
+    this.updatePublicStreamConnectivity();
     this.state.futuresStreamConnected = false;
     this.resetUserStreamState();
     this.clearPublicBookTickers();

@@ -42,11 +42,22 @@ if errorlevel 1 (
 echo Bot wordt gestart met de actuele code...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$startUri='%DASHBOARD_URL%/api/start';" ^
+  "$statusUri='%DASHBOARD_URL%/api/status';" ^
   "$headers=@{ 'X-Dashboard-Request'='1'; 'Content-Type'='application/json' };" ^
-  "Invoke-RestMethod -Uri $startUri -Method Post -Headers $headers -Body '{}' -TimeoutSec 15 | Out-Null"
+  "$lastStart=$null;" ^
+  "for($attempt=1; $attempt -le 3; $attempt++) {" ^
+  "  try { $lastStart=Invoke-RestMethod -Uri $startUri -Method Post -Headers $headers -Body '{}' -TimeoutSec 30 } catch { if($attempt -eq 3) { throw }; Start-Sleep -Seconds 2; continue }" ^
+  "  $deadline=(Get-Date).AddSeconds(45);" ^
+  "  while((Get-Date) -lt $deadline) {" ^
+  "    try { $status=Invoke-RestMethod -Uri $statusUri -Method Get -TimeoutSec 10; if($status.manager.runState -eq 'running') { exit 0 } } catch {}" ^
+  "    Start-Sleep -Seconds 2" ^
+  "  }" ^
+  "}" ^
+  "$summary=if($lastStart){ $lastStart | ConvertTo-Json -Depth 5 -Compress } else { 'geen startantwoord' };" ^
+  "throw ('Bot start is niet bevestigd door /api/status. Laatste antwoord: ' + $summary)"
 if errorlevel 1 (
   echo Dashboard draait, maar de bot kon niet automatisch worden gestart.
-  echo Open %DASHBOARD_URL% en klik handmatig op Start bot.
+  echo Open %DASHBOARD_URL% en controleer de foutmelding bij Readiness/Status.
   exit /b 1
 )
 
