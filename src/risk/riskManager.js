@@ -5538,6 +5538,7 @@ export class RiskManager {
       dataQualitySummary,
       confidenceBreakdown,
       lowConfidencePressure,
+      missedTradeTuningApplied,
       qualityQuorumSummary,
       marketSnapshot,
       newsSummary,

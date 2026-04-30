@@ -128,6 +128,73 @@ export async function registerRecoveryProbePolicyTests({
     assert.deepEqual(result.probeSoftBlockers, ["meta_followthrough_caution", "meta_neural_caution"]);
   });
 
+  await runCheck("soft-blocker probe lane admits proven bad-veto model confidence near-misses in paper only", async () => {
+    const base = {
+      config: {
+        botMode: "paper",
+        paperExecutionVenue: "binance_demo_spot",
+        paperRecoveryProbeEnabled: true,
+        paperSoftBlockerProbeEnabled: true,
+        paperSoftBlockerProbeMinEdge: 0.08,
+        paperRecoveryProbeMinBookPressure: -0.28,
+        maxSpreadBps: 25,
+        maxRealizedVolPct: 0.08
+      },
+      symbol: "BTCUSDT",
+      capitalGovernor: { allowEntries: true, allowProbeEntries: false, blocked: false },
+      reasons: ["model_confidence_too_low"],
+      openPositionsInMode: [],
+      canOpenAnotherPaperLearningPosition: true,
+      score: { probability: 0.505, disagreement: 0.05 },
+      threshold: 0.55,
+      recoveryProbeProbabilityFloor: 0.5,
+      setupQuality: { score: 0.7 },
+      signalQualitySummary: { overallScore: 0.7, executionViability: 0.64 },
+      dataQualitySummary: { overallScore: 0.66 },
+      confidenceBreakdown: { overallConfidence: 0.68, executionConfidence: 0.64 },
+      lowConfidencePressure: { featureTrustPenalty: 0.03, featureTrustHardRisk: false },
+      missedTradeTuningApplied: {
+        active: true,
+        paperProbeEligible: true,
+        targetedBlocker: true,
+        blocker: "model_confidence_too_low",
+        confidence: 0.74
+      },
+      qualityQuorumSummary: { observeOnly: false, quorumScore: 0.9 },
+      marketSnapshot: { book: { bookPressure: 0.08, spreadBps: 4 }, market: { realizedVolPct: 0.02 } },
+      newsSummary: { riskScore: 0.08 },
+      announcementSummary: { riskScore: 0.06 },
+      calendarSummary: { riskScore: 0.08 },
+      marketStructureSummary: { riskScore: 0.14 },
+      volatilitySummary: { riskScore: 0.18 },
+      sessionSummary: { blockerReasons: [] },
+      driftSummary: { blockerReasons: [] },
+      selfHealState: { learningAllowed: true },
+      strategySummary: { family: "trend_following", fitScore: 0.72, confidence: 0.62 },
+      regimeSummary: { regime: "trend" },
+      minutesSincePortfolioTrade: 180,
+      cooldownMinutes: 60
+    };
+    const paper = buildRecoveryProbePolicy(base);
+    const noEvidence = buildRecoveryProbePolicy({
+      ...base,
+      missedTradeTuningApplied: {}
+    });
+    const live = buildRecoveryProbePolicy({
+      ...base,
+      config: { ...base.config, botMode: "live" }
+    });
+
+    assert.equal(paper.eligible, true);
+    assert.equal(paper.probeMode, "paper_soft_blocker_probe");
+    assert.equal(paper.modelConfidenceBadVetoOverrideEligible, true);
+    assert.deepEqual(paper.probeSoftBlockers, ["model_confidence_too_low"]);
+    assert.equal(noEvidence.eligible, false);
+    assert.equal(noEvidence.modelConfidenceBadVetoOverrideEligible, false);
+    assert.equal(live.eligible, false);
+    assert.equal(live.badVetoModelConfidenceEvidence, false);
+  });
+
   await runCheck("soft-blocker probe lane stays bounded by edge and hard safety", async () => {
     const base = {
       config: {

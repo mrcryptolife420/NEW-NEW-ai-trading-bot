@@ -170,6 +170,7 @@ export function buildRecoveryProbePolicy({
   dataQualitySummary = {},
   confidenceBreakdown = {},
   lowConfidencePressure = {},
+  missedTradeTuningApplied = {},
   qualityQuorumSummary = {},
   marketSnapshot = {},
   newsSummary = {},
@@ -191,9 +192,23 @@ export function buildRecoveryProbePolicy({
   const botMode = config.botMode || "paper";
   const paperVenue = `${config.paperExecutionVenue || ""}`.toLowerCase();
   const hardStopReasons = normalizedReasons.filter((reason) => isHardStopReason(reason));
+  const badVetoModelConfidenceEvidence =
+    botMode === "paper" &&
+    normalizedReasons.includes("model_confidence_too_low") &&
+    missedTradeTuningApplied?.active === true &&
+    missedTradeTuningApplied?.paperProbeEligible === true &&
+    missedTradeTuningApplied?.targetedBlocker === true &&
+    missedTradeTuningApplied?.blocker === "model_confidence_too_low" &&
+    safeValue(missedTradeTuningApplied.confidence, 0) >= 0.62;
   const modelConfidenceNearMissEligible =
     normalizedReasons.includes("model_confidence_too_low") &&
-    safeValue(score.probability, 0) >= Math.max(safeValue(recoveryProbeProbabilityFloor, 0), safeValue(threshold, 0) - 0.035) &&
+    (
+      safeValue(score.probability, 0) >= Math.max(safeValue(recoveryProbeProbabilityFloor, 0), safeValue(threshold, 0) - 0.035) ||
+      (
+        badVetoModelConfidenceEvidence &&
+        safeValue(score.probability, 0) >= Math.max(safeValue(recoveryProbeProbabilityFloor, 0) - 0.018, safeValue(threshold, 0) - 0.065)
+      )
+    ) &&
     safeValue(lowConfidencePressure.featureTrustPenalty, 0) <= 0.1 &&
     !safeValue(lowConfidencePressure.featureTrustHardRisk, false);
   const qualifyingReasons = normalizedReasons.filter((reason) =>
@@ -210,6 +225,15 @@ export function buildRecoveryProbePolicy({
   const metaCautionOverrideEligible = qualifyingReasons.some((reason) =>
     ["meta_gate_caution", "meta_neural_caution", "meta_followthrough_caution", "trade_quality_caution"].includes(reason)
   );
+  const modelConfidenceBadVetoOverrideEligible =
+    badVetoModelConfidenceEvidence &&
+    softBlockerOnly &&
+    normalizedReasons.includes("model_confidence_too_low") &&
+    normalizedReasons.every((reason) => reason === "model_confidence_too_low" || reason === "quality_quorum_degraded") &&
+    safeValue(signalQualitySummary.overallScore, 0) >= 0.66 &&
+    safeValue(dataQualitySummary.overallScore, 0) >= 0.58 &&
+    safeValue(confidenceBreakdown.executionConfidence, 0) >= 0.58 &&
+    safeValue(score.disagreement, 0) <= 0.14;
   const compatibleOpenPositions = hasCompatibleOpenPositions(openPositionsInMode, {
     symbol,
     strategySummary,
@@ -256,8 +280,16 @@ export function buildRecoveryProbePolicy({
     capitalGovernor.blocked !== true &&
     !capitalRecoveryProbeLane &&
     softBlockerOnly &&
-    metaCautionOverrideEligible &&
-    safeValue(score.probability, 0) >= safeValue(threshold, 0) + softBlockerProbeEdge;
+    (
+      (
+        metaCautionOverrideEligible &&
+        safeValue(score.probability, 0) >= safeValue(threshold, 0) + softBlockerProbeEdge
+      ) ||
+      (
+        modelConfidenceBadVetoOverrideEligible &&
+        safeValue(score.probability, 0) >= Math.max(safeValue(recoveryProbeProbabilityFloor, 0), safeValue(threshold, 0) - 0.055)
+      )
+    );
   const probeLaneAllowed = capitalRecoveryProbeLane || softBlockerProbeLane;
   const reasonScopeSufficient = capitalRecoveryProbeLane ? softBlockedOnly : softBlockerOnly;
   const policyActive =
@@ -337,6 +369,8 @@ export function buildRecoveryProbePolicy({
     softBlockerOnly,
     modelConfidenceNearMissEligible,
     metaCautionOverrideEligible,
+    badVetoModelConfidenceEvidence,
+    modelConfidenceBadVetoOverrideEligible,
     compatibleOpenPositions,
     qualityScore: num(qualityScore, 4),
     qualitySufficient,
