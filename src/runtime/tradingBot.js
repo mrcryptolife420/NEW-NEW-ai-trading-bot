@@ -9097,7 +9097,13 @@ export class TradingBot {
     this.marketProviderHub = new MarketProviderHub({ config, logger: this.logger });
     this.capitalLadder = new CapitalLadder(config);
     this.stream = new StreamCoordinator({ client: this.client, config, logger: this.logger });
-    this.persistenceCoordinator = new PersistenceCoordinator({ store: this.store });
+    this.readModelRefreshState = {
+      running: false,
+      lastStartedAt: null,
+      lastCompletedAt: null,
+      lastError: null
+    };
+    this.persistenceCoordinator = this.createPersistenceCoordinator();
     this.symbolRules = {};
     this.marketCache = {};
     this.klineCache = {};
@@ -9150,6 +9156,79 @@ export class TradingBot {
     this.observabilityCache.reportBuiltVersion = this.observabilityCache.reportVersion;
     this.observabilityCache.reportGeneratedAt = nowIso();
     return report;
+  }
+
+  createPersistenceCoordinator() {
+    return new PersistenceCoordinator({
+      store: this.store,
+      afterPersist: (payload) => this.scheduleReadModelRefresh(payload)
+    });
+  }
+
+  scheduleReadModelRefresh({ type = "persist" } = {}) {
+    this.readModelRefreshState = this.readModelRefreshState || {
+      running: false,
+      lastStartedAt: null,
+      lastCompletedAt: null,
+      lastError: null
+    };
+    if (this.readModelRefreshState.running) {
+      return this.readModelRefreshState;
+    }
+    const minIntervalMs = Math.max(10_000, Number(this.config.readModelRefreshMinIntervalMs || 60_000));
+    const previousStartedMs = this.readModelRefreshState.lastStartedAt
+      ? new Date(this.readModelRefreshState.lastStartedAt).getTime()
+      : Number.NaN;
+    if (Number.isFinite(previousStartedMs) && Date.now() - previousStartedMs < minIntervalMs) {
+      return this.readModelRefreshState;
+    }
+
+    const startedAt = nowIso();
+    this.readModelRefreshState.running = true;
+    this.readModelRefreshState.lastStartedAt = startedAt;
+    this.readModelRefreshState.lastError = null;
+    this.runtime.readModelRefresh = {
+      status: "running",
+      source: "sqlite_read_model",
+      reason: type,
+      startedAt
+    };
+
+    const task = (async () => {
+      const store = new ReadModelStore({ runtimeDir: this.config.runtimeDir, logger: this.logger });
+      try {
+        const status = await store.rebuildFromSources();
+        const completedAt = nowIso();
+        this.readModelRefreshState.lastCompletedAt = completedAt;
+        this.runtime.readModelRefresh = {
+          status: "ready",
+          source: "sqlite_read_model",
+          reason: type,
+          startedAt,
+          completedAt,
+          tables: status.tables || {}
+        };
+        this.markReportDirty();
+      } catch (error) {
+        const completedAt = nowIso();
+        const message = error?.message || "read_model_refresh_failed";
+        this.readModelRefreshState.lastError = message;
+        this.runtime.readModelRefresh = {
+          status: "failed",
+          source: "sqlite_read_model",
+          reason: type,
+          startedAt,
+          completedAt,
+          error: message
+        };
+        this.logger?.warn?.("Read model refresh after persist failed", { error: message });
+      } finally {
+        store.close();
+        this.readModelRefreshState.running = false;
+      }
+    })();
+    this.readModelRefreshState.promise = task;
+    return this.readModelRefreshState;
   }
 
   async buildReadModelDashboardSummary() {
@@ -11318,7 +11397,7 @@ export class TradingBot {
 
   async persist() {
     if (!this.persistenceCoordinator) {
-      this.persistenceCoordinator = new PersistenceCoordinator({ store: this.store });
+      this.persistenceCoordinator = this.createPersistenceCoordinator();
     }
     this.runtime.stream = this.stream.getStatus();
     this.runtime.executionPolicyState = this.rlPolicy.getState();
@@ -11338,7 +11417,7 @@ export class TradingBot {
 
   async persistRuntimeAndSnapshot(runtime = this.runtime) {
     if (!this.persistenceCoordinator) {
-      this.persistenceCoordinator = new PersistenceCoordinator({ store: this.store });
+      this.persistenceCoordinator = this.createPersistenceCoordinator();
     }
     return this.persistenceCoordinator.persistRuntimeAndBuildSnapshot(
       runtime,
@@ -11348,7 +11427,7 @@ export class TradingBot {
 
   async persistRuntimeOnly(runtime = this.runtime) {
     if (!this.persistenceCoordinator) {
-      this.persistenceCoordinator = new PersistenceCoordinator({ store: this.store });
+      this.persistenceCoordinator = this.createPersistenceCoordinator();
     }
     await this.persistenceCoordinator.persistRuntimeOnly(runtime);
   }
@@ -11365,6 +11444,71 @@ export class TradingBot {
   recordEvent(type, payload) {
     recordDomainEvent(this.journal, type, payload);
     this.markReportDirty();
+  }
+
+  recordRequestWeightBudgetEvent(context = "runtime") {
+    const state = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
+    if (!state) {
+      return null;
+    }
+    this.runtime.requestWeight = state;
+    const topRestCallers = Object.entries(state.topRestCallers || {})
+      .map(([caller, value]) => ({
+        caller,
+        count: Number(value?.count || 0),
+        endpoint: value?.endpoint || null,
+        scope: value?.scope || null,
+        lastAt: value?.lastAt || null
+      }))
+      .sort((left, right) => (right.count - left.count) || left.caller.localeCompare(right.caller))
+      .slice(0, 8);
+    if (!Number(state.totalRequests || 0) && !state.banActive && !state.backoffActive && !state.warningActive) {
+      return state;
+    }
+    const eventKey = [
+      state.totalRequests || 0,
+      state.usedWeight1m ?? "",
+      state.usedWeight ?? "",
+      state.lastRateLimitStatus ?? "",
+      state.lastRequest?.caller || "",
+      state.banUntil || "",
+      state.backoffUntil || ""
+    ].join("|");
+    this.runtime.requestWeightAudit = this.runtime.requestWeightAudit || {};
+    if (this.runtime.requestWeightAudit.lastEventKey === eventKey) {
+      return state;
+    }
+    const at = nowIso();
+    this.runtime.requestWeightAudit = {
+      lastEventKey: eventKey,
+      lastRecordedAt: at,
+      context,
+      topRestCallers
+    };
+    this.recordEvent("binance_request_weight_budget", {
+      at,
+      category: "runtime",
+      scope: "binance_rest",
+      context,
+      requestWeight: {
+        lastUpdatedAt: state.lastUpdatedAt || null,
+        usedWeight: state.usedWeight ?? null,
+        usedWeight1m: state.usedWeight1m ?? null,
+        orderCount10s: state.orderCount10s ?? null,
+        warningActive: Boolean(state.warningActive),
+        backoffActive: Boolean(state.backoffActive),
+        backoffRemainingMs: state.backoffRemainingMs || 0,
+        banActive: Boolean(state.banActive),
+        banUntil: state.banUntil || null,
+        totalRequests: state.totalRequests || 0,
+        totalRateLimitHits: state.totalRateLimitHits || 0,
+        lastRateLimitStatus: state.lastRateLimitStatus || null,
+        lastRequest: state.lastRequest || null,
+        topRestCallers: Object.fromEntries(topRestCallers.map((item) => [item.caller, item]))
+      },
+      topRestCallers
+    });
+    return state;
   }
 
   ensureSignalFlowMetrics() {
@@ -21792,7 +21936,7 @@ export class TradingBot {
   }
 
   async updatePortfolioSnapshot(midPrices = {}) {
-    this.runtime.requestWeight = this.client?.getRateLimitState ? this.client.getRateLimitState() : this.runtime.requestWeight;
+    this.recordRequestWeightBudgetEvent("portfolio_snapshot");
     if (this.runtime.requestWeight?.banActive) {
       const balance = { quoteFree: Number(this.runtime.lastKnownBalance || 0) };
       const equity = Number(this.runtime.lastKnownEquity || balance.quoteFree || 0);
@@ -21839,7 +21983,7 @@ export class TradingBot {
     if ((this.config.botMode !== "live" && !usesDemoPaperExecution(this.config)) || !this.broker?.reconcileRuntime) {
       return null;
     }
-    this.runtime.requestWeight = this.client.getRateLimitState ? this.client.getRateLimitState() : this.runtime.requestWeight;
+    this.recordRequestWeightBudgetEvent("exchange_truth_loop");
     if (this.runtime.requestWeight?.banActive) {
       this.recordEvent("exchange_truth_loop_skipped_rate_limit_ban", {
         banUntil: this.runtime.requestWeight.banUntil || null
@@ -21866,7 +22010,7 @@ export class TradingBot {
 
   async refreshAnalysis() {
     try {
-      this.runtime.requestWeight = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
+      this.recordRequestWeightBudgetEvent("analysis_refresh");
       if (this.runtime.requestWeight?.banActive) {
         const analysisAt = nowIso();
         this.runtime.lastAnalysisAt = analysisAt;
@@ -22090,7 +22234,7 @@ export class TradingBot {
       this.logger.warn("Clock sync refresh failed", { error: error.message });
       this.recordEvent("clock_sync_refresh_failed", { error: error.message });
     }
-    this.runtime.requestWeight = this.client.getRateLimitState ? this.client.getRateLimitState() : null;
+    this.recordRequestWeightBudgetEvent("cycle_start");
     if (this.runtime.requestWeight?.banActive) {
       this.logger.error("Skipping cycle while Binance REST ban is active", {
         banUntil: this.runtime.requestWeight.banUntil,

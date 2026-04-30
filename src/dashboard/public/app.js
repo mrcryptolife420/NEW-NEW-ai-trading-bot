@@ -925,6 +925,12 @@ function renderHealth(snapshot) {
   const dataFreshness = ops.dataFreshness || {};
   const exchangeConnectivity = ops.exchangeConnectivity || {};
   const requestWeight = dashboard.requestWeight || ops.requestWeight || exchangeConnectivity.requestWeight || {};
+  const readModel = dashboard.readModel || dashboard.report?.readModel || {};
+  const requestBudget = readModel.requestBudget || dashboard.requestBudgetSummary || {};
+  const readModelTables = readModel.tables || {};
+  const topReadModelBlocker = arr(readModel.topBlockers || [])[0] || null;
+  const dangerousScorecards = arr(readModel.topScorecards || []).filter((item) => ["dangerous", "negative_edge"].includes(item.status));
+  const latestReplay = readModel.latestReplay || null;
   const mode = ops.mode || {};
   const topRejections = arr(ops.topRejections || []);
   const riskLocks = ops.riskLocks || {};
@@ -1032,6 +1038,37 @@ function renderHealth(snapshot) {
     },
     { title: "Dashboard feeds", detail: compactJoin([titleize(service.status || "unknown"), service.note || null]), tone: service.status === "degraded" ? "negative" : "positive" },
     { title: "Market history", detail: compactJoin([titleize(history.status || "unknown"), history.note || null]), tone: history.status === "degraded" ? "negative" : "neutral" },
+    {
+      title: "Read model",
+      detail: compactJoin([
+        titleize(readModel.status || "unknown"),
+        readModelTables.trades != null ? `${readModelTables.trades} trades` : null,
+        readModelTables.decisions != null ? `${readModelTables.decisions} decisions` : null,
+        readModelTables.replayTraces != null ? `${readModelTables.replayTraces} replays` : null,
+        readModel.rebuiltAt ? `rebuilt ${formatAgeCompact(readModel.rebuiltAt, freshness.generatedAt)}` : null,
+        readModel.error || null
+      ]) || "SQLite read-model niet beschikbaar; dashboard gebruikt runtime fallback.",
+      tone: readModel.status === "ready" ? "positive" : readModel.status === "unavailable" ? "warning" : "neutral"
+    },
+    {
+      title: "Read-model blockers",
+      detail: compactJoin([
+        topReadModelBlocker ? `${humanizeReason(topReadModelBlocker.reason)} x${topReadModelBlocker.count || 0}` : "Geen blocker-historie in read-model.",
+        dangerousScorecards.length ? `${dangerousScorecards.length} risky scorecard(s)` : null
+      ]),
+      tone: dangerousScorecards.length || topReadModelBlocker ? "warning" : "neutral"
+    },
+    {
+      title: "Latest replay trace",
+      detail: latestReplay
+        ? compactJoin([
+            latestReplay.symbol || "Replay",
+            titleize(latestReplay.status || "unknown"),
+            latestReplay.at ? formatAgeCompact(latestReplay.at, freshness.generatedAt) : null
+          ])
+        : "Geen replay trace in read-model.",
+      tone: latestReplay?.status === "ready" ? "positive" : latestReplay ? "warning" : "neutral"
+    },
     { title: "External feeds", detail: compactJoin([`${sourceReliability.providerCount || 0} providers`, `avg ${formatPct(sourceReliability.averageScore || 0, 0)}`]), tone: Number(sourceReliability.degradedCount || 0) > 0 ? "warning" : "positive" },
     {
       title: "Market providers",
@@ -1056,9 +1093,12 @@ function renderHealth(snapshot) {
             : requestWeight.warningActive
               ? "pressure high"
               : null,
-        requestWeight.lastRequest?.caller ? `top ${requestWeight.lastRequest.caller}` : null
+        requestWeight.lastRequest?.caller ? `last ${requestWeight.lastRequest.caller}` : null,
+        requestBudget.topCallers?.[0]?.caller ? `top ${requestBudget.topCallers[0].caller}` : null,
+        Number.isFinite(requestBudget.latestWeight1m) ? `read-model 1m ${requestBudget.latestWeight1m}` : null,
+        requestBudget.status && requestBudget.status !== "ready" ? titleize(requestBudget.status) : null
       ]) || "Geen request-weight telemetrie beschikbaar.",
-      tone: requestWeight.banActive ? "negative" : requestWeight.backoffActive || requestWeight.warningActive ? "warning" : "neutral"
+      tone: requestWeight.banActive ? "negative" : requestWeight.backoffActive || requestWeight.warningActive || requestBudget.rateLimitEvents ? "warning" : "neutral"
     },
     {
       title: "Decision funnel",

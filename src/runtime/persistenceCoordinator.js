@@ -1,7 +1,19 @@
 export class PersistenceCoordinator {
-  constructor({ store }) {
+  constructor({ store, afterPersist = null }) {
     this.store = store;
+    this.afterPersist = typeof afterPersist === "function" ? afterPersist : null;
     this.persistPromise = null;
+  }
+
+  notifyAfterPersist(payload) {
+    if (!this.afterPersist) {
+      return;
+    }
+    try {
+      Promise.resolve(this.afterPersist(payload)).catch(() => {});
+    } catch {
+      // Persistence must not fail because a non-critical read-model hook failed.
+    }
   }
 
   async enqueue(work) {
@@ -27,6 +39,7 @@ export class PersistenceCoordinator {
           model,
           modelBackups
         });
+        this.notifyAfterPersist({ type: "snapshot_bundle", runtime, journal, model, modelBackups });
         return;
       }
       await this.store.saveRuntime(runtime);
@@ -39,6 +52,7 @@ export class PersistenceCoordinator {
       if (modelBackups != null && typeof this.store.saveModelBackups === "function") {
         await this.store.saveModelBackups(modelBackups);
       }
+      this.notifyAfterPersist({ type: "snapshot_bundle", runtime, journal, model, modelBackups });
     });
   }
 

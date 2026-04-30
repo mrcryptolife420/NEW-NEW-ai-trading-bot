@@ -1,6 +1,7 @@
 import { AuditLogStore } from "../src/storage/auditLogStore.js";
 import { ReadModelStore } from "../src/storage/readModelStore.js";
 import { StateStore } from "../src/storage/stateStore.js";
+import { PersistenceCoordinator } from "../src/runtime/persistenceCoordinator.js";
 import { runMarketReplay } from "../src/runtime/marketReplayEngine.js";
 import {
   assertTradingBotServiceCoverage,
@@ -60,6 +61,23 @@ export async function registerLargeFoundationsTests({
           rootBlocker: "exchange_safety_blocked",
           blockerStage: "hard_safety"
         }
+      ],
+      events: [
+        {
+          at: "2026-01-01T02:05:00.000Z",
+          type: "binance_request_weight_budget",
+          requestWeight: {
+            usedWeight1m: 123,
+            usedWeight: 456,
+            topRestCallers: {
+              "spot:GET:/api/v3/ticker/bookTicker": {
+                count: 3,
+                endpoint: "GET /api/v3/ticker/bookTicker",
+                scope: "spot"
+              }
+            }
+          }
+        }
       ]
     });
     const auditStore = new AuditLogStore(runtimeDir);
@@ -83,10 +101,13 @@ export async function registerLargeFoundationsTests({
     assert.equal(status.tables.trades, 1);
     assert.equal(status.tables.decisions, 1);
     assert.equal(status.tables.blockers, 2);
-    assert.equal(status.tables.auditEvents, 1);
+    assert.equal(status.tables.auditEvents, 2);
     assert.equal(status.tables.scorecards, 1);
     assert.equal(dashboard.source, "sqlite_read_model");
     assert.equal(dashboard.topBlockers[0].reason, "exchange_safety_blocked");
+    assert.equal(dashboard.requestBudget.status, "ready");
+    assert.equal(dashboard.requestBudget.latestWeight1m, 123);
+    assert.equal(dashboard.requestBudget.topCallers[0].caller, "spot:GET:/api/v3/ticker/bookTicker");
     assert.equal(decisionTrace.status, "ready");
     assert.equal(decisionTrace.blockers.length, 2);
     assert.equal(cycleTrace.decisionIds.includes("decision-1"), true);
@@ -104,6 +125,24 @@ export async function registerLargeFoundationsTests({
     readModel.close();
     assert.equal(status.status, "ready");
     assert.equal(status.tables.trades, 0);
+  });
+
+  await runCheck("persistence coordinator notifies read-model refresh hook after bundle save", async () => {
+    let saved = false;
+    let notifiedType = null;
+    const coordinator = new PersistenceCoordinator({
+      store: {
+        async saveSnapshotBundle() {
+          saved = true;
+        }
+      },
+      afterPersist(payload) {
+        notifiedType = payload.type;
+      }
+    });
+    await coordinator.persistSnapshotBundle({ runtime: { ok: true }, journal: { trades: [] } });
+    assert.equal(saved, true);
+    assert.equal(notifiedType, "snapshot_bundle");
   });
 
   await runCheck("market replay safely returns empty-history without live orders", async () => {

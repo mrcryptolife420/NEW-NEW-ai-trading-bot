@@ -186,5 +186,28 @@ export async function registerDashboardHealthTests({
     assert.ok(render.healthText.includes("Reconcile timeline"));
     assert.ok(render.positionsText.includes("escalated after 3"));
     assert.ok(render.focusText.includes("Dominant blocker"));
+
+    const readModelRender = __dashboardSmokeRender({
+      dashboard: {
+        ...snapshot,
+        readModel: {
+          status: "ready",
+          rebuiltAt: "2026-04-17T12:00:00.000Z",
+          tables: { trades: 2, decisions: 3, replayTraces: 1 },
+          topBlockers: [{ reason: "exchange_safety_blocked", count: 4 }],
+          topScorecards: [{ status: "negative_edge", strategyId: "range_grid", sampleSize: 8 }],
+          latestReplay: { symbol: "BTCUSDT", status: "ready", at: "2026-04-17T12:00:00.000Z" },
+          requestBudget: {
+            status: "ready",
+            latestWeight1m: 321,
+            topCallers: [{ caller: "spot:GET:/api/v3/ticker/bookTicker", count: 5 }]
+          }
+        }
+      }
+    });
+    assert.ok(readModelRender.healthText.includes("Read model"));
+    assert.ok(readModelRender.healthText.includes("Read-model blockers"));
+    assert.ok(readModelRender.healthText.includes("Latest replay trace"));
+    assert.ok(readModelRender.healthText.includes("spot:GET:/api/v3/ticker/bookTicker"));
   });
 }

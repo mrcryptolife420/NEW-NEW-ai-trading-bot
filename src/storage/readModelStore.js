@@ -356,12 +356,21 @@ export class ReadModelStore {
         });
       });
 
-      arr(auditEvents).forEach((event, index) => {
+      const allAuditLikeEvents = [
+        ...arr(auditEvents),
+        ...arr(journal.events).map((event, index) => ({
+          ...event,
+          id: event.id || `journal-event:${index}`,
+          source: event.source || "journal.events"
+        }))
+      ];
+
+      arr(allAuditLikeEvents).forEach((event, index) => {
         const id = safeString(event.id || event.eventId, `audit:${index}`);
         insertAudit.run(
           id,
           safeString(event.at),
-          safeString(event.type || event.eventType),
+          safeString(event.type || event.kind || event.eventType),
           safeString(event.symbol),
           safeString(event.cycleId || event.cycle_id),
           safeString(event.decisionId || event.decision_id),
@@ -472,7 +481,8 @@ export class ReadModelStore {
       fallbackAvailable: true,
       topBlockers,
       topScorecards,
-      latestReplay
+      latestReplay,
+      requestBudget: this.requestBudgetSummary({ limit })
     };
   }
 
