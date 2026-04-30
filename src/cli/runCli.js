@@ -4,7 +4,7 @@ import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayE
 import { runReadModelCommand, runReadModelTraceCommand } from "../storage/readModelStore.js";
 import { TradingBot } from "../runtime/tradingBot.js";
 import { BotManager } from "../runtime/botManager.js";
-import { buildRestArchitectureAudit } from "../runtime/restArchitectureAudit.js";
+import { buildRestArchitectureAudit, scanRestCallers } from "../runtime/restArchitectureAudit.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -172,7 +172,15 @@ export default async function runCli({
       error: error?.message || "request_budget_unavailable",
       topCallers: []
     }));
-    const result = buildRestArchitectureAudit({ config, requestBudget });
+    const codeScan = await scanRestCallers({ projectRoot: config.projectRoot }).catch((error) => ({
+      status: "unavailable",
+      error: error?.message || "rest_code_scan_unavailable",
+      callers: []
+    }));
+    const result = {
+      ...buildRestArchitectureAudit({ config, requestBudget }),
+      codeScan
+    };
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;

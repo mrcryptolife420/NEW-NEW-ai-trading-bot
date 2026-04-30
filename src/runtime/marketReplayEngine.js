@@ -45,6 +45,21 @@ function buildReplayExchangeInfo(symbol, quoteAsset = "USDT") {
   };
 }
 
+function buildHistoryActionPlan({ symbol, interval, from, to, status = "missing" }) {
+  const args = [
+    "npm run download-history",
+    "--",
+    symbol,
+    interval
+  ];
+  return {
+    status,
+    recommendedCommand: args.join(" "),
+    validationCommand: `npm run replay:market -- ${symbol}${from ? ` --from=${from}` : ""}${to ? ` --to=${to}` : ""}${interval ? ` --interval=${interval}` : ""}`,
+    note: "Replay gebruikt alleen lokale history; backfill history voordat je conclusies uit empty_history trekt."
+  };
+}
+
 function buildTrace({ symbol, candles = [], result = {}, status = "ready" }) {
   const first = candles[0] || null;
   const last = candles.at(-1) || null;
@@ -159,9 +174,17 @@ export async function runMarketReplay({
   });
 
   if (!replayCandles.length) {
+    const historyActionPlan = buildHistoryActionPlan({
+      symbol: replaySymbol,
+      interval: replayInterval,
+      from,
+      to,
+      status: "missing_history"
+    });
     const trace = {
       ...buildTrace({ symbol: replaySymbol, candles: [], status: "empty_history" }),
-      historyReadiness
+      historyReadiness,
+      historyActionPlan
     };
     await persistReplayTrace({ config, trace, persistTrace, logger });
     return {
@@ -173,6 +196,7 @@ export async function runMarketReplay({
       blockedSetups: [],
       equityCurve: [],
       historyReadiness,
+      historyActionPlan,
       trace,
       warnings: ["No local candles found for replay range. Run history download/backfill first."]
     };
@@ -222,6 +246,9 @@ export async function runMarketReplay({
     equityCurve: result.equityCurve || [],
     performance: result,
     historyReadiness,
+    historyActionPlan: historyReadiness.status === "ready"
+      ? { status: "ready", note: "Local history coverage is sufficient for this replay window." }
+      : buildHistoryActionPlan({ symbol: replaySymbol, interval: replayInterval, from, to, status: "improve_history" }),
     trace,
     warnings: historyReadiness.warnings || []
   };

@@ -202,7 +202,10 @@ export async function registerDashboardHealthTests({
             latestWeight1m: 321,
             topCallers: [{ caller: "spot:GET:/api/v3/ticker/bookTicker", count: 5 }]
           },
-          operatorRunbooks: [{ action: "Voer eerst status/doctor/reconcile checks uit." }],
+          operatorRunbooks: [{
+            action: "Voer eerst status/doctor/reconcile checks uit.",
+            actionLinks: [{ command: "npm run status" }]
+          }],
           strategyLifecycleDiagnostics: {
             status: "review_required",
             dangerousCount: 1,
@@ -217,6 +220,7 @@ export async function registerDashboardHealthTests({
     assert.ok(readModelRender.healthText.includes("Latest replay trace"));
     assert.ok(readModelRender.healthText.includes("Strategy lifecycle"));
     assert.ok(readModelRender.healthText.includes("Review dangerous strategy"));
+    assert.ok(readModelRender.healthText.includes("npm run status"));
     assert.ok(readModelRender.healthText.includes("spot:GET:/api/v3/ticker/bookTicker"));
   });
 }

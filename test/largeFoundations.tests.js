@@ -151,6 +151,7 @@ export async function registerLargeFoundationsTests({
     readModel.close();
     assert.equal(status.tables.trades, 1);
     assert.equal(status.tables.replayTraces, 1);
+    assert.ok(status.journalRefreshedAt);
     assert.equal(dashboard.latestReplay.id, "replay-1");
   });
 
@@ -162,6 +163,7 @@ export async function registerLargeFoundationsTests({
     ]);
     assert.equal(runbook.severity, "negative");
     assert.ok(runbook.forbiddenActions.includes("force_live_entry"));
+    assert.equal(runbook.actionLinks[0].command, "npm run status");
     assert.equal(lifecycle.status, "review_required");
     assert.equal(lifecycle.dangerousCount, 1);
   });
@@ -191,6 +193,8 @@ export async function registerLargeFoundationsTests({
     assert.equal(result.status, "empty_history");
     assert.equal(result.trace.diagnostics.noLiveOrders, true);
     assert.equal(result.historyReadiness.status, "degraded");
+    assert.equal(result.historyActionPlan.status, "missing_history");
+    assert.ok(result.historyActionPlan.recommendedCommand.includes("download-history"));
     assert.ok(result.warnings.some((item) => item.includes("No local candles")));
   });
 

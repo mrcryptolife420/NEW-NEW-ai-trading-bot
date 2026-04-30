@@ -31781,7 +31781,10 @@ await registerMarketProvidersTests({
 await registerBinanceRestArchitectureTests({
   runCheck,
   assert,
-  makeConfig
+  makeConfig,
+  fs,
+  path,
+  os
 });
 
 await registerOperationalHardeningTests({

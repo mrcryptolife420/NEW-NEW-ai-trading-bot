@@ -447,15 +447,144 @@ export class ReadModelStore {
   refreshFromJournalSnapshot({ journal = {}, at = new Date().toISOString() } = {}) {
     const db = this.open();
     this.ensureSchema();
-    const auditEvents = db.prepare("SELECT json FROM audit_events ORDER BY COALESCE(at, '') ASC")
-      .all()
-      .map((row) => parseJson(row.json, null))
-      .filter(Boolean);
-    const replayTraces = db.prepare("SELECT json FROM replay_traces ORDER BY COALESCE(at, '') ASC")
-      .all()
-      .map((row) => parseJson(row.json, null))
-      .filter(Boolean);
-    return this.rebuild({ journal, auditEvents, replayTraces, at });
+    db.exec("BEGIN");
+    try {
+      db.exec(`
+        DELETE FROM trades;
+        DELETE FROM decisions;
+        DELETE FROM blockers;
+        DELETE FROM scorecards;
+        DELETE FROM strategy_lifecycle;
+        DELETE FROM execution_attribution;
+        DELETE FROM fee_attribution;
+      `);
+      const insertTrade = db.prepare(`
+        INSERT OR REPLACE INTO trades(id, symbol, broker_mode, strategy_id, strategy_family, regime, session, entry_at, exit_at, pnl_quote, net_pnl_pct, json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertDecision = db.prepare(`
+        INSERT OR REPLACE INTO decisions(id, symbol, at, allow, root_blocker, blocker_stage, json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertBlocker = db.prepare(`
+        INSERT OR REPLACE INTO blockers(id, decision_id, symbol, reason, stage, root, json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertAudit = db.prepare(`
+        INSERT OR REPLACE INTO audit_events(id, at, type, symbol, cycle_id, decision_id, json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertScorecard = db.prepare(`
+        INSERT OR REPLACE INTO scorecards(id, strategy_id, strategy_family, regime, session, status, sample_size, expectancy_pct, confidence, json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertLifecycle = db.prepare(`
+        INSERT OR REPLACE INTO strategy_lifecycle(id, strategy_id, strategy_family, regime, status, json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      const insertExecution = db.prepare(`
+        INSERT OR REPLACE INTO execution_attribution(id, trade_id, symbol, side, execution_quality, json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      const insertFee = db.prepare(`
+        INSERT OR REPLACE INTO fee_attribution(id, trade_id, symbol, entry_fee_quote, exit_fee_quote, json)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      arr(journal.trades).forEach((trade, index) => {
+        const id = safeString(trade.id, `trade:${index}`);
+        const strategy = trade.strategyAtEntry || trade.strategy || {};
+        insertTrade.run(
+          id,
+          safeString(trade.symbol),
+          safeString(trade.brokerMode || trade.source || trade.tradingSource),
+          safeString(strategy.strategy || strategy.id || trade.strategyId || trade.activeStrategy),
+          safeString(strategy.family || trade.strategyFamily),
+          safeString(trade.regimeAtEntry || trade.regime),
+          safeString(trade.session || trade.sessionAtEntry),
+          safeString(trade.entryAt),
+          safeString(trade.exitAt),
+          safeNumber(trade.pnlQuote, 0),
+          safeNumber(trade.netPnlPct, 0),
+          json(trade)
+        );
+        if (trade.entryExecutionAttribution) {
+          insertExecution.run(`${id}:entry`, id, safeString(trade.symbol), "BUY", safeNumber(trade.entryExecutionAttribution.executionQualityScore, safeNumber(trade.executionQualityScore, 0)), json(trade.entryExecutionAttribution));
+        }
+        if (trade.exitExecutionAttribution) {
+          insertExecution.run(`${id}:exit`, id, safeString(trade.symbol), "SELL", safeNumber(trade.exitExecutionAttribution.executionQualityScore, safeNumber(trade.executionQualityScore, 0)), json(trade.exitExecutionAttribution));
+        }
+        insertFee.run(
+          `${id}:fees`,
+          id,
+          safeString(trade.symbol),
+          safeNumber(trade.entryFeeQuote ?? trade.entryFee, 0),
+          safeNumber(trade.exitFeeQuote ?? trade.exitFee, 0),
+          json({
+            entryFee: trade.entryFee,
+            entryFeeQuote: trade.entryFeeQuote,
+            entryFeeAssetBreakdown: trade.entryFeeAssetBreakdown,
+            exitFee: trade.exitFee,
+            exitFeeQuote: trade.exitFeeQuote,
+            exitFeeAssetBreakdown: trade.exitFeeAssetBreakdown
+          })
+        );
+      });
+      arr(journal.blockedSetups).forEach((decision, index) => {
+        const id = safeString(decision.decisionId || decision.id, `blocked:${index}`);
+        const reasons = arr(decision.reasons || decision.blockers || decision.blockerReasons);
+        insertDecision.run(
+          id,
+          safeString(decision.symbol),
+          safeString(decision.at || decision.createdAt),
+          0,
+          safeString(decision.rootBlocker || reasons[0]),
+          safeString(decision.blockerStage || decision.stage),
+          json(decision)
+        );
+        reasons.forEach((reason, reasonIndex) => {
+          insertBlocker.run(
+            `${id}:${reasonIndex}:${reason}`,
+            id,
+            safeString(decision.symbol),
+            safeString(reason),
+            safeString(decision.blockerStage || decision.stage),
+            reasonIndex === 0 ? 1 : 0,
+            json({ reason, decisionId: id, source: "journal.blockedSetups" })
+          );
+        });
+      });
+      arr(journal.events).forEach((event, index) => {
+        const id = safeString(event.id || event.eventId, `journal-event:${index}`);
+        insertAudit.run(
+          id,
+          safeString(event.at),
+          safeString(event.type || event.kind || event.eventType),
+          safeString(event.symbol),
+          safeString(event.cycleId || event.cycle_id),
+          safeString(event.decisionId || event.decision_id),
+          json({ ...event, id, source: event.source || "journal.events" })
+        );
+      });
+      const scorecards = buildStrategyEvidenceScorecards({ trades: arr(journal.trades), minSampleSize: 5 });
+      for (const card of scorecards) {
+        insertScorecard.run(card.id, card.strategyId, card.strategyFamily, card.regime, card.session, card.status, card.sampleSize, card.expectancyPct, card.confidence, json(card));
+        insertLifecycle.run(
+          card.id,
+          card.strategyId,
+          card.strategyFamily,
+          card.regime,
+          card.status === "dangerous" ? "quarantined" : card.status === "negative_edge" ? "degraded" : card.status === "positive_edge" ? "paper_approved" : "paper_testing",
+          json({ source: "scorecard", scorecard: card })
+        );
+      }
+      db.prepare("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)").run("journalRefreshedAt", at);
+      db.exec("COMMIT");
+      return this.status();
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   status() {
@@ -468,6 +597,7 @@ export class ReadModelStore {
       dbPath: this.dbPath,
       schemaVersion: Number(meta.schemaVersion || READ_MODEL_SCHEMA_VERSION),
       rebuiltAt: meta.rebuiltAt || null,
+      journalRefreshedAt: meta.journalRefreshedAt || null,
       tables: {
         trades: tableCount(db, "trades"),
         decisions: tableCount(db, "decisions"),

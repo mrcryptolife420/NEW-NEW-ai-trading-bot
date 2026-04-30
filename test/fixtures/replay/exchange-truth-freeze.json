@@ -1,0 +1,16 @@
+{
+  "fixtureVersion": 1,
+  "incidentId": "ETHUSDT::exchange_truth_freeze::2026-04-30T01:15:00",
+  "symbol": "ETHUSDT",
+  "reason": "exchange_truth_freeze",
+  "rootBlocker": "exchange_truth_freeze",
+  "blockerStage": "hard_safety",
+  "finalEdge": 0.72,
+  "permissioningScore": 0,
+  "threshold": 0.52,
+  "allow": false,
+  "expectedDiff": {
+    "exchangeTruthRequired": true,
+    "liveSafetyPreserved": true
+  }
+}

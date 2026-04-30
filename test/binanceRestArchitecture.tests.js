@@ -1,6 +1,6 @@
 import { BinanceClient } from "../src/binance/client.js";
 import { TradingBot } from "../src/runtime/tradingBot.js";
-import { buildRestArchitectureAudit } from "../src/runtime/restArchitectureAudit.js";
+import { buildRestArchitectureAudit, scanRestCallers } from "../src/runtime/restArchitectureAudit.js";
 
 function makeHeaders(values = {}) {
   const normalized = Object.fromEntries(
@@ -75,7 +75,10 @@ function buildFakeBot({
 export async function registerBinanceRestArchitectureTests({
   runCheck,
   assert,
-  makeConfig
+  makeConfig,
+  fs,
+  path,
+  os
 }) {
   await runCheck("binance client tracks request weight and backs off on 429", async () => {
     let attempts = 0;
@@ -353,5 +356,21 @@ export async function registerBinanceRestArchitectureTests({
     assert.ok(audit.hotspots.some((item) => item.id === "klines" && item.streamReplacement));
     assert.ok(audit.hotspots.some((item) => item.id === "exchange_info" && item.cachePolicy));
     assert.equal(audit.topRestCallers[0].caller, "spot:GET:/api/v3/klines");
+  });
+
+  await runCheck("rest architecture static scan classifies code callers", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-rest-scan-"));
+    const srcDir = path.join(projectRoot, "src", "runtime");
+    await fs.mkdir(srcDir, { recursive: true });
+    await fs.writeFile(path.join(srcDir, "scanner.js"), `
+      await client.getKlines("BTCUSDT", "1m", 100);
+      await client.getBookTicker("BTCUSDT");
+      await client.getExchangeInfo([]);
+    `);
+    const scan = await scanRestCallers({ projectRoot });
+    assert.equal(scan.status, "ready");
+    assert.equal(scan.familyCounts.klines, 1);
+    assert.equal(scan.familyCounts.book_ticker, 1);
+    assert.equal(scan.familyCounts.exchange_info, 1);
   });
 }

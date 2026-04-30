@@ -1,3 +1,6 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+
 function bool(value) {
   return Boolean(value);
 }
@@ -84,5 +87,115 @@ export function buildRestArchitectureAudit({ config = {}, requestBudget = null, 
       "Use REST only for startup sync, exchange info, reconciliation and fallback sanity checks.",
       "Investigate any hot caller that appears repeatedly in request-budget topCallers."
     ]
+  };
+}
+
+function classifyCodeCaller(text = "", filePath = "") {
+  const lowered = text.toLowerCase();
+  const file = filePath.replace(/\\/g, "/");
+  if (/getklines|\/api\/v3\/klines/.test(lowered)) {
+    return {
+      family: "klines",
+      classification: "websocket_primary_rest_fallback",
+      streamReplacement: "combined public stream: <symbol>@kline_<interval>"
+    };
+  }
+  if (/getbookticker|bookticker|\/api\/v3\/ticker\/bookticker/.test(lowered)) {
+    return {
+      family: "book_ticker",
+      classification: "websocket_primary_rest_fallback",
+      streamReplacement: "combined public stream: <symbol>@bookTicker"
+    };
+  }
+  if (/getorderbook|\/api\/v3\/depth/.test(lowered)) {
+    return {
+      family: "depth",
+      classification: "startup_sync_or_websocket_fallback",
+      streamReplacement: "combined public stream: <symbol>@depth@100ms"
+    };
+  }
+  if (/getexchangeinfo|\/api\/v3\/exchangeinfo/.test(lowered)) {
+    return {
+      family: "exchange_info",
+      classification: "cache_static_rest",
+      streamReplacement: null
+    };
+  }
+  if (/openorders|getorder|getmytrades|account|placeorder|cancelorder/.test(lowered) || file.includes("/execution/")) {
+    return {
+      family: "private_account_orders",
+      classification: "critical_rest_or_user_data_stream",
+      streamReplacement: "User Data Stream / WebSocket API where supported"
+    };
+  }
+  return {
+    family: "unknown_rest",
+    classification: "review_required",
+    streamReplacement: null
+  };
+}
+
+async function listJavaScriptFiles(rootDir) {
+  const results = [];
+  const entries = await fs.readdir(rootDir, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    if (["node_modules", ".git", "data", "logs"].includes(entry.name)) {
+      continue;
+    }
+    const fullPath = path.join(rootDir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...await listJavaScriptFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith(".js")) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+export async function scanRestCallers({ projectRoot = process.cwd(), limit = 80 } = {}) {
+  const srcRoot = path.join(projectRoot, "src");
+  const files = await listJavaScriptFiles(srcRoot);
+  const patterns = [
+    "publicRequest(",
+    "signedRequest(",
+    "getKlines(",
+    "getBookTicker(",
+    "getOrderBook(",
+    "getExchangeInfo(",
+    "getOpenOrders(",
+    "getOrder(",
+    "getMyTrades(",
+    "placeOrder(",
+    "cancelOrder("
+  ];
+  const callers = [];
+  for (const filePath of files) {
+    const content = await fs.readFile(filePath, "utf8").catch(() => "");
+    const lines = content.split(/\r?\n/);
+    lines.forEach((line, index) => {
+      if (!patterns.some((pattern) => line.includes(pattern))) {
+        return;
+      }
+      const classified = classifyCodeCaller(line, filePath);
+      callers.push({
+        file: path.relative(projectRoot, filePath).replace(/\\/g, "/"),
+        line: index + 1,
+        snippet: line.trim().slice(0, 180),
+        ...classified
+      });
+    });
+  }
+  const familyCounts = {};
+  const classificationCounts = {};
+  for (const caller of callers) {
+    familyCounts[caller.family] = (familyCounts[caller.family] || 0) + 1;
+    classificationCounts[caller.classification] = (classificationCounts[caller.classification] || 0) + 1;
+  }
+  return {
+    status: callers.length ? "ready" : "no_rest_callers_found",
+    callerCount: callers.length,
+    familyCounts,
+    classificationCounts,
+    callers: callers.slice(0, limit)
   };
 }

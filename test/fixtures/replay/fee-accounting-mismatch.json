@@ -1,0 +1,16 @@
+{
+  "fixtureVersion": 1,
+  "incidentId": "BNBUSDT::fee_model_mismatch::2026-04-30T00:30:00",
+  "symbol": "BNBUSDT",
+  "reason": "fee_model_mismatch",
+  "rootBlocker": "fee_model_mismatch",
+  "blockerStage": "execution_accounting",
+  "finalEdge": 0.56,
+  "permissioningScore": 0.5,
+  "threshold": 0.52,
+  "allow": false,
+  "expectedDiff": {
+    "feeModelVerified": false,
+    "requiresFeeReview": true
+  }
+}

@@ -24951,6 +24951,10 @@ export class TradingBot {
     }
     const view = this.buildPublicReportView(this.getPerformanceReport());
     view.readModel = await this.buildReadModelDashboardSummary();
+    view.strategyLifecycleEvidence = view.readModel?.strategyLifecycleDiagnostics || {
+      status: "unavailable",
+      recommendedAction: "Run npm run readmodel:rebuild before relying on strategy lifecycle evidence."
+    };
     return view;
   }
 }

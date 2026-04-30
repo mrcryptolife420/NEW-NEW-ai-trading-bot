@@ -1057,7 +1057,8 @@ function renderHealth(snapshot) {
       detail: compactJoin([
         topReadModelBlocker ? `${humanizeReason(topReadModelBlocker.reason)} x${topReadModelBlocker.count || 0}` : "Geen blocker-historie in read-model.",
         dangerousScorecards.length ? `${dangerousScorecards.length} risky scorecard(s)` : null,
-        readModelRunbook?.action || null
+        readModelRunbook?.action || null,
+        readModelRunbook?.actionLinks?.[0]?.command ? `actie: ${readModelRunbook.actionLinks[0].command}` : null
       ]),
       tone: dangerousScorecards.length || topReadModelBlocker ? "warning" : "neutral"
     },

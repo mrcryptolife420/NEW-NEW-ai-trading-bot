@@ -1,0 +1,16 @@
+{
+  "fixtureVersion": 1,
+  "incidentId": "SYSTEM::binance_rest_ban_active::2026-04-30T00:45:00",
+  "symbol": "SYSTEM",
+  "reason": "binance_rest_ban_active",
+  "rootBlocker": "binance_rest_ban_active",
+  "blockerStage": "runtime_rate_limit",
+  "finalEdge": 0,
+  "permissioningScore": 0,
+  "threshold": 0.52,
+  "allow": false,
+  "expectedDiff": {
+    "tradingPaused": true,
+    "honorBanUntil": true
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "fixtureVersion": 1,
+  "incidentId": "BTCUSDT::late_exit::2026-04-30T01:00:00",
+  "symbol": "BTCUSDT",
+  "reason": "late_exit",
+  "rootBlocker": "range_grid_exit_regret",
+  "blockerStage": "exit_diagnostics",
+  "finalEdge": 0.54,
+  "permissioningScore": 0.62,
+  "threshold": 0.52,
+  "allow": true,
+  "expectedDiff": {
+    "strategyFamily": "range_grid",
+    "exitReviewRequired": true
+  }
+}
