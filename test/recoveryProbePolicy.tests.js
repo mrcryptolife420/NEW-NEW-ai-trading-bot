@@ -79,4 +79,107 @@ export async function registerRecoveryProbePolicyTests({
     assert.equal(blocked.eligible, false);
     assert.equal(blocked.hardStopReasons.includes("exchange_safety_blocked"), true);
   });
+
+  await runCheck("soft-blocker probe lane admits strong paper near-misses without capital recovery", async () => {
+    const result = buildRecoveryProbePolicy({
+      config: {
+        botMode: "paper",
+        paperExecutionVenue: "binance_demo_spot",
+        paperRecoveryProbeEnabled: true,
+        paperSoftBlockerProbeEnabled: true,
+        paperSoftBlockerProbeMinEdge: 0.08,
+        paperRecoveryProbeMinBookPressure: -0.28,
+        maxSpreadBps: 25,
+        maxRealizedVolPct: 0.08
+      },
+      symbol: "INJUSDT",
+      capitalGovernor: { allowEntries: true, allowProbeEntries: false, blocked: false },
+      reasons: ["meta_followthrough_caution", "meta_neural_caution"],
+      openPositionsInMode: [],
+      canOpenAnotherPaperLearningPosition: true,
+      score: { probability: 0.87 },
+      threshold: 0.52,
+      recoveryProbeProbabilityFloor: 0.49,
+      setupQuality: { score: 0.72 },
+      signalQualitySummary: { overallScore: 0.72, executionViability: 0.64 },
+      dataQualitySummary: { overallScore: 0.7 },
+      confidenceBreakdown: { overallConfidence: 0.68, executionConfidence: 0.64 },
+      qualityQuorumSummary: { observeOnly: false, quorumScore: 0.9 },
+      marketSnapshot: { book: { bookPressure: 0.12, spreadBps: 4 }, market: { realizedVolPct: 0.02 } },
+      newsSummary: { riskScore: 0.08 },
+      announcementSummary: { riskScore: 0.06 },
+      calendarSummary: { riskScore: 0.08 },
+      marketStructureSummary: { riskScore: 0.14 },
+      volatilitySummary: { riskScore: 0.18 },
+      sessionSummary: { blockerReasons: [] },
+      driftSummary: { blockerReasons: [] },
+      selfHealState: { learningAllowed: true },
+      strategySummary: { family: "market_structure", fitScore: 0.74, confidence: 0.62 },
+      regimeSummary: { regime: "trend" },
+      minutesSincePortfolioTrade: 180,
+      cooldownMinutes: 60
+    });
+
+    assert.equal(result.eligible, true);
+    assert.equal(result.active, true);
+    assert.equal(result.probeMode, "paper_soft_blocker_probe");
+    assert.equal(result.softBlockerProbeLane, true);
+    assert.equal(result.capitalGovernorProbeState, "not_required_soft_blocker_lane");
+    assert.deepEqual(result.probeSoftBlockers, ["meta_followthrough_caution", "meta_neural_caution"]);
+  });
+
+  await runCheck("soft-blocker probe lane stays bounded by edge and hard safety", async () => {
+    const base = {
+      config: {
+        botMode: "paper",
+        paperExecutionVenue: "binance_demo_spot",
+        paperRecoveryProbeEnabled: true,
+        paperSoftBlockerProbeEnabled: true,
+        paperSoftBlockerProbeMinEdge: 0.08,
+        paperRecoveryProbeMinBookPressure: -0.28,
+        maxSpreadBps: 25,
+        maxRealizedVolPct: 0.08
+      },
+      capitalGovernor: { allowEntries: true, allowProbeEntries: false, blocked: false },
+      reasons: ["meta_followthrough_caution"],
+      openPositionsInMode: [],
+      canOpenAnotherPaperLearningPosition: true,
+      setupQuality: { score: 0.72 },
+      signalQualitySummary: { overallScore: 0.72, executionViability: 0.64 },
+      dataQualitySummary: { overallScore: 0.7 },
+      confidenceBreakdown: { overallConfidence: 0.68, executionConfidence: 0.64 },
+      qualityQuorumSummary: { observeOnly: false, quorumScore: 0.9 },
+      marketSnapshot: { book: { bookPressure: 0.12, spreadBps: 4 }, market: { realizedVolPct: 0.02 } },
+      newsSummary: { riskScore: 0.08 },
+      announcementSummary: { riskScore: 0.06 },
+      calendarSummary: { riskScore: 0.08 },
+      marketStructureSummary: { riskScore: 0.14 },
+      volatilitySummary: { riskScore: 0.18 },
+      sessionSummary: { blockerReasons: [] },
+      driftSummary: { blockerReasons: [] },
+      selfHealState: { learningAllowed: true },
+      strategySummary: { family: "market_structure", fitScore: 0.74, confidence: 0.62 },
+      regimeSummary: { regime: "trend" },
+      minutesSincePortfolioTrade: 180,
+      cooldownMinutes: 60
+    };
+    const weakEdge = buildRecoveryProbePolicy({
+      ...base,
+      score: { probability: 0.56 },
+      threshold: 0.52,
+      recoveryProbeProbabilityFloor: 0.49
+    });
+    const hardSafety = buildRecoveryProbePolicy({
+      ...base,
+      reasons: ["exchange_safety_blocked", "meta_followthrough_caution"],
+      score: { probability: 0.87 },
+      threshold: 0.52,
+      recoveryProbeProbabilityFloor: 0.49
+    });
+
+    assert.equal(weakEdge.eligible, false);
+    assert.equal(weakEdge.whyNoProbeAttempt, "soft_blocker_probe_edge_too_low");
+    assert.equal(hardSafety.eligible, false);
+    assert.ok(hardSafety.hardStopReasons.includes("exchange_safety_blocked"));
+  });
 }

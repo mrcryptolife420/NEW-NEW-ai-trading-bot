@@ -5598,7 +5598,7 @@ export class RiskManager {
       );
         if (recoveryProbeQuoteAmount > 0 && (this.config.paperRecoveryProbeAllowMinTradeOverride || recoveryProbeQuoteAmount >= effectiveMinTradeUsdt)) {
           allow = true;
-        entryMode = "paper_recovery_probe";
+        entryMode = paperRecoveryProbeAdmission.probeMode || "paper_recovery_probe";
         suppressedReasons = [...(paperRecoveryProbeAdmission.qualifyingReasons.length ? paperRecoveryProbeAdmission.qualifyingReasons : reasons)];
         paperGuardrailRelief = recoveryProbeGuardrailReasons;
         finalQuoteAmount = recoveryProbeQuoteAmount;
@@ -5606,7 +5606,7 @@ export class RiskManager {
         paperRecoveryProbeAdmission.probeRejectedReason = null;
         paperRecoveryProbeAdmission.whyNoProbeAttempt = null;
         paperExploration = {
-          mode: "paper_recovery_probe",
+          mode: paperRecoveryProbeAdmission.probeMode || "paper_recovery_probe",
           thresholdBuffer: this.config.paperRecoveryProbeThresholdBuffer,
           probabilityFloor: num(recoveryProbeProbabilityFloor, 4),
           modelConfidenceSlack: num(recoveryModelConfidenceSlack, 4),

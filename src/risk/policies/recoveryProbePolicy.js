@@ -24,6 +24,15 @@ const SOFT_RECOVERY_PROBE_BLOCKERS = new Set([
   "trade_size_below_minimum"
 ]);
 
+const SOFT_BLOCKER_PROBE_BLOCKERS = new Set([
+  "meta_gate_caution",
+  "meta_neural_caution",
+  "meta_followthrough_caution",
+  "trade_quality_caution",
+  "quality_quorum_degraded",
+  "model_confidence_too_low"
+]);
+
 const HARD_RECOVERY_PROBE_BLOCKERS = new Set([
   "exchange_truth_freeze",
   "exchange_safety_blocked",
@@ -191,6 +200,13 @@ export function buildRecoveryProbePolicy({
     isAllowedSoftProbeReason(reason, selfHealState, { allowModelConfidenceNearMiss: modelConfidenceNearMissEligible })
   );
   const softBlockedOnly = normalizedReasons.length > 0 && qualifyingReasons.length === normalizedReasons.length;
+  const softBlockerProbeReasons = normalizedReasons.filter((reason) =>
+    SOFT_BLOCKER_PROBE_BLOCKERS.has(reason) &&
+    (reason !== "model_confidence_too_low" || modelConfidenceNearMissEligible)
+  );
+  const softBlockerOnly =
+    normalizedReasons.length > 0 &&
+    softBlockerProbeReasons.length === normalizedReasons.length;
   const metaCautionOverrideEligible = qualifyingReasons.some((reason) =>
     ["meta_gate_caution", "meta_neural_caution", "meta_followthrough_caution", "trade_quality_caution"].includes(reason)
   );
@@ -232,19 +248,36 @@ export function buildRecoveryProbePolicy({
   const cooldownSatisfied = !Number.isFinite(cooldownMinutes) || !Number.isFinite(minutesSincePortfolioTrade)
     ? true
     : minutesSincePortfolioTrade >= Math.max(0, cooldownMinutes);
+  const capitalRecoveryProbeLane = capitalGovernor.allowProbeEntries === true;
+  const softBlockerProbeEdge = safeValue(config.paperSoftBlockerProbeMinEdge, 0.08);
+  const softBlockerProbeLane =
+    config.paperSoftBlockerProbeEnabled !== false &&
+    capitalGovernor.allowEntries !== false &&
+    capitalGovernor.blocked !== true &&
+    !capitalRecoveryProbeLane &&
+    softBlockerOnly &&
+    metaCautionOverrideEligible &&
+    safeValue(score.probability, 0) >= safeValue(threshold, 0) + softBlockerProbeEdge;
+  const probeLaneAllowed = capitalRecoveryProbeLane || softBlockerProbeLane;
+  const reasonScopeSufficient = capitalRecoveryProbeLane ? softBlockedOnly : softBlockerOnly;
+  const policyActive =
+    botMode === "paper" &&
+    paperVenue === "binance_demo_spot" &&
+    config.paperRecoveryProbeEnabled !== false &&
+    (capitalRecoveryProbeLane || config.paperSoftBlockerProbeEnabled !== false);
   const eligible =
     !allow &&
     botMode === "paper" &&
     paperVenue === "binance_demo_spot" &&
     config.paperRecoveryProbeEnabled !== false &&
-    capitalGovernor.allowProbeEntries === true &&
+    probeLaneAllowed &&
     !capitalGovernor.blocked &&
     !invalidQuoteAmount &&
     hardStopReasons.length === 0 &&
     canOpenAnotherPaperLearningPosition &&
     compatibleOpenPositions &&
     cooldownSatisfied &&
-    softBlockedOnly &&
+    reasonScopeSufficient &&
     qualitySufficient &&
     marketHealthy &&
     canRelaxPaperSelfHeal(selfHealState) &&
@@ -257,10 +290,14 @@ export function buildRecoveryProbePolicy({
     whyNoProbeAttempt = "probe_lane_requires_binance_demo_paper";
   } else if (config.paperRecoveryProbeEnabled === false) {
     whyNoProbeAttempt = "paper_recovery_probe_disabled";
-  } else if (capitalGovernor.allowProbeEntries !== true) {
-    whyNoProbeAttempt = "capital_governor_probe_not_allowed";
   } else if (capitalGovernor.blocked) {
     whyNoProbeAttempt = "capital_governor_blocked";
+  } else if (config.paperSoftBlockerProbeEnabled === false && capitalGovernor.allowProbeEntries !== true && softBlockerOnly) {
+    whyNoProbeAttempt = "paper_soft_blocker_probe_disabled";
+  } else if (!probeLaneAllowed) {
+    whyNoProbeAttempt = capitalGovernor.allowProbeEntries !== true && softBlockerOnly
+      ? "soft_blocker_probe_edge_too_low"
+      : "capital_governor_probe_not_allowed";
   } else if (hardStopReasons.length) {
     whyNoProbeAttempt = hardStopReasons[0];
   } else if (!compatibleOpenPositions) {
@@ -282,17 +319,22 @@ export function buildRecoveryProbePolicy({
   }
 
   return {
-    active: false,
-    probeOnlyActive: false,
+    active: policyActive,
+    probeOnlyActive: capitalRecoveryProbeLane && capitalGovernor.allowEntries === false,
     eligible,
+    probeMode: softBlockerProbeLane ? "paper_soft_blocker_probe" : capitalRecoveryProbeLane ? "paper_recovery_probe" : null,
+    softBlockerProbeLane,
+    capitalRecoveryProbeLane,
     activated: false,
     paperRecoveryProbeEligible: eligible,
     probeEligibleSoftBlockedCandidate: eligible,
-    probeSoftBlockers: qualifyingReasons,
-    probeBlockerReasons: qualifyingReasons,
+    probeSoftBlockers: capitalRecoveryProbeLane ? qualifyingReasons : softBlockerProbeReasons,
+    probeBlockerReasons: capitalRecoveryProbeLane ? qualifyingReasons : softBlockerProbeReasons,
     qualifyingReasons,
+    softBlockerProbeReasons,
     hardStopReasons,
     softBlockedOnly,
+    softBlockerOnly,
     modelConfidenceNearMissEligible,
     metaCautionOverrideEligible,
     compatibleOpenPositions,
@@ -305,7 +347,7 @@ export function buildRecoveryProbePolicy({
     probeRejectedReason: eligible ? null : whyNoProbeAttempt,
     rootBlocker: normalizedReasons[0] || null,
     downstreamBlockers: normalizedReasons.filter((reason) => reason !== normalizedReasons[0]),
-    capitalGovernorProbeState: capitalGovernor.allowProbeEntries ? "allowed" : "blocked"
+    capitalGovernorProbeState: capitalGovernor.allowProbeEntries ? "allowed" : softBlockerProbeLane ? "not_required_soft_blocker_lane" : "blocked"
   };
 }
 
