@@ -310,6 +310,29 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.depthFallbackCount, 1);
   });
 
+  await runCheck("stream fallback health surfaces connected but stalled public stream chunks", async () => {
+    const fakeBot = {
+      config: { requestWeightWarnThreshold1m: 4800 },
+      runtime: {},
+      restFallbackState: {},
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 100, banActive: false, backoffActive: false };
+        }
+      }
+    };
+    const summary = TradingBot.prototype.buildStreamFallbackHealth.call(fakeBot, {
+      publicStreamConnected: true,
+      connectivityAuthoritative: true,
+      publicStreamStaleChunkCount: 1,
+      publicStreamPendingChunkCount: 0,
+      localBook: { healthySymbols: 12 }
+    }, "2026-01-01T00:00:01.000Z");
+    assert.equal(summary.status, "public_stream_stalled");
+    assert.equal(summary.publicStreamStaleChunkCount, 1);
+    assert.equal(summary.recommendedAction.includes("watchdog"), true);
+  });
+
   await runCheck("stream fallback health surfaces private stream gaps before private REST becomes normal", async () => {
     const fakeBot = {
       config: {

@@ -25919,6 +25919,80 @@ await runCheck("stream coordinator splits large public subscriptions across mult
   }
 });
 
+await runCheck("stream coordinator watchdog restarts stale public stream chunks", async () => {
+  const sockets = [];
+  const originalWebSocket = globalThis.WebSocket;
+  class FakeWebSocket {
+    constructor(url) {
+      this.url = url;
+      this.listeners = new Map();
+      this.closed = false;
+      sockets.push(this);
+    }
+
+    addEventListener(type, handler) {
+      const bucket = this.listeners.get(type) || [];
+      bucket.push(handler);
+      this.listeners.set(type, bucket);
+    }
+
+    emit(type, payload = {}) {
+      for (const handler of this.listeners.get(type) || []) {
+        handler(payload);
+      }
+    }
+
+    close() {
+      this.closed = true;
+    }
+  }
+  globalThis.WebSocket = FakeWebSocket;
+  try {
+    const coordinator = new StreamCoordinator({
+      client: {
+        getStreamBaseUrl() {
+          return "wss://stream.binance.com:9443";
+        },
+        getFuturesStreamBaseUrl() {
+          return "wss://fstream.binance.com";
+        },
+        closeUserDataListenKey: async () => {}
+      },
+      config: makeConfig({
+        watchlist: ["BTCUSDT"],
+        enableEventDrivenData: true,
+        enableLocalOrderBook: true,
+        publicStreamStaleMs: 15_000,
+        publicStreamMonitorIntervalMs: 5_000
+      }),
+      logger: { warn() {}, info() {} }
+    });
+    let restartReason = null;
+    coordinator.scheduleRestart = async (_kind, _restart, reason) => {
+      restartReason = reason;
+    };
+    await coordinator.startPublicStream();
+    sockets[0].emit("open");
+    sockets[0].emit("message", {
+      data: JSON.stringify({
+        stream: "btcusdt@bookTicker",
+        data: { s: "BTCUSDT", b: "100", a: "101", E: Date.now() }
+      })
+    });
+    const meta = coordinator.publicSocketMeta.get(sockets[0]);
+    meta.lastMessageAt = "2026-01-01T00:00:00.000Z";
+    meta.openedAt = "2026-01-01T00:00:00.000Z";
+    const result = await coordinator.checkPublicStreamHealth(Date.parse("2026-01-01T00:00:20.000Z"));
+    assert.equal(result.action, "restart_scheduled");
+    assert.equal(result.reason, "public_stream_stalled");
+    assert.equal(restartReason, "public_stream_stalled");
+    assert.equal(coordinator.getStatus().restartHealth.public.stalled, true);
+    await coordinator.close();
+  } finally {
+    globalThis.WebSocket = originalWebSocket;
+  }
+});
+
 await runCheck("stream coordinator restarts the public stream when the watchlist changes", async () => {
   const openedUrls = [];
   const sockets = [];

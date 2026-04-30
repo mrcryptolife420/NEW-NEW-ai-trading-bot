@@ -10899,6 +10899,8 @@ export class TradingBot {
     const bookTickerFallbacks = fallbackEntries.filter((entry) => entry.kind === "book_ticker");
     const publicConnected = streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected ?? false;
     const publicStreamAuthoritative = streamStatus?.connectivityAuthoritative !== false;
+    const publicStreamStaleChunkCount = Number(streamStatus?.publicStreamStaleChunkCount || 0);
+    const publicStreamPendingChunkCount = Number(streamStatus?.publicStreamPendingChunkCount || 0);
     const userStreamConnected = Boolean(streamStatus?.userStreamConnected);
     const userStreamExpected = Boolean(this.config?.binanceApiKey) && (
       this.config?.botMode === "live" ||
@@ -10921,6 +10923,8 @@ export class TradingBot {
       ? "paused_rate_limit_ban"
       : (userStreamExpected && userStreamAuthoritative && !userStreamConnected && privateRestWeight > 0)
         ? "private_stream_gap_using_rest"
+      : (publicStreamAuthoritative && publicConnected && publicStreamStaleChunkCount > 0)
+        ? "public_stream_stalled"
       : pressure >= 0.8
         ? "rest_pressure_guarded"
       : (publicStreamAuthoritative && !publicConnected && depthFallbacks.length)
@@ -10932,6 +10936,8 @@ export class TradingBot {
       ? "Wacht tot Binance REST ban afloopt; gebruik streams en vermijd handmatige refreshes."
       : status === "private_stream_gap_using_rest"
         ? "Controleer user-data stream; private REST open-order/account checks moeten sanity fallback blijven."
+      : status === "public_stream_stalled"
+        ? "Publieke stream is verbonden maar stilgevallen; watchdog hoort de stream automatisch te herstarten."
       : status === "rest_pressure_guarded"
         ? "Laat publieke marketdata uit streams komen en stel niet-kritieke scanner/depth REST calls uit."
         : status === "stream_gap_using_rest_fallback"
@@ -10942,6 +10948,8 @@ export class TradingBot {
       generatedAt: referenceNow,
       publicStreamConnected: Boolean(publicConnected),
       publicStreamAuthoritative,
+      publicStreamStaleChunkCount: Number.isFinite(publicStreamStaleChunkCount) ? publicStreamStaleChunkCount : 0,
+      publicStreamPendingChunkCount: Number.isFinite(publicStreamPendingChunkCount) ? publicStreamPendingChunkCount : 0,
       localBookHealthySymbols: Number.isFinite(localBookHealthy) ? localBookHealthy : 0,
       usedWeight1m: Number.isFinite(usedWeight1m) ? usedWeight1m : null,
       pressure: Number.isFinite(pressure) ? Number(pressure.toFixed(4)) : null,
@@ -13901,6 +13909,9 @@ export class TradingBot {
     }
     if (streamFallbackHealth.status === "stream_gap_using_rest_fallback") {
       runtimeReasons.push("market_data_stream_gap_using_rest_fallback");
+    }
+    if (streamFallbackHealth.status === "public_stream_stalled") {
+      runtimeReasons.push("market_data_public_stream_stalled");
     }
     if (streamFallbackHealth.status === "private_stream_gap_using_rest") {
       runtimeReasons.push("private_stream_gap_using_rest");

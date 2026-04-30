@@ -159,6 +159,11 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isoAgeMs(value, referenceMs = Date.now()) {
+  const ms = Date.parse(value || "");
+  return Number.isFinite(ms) ? Math.max(0, referenceMs - ms) : null;
+}
+
 function isDemoSpotEnvironment(client) {
   return `${client?.baseUrl || ""}`.includes("demo-api.binance.com");
 }
@@ -270,6 +275,8 @@ export class StreamCoordinator {
       publicStreamChunkCount: 0,
       publicStreamStreamCount: 0,
       publicStreamMaxStreamsPerConnection: Math.max(1, Number(config.publicStreamMaxStreamsPerConnection || 180)),
+      publicStreamStaleMs: Math.max(15_000, Number(config.publicStreamStaleMs || 90_000)),
+      publicStreamMonitorIntervalMs: Math.max(5_000, Number(config.publicStreamMonitorIntervalMs || 30_000)),
       restartHealth: {
         public: {
           attempts: 0,
@@ -308,9 +315,11 @@ export class StreamCoordinator {
     this.publicSocket = null;
     this.publicSockets = new Set();
     this.publicOpenSockets = new Set();
+    this.publicSocketMeta = new Map();
     this.futuresSocket = null;
     this.userSocket = null;
     this.keepAliveTimer = null;
+    this.streamHealthTimer = null;
     this.restartTimers = {
       public: null,
       futures: null,
@@ -521,6 +530,7 @@ export class StreamCoordinator {
 
   getStatus() {
     this.state.localBook = this.orderBook.getSummary();
+    const publicStreamChunks = this.getPublicStreamChunkStatus();
     return {
       enabled: this.state.enabled,
       marketDataMode: this.state.marketDataMode,
@@ -538,6 +548,11 @@ export class StreamCoordinator {
       publicStreamChunkCount: this.state.publicStreamChunkCount,
       publicStreamStreamCount: this.state.publicStreamStreamCount,
       publicStreamMaxStreamsPerConnection: this.state.publicStreamMaxStreamsPerConnection,
+      publicStreamStaleMs: this.state.publicStreamStaleMs,
+      publicStreamMonitorIntervalMs: this.state.publicStreamMonitorIntervalMs,
+      publicStreamStaleChunkCount: publicStreamChunks.filter((chunk) => chunk.stale).length,
+      publicStreamPendingChunkCount: publicStreamChunks.filter((chunk) => chunk.pending).length,
+      publicStreamChunks,
       restartHealth: this.state.restartHealth,
       localBook: this.state.localBook
     };
@@ -661,8 +676,28 @@ export class StreamCoordinator {
     return this.state.publicStreamConnected;
   }
 
+  async waitForUserStreamOpen(timeoutMs = 1500) {
+    const deadline = Date.now() + Math.max(0, timeoutMs);
+    while (!this.state.userStreamConnected && Date.now() < deadline) {
+      await sleep(50);
+    }
+    return this.state.userStreamConnected;
+  }
+
   getPublicStreamMaxStreamsPerConnection() {
     return Math.max(1, Math.floor(Number(this.config.publicStreamMaxStreamsPerConnection || 180)));
+  }
+
+  getPublicStreamStaleMs() {
+    return Math.max(15_000, Number(this.config.publicStreamStaleMs || this.state.publicStreamStaleMs || 90_000));
+  }
+
+  getPublicStreamMonitorIntervalMs() {
+    return Math.max(5_000, Number(this.config.publicStreamMonitorIntervalMs || this.state.publicStreamMonitorIntervalMs || 30_000));
+  }
+
+  getUserStreamStartupWaitMs() {
+    return Math.max(0, Number(this.config.userStreamStartupWaitMs || 2_500));
   }
 
   updatePublicStreamConnectivity() {
@@ -670,6 +705,87 @@ export class StreamCoordinator {
     this.state.publicStreamConnected = this.state.publicStreamConnectionCount > 0;
     this.publicSocket = this.publicSockets?.values?.().next?.().value || null;
     return this.state.publicStreamConnected;
+  }
+
+  getPublicStreamChunkStatus(referenceMs = Date.now()) {
+    const staleMs = this.getPublicStreamStaleMs();
+    return [...(this.publicSocketMeta || new Map()).values()]
+      .sort((left, right) => Number(left.index || 0) - Number(right.index || 0))
+      .map((meta) => {
+        const messageAgeMs = isoAgeMs(meta.lastMessageAt, referenceMs);
+        const openAgeMs = isoAgeMs(meta.openedAt || meta.createdAt, referenceMs);
+        const pendingAgeMs = meta.openedAt ? null : isoAgeMs(meta.createdAt, referenceMs);
+        const pending = !meta.openedAt;
+        return {
+          chunk: Number(meta.index || 0) + 1,
+          streams: Number(meta.streams || 0),
+          connected: Boolean(meta.openedAt),
+          pending,
+          createdAt: meta.createdAt || null,
+          openedAt: meta.openedAt || null,
+          lastMessageAt: meta.lastMessageAt || null,
+          messageAgeMs,
+          openAgeMs,
+          pendingAgeMs,
+          stale: Boolean(meta.openedAt && (messageAgeMs == null ? openAgeMs : messageAgeMs) > staleMs)
+        };
+      });
+  }
+
+  startStreamHealthMonitor() {
+    if (this.streamHealthTimer || !this.state.enabled || !this.config.enableEventDrivenData) {
+      return;
+    }
+    const intervalMs = this.getPublicStreamMonitorIntervalMs();
+    this.streamHealthTimer = setInterval(() => {
+      this.checkPublicStreamHealth().catch((error) => {
+        this.state.lastError = error.message;
+      });
+    }, intervalMs);
+    if (typeof this.streamHealthTimer.unref === "function") {
+      this.streamHealthTimer.unref();
+    }
+  }
+
+  stopStreamHealthMonitor() {
+    if (this.streamHealthTimer) {
+      clearInterval(this.streamHealthTimer);
+      this.streamHealthTimer = null;
+    }
+  }
+
+  async checkPublicStreamHealth(referenceMs = Date.now()) {
+    if (this.isClosing || !this.state.enabled || !this.config.enableEventDrivenData) {
+      return { action: "skipped", reason: "stream_disabled" };
+    }
+    const chunks = this.getPublicStreamChunkStatus(referenceMs);
+    const openTimeoutMs = Math.max(this.getPublicStreamStaleMs(), Number(this.config.publicStreamStartupWaitMs || 3_500) + this.getStreamReconnectDelayMs());
+    const pendingStale = chunks.filter((chunk) => chunk.pending && Number(chunk.pendingAgeMs || 0) > openTimeoutMs);
+    const messageStale = chunks.filter((chunk) => chunk.stale);
+    if (!pendingStale.length && !messageStale.length) {
+      this.ensureRestartHealth("public").stalled = false;
+      return { action: "ok", staleChunks: 0, pendingChunks: 0 };
+    }
+    const health = this.ensureRestartHealth("public");
+    health.stalled = true;
+    health.lastReason = pendingStale.length ? "public_stream_open_timeout" : "public_stream_stalled";
+    health.lastError = pendingStale.length
+      ? `${pendingStale.length} public stream chunk(s) did not open`
+      : `${messageStale.length} public stream chunk(s) stopped receiving messages`;
+    health.lastFailureAt = new Date(referenceMs).toISOString();
+    this.logger?.warn?.("Public market stream health restart scheduled", {
+      reason: health.lastReason,
+      staleChunks: messageStale.length,
+      pendingChunks: pendingStale.length,
+      staleMs: this.getPublicStreamStaleMs()
+    });
+    void this.scheduleRestart("public", () => this.startPublicStream(), health.lastReason);
+    return {
+      action: "restart_scheduled",
+      reason: health.lastReason,
+      staleChunks: messageStale.length,
+      pendingChunks: pendingStale.length
+    };
   }
 
   getStreamReconnectDelayMs() {
@@ -778,6 +894,7 @@ export class StreamCoordinator {
     }
 
     await this.startPublicStream();
+    this.startStreamHealthMonitor();
     const startupWaitMs = Math.max(250, Number(this.config.publicStreamStartupWaitMs || 3_500));
     const publicConnected = await this.waitForPublicStreamOpen(startupWaitMs);
     if (!publicConnected) {
@@ -799,6 +916,10 @@ export class StreamCoordinator {
     if (shouldUsePrivateUserStream(this.config)) {
       try {
         await this.startUserStream();
+        const userStartupWaitMs = this.getUserStreamStartupWaitMs();
+        if (userStartupWaitMs > 0 && !this.state.userStreamConnected) {
+          await this.waitForUserStreamOpen(userStartupWaitMs);
+        }
       } catch (error) {
         this.state.lastError = error.message;
         this.logger?.warn?.("User stream failed to start", { error: error.message });
@@ -935,6 +1056,13 @@ export class StreamCoordinator {
     chunks.forEach((chunk, index) => {
       const socket = new WebSocket(`${baseUrl}/${toCombinedStreamPath(chunk)}`);
       this.publicSockets.add(socket);
+      this.publicSocketMeta.set(socket, {
+        index,
+        streams: chunk.length,
+        createdAt: new Date().toISOString(),
+        openedAt: null,
+        lastMessageAt: null
+      });
       if (!this.publicSocket) {
         this.publicSocket = socket;
       }
@@ -943,6 +1071,11 @@ export class StreamCoordinator {
           return;
         }
         this.publicOpenSockets.add(socket);
+        const meta = this.publicSocketMeta.get(socket) || {};
+        this.publicSocketMeta.set(socket, {
+          ...meta,
+          openedAt: new Date().toISOString()
+        });
         this.updatePublicStreamConnectivity();
         this.state.unavailableReason = null;
         this.logger?.info?.("Public market stream chunk connected", {
@@ -957,6 +1090,12 @@ export class StreamCoordinator {
           return;
         }
         try {
+          const meta = this.publicSocketMeta.get(socket) || {};
+          this.publicSocketMeta.set(socket, {
+            ...meta,
+            lastMessageAt: new Date().toISOString()
+          });
+          this.ensureRestartHealth("public").stalled = false;
           this.handlePublicMessage(JSON.parse(event.data));
         } catch (error) {
           this.state.lastError = error.message;
@@ -968,6 +1107,7 @@ export class StreamCoordinator {
         }
         this.publicSockets.delete(socket);
         this.publicOpenSockets.delete(socket);
+        this.publicSocketMeta.delete(socket);
         this.updatePublicStreamConnectivity();
         if (!this.state.publicStreamConnected) {
           this.clearPublicBookTickers();
@@ -981,6 +1121,7 @@ export class StreamCoordinator {
         this.state.lastError = error.message || "public_stream_error";
         this.publicSockets.delete(socket);
         this.publicOpenSockets.delete(socket);
+        this.publicSocketMeta.delete(socket);
         this.updatePublicStreamConnectivity();
         if (!this.state.publicStreamConnected) {
           this.clearPublicBookTickers();
@@ -1260,6 +1401,7 @@ export class StreamCoordinator {
     this.publicSocket = null;
     this.publicSockets = new Set();
     this.publicOpenSockets = new Set();
+    this.publicSocketMeta = new Map();
     this.updatePublicStreamConnectivity();
     this.clearPublicBookTickers();
     for (const socket of sockets) {
@@ -1291,6 +1433,7 @@ export class StreamCoordinator {
 
   async close() {
     this.isClosing = true;
+    this.stopStreamHealthMonitor();
     this.clearRestartTimer("public");
     this.clearRestartTimer("futures");
     this.clearRestartTimer("user");
@@ -1307,6 +1450,7 @@ export class StreamCoordinator {
     this.publicSocket = null;
     this.publicSockets = new Set();
     this.publicOpenSockets = new Set();
+    this.publicSocketMeta = new Map();
     this.futuresSocket = null;
     this.userSocket = null;
     const listenKey = this.state.listenKey;
