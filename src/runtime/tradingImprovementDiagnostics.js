@@ -46,6 +46,16 @@ function extractDecisionReasons(decision = {}) {
   ].filter(Boolean).map(normalizeReason);
 }
 
+function contextKey(decision = {}) {
+  const strategy = decision.strategySummary || decision.strategy || decision.entryDiagnostics?.strategy || {};
+  const family = strategy.family || decision.strategyFamily || decision.family || "unknown";
+  const activeStrategy = strategy.activeStrategy || strategy.strategy || decision.strategyId || decision.activeStrategy || "unknown";
+  const regime = decision.regime || decision.regimeAtEntry || decision.marketRegime || decision.entryDiagnostics?.regime || "unknown";
+  const session = decision.session?.label || decision.session || decision.entryDiagnostics?.session || "unknown";
+  const condition = decision.marketCondition?.condition || decision.marketCondition || decision.condition || "unknown";
+  return `${family}/${activeStrategy}/${regime}/${session}/${condition}`;
+}
+
 export function buildMetaCautionDiagnostics({
   topDecisions = [],
   blockedSetups = [],
@@ -58,12 +68,14 @@ export function buildMetaCautionDiagnostics({
   const driverCounts = new Map();
   const featureCounts = new Map();
   const actionCounts = new Map();
+  const contextCounts = new Map();
 
   for (const decision of decisions) {
     const reasons = extractDecisionReasons(decision);
     for (const reason of reasons) {
       if (/meta_|model_confidence|committee|quality/i.test(reason)) {
         metaReasons.push(reason);
+        pushCount(contextCounts, contextKey(decision));
       }
     }
     const pressure = decision.lowConfidencePressure || decision.entryDiagnostics?.lowConfidencePressure || {};
@@ -106,6 +118,13 @@ export function buildMetaCautionDiagnostics({
     topDrivers: summarizeCountMap(driverCounts, 5),
     topFeaturePressureSources: summarizeCountMap(featureCounts, 5),
     topMetaActions: summarizeCountMap(actionCounts, 4),
+    topContexts: summarizeCountMap(contextCounts, 5),
+    drilldown: {
+      byReason: topReasons,
+      byDriver: summarizeCountMap(driverCounts, 5),
+      byFeaturePressureSource: summarizeCountMap(featureCounts, 5),
+      byContext: summarizeCountMap(contextCounts, 5)
+    },
     recommendedAction: totalMetaBlocks
       ? "Inspecteer top drivers en bad-veto evidence voordat thresholds worden aangepast."
       : "Geen dominante meta-caution druk in deze snapshot."
@@ -138,6 +157,11 @@ export function buildExchangeSafetyRecoveryDiagnostics({
       : [],
     blockedSymbols: arr(exchangeSafety.blockedSymbols).slice(0, 8),
     lastReconcileAction: exchangeSafety.autoReconcileSummary?.latestAction || exchangeSafety.lastAutoReconcileAction || null,
+    safeActions: recoveryOnly ? ["force_reconcile", "exit_only", "protective_rebuild", "readiness_check"] : [],
+    forbiddenActions: recoveryOnly ? ["force_entry", "manual_live_override", "threshold_lowering"] : [],
+    releaseSignals: recoveryOnly
+      ? ["exchange_truth_clean", "no_unmatched_orders", "no_manual_review_symbols", "protective_orders_clear_or_rebuilt"]
+      : [],
     recommendedAction: recoveryOnly
       ? "Laat entries gepauzeerd; controleer reconcile/exits/protective rebuilds en hervat pas na schone exchange truth."
       : "Exchange safety blokkeert geen globale entries."
@@ -213,6 +237,14 @@ export function buildStrategyRiskDiagnostics(readModel = {}) {
     status: dangerous.length ? "review_required" : lifecycle.status || "observe",
     dangerous,
     promoteCandidates: arr(lifecycle.promoteCandidates).slice(0, 5),
+    paperQuarantineAdvice: dangerous.some((item) => `${item.strategyFamily || item.strategyId || ""}`.includes("range_grid"))
+      ? {
+          strategyFamily: "range_grid",
+          action: "diagnostic_downweight",
+          scope: "paper_first",
+          note: "Range-grid toont negatieve/dangerous evidence; houd live streng en gebruik paper/replay voordat allocation stijgt."
+        }
+      : null,
     recommendedAction: dangerous.length
       ? "Downweight/quarantine eerst diagnostisch per strategy/regime/session; wijzig live allocator pas na replaybewijs."
       : lifecycle.recommendedAction || "Blijf strategy scorecards verzamelen."
@@ -242,6 +274,7 @@ export function buildTradingImprovementBacklog({
 } = {}) {
   const exitSummary = report.postTradeAnalytics?.summary || report.tradeQualitySummary || {};
   const executionCost = report.executionCostSummary || {};
+  const paperLiveParity = report.paperLiveParity || {};
   const openExposureReview = report.openExposureReview || {};
   const hasPrivateRestHotspots = arr(requestWeight.privateHotspots).length > 0;
   const hasPublicRestHotspots = arr(requestWeight.publicHotspots).length > 0;
@@ -324,6 +357,8 @@ export function buildTradingImprovementBacklog({
       priority: 7,
       evidence: [
         executionCost.status ? `execution cost ${executionCost.status}` : null,
+        paperLiveParity.status ? `paper/live parity ${paperLiveParity.status}` : null,
+        paperLiveParity.optimismBiasBps != null ? `optimism ${Number(paperLiveParity.optimismBiasBps).toFixed(2)} bps` : null,
         executionCost.averageFeeBps != null ? `avg fee ${Number(executionCost.averageFeeBps).toFixed(2)} bps` : null,
         executionCost.reconstructedPaperEntryFeeCount ? `${executionCost.reconstructedPaperEntryFeeCount} reconstructed paper fees` : null
       ],

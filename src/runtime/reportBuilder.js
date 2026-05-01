@@ -1,4 +1,5 @@
 import { getConfiguredTradingSource, matchesBrokerMode, matchesTradingSource } from "../utils/tradingSource.js";
+import { buildPaperLiveParitySummary } from "./paperLiveParity.js";
 
 function safeDivide(numerator, denominator, fallback = 0) {
   return denominator ? numerator / denominator : fallback;
@@ -1822,6 +1823,10 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
   const rangeGridDamageReview = buildRangeGridDamageReview(primaryTrades);
   const blockedSetupLifecycle = buildBlockedSetupLifecycleSummary(blockedSetups, journal.counterfactuals || []);
   const executionCostSummary = buildExecutionCostSummary(primaryLookbackTrades, config, referenceNow.toISOString());
+  const paperLiveParity = buildPaperLiveParitySummary({
+    trades: primaryLookbackTrades,
+    minSampleSize: config.paperLiveParityMinSamples || 3
+  });
   const pnlDecomposition = buildPnlDecomposition(primaryLookbackTrades, config);
   const reportStats = buildTradeStats(primaryLookbackTrades, { realizedPnlAdjustment: lookbackScaleOutPnl });
   const sourceScopedStats = buildTradeStats(sourceScopedLookbackTrades, { realizedPnlAdjustment: sourceScopedLookbackScaleOutPnl });
@@ -1885,6 +1890,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
     recentTrades: primaryLookbackTrades.slice(-25).reverse(),
     executionSummary: buildExecutionSummary(primaryLookbackTrades),
     executionCostSummary,
+    paperLiveParity,
     pnlDecomposition,
     postTradeAnalytics,
     performanceDiagnosis,

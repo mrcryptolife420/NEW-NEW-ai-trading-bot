@@ -288,6 +288,10 @@ export async function registerLargeFoundationsTests({
       blockedSetups: [{
         symbol: "ETHUSDT",
         reasons: ["meta_followthrough_caution", "model_confidence_too_low"],
+        strategySummary: { family: "breakout", activeStrategy: "donchian_breakout" },
+        regime: "trend_up",
+        session: "us",
+        marketCondition: "breakout_release",
         lowConfidencePressure: {
           primaryDriver: "feature_trust_low",
           dominantFeaturePressureSource: "orderflow"
@@ -347,6 +351,10 @@ export async function registerLargeFoundationsTests({
           averageFeeBps: 19.9,
           reconstructedPaperEntryFeeCount: 5
         },
+        paperLiveParity: {
+          status: "paper_too_optimistic",
+          optimismBiasBps: 6.2
+        },
         postTradeAnalytics: {
           summary: { expectancyPct: -0.004 }
         },
@@ -360,12 +368,16 @@ export async function registerLargeFoundationsTests({
     assert.equal(diagnostics.status, "blocked_or_recovery");
     assert.equal(diagnostics.exchangeSafetyRecovery.recoveryOnly, true);
     assert.equal(diagnostics.exchangeSafetyRecovery.allowedOperations.includes("reconcile"), true);
+    assert.equal(diagnostics.exchangeSafetyRecovery.safeActions.includes("protective_rebuild"), true);
+    assert.equal(diagnostics.exchangeSafetyRecovery.forbiddenActions.includes("force_entry"), true);
     assert.equal(diagnostics.metaCaution.topReasons[0].id, "meta_followthrough_caution");
     assert.equal(diagnostics.metaCaution.topDrivers.some((item) => item.id === "calibration_drag"), true);
+    assert.equal(diagnostics.metaCaution.topContexts[0].id.includes("breakout/donchian_breakout"), true);
     assert.equal(diagnostics.badVeto.recommendationCount, 1);
     assert.equal(diagnostics.requestWeight.privateHotspots[0].caller, "signed:GET /api/v3/openOrders");
     assert.equal(diagnostics.requestWeight.publicHotspots[0].caller, "spot_public:GET /api/v3/depth");
     assert.equal(diagnostics.strategyRisk.status, "review_required");
+    assert.equal(diagnostics.strategyRisk.paperQuarantineAdvice.action, "diagnostic_downweight");
     assert.equal(diagnostics.backlog.length, 10);
     assert.equal(diagnostics.backlog.some((item) => item.id === "exit_loss_autopsy" && item.status === "review_required"), true);
     assert.equal(diagnostics.backlog.some((item) => item.id === "paper_live_parity_score" && item.status === "recommended"), true);
@@ -374,6 +386,7 @@ export async function registerLargeFoundationsTests({
     assert.ok(diagnostics.priorityActions.some((item) => item.includes("Depth REST fallback is onderdrukt")));
     assert.ok(diagnostics.priorityActions.some((item) => item.includes("REST budget governor")));
     assert.ok(diagnostics.backlog.find((item) => item.id === "public_depth_stream_first").evidence.some((item) => item.includes("suppressed")));
+    assert.ok(diagnostics.backlog.find((item) => item.id === "paper_live_parity_score").evidence.some((item) => item.includes("paper/live parity")));
   });
 
   await runCheck("scanner deep-book enrichment backs off under request-weight pressure", async () => {

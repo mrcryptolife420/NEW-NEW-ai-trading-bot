@@ -1,0 +1,23 @@
+{
+  "fixtureVersion": 1,
+  "incidentId": "SOLUSDT::model_confidence_too_low::2026-05-01T14:30:00",
+  "symbol": "SOLUSDT",
+  "reason": "model_confidence_too_low",
+  "rootBlocker": "model_confidence_too_low",
+  "blockerStage": "alpha_quality",
+  "finalEdge": 0.515,
+  "permissioningScore": 0.62,
+  "threshold": 0.54,
+  "allow": false,
+  "paperRecoveryProbeEligible": false,
+  "diagnostics": {
+    "metaCaution": "model_confidence_too_low",
+    "lowConfidenceDriver": "calibration_confidence",
+    "expectedOperatorAction": "review_bad_veto_learning_before_threshold_change"
+  },
+  "expectedDiff": {
+    "rootBlocker": "model_confidence_too_low",
+    "liveSafetyPreserved": true,
+    "noBlindThresholdLowering": true
+  }
+}

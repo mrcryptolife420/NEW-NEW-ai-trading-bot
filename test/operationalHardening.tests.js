@@ -3,6 +3,7 @@ import { validatePaperPortfolioState } from "../src/execution/paperBroker.js";
 import { sortReasonsByRootPriority, classifyDecisionPlane, isHardSafetyReason } from "../src/risk/reasonRegistry.js";
 import { buildStrategyEvidenceScorecard } from "../src/runtime/strategyEvidenceScorecard.js";
 import { classifyTradeAutopsy } from "../src/runtime/tradeAutopsy.js";
+import { buildPaperLiveParitySummary } from "../src/runtime/paperLiveParity.js";
 
 export async function registerOperationalHardeningTests({ runCheck, assert }) {
   await runCheck("fee accounting converts base quote and third asset commissions", async () => {
@@ -90,5 +91,20 @@ export async function registerOperationalHardeningTests({ runCheck, assert }) {
     assert.equal(classifyTradeAutopsy({ netPnlPct: -0.002, mfePct: 0.002, maePct: -0.004, executionQualityScore: 0.2 }).classification, "execution_drag");
     const profitableLowCapture = classifyTradeAutopsy({ netPnlPct: 0.004, mfePct: 0.03, captureEfficiency: 0.12 });
     assert.equal(profitableLowCapture.classification, "premature_exit");
+  });
+
+  await runCheck("paper/live parity flags optimistic paper fills", async () => {
+    const summary = buildPaperLiveParitySummary({
+      comparisons: [
+        { symbol: "BTCUSDT", side: "BUY", paperFillPrice: 100, liveFillPrice: 100.08, expectedSlippageBps: 1, realizedSlippageBps: 7, expectedFeeBps: 10, observedFeeBps: 10 },
+        { symbol: "ETHUSDT", side: "BUY", paperFillPrice: 50, liveFillPrice: 50.04, expectedSlippageBps: 1, realizedSlippageBps: 6, expectedFeeBps: 10, observedFeeBps: 11 },
+        { symbol: "BNBUSDT", side: "SELL", paperFillPrice: 300, liveFillPrice: 299.7, expectedSlippageBps: 1, realizedSlippageBps: 6, expectedFeeBps: 10, observedFeeBps: 10 }
+      ],
+      minSampleSize: 3
+    });
+    assert.equal(summary.status, "paper_too_optimistic");
+    assert.equal(summary.fillModelTooOptimistic, true);
+    assert.ok(summary.optimismBiasBps > 3);
+    assert.ok(summary.recommendedPaperCalibration.includes("conservatisme"));
   });
 }
