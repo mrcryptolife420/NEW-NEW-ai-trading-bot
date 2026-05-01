@@ -10883,6 +10883,7 @@ export class TradingBot {
     const state = this.restFallbackState?.[key];
     const now = Date.now();
     const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
+    const kind = `${key || ""}`.split(":")[0] || "market";
     if (rateLimitState?.banActive || rateLimitState?.backoffActive) {
       return false;
     }
@@ -10890,6 +10891,20 @@ export class TradingBot {
       const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
       const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
       if (rateLimitState?.warningActive || (Number.isFinite(usedWeight1m) && usedWeight1m >= warnThreshold * 0.8)) {
+        return false;
+      }
+    }
+    if (
+      kind === "depth" &&
+      this.config.disableDepthRestFallbackOnStreamDegraded !== false &&
+      this.config.enableEventDrivenData &&
+      this.config.enableLocalOrderBook
+    ) {
+      const streamStatus = this.stream?.getStatus ? this.stream.getStatus() : {};
+      const publicConnected = streamStatus.public?.connected ?? streamStatus.publicStreamConnected ?? streamStatus.connected ?? false;
+      const healthyLocalBooks = Number(streamStatus.localBook?.healthySymbols || streamStatus.localBook?.syncedSymbols || 0);
+      if (!publicConnected || !Number.isFinite(healthyLocalBooks) || healthyLocalBooks <= 0) {
+        this.rememberSuppressedRestFallback?.(key, "stream_or_local_book_degraded");
         return false;
       }
     }
@@ -10904,6 +10919,15 @@ export class TradingBot {
     };
   }
 
+  rememberSuppressedRestFallback(key, reason = "guarded") {
+    this.restFallbackSuppressedState = this.restFallbackSuppressedState || {};
+    this.restFallbackSuppressedState[key] = {
+      lastAtMs: Date.now(),
+      lastAt: nowIso(),
+      reason
+    };
+  }
+
   buildStreamFallbackHealth(streamStatus = {}, referenceNow = nowIso()) {
     const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : (this.runtime.requestWeight || {});
     const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
@@ -10914,6 +10938,17 @@ export class TradingBot {
         key,
         kind: `${key}`.split(":")[0] || "unknown",
         symbol: `${key}`.split(":")[1] || null,
+        lastAt: value?.lastAt || null,
+        ageMs: Number.isFinite(Date.parse(value?.lastAt || "")) ? Math.max(0, Date.parse(referenceNow) - Date.parse(value.lastAt)) : null
+      }))
+      .sort((left, right) => Number(left.ageMs ?? Infinity) - Number(right.ageMs ?? Infinity))
+      .slice(0, 12);
+    const suppressedEntries = Object.entries(this.restFallbackSuppressedState || {})
+      .map(([key, value]) => ({
+        key,
+        kind: `${key}`.split(":")[0] || "unknown",
+        symbol: `${key}`.split(":")[1] || null,
+        reason: value?.reason || "guarded",
         lastAt: value?.lastAt || null,
         ageMs: Number.isFinite(Date.parse(value?.lastAt || "")) ? Math.max(0, Date.parse(referenceNow) - Date.parse(value.lastAt)) : null
       }))
@@ -10949,7 +10984,7 @@ export class TradingBot {
         ? "private_stream_gap_using_rest"
       : (publicStreamAuthoritative && publicConnected && publicStreamStaleChunkCount > 0)
         ? "public_stream_stalled"
-      : pressure >= 0.8
+      : pressure >= 0.8 || suppressedEntries.some((entry) => entry.kind === "depth")
         ? "rest_pressure_guarded"
       : (publicStreamAuthoritative && !publicConnected && depthFallbacks.length)
           ? "stream_gap_using_rest_fallback"
@@ -10980,11 +11015,13 @@ export class TradingBot {
       fallbackCount: fallbackEntries.length,
       depthFallbackCount: depthFallbacks.length,
       bookTickerFallbackCount: bookTickerFallbacks.length,
+      suppressedFallbackCount: suppressedEntries.length,
       userStreamExpected,
       userStreamConnected,
       privateRestWeight,
       publicFallbackWeight,
       recentFallbacks: fallbackEntries,
+      recentSuppressedFallbacks: suppressedEntries,
       recommendedAction
     };
   }

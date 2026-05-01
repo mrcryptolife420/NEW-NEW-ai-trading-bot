@@ -181,6 +181,7 @@ export function buildRequestWeightMitigationPlan({
     privateHotspots.length ? "Maak User Data Stream leidend voor orders/fills/account en beperk private REST tot reconcile sanity checks." : null,
     publicHotspots.length ? "Gebruik public WebSocket/local book voor hot market-data callers en verhoog REST fallback TTL." : null,
     fallbackHealth.status === "degraded" ? "Herstel stream fallback health voordat scanner/deep-book REST wordt opgevoerd." : null,
+    safeNumber(fallbackHealth.suppressedFallbackCount, 0) > 0 ? "Depth REST fallback is onderdrukt door de stream/local-book guard; herstel streams voordat deep-book REST terugkomt." : null,
     weight.banActive ? "Hard pause blijft actief tot Binance banUntil verstreken is." : null,
     ...arr(budget.recommendedActions)
   ].filter(Boolean);
@@ -259,7 +260,8 @@ export function buildTradingImprovementBacklog({
       priority: 2,
       evidence: [
         ...arr(requestWeight.publicHotspots).map((item) => `${item.caller} weight ${item.weight || 0}`),
-        streamFallbackHealth.status === "degraded" ? "stream fallback degraded" : null
+        streamFallbackHealth.status === "degraded" ? "stream fallback degraded" : null,
+        safeNumber(streamFallbackHealth.suppressedFallbackCount, 0) > 0 ? `${streamFallbackHealth.suppressedFallbackCount} REST fallback(s) suppressed` : null
       ],
       nextStep: "Gebruik local order book/WebSocket als primaire bron; skip deep-book REST onder streamdegradatie of request-pressure.",
       safety: "no_order_behavior_change"

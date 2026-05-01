@@ -3,6 +3,7 @@ import { ReadModelStore } from "../src/storage/readModelStore.js";
 import { StateStore } from "../src/storage/stateStore.js";
 import { PersistenceCoordinator } from "../src/runtime/persistenceCoordinator.js";
 import { TradingBot } from "../src/runtime/tradingBot.js";
+import { LiveBroker } from "../src/execution/liveBroker.js";
 import { runMarketReplay } from "../src/runtime/marketReplayEngine.js";
 import { buildMarketScannerUniverse, resolveScannerDeepBookPlan } from "../src/runtime/marketScanner.js";
 import { buildPerformanceReport } from "../src/runtime/reportBuilder.js";
@@ -284,7 +285,7 @@ export async function registerLargeFoundationsTests({
         ],
         recommendedActions: ["Pauzeer niet-kritieke dashboard/research/scanner REST acties tot weight normaliseert."]
       },
-      streamFallbackHealth: { status: "degraded" },
+      streamFallbackHealth: { status: "degraded", suppressedFallbackCount: 2 },
       readModel: {
         strategyLifecycleDiagnostics: {
           status: "review_required",
@@ -323,6 +324,8 @@ export async function registerLargeFoundationsTests({
     assert.equal(diagnostics.backlog.some((item) => item.id === "paper_live_parity_score" && item.status === "recommended"), true);
     assert.equal(diagnostics.backlog.some((item) => item.id === "exchange_safety_recovery_playbook" && item.status === "action_required"), true);
     assert.ok(diagnostics.priorityActions.some((item) => item.includes("User Data Stream")));
+    assert.ok(diagnostics.priorityActions.some((item) => item.includes("Depth REST fallback is onderdrukt")));
+    assert.ok(diagnostics.backlog.find((item) => item.id === "public_depth_stream_first").evidence.some((item) => item.includes("suppressed")));
   });
 
   await runCheck("scanner deep-book enrichment backs off under request-weight pressure", async () => {
@@ -372,6 +375,72 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.status, "rest_pressure_guarded");
     assert.equal(summary.depthFallbackCount, 1);
     assert.equal(summary.recommendedAction.includes("streams"), true);
+  });
+
+  await runCheck("depth REST fallback is suppressed when streams and local book are degraded", async () => {
+    const fakeBot = {
+      config: {
+        enableEventDrivenData: true,
+        enableLocalOrderBook: true,
+        requestWeightWarnThreshold1m: 4800
+      },
+      runtime: {},
+      restFallbackState: {},
+      restFallbackSuppressedState: {},
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 100, banActive: false, backoffActive: false };
+        }
+      },
+      stream: {
+        getStatus() {
+          return {
+            publicStreamConnected: false,
+            localBook: { healthySymbols: 0 }
+          };
+        }
+      },
+      rememberSuppressedRestFallback: TradingBot.prototype.rememberSuppressedRestFallback
+    };
+    const allowed = TradingBot.prototype.shouldUseRestFallback.call(
+      fakeBot,
+      "depth:BTCUSDT",
+      1_000,
+      { pressureSensitive: true }
+    );
+    const summary = TradingBot.prototype.buildStreamFallbackHealth.call(fakeBot, {
+      publicStreamConnected: false,
+      connectivityAuthoritative: true,
+      localBook: { healthySymbols: 0 }
+    }, "2026-01-01T00:00:01.000Z");
+
+    assert.equal(allowed, false);
+    assert.equal(fakeBot.restFallbackSuppressedState["depth:BTCUSDT"].reason, "stream_or_local_book_degraded");
+    assert.equal(summary.status, "rest_pressure_guarded");
+    assert.equal(summary.suppressedFallbackCount, 1);
+    assert.equal(summary.recentSuppressedFallbacks[0].key, "depth:BTCUSDT");
+  });
+
+  await runCheck("live broker skips recent-trade REST under request-weight pressure", async () => {
+    let myTradesCalls = 0;
+    const broker = new LiveBroker({
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 4600, warningActive: false, banActive: false, backoffActive: false };
+        },
+        async getMyTrades() {
+          myTradesCalls += 1;
+          return [];
+        }
+      },
+      symbolRules: {},
+      config: { requestWeightWarnThreshold1m: 4800 },
+      logger: { info() {}, warn() {}, error() {}, debug() {} }
+    });
+    const result = await broker.fetchRecentTrades("BTCUSDT", 8);
+    assert.equal(result.skipped, true);
+    assert.equal(result.error.message, "recent_trades_skipped_request_weight_pressure");
+    assert.equal(myTradesCalls, 0);
   });
 
   await runCheck("stream fallback health does not treat read-only status snapshots as live stream gaps", async () => {

@@ -590,6 +590,19 @@ export class LiveBroker {
   }
 
   async fetchRecentTrades(symbol, limit = 8) {
+    const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
+    const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
+    const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
+    const pressure = Number.isFinite(usedWeight1m) && warnThreshold > 0 ? usedWeight1m / warnThreshold : 0;
+    if (rateLimitState?.banActive || rateLimitState?.backoffActive || rateLimitState?.warningActive || pressure >= 0.8) {
+      return {
+        trades: [],
+        error: new Error("recent_trades_skipped_request_weight_pressure"),
+        skipped: true,
+        pressure,
+        usedWeight1m
+      };
+    }
     return fetchRecentTrades(this.client, symbol, limit);
   }
 
