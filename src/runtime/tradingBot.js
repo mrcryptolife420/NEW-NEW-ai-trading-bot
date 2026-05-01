@@ -122,6 +122,7 @@ import {
   buildFeatureUsefulnessView
 } from "./viewMappers.js";
 import { buildOperatorActionResult } from "./operatorRunbookGenerator.js";
+import { buildTradingImprovementDiagnostics } from "./tradingImprovementDiagnostics.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -24878,6 +24879,23 @@ export class TradingBot {
     const readModelSummary = await this.buildReadModelDashboardSummary();
     const decoratedStreamStatus = decorateStreamStatus(this.stream.getStatus(), this.runtime.service || {});
     const streamFallbackHealth = this.buildStreamFallbackHealth(decoratedStreamStatus, referenceNow);
+    const tradingImprovementDiagnostics = buildTradingImprovementDiagnostics({
+      topDecisions: dashboardTopDecisions,
+      blockedSetups: dashboardBlockedSetups,
+      lastEntryAttempt: summarizeLastEntryAttempt(this.runtime.lastEntryAttempt || {}),
+      lowConfidenceAudit,
+      blockerFrictionAudit,
+      exchangeSafety: exchangeSafetySummary,
+      exchangeTruth: exchangeTruthSummary,
+      signalFlow: signalFlowSummary,
+      rejectAdaptiveLearning: rejectAdaptiveLearningSummary,
+      offlineTrainer: offlineTrainerSummary,
+      requestWeight: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
+      requestBudget: readModelSummary?.requestBudget || {},
+      streamFallbackHealth,
+      streamStatus: decoratedStreamStatus,
+      readModel: readModelSummary
+    });
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),
       generatedAt: referenceNow,
@@ -25032,6 +25050,7 @@ export class TradingBot {
         reconcileTimeline,
         paperLearning: paperLearningSummary,
         badVetoLearning: rejectAdaptiveLearningSummary,
+        tradingImprovementDiagnostics,
         marketProviders: marketProvidersSummary,
         onlineAdaptation: onlineAdaptationSummary,
         adaptiveLearning: adaptiveLearningSummary,
@@ -25065,6 +25084,7 @@ export class TradingBot {
       onlineAdaptation: onlineAdaptationSummary,
       adaptiveLearning: adaptiveLearningSummary,
       badVetoLearning: rejectAdaptiveLearningSummary,
+      tradingImprovementDiagnostics,
       marketProviders: marketProvidersSummary,
       requestWeight: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
       offlineTrainer: offlineTrainerSummary,

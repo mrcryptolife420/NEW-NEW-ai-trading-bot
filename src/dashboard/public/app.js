@@ -940,6 +940,7 @@ function renderHealth(snapshot) {
   const requestWeight = dashboard.requestWeight || ops.requestWeight || exchangeConnectivity.requestWeight || {};
   const readModel = dashboard.readModel || dashboard.report?.readModel || {};
   const requestBudget = readModel.requestBudget || dashboard.requestBudgetSummary || {};
+  const tradingImprovements = dashboard.tradingImprovementDiagnostics || ops.tradingImprovementDiagnostics || {};
   const readModelTables = readModel.tables || {};
   const topReadModelBlocker = arr(readModel.topBlockers || [])[0] || null;
   const dangerousScorecards = arr(readModel.topScorecards || []).filter((item) => ["dangerous", "negative_edge"].includes(item.status));
@@ -1126,6 +1127,18 @@ function renderHealth(snapshot) {
         requestBudget.status && requestBudget.status !== "ready" ? titleize(requestBudget.status) : null
       ]) || "Geen request-weight telemetrie beschikbaar.",
       tone: requestWeight.banActive ? "negative" : requestWeight.backoffActive || requestWeight.warningActive || requestBudget.rateLimitEvents ? "warning" : "neutral"
+    },
+    {
+      title: "Trading improvement priorities",
+      detail: compactJoin([
+        tradingImprovements.status ? titleize(tradingImprovements.status) : null,
+        tradingImprovements.requestWeight?.privateHotspots?.[0]?.caller ? `private REST ${tradingImprovements.requestWeight.privateHotspots[0].caller}` : null,
+        tradingImprovements.metaCaution?.topReasons?.[0]?.id ? `meta ${humanizeReason(tradingImprovements.metaCaution.topReasons[0].id)} x${tradingImprovements.metaCaution.topReasons[0].count || 0}` : null,
+        tradingImprovements.exchangeSafetyRecovery?.recoveryOnly ? "recovery-only actief" : null,
+        tradingImprovements.strategyRisk?.dangerous?.[0]?.strategyId ? `risk ${tradingImprovements.strategyRisk.dangerous[0].strategyId}` : null,
+        arr(tradingImprovements.priorityActions || [])[0] || null
+      ]) || "Geen extra trading-improvement acties in deze snapshot.",
+      tone: ["blocked_or_recovery", "action_required"].includes(tradingImprovements.status) ? "warning" : "neutral"
     },
     {
       title: "Decision funnel",

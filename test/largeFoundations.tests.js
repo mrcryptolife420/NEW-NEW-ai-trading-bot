@@ -15,6 +15,7 @@ import {
   buildOperatorRunbookForReason,
   buildStrategyLifecycleDiagnostics
 } from "../src/runtime/operatorRunbookGenerator.js";
+import { buildTradingImprovementDiagnostics } from "../src/runtime/tradingImprovementDiagnostics.js";
 
 function buildCandles(count = 70) {
   const start = Date.parse("2026-01-01T00:00:00.000Z");
@@ -116,6 +117,10 @@ export async function registerLargeFoundationsTests({
     assert.equal(dashboard.requestBudget.status, "ready");
     assert.equal(dashboard.requestBudget.latestWeight1m, 123);
     assert.equal(dashboard.requestBudget.topCallers[0].caller, "spot:GET:/api/v3/ticker/bookTicker");
+    assert.equal(dashboard.tradingImprovementDiagnostics.status, "action_required");
+    assert.equal(dashboard.tradingImprovementDiagnostics.metaCaution.status, "active");
+    assert.equal(dashboard.tradingImprovementDiagnostics.metaCaution.topReasons[0].id, "model_confidence_too_low");
+    assert.equal(dashboard.tradingImprovementDiagnostics.requestWeight.publicHotspots[0].caller, "spot:GET:/api/v3/ticker/bookTicker");
     assert.equal(decisionTrace.status, "ready");
     assert.equal(decisionTrace.blockers.length, 2);
     assert.equal(cycleTrace.decisionIds.includes("decision-1"), true);
@@ -234,6 +239,68 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.incidents.length >= 1, true);
     assert.equal(summary.incidents.some((incident) => incident.type === "request_budget_hot_caller"), true);
     assert.equal(summary.recommendedActions.some((action) => action.includes("depth")), true);
+  });
+
+  await runCheck("trading improvement diagnostics combine meta caution recovery request budget and strategy risk", async () => {
+    const diagnostics = buildTradingImprovementDiagnostics({
+      blockedSetups: [{
+        symbol: "ETHUSDT",
+        reasons: ["meta_followthrough_caution", "model_confidence_too_low"],
+        lowConfidencePressure: {
+          primaryDriver: "feature_trust_low",
+          dominantFeaturePressureSource: "orderflow"
+        },
+        metaSummary: { action: "caution" }
+      }],
+      lastEntryAttempt: {
+        recoveryOnly: true,
+        allowedOperations: ["reconcile", "exit", "protective_rebuild"],
+        blockedReasonDetails: {
+          lowConfidenceDrivers: [{ id: "calibration_drag", count: 2 }],
+          metaActions: [{ id: "followthrough_caution", count: 1 }]
+        }
+      },
+      exchangeSafety: {
+        globalFreezeEntries: true,
+        globalFreezeReason: "exchange_safety_blocked",
+        blockedSymbols: [{ symbol: "BTCUSDT", reason: "manual_review" }]
+      },
+      exchangeTruth: { freezeEntries: true },
+      rejectAdaptiveLearning: {
+        status: "active",
+        recommendations: [{ blocker: "meta_followthrough_caution", action: "bounded_paper_soften" }],
+        blockerStats: [{ blocker: "meta_followthrough_caution", falseNegativeRate: 0.62 }]
+      },
+      offlineTrainer: { counterfactuals: { total: 12, averageMissedMovePct: 0.8 } },
+      requestWeight: { warningActive: true, usedWeight1m: 5100 },
+      requestBudget: {
+        pressureLevel: "warning",
+        latestWeight1m: 5100,
+        topCallers: [
+          { caller: "signed:GET /api/v3/openOrders", count: 20, weight: 1600 },
+          { caller: "spot_public:GET /api/v3/depth", count: 12, weight: 300 }
+        ],
+        recommendedActions: ["Pauzeer niet-kritieke dashboard/research/scanner REST acties tot weight normaliseert."]
+      },
+      streamFallbackHealth: { status: "degraded" },
+      readModel: {
+        strategyLifecycleDiagnostics: {
+          status: "review_required",
+          topDangerous: [{ strategyId: "range_grid_reversion", status: "dangerous", sampleSize: 9 }]
+        }
+      }
+    });
+
+    assert.equal(diagnostics.status, "blocked_or_recovery");
+    assert.equal(diagnostics.exchangeSafetyRecovery.recoveryOnly, true);
+    assert.equal(diagnostics.exchangeSafetyRecovery.allowedOperations.includes("reconcile"), true);
+    assert.equal(diagnostics.metaCaution.topReasons[0].id, "meta_followthrough_caution");
+    assert.equal(diagnostics.metaCaution.topDrivers.some((item) => item.id === "calibration_drag"), true);
+    assert.equal(diagnostics.badVeto.recommendationCount, 1);
+    assert.equal(diagnostics.requestWeight.privateHotspots[0].caller, "signed:GET /api/v3/openOrders");
+    assert.equal(diagnostics.requestWeight.publicHotspots[0].caller, "spot_public:GET /api/v3/depth");
+    assert.equal(diagnostics.strategyRisk.status, "review_required");
+    assert.ok(diagnostics.priorityActions.some((item) => item.includes("User Data Stream")));
   });
 
   await runCheck("scanner deep-book enrichment backs off under request-weight pressure", async () => {

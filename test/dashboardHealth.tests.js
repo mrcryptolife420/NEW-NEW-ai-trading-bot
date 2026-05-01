@@ -212,6 +212,20 @@ export async function registerDashboardHealthTests({
             positiveCount: 0,
             recommendedAction: "Review dangerous strategy/regime/session pairs."
           }
+        },
+        tradingImprovementDiagnostics: {
+          status: "action_required",
+          requestWeight: {
+            privateHotspots: [{ caller: "signed:GET /api/v3/openOrders" }]
+          },
+          metaCaution: {
+            topReasons: [{ id: "meta_followthrough_caution", count: 9 }]
+          },
+          exchangeSafetyRecovery: { recoveryOnly: false },
+          strategyRisk: {
+            dangerous: [{ strategyId: "range_grid_reversion" }]
+          },
+          priorityActions: ["Maak User Data Stream leidend voor orders/fills/account."]
         }
       }
     });
@@ -222,5 +236,8 @@ export async function registerDashboardHealthTests({
     assert.ok(readModelRender.healthText.includes("Review dangerous strategy"));
     assert.ok(readModelRender.healthText.includes("npm run status"));
     assert.ok(readModelRender.healthText.includes("spot:GET:/api/v3/ticker/bookTicker"));
+    assert.ok(readModelRender.healthText.includes("Trading improvement priorities"));
+    assert.ok(readModelRender.healthText.includes("signed:GET /api/v3/openOrders"));
+    assert.ok(readModelRender.healthText.includes("Meta Followthrough Caution"));
   });
 }

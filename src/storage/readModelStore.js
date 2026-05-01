@@ -5,6 +5,7 @@ import { StateStore } from "./stateStore.js";
 import { AuditLogStore } from "./auditLogStore.js";
 import { buildStrategyEvidenceScorecards } from "../runtime/strategyEvidenceScorecard.js";
 import { buildOperatorRunbookForReason, buildStrategyLifecycleDiagnostics } from "../runtime/operatorRunbookGenerator.js";
+import { buildTradingImprovementDiagnostics } from "../runtime/tradingImprovementDiagnostics.js";
 import { ensureDir } from "../utils/fs.js";
 
 const READ_MODEL_SCHEMA_VERSION = 1;
@@ -638,6 +639,16 @@ export class ReadModelStore {
     const operatorRunbooks = topBlockers
       .slice(0, 3)
       .map((item) => buildOperatorRunbookForReason(item.reason, { count: item.count }));
+    const requestBudget = this.requestBudgetSummary({ limit });
+    const strategyLifecycleDiagnostics = buildStrategyLifecycleDiagnostics(topScorecards);
+    const tradingImprovementDiagnostics = buildTradingImprovementDiagnostics({
+      blockedSetups: topBlockers.map((item) => ({ reasons: [item.reason] })),
+      requestBudget,
+      readModel: {
+        topScorecards,
+        strategyLifecycleDiagnostics
+      }
+    });
     return {
       ...status,
       source: "sqlite_read_model",
@@ -645,9 +656,10 @@ export class ReadModelStore {
       topBlockers,
       topScorecards,
       latestReplay,
-      requestBudget: this.requestBudgetSummary({ limit }),
+      requestBudget,
       operatorRunbooks,
-      strategyLifecycleDiagnostics: buildStrategyLifecycleDiagnostics(topScorecards)
+      strategyLifecycleDiagnostics,
+      tradingImprovementDiagnostics
     };
   }
 
