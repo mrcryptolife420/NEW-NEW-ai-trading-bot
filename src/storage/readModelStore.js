@@ -709,6 +709,29 @@ export class ReadModelStore {
       }
     }
     const topCallers = [...callers.values()]
+      .map((caller) => {
+        const publicDepth = /depth|orderBook/i.test(caller.caller);
+        const privateTradeHistory = /myTrades|recent_trades|trade_history|settle_.*trades/i.test(caller.caller);
+        const privateOrders = /openOrders|open_orders|openOrderList|open_order_list/i.test(caller.caller);
+        const hotThreshold = publicDepth ? 5000 : privateTradeHistory ? 2000 : privateOrders ? 8000 : 1000;
+        const hot = Number(caller.weight || 0) >= hotThreshold;
+        const streamReplacementAvailable = publicDepth || privateTradeHistory;
+        return {
+          ...caller,
+          hot,
+          streamReplacementAvailable,
+          guarded: hot && streamReplacementAvailable,
+          nextSafeAction: publicDepth
+            ? "use_local_book_or_public_stream"
+            : privateTradeHistory
+              ? "use_user_stream_fills"
+              : privateOrders
+                ? "keep_reconcile_but_reduce_poll_frequency"
+                : hot
+                  ? "review_rest_call_frequency"
+                  : "watch"
+        };
+      })
       .sort((left, right) => (right.weight - left.weight) || (right.count - left.count) || left.caller.localeCompare(right.caller))
       .slice(0, limit);
     const pressureLevel = latestWeight1m == null
@@ -732,6 +755,8 @@ export class ReadModelStore {
             ? "public_klines"
             : /openOrders|open_orders|openOrderList|open_order_list/i.test(caller.caller)
               ? "private_orders"
+              : /myTrades|recent_trades|trade_history|settle_.*trades/i.test(caller.caller)
+                ? "private_trade_history"
               : /account/i.test(caller.caller)
                 ? "private_account"
                 : "other";

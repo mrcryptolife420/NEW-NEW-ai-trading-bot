@@ -222,7 +222,12 @@ export function buildSignalQualitySummary({
       confirmationScore: clamp(safeValue(marketFeatures.cvdConfirmationScore), 0, 1),
       divergenceScore: clamp(safeValue(marketFeatures.cvdDivergenceScore), 0, 1),
       trendAlignment: clamp(safeValue(marketFeatures.cvdTrendAlignment), -1, 1),
-      confidence: clamp(safeValue(marketFeatures.cvdConfidence), 0, 1)
+      confidence: clamp(safeValue(marketFeatures.cvdConfidence), 0, 1),
+      multiHorizon: marketFeatures.cvdMultiHorizon || null,
+      absorption: marketFeatures.orderflowAbsorption || null,
+      toxicity: marketFeatures.orderflowToxicity || null,
+      absorptionScore: clamp(safeValue(marketFeatures.orderflowAbsorptionScore), 0, 1),
+      toxicityScore: clamp(safeValue(marketFeatures.orderflowToxicityScore), 0, 1)
     },
     gridContext: {
       rangeWidthPct: safeValue(marketFeatures.rangeWidthPct),

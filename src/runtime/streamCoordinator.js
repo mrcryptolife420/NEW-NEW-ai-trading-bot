@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { LocalOrderBookEngine } from "../market/localOrderBook.js";
-import { getOrderflowDelta, recordAggTrade } from "../market/orderbookDelta.js";
+import { getMultiHorizonOrderflow, getOrderflowDelta, recordAggTrade } from "../market/orderbookDelta.js";
 import { mapWithConcurrency } from "../utils/async.js";
 
 function toCombinedStreamPath(streams) {
@@ -629,6 +629,11 @@ export class StreamCoordinator {
         tradeFlowImbalance: 0,
         microTrend: 0,
         orderflowDelta: null,
+        orderflowContext: null,
+        cvdMultiHorizon: null,
+        absorption: null,
+        toxicity: null,
+        orderflowDivergence: 0,
         latestBookTicker,
         recentTradeCount: 0,
         liquidationCount: 0,
@@ -655,11 +660,22 @@ export class StreamCoordinator {
     const orderflowDelta = this.config.enableAggtradeOrderflow
       ? getOrderflowDelta(symbol, this.config.aggtradeWindowSeconds)
       : null;
+    const orderflowContext = this.config.enableAggtradeOrderflow
+      ? getMultiHorizonOrderflow(symbol, [60, 300, 900, 3600], {
+          depthConfidence: localBook?.depthConfidence,
+          microTrend: firstPrice ? (lastPrice - firstPrice) / firstPrice : 0
+        })
+      : null;
 
     return {
       tradeFlowImbalance: totalVolume ? (buyVolume - sellVolume) / totalVolume : 0,
       microTrend: firstPrice ? (lastPrice - firstPrice) / firstPrice : 0,
       orderflowDelta,
+      orderflowContext,
+      cvdMultiHorizon: orderflowContext?.horizons || null,
+      absorption: orderflowContext?.absorption || null,
+      toxicity: orderflowContext?.toxicity || null,
+      orderflowDivergence: orderflowContext?.divergenceScore || 0,
       latestBookTicker,
       recentTradeCount: trades.length,
       liquidationCount: liquidations.length,

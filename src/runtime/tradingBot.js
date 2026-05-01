@@ -1443,6 +1443,7 @@ function buildCachedSnapshotView({ symbol, cachedSnapshot, streamFeatures = {}, 
   return {
     ...cachedSnapshot,
     symbol,
+    market: enrichMarketWithStreamOrderflow(cachedSnapshot.market || {}, streamFeatures),
     book: {
       ...(cachedSnapshot.book || {}),
       ...refreshedBook,
@@ -1453,6 +1454,11 @@ function buildCachedSnapshotView({ symbol, cachedSnapshot, streamFeatures = {}, 
       tradeFlowImbalance: Number(streamFeatures.tradeFlowImbalance ?? cachedSnapshot.book?.tradeFlowImbalance ?? 0),
       microTrend: Number(streamFeatures.microTrend ?? cachedSnapshot.book?.microTrend ?? 0),
       recentTradeCount: Number(streamFeatures.recentTradeCount ?? cachedSnapshot.book?.recentTradeCount ?? 0),
+      orderflowContext: streamFeatures.orderflowContext || cachedSnapshot.book?.orderflowContext || null,
+      cvdMultiHorizon: streamFeatures.cvdMultiHorizon || cachedSnapshot.book?.cvdMultiHorizon || null,
+      absorption: streamFeatures.absorption || cachedSnapshot.book?.absorption || null,
+      toxicity: streamFeatures.toxicity || cachedSnapshot.book?.toxicity || null,
+      orderflowDivergence: Number(streamFeatures.orderflowDivergence ?? cachedSnapshot.book?.orderflowDivergence ?? 0),
       localBook: localBookSnapshot || cachedSnapshot.book?.localBook || null,
       localBookSynced: Boolean(localBookSnapshot?.synced ?? cachedSnapshot.book?.localBookSynced),
       queueImbalance: Number(localBookSnapshot?.queueImbalance ?? cachedSnapshot.book?.queueImbalance ?? 0),
@@ -8002,6 +8008,41 @@ function summarizeDecisionFunnel(funnel = {}) {
         rootBlocker: item.probe?.rootBlocker || item.primaryReason || null
       })),
     symbolFunnels: symbolFunnels.slice(0, 16)
+  };
+}
+
+function enrichMarketWithStreamOrderflow(marketFeatures = {}, streamFeatures = {}) {
+  const context = streamFeatures.orderflowContext || {};
+  const primary = context.primary || streamFeatures.orderflowDelta || {};
+  const absorption = context.absorption || streamFeatures.absorption || {};
+  const toxicity = context.toxicity || streamFeatures.toxicity || {};
+  const horizons = context.horizons || streamFeatures.cvdMultiHorizon || null;
+  const deltaRatio = Number(primary.deltaRatio || 0);
+  const confirmationScore = Math.max(0, Math.min(1, Math.max(0, deltaRatio) * 1.35));
+  const divergenceScore = Math.max(
+    Number(marketFeatures.cvdDivergenceScore || 0),
+    Number(context.divergenceScore || streamFeatures.orderflowDivergence || 0),
+    Number(absorption.buyAbsorptionScore || 0) * 0.72
+  );
+  return {
+    ...marketFeatures,
+    cvdMultiHorizon: horizons,
+    cvdAggTradeDeltaRatio: deltaRatio,
+    cvdAggTradeDelta: Number(primary.delta || 0),
+    cvdAggTradeQuality: primary.dataQuality || "unknown",
+    cvdConfirmationScore: Math.max(Number(marketFeatures.cvdConfirmationScore || 0), confirmationScore),
+    cvdDivergenceScore: Math.max(Number(marketFeatures.cvdDivergenceScore || 0), Math.min(1, divergenceScore)),
+    cvdTrendAlignment: Number.isFinite(Number(context.trendAlignment))
+      ? Number(context.trendAlignment)
+      : Number(marketFeatures.cvdTrendAlignment || 0),
+    cvdConfidence: Math.max(Number(marketFeatures.cvdConfidence || 0), primary.dataQuality === "high" ? 0.84 : primary.dataQuality === "medium" ? 0.62 : primary.dataQuality === "low" ? 0.38 : 0),
+    orderflowAbsorption: absorption,
+    orderflowAbsorptionScore: Number(absorption.score || 0),
+    orderflowBuyAbsorptionScore: Number(absorption.buyAbsorptionScore || 0),
+    orderflowSellAbsorptionScore: Number(absorption.sellAbsorptionScore || 0),
+    orderflowToxicity: toxicity,
+    orderflowToxicityScore: Number(toxicity.score || 0),
+    orderflowToxicityLevel: toxicity.level || "normal"
   };
 }
 
@@ -17155,10 +17196,16 @@ export class TradingBot {
             this.config.vwapLookbackCandles
           )
         : EMPTY_VOLUME_CONTEXT;
+      const market = enrichMarketWithStreamOrderflow(computeMarketFeatures(candles), streamFeatures);
+      book.orderflowContext = streamFeatures.orderflowContext || null;
+      book.cvdMultiHorizon = streamFeatures.cvdMultiHorizon || null;
+      book.absorption = streamFeatures.absorption || null;
+      book.toxicity = streamFeatures.toxicity || null;
+      book.orderflowDivergence = streamFeatures.orderflowDivergence || 0;
       const snapshot = {
         symbol,
         candles,
-        market: computeMarketFeatures(candles),
+        market,
         volumeContext,
         timeframes,
         book,

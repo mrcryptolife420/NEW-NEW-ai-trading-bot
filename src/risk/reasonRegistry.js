@@ -46,7 +46,11 @@ const DEFINITIONS = {
   meta_neural_caution: { category: "governance", plane: "permissioning", severity: "medium", paperSoftEligible: true, probeEligible: true, rootPriority: 170, operatorAction: "review_meta_caution" },
   meta_followthrough_caution: { category: "quality", plane: "alpha", severity: "medium", paperSoftEligible: true, probeEligible: true, rootPriority: 240, operatorAction: "review_followthrough" },
   meta_followthrough_reject: { category: "quality", plane: "alpha", severity: "medium", rootPriority: 210, operatorAction: "review_followthrough" },
-  meta_followthrough_extension_reject: { category: "quality", plane: "alpha", severity: "medium", rootPriority: 210, operatorAction: "review_followthrough" }
+  meta_followthrough_extension_reject: { category: "quality", plane: "alpha", severity: "medium", rootPriority: 210, operatorAction: "review_followthrough" },
+  range_grid_paper_quarantined: { category: "governance", plane: "permissioning", severity: "medium", rootPriority: 160, operatorAction: "review_range_grid_scorecard" },
+  range_grid_paper_degraded: { category: "governance", plane: "permissioning", severity: "low", paperSoftEligible: true, probeEligible: false, rootPriority: 245, operatorAction: "review_range_grid_scorecard" },
+  orderflow_toxicity: { category: "execution", plane: "permissioning", severity: "medium", rootPriority: 206, operatorAction: "review_orderflow_toxicity" },
+  orderflow_absorption: { category: "market", plane: "alpha", severity: "medium", rootPriority: 226, operatorAction: "review_orderflow_absorption" }
 };
 
 function humanize(code = "") {

@@ -87,6 +87,31 @@ export function defaultPriorityForRestClass(restClass) {
   }
 }
 
+function streamReplacementAvailable(restClass, streamStatus = {}) {
+  if (restClass === "public_market_depth" || restClass === "public_market_snapshot") {
+    return Boolean(streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected);
+  }
+  if (restClass === "private_trade_history") {
+    return Boolean(streamStatus?.userStreamConnected);
+  }
+  return false;
+}
+
+function nextSafeActionForCaller(restClass, allowance = {}, replacementAvailable = false) {
+  if (!allowance.allow && restClass === "public_market_depth") {
+    return replacementAvailable ? "use_local_book_or_public_stream" : "restore_public_stream_before_depth_rest";
+  }
+  if (!allowance.allow && restClass === "private_trade_history") {
+    return replacementAvailable ? "use_user_stream_fills" : "restore_user_stream_then_retry_private_rest";
+  }
+  if (!allowance.allow) {
+    return "defer_non_critical_rest_until_budget_recovers";
+  }
+  return restClass === "critical_reconcile" || restClass === "critical_execution"
+    ? "allowed_for_safety_or_execution"
+    : "allowed_with_budget_watch";
+}
+
 export function evaluateRestBudgetAllowance({
   caller = "",
   priority = null,
@@ -184,14 +209,33 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
   const pressureState = getRequestWeightPressure(rateLimitState, config);
   const topRestCallers = rateLimitState?.topRestCallers || {};
   const topCallers = Object.entries(topRestCallers)
-    .map(([caller, value]) => ({
-      caller,
-      count: safeNumber(value?.count, 0),
-      weight: safeNumber(value?.weight, 0),
-      restClass: classifyRestCaller(caller),
-      priority: defaultPriorityForRestClass(classifyRestCaller(caller)),
-      hotCallerThreshold: resolveHotCallerThreshold(classifyRestCaller(caller), config)
-    }))
+    .map(([caller, value]) => {
+      const restClass = classifyRestCaller(caller);
+      const priority = defaultPriorityForRestClass(restClass);
+      const hotCallerThreshold = resolveHotCallerThreshold(restClass, config);
+      const weight = safeNumber(value?.weight, 0);
+      const streamReplacement = streamReplacementAvailable(restClass, streamStatus);
+      const allowance = evaluateRestBudgetAllowance({
+        caller,
+        priority,
+        rateLimitState,
+        config,
+        streamPrimary: streamReplacement || ["public_market_depth", "private_trade_history"].includes(restClass)
+      });
+      return {
+        caller,
+        count: safeNumber(value?.count, 0),
+        weight,
+        restClass,
+        priority,
+        hotCallerThreshold,
+        hot: hotCallerThreshold > 0 ? weight >= hotCallerThreshold : weight >= 1000,
+        guarded: !allowance.allow,
+        streamReplacementAvailable: streamReplacement,
+        nextSafeAction: nextSafeActionForCaller(restClass, allowance, streamReplacement),
+        allowance
+      };
+    })
     .sort((left, right) => (right.weight - left.weight) || (right.count - left.count))
     .slice(0, 12);
   const publicStreamConnected = Boolean(streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected);
@@ -199,12 +243,12 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
   const guardedCallers = topCallers
     .map((caller) => ({
       ...caller,
-      allowance: evaluateRestBudgetAllowance({
+      allowance: caller.allowance || evaluateRestBudgetAllowance({
         caller: caller.caller,
         priority: caller.priority,
         rateLimitState,
         config,
-        streamPrimary: ["public_market_depth", "private_trade_history"].includes(caller.restClass)
+        streamPrimary: caller.streamReplacementAvailable || ["public_market_depth", "private_trade_history"].includes(caller.restClass)
       })
     }))
     .filter((caller) => !caller.allowance.allow);

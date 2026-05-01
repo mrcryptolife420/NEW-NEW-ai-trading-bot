@@ -18,6 +18,8 @@ import {
 } from "../src/runtime/operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "../src/runtime/tradingImprovementDiagnostics.js";
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "../src/runtime/restBudgetGovernor.js";
+import { getMultiHorizonOrderflow, recordAggTrade, resetBuffer } from "../src/market/orderbookDelta.js";
+import { buildStrategyLifecycleGovernance, resolveRangeGridLifecycleFromTrades } from "../src/strategy/strategyLifecycleGovernance.js";
 
 function buildCandles(count = 70) {
   const start = Date.parse("2026-01-01T00:00:00.000Z");
@@ -332,7 +334,74 @@ export async function registerLargeFoundationsTests({
     assert.equal(openOrders.allow, true);
     assert.equal(summary.status, "guarding");
     assert.equal(summary.guardedCallers.some((item) => item.allowance.reason === "hot_public_depth_rest_suppressed"), true);
+    assert.equal(summary.topCallers[0].hot, true);
+    assert.equal(summary.topCallers[0].streamReplacementAvailable, true);
+    assert.ok(summary.topCallers[0].nextSafeAction.includes("stream") || summary.topCallers[0].nextSafeAction.includes("book"));
     assert.equal(summary.recommendedActions.some((item) => item.includes("historisch te heet")), true);
+  });
+
+  await runCheck("multi-horizon aggTrade orderflow detects CVD absorption and toxicity", async () => {
+    resetBuffer("FLOWUSDT");
+    const now = Date.now();
+    for (let index = 0; index < 16; index += 1) {
+      recordAggTrade("FLOWUSDT", {
+        p: 100 + index * 0.002,
+        q: 2,
+        m: false,
+        E: now - (16 - index) * 10_000
+      });
+    }
+    const context = getMultiHorizonOrderflow("FLOWUSDT", [60, 300, 900], {
+      depthConfidence: 0.3,
+      microTrend: 0.0002
+    });
+    assert.equal(context.status, "ready");
+    assert.ok(context.horizons["1m"].deltaRatio > 0);
+    assert.ok(context.horizons["5m"].deltaRatio > 0);
+    assert.equal(context.absorption.side, "buy_absorbed");
+    assert.ok(context.toxicity.score >= 0.48);
+  });
+
+  await runCheck("range-grid lifecycle governance quarantines dangerous paper contexts only", async () => {
+    const governance = buildStrategyLifecycleGovernance([
+      {
+        strategyId: "range_grid_reversion",
+        strategyFamily: "range_grid",
+        regime: "range",
+        session: "us",
+        status: "dangerous",
+        sampleSize: 9,
+        expectancyPct: -0.01,
+        confidence: 0.9
+      },
+      {
+        strategyId: "range_grid_reversion",
+        strategyFamily: "range_grid",
+        regime: "range",
+        session: "asia",
+        status: "negative_edge",
+        sampleSize: 5,
+        expectancyPct: -0.001,
+        confidence: 0.5
+      }
+    ]);
+    assert.equal(governance.status, "paper_quarantine_active");
+    assert.equal(governance.quarantined[0].lifecycleStatus, "paper_quarantined");
+    assert.equal(governance.degraded[0].lifecycleStatus, "paper_degraded");
+
+    const lifecycle = resolveRangeGridLifecycleFromTrades({
+      source: "paper",
+      scope: { strategyFamily: "range_grid", strategyId: "range_grid_reversion", regime: "range", session: "us" },
+      trades: Array.from({ length: 8 }, (_, index) => ({
+        exitAt: `2026-01-01T0${index}:00:00.000Z`,
+        brokerMode: "paper",
+        strategyAtEntry: { strategy: "range_grid_reversion", family: "range_grid" },
+        regimeAtEntry: "range",
+        sessionAtEntry: "us",
+        netPnlPct: -0.006
+      }))
+    });
+    assert.equal(lifecycle.lifecycleStatus, "paper_quarantined");
   });
 
   await runCheck("trading improvement diagnostics combine meta caution recovery request budget and strategy risk", async () => {

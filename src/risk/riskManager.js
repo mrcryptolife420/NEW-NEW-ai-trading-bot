@@ -15,6 +15,7 @@ import { buildPermissioningScore } from "./policies/governancePolicy.js";
 import { buildSizingPolicySummary } from "./policies/sizingPolicy.js";
 import { buildRecoveryProbePolicy, isRecoveryProbeSoftBlocker } from "./policies/recoveryProbePolicy.js";
 import { resolvePolicyProfile } from "./policyProfiles.js";
+import { resolveRangeGridLifecycleFromTrades } from "../strategy/strategyLifecycleGovernance.js";
 
 function safeValue(value, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
@@ -3943,6 +3944,8 @@ export class RiskManager {
     const bosStrength = safeValue(marketSnapshot.market.bosStrengthScore, 0);
     const cvdConfirmation = safeValue(marketSnapshot.market.cvdConfirmationScore, 0);
     const cvdDivergence = safeValue(marketSnapshot.market.cvdDivergenceScore, 0);
+    const orderflowToxicityScore = safeValue(marketSnapshot.market.orderflowToxicityScore, 0);
+    const buyAbsorptionScore = safeValue(marketSnapshot.market.orderflowBuyAbsorptionScore, 0);
     const fvgRespect = safeValue(marketSnapshot.market.fvgRespectScore, 0);
     const hasStructureSignals = [
       marketSnapshot.market.bullishBosActive,
@@ -3953,6 +3956,18 @@ export class RiskManager {
       marketSnapshot.market.cvdDivergenceScore
     ].some((value) => value != null);
     const rangeGridFamily = (strategySummary.family || "") === "range_grid";
+    const rangeGridLifecycle = rangeGridFamily
+      ? resolveRangeGridLifecycleFromTrades({
+          trades: journal?.trades || [],
+          scope: {
+            strategyFamily: strategySummary.family,
+            strategyId: strategySummary.activeStrategy || "range_grid_reversion",
+            regime: regimeSummary.regime || "unknown",
+            session: sessionSummary.session || sessionSummary.label || "unknown"
+          },
+          source: "paper"
+        })
+      : null;
     const strongBosContinuation =
       bosStrength >= 0.52 &&
       (safeValue(marketSnapshot.market.bullishBosActive, 0) > 0 || safeValue(marketSnapshot.market.bearishBosActive, 0) > 0);
@@ -4358,6 +4373,14 @@ export class RiskManager {
       reasons.push("cvd_divergence");
     }
     if (
+      ["trend_following", "breakout", "market_structure", "orderflow"].includes(strategySummary.family || "") &&
+      (orderflowToxicityScore >= 0.68 || buyAbsorptionScore >= 0.62) &&
+      score.probability < threshold + 0.12 &&
+      !strongTrendGuardOverride
+    ) {
+      reasons.push(orderflowToxicityScore >= 0.68 ? "orderflow_toxicity" : "orderflow_absorption");
+    }
+    if (
       strategySummary.family === "mean_reversion" &&
       hasStructureSignals &&
       strongBosContinuation &&
@@ -4367,6 +4390,11 @@ export class RiskManager {
       reasons.push("mean_reversion_vs_fresh_bos");
     }
     if (rangeGridFamily) {
+      if (this.config.botMode === "paper" && rangeGridLifecycle?.lifecycleStatus === "paper_quarantined") {
+        reasons.push("range_grid_paper_quarantined");
+      } else if (this.config.botMode === "paper" && rangeGridLifecycle?.lifecycleStatus === "paper_degraded" && score.probability < threshold + 0.08) {
+        reasons.push("range_grid_paper_degraded");
+      }
       if (this.config.botMode === "live" && !this.config.enableLiveRangeGrid) {
         reasons.push("live_range_grid_disabled");
       }
@@ -4652,6 +4680,7 @@ export class RiskManager {
     const relativeStrengthFactor = clamp(0.88 + relativeStrengthComposite * 8, 0.72, 1.12);
     const acceptanceFactor = clamp(0.78 + acceptanceQuality * 0.34, 0.62, 1.12);
     const downsideVolFactor = clamp(1 - Math.max(0, downsideVolDominance) * 0.26, 0.68, 1.04);
+    const orderflowRiskFactor = clamp(1 - orderflowToxicityScore * 0.22 - buyAbsorptionScore * 0.14, 0.72, 1.02);
     const patternFactor = clamp(1 + (marketSnapshot.market.bullishPatternScore || 0) * 0.08 - (marketSnapshot.market.bearishPatternScore || 0) * 0.12, 0.72, 1.08);
     const committeeFactor = clamp(0.8 + (committeeSummary.sizeMultiplier || 1) * 0.24 + (committeeSummary.netScore || 0) * 0.12 + (committeeSummary.agreement || 0) * 0.08, 0.62, 1.16);
     const strategyFactor = clamp(0.76 + (strategySummary.fitScore || 0) * 0.28 + (strategySummary.agreementGap || 0) * 0.12 + (strategySummary.optimizerBoost || 0) * 0.5 - (strategySummary.blockers || []).length * 0.06, 0.56, 1.16);
@@ -4721,6 +4750,7 @@ export class RiskManager {
       { id: "macro", value: macroFactor },
       { id: "volatility", value: volatilityFactor },
       { id: "orderbook", value: orderbookFactor },
+      { id: "orderflow_risk", value: orderflowRiskFactor },
       { id: "committee", value: committeeFactor },
       { id: "strategy", value: strategyFactor },
       { id: "portfolio", value: portfolioFactor },

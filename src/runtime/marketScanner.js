@@ -679,6 +679,12 @@ function buildReasons({
   if ((candidate.cvdContext?.divergenceScore || 0) >= 0.42) {
     bearishReasons.push("cvd_divergence");
   }
+  if ((candidate.cvdContext?.toxicityScore || 0) >= 0.48) {
+    bearishReasons.push("orderflow_toxicity");
+  }
+  if ((candidate.cvdContext?.absorptionScore || 0) >= 0.52) {
+    bearishReasons.push("orderflow_absorption");
+  }
   if ((candidate.liquidationContext?.liquidationTrapRisk || 0) >= 0.48) {
     bearishReasons.push("liquidation_trap_risk");
   }
@@ -1001,8 +1007,22 @@ function scoreScannerCandidate(item, context = {}) {
     confirmationScore: num(item.marketFeatures.cvdConfirmationScore || 0),
     divergenceScore: num(item.marketFeatures.cvdDivergenceScore || 0),
     trendAlignment: num(item.marketFeatures.cvdTrendAlignment || 0),
-    confidence: num(item.marketFeatures.cvdConfidence || 0)
+    confidence: num(item.marketFeatures.cvdConfidence || 0),
+    absorptionScore: num(item.marketFeatures.orderflowAbsorptionScore || 0),
+    toxicityScore: num(item.marketFeatures.orderflowToxicityScore || 0),
+    toxicityLevel: item.marketFeatures.orderflowToxicityLevel || "normal",
+    multiHorizon: item.marketFeatures.cvdMultiHorizon || null
   };
+  const orderflowQualityScore = clamp(
+    average([
+      clamp(item.marketFeatures.cvdConfirmationScore || 0, 0, 1),
+      clamp(1 - (item.marketFeatures.cvdDivergenceScore || 0), 0, 1),
+      clamp(1 - (item.marketFeatures.orderflowToxicityScore || 0), 0, 1),
+      clamp(1 - (item.marketFeatures.orderflowBuyAbsorptionScore || 0), 0, 1)
+    ], 0.5),
+    0,
+    1
+  );
   const liquidationContext = {
     liquidationMagnetDirection: item.marketStructureSummary?.liquidationMagnetDirection || "neutral",
     liquidationMagnetStrength: num(item.marketStructureSummary?.liquidationMagnetStrength || 0),
@@ -1025,6 +1045,7 @@ function scoreScannerCandidate(item, context = {}) {
       momentumScore * 0.17 +
       relativeStrengthScore * 0.08 +
       breakoutContinuationScore * 0.14 +
+      orderflowQualityScore * 0.04 +
       volatilityQualityScore * 0.08 +
       regimeFitScore * 0.11 +
       binanceHistoryScore * 0.08 +
@@ -1032,6 +1053,7 @@ function scoreScannerCandidate(item, context = {}) {
       confidence * 0.08 -
       penalties.fakeoutNoisePenalty * 0.08 -
       penalties.overextensionPenalty * 0.06 -
+      (item.marketFeatures.orderflowToxicityScore || 0) * 0.04 -
       penalties.degradedDataPenalty * 0.08,
     0,
     1
@@ -1077,6 +1099,7 @@ function scoreScannerCandidate(item, context = {}) {
     binanceHistoryScore: num(binanceHistoryScore),
     botHistoryScore: num(item.botHistory.botHistoryScore),
     confidence: num(confidence),
+    orderflowQualityScore: num(orderflowQualityScore),
     dataQualityScore: num(dataQualityScore),
     signalQualityScore: num(item.signalQualitySummary.overallScore || 0),
     penalties,

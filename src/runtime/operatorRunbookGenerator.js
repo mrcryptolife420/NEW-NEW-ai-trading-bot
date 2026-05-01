@@ -1,3 +1,5 @@
+import { buildStrategyLifecycleGovernance } from "../strategy/strategyLifecycleGovernance.js";
+
 function titleize(value = "") {
   return `${value || ""}`.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -123,12 +125,22 @@ export function buildStrategyLifecycleDiagnostics(scorecards = []) {
   const cards = Array.isArray(scorecards) ? scorecards : [];
   const dangerous = cards.filter((card) => ["dangerous", "negative_edge"].includes(card.status));
   const positive = cards.filter((card) => card.status === "positive_edge");
+  const rangeGridGovernance = buildStrategyLifecycleGovernance(cards);
   return {
-    status: dangerous.length ? "review_required" : positive.length ? "healthy_edges_present" : cards.length ? "observe" : "insufficient_evidence",
+    status: rangeGridGovernance.status === "paper_quarantine_active"
+      ? "paper_quarantine_active"
+      : dangerous.length
+        ? "review_required"
+        : positive.length
+          ? "healthy_edges_present"
+          : cards.length
+            ? "observe"
+            : "insufficient_evidence",
     dangerousCount: dangerous.length,
     positiveCount: positive.length,
     topDangerous: dangerous.slice(0, 5),
     promoteCandidates: positive.slice(0, 5),
+    rangeGridGovernance,
     recommendedAction: dangerous.length
       ? "Review dangerous strategy/regime/session pairs before allowing more allocation."
       : positive.length
