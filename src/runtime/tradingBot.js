@@ -24894,7 +24894,8 @@ export class TradingBot {
       requestBudget: readModelSummary?.requestBudget || {},
       streamFallbackHealth,
       streamStatus: decoratedStreamStatus,
-      readModel: readModelSummary
+      readModel: readModelSummary,
+      report
     });
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),

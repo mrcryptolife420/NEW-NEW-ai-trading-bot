@@ -225,6 +225,10 @@ export async function registerDashboardHealthTests({
           strategyRisk: {
             dangerous: [{ strategyId: "range_grid_reversion" }]
           },
+          backlog: [
+            { id: "private_rest_user_stream_primary", title: "Private REST-druk verlagen", status: "action_required" },
+            { id: "public_depth_stream_first", title: "Public depth REST terugdringen", status: "action_required" }
+          ],
           priorityActions: ["Maak User Data Stream leidend voor orders/fills/account."]
         }
       }
@@ -239,5 +243,6 @@ export async function registerDashboardHealthTests({
     assert.ok(readModelRender.healthText.includes("Trading improvement priorities"));
     assert.ok(readModelRender.healthText.includes("signed:GET /api/v3/openOrders"));
     assert.ok(readModelRender.healthText.includes("Meta Followthrough Caution"));
+    assert.ok(readModelRender.healthText.includes("Private REST-druk verlagen"));
   });
 }

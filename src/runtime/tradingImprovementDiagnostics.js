@@ -210,18 +210,177 @@ export function buildStrategyRiskDiagnostics(readModel = {}) {
   };
 }
 
+function buildAction({ id, title, status, priority, evidence = [], nextStep, safety = "diagnostic_only" }) {
+  return {
+    id,
+    title,
+    status,
+    priority,
+    evidence: arr(evidence).filter(Boolean).slice(0, 5),
+    nextStep,
+    safety
+  };
+}
+
+export function buildTradingImprovementBacklog({
+  metaCaution = {},
+  exchangeSafetyRecovery = {},
+  badVeto = {},
+  requestWeight = {},
+  strategyRisk = {},
+  report = {},
+  streamFallbackHealth = {}
+} = {}) {
+  const exitSummary = report.postTradeAnalytics?.summary || report.tradeQualitySummary || {};
+  const executionCost = report.executionCostSummary || {};
+  const openExposureReview = report.openExposureReview || {};
+  const hasPrivateRestHotspots = arr(requestWeight.privateHotspots).length > 0;
+  const hasPublicRestHotspots = arr(requestWeight.publicHotspots).length > 0;
+  const hasDangerousStrategy = arr(strategyRisk.dangerous).length > 0;
+  const hasMetaPressure = safeNumber(metaCaution.totalMetaBlocks, 0) > 0;
+  const hasBadVetoEvidence = safeNumber(badVeto.recommendationCount, 0) > 0 || safeNumber(badVeto.counterfactualCount, 0) > 0;
+  const exitExpectancy = exitSummary.expectancyPct ?? report.averagePnlPct ?? null;
+  const exitNeedsReview = Number.isFinite(Number(exitExpectancy)) && Number(exitExpectancy) < 0;
+
+  return [
+    buildAction({
+      id: "private_rest_user_stream_primary",
+      title: "Private REST-druk verlagen",
+      status: hasPrivateRestHotspots ? "action_required" : "observe",
+      priority: 1,
+      evidence: arr(requestWeight.privateHotspots).map((item) => `${item.caller} weight ${item.weight || 0}`),
+      nextStep: "Maak User Data Stream leidend voor fills/orders/account; gebruik openOrders/myTrades alleen voor startup, reconcile en ambiguiteit.",
+      safety: "live_safety_preserved"
+    }),
+    buildAction({
+      id: "public_depth_stream_first",
+      title: "Public depth REST terugdringen",
+      status: hasPublicRestHotspots || streamFallbackHealth.status === "degraded" ? "action_required" : "observe",
+      priority: 2,
+      evidence: [
+        ...arr(requestWeight.publicHotspots).map((item) => `${item.caller} weight ${item.weight || 0}`),
+        streamFallbackHealth.status === "degraded" ? "stream fallback degraded" : null
+      ],
+      nextStep: "Gebruik local order book/WebSocket als primaire bron; skip deep-book REST onder streamdegradatie of request-pressure.",
+      safety: "no_order_behavior_change"
+    }),
+    buildAction({
+      id: "range_grid_diagnostic_quarantine",
+      title: "Range-grid diagnostic quarantine",
+      status: hasDangerousStrategy ? "review_required" : "observe",
+      priority: 3,
+      evidence: arr(strategyRisk.dangerous).map((item) => `${item.strategyId || item.strategyFamily}:${item.regime || "unknown"}/${item.session || "unknown"} ${item.status}`),
+      nextStep: "Toon downweight/quarantine advies per regime/session; pas live allocator pas aan na replaybewijs.",
+      safety: "diagnostic_only"
+    }),
+    buildAction({
+      id: "meta_caution_root_cause_drilldown",
+      title: "Meta-caution root cause drilldown",
+      status: hasMetaPressure ? "action_required" : "observe",
+      priority: 4,
+      evidence: [
+        ...arr(metaCaution.topReasons).map((item) => `${item.id} x${item.count || 0}`),
+        ...arr(metaCaution.topDrivers).map((item) => `driver ${item.id} x${item.count || 0}`)
+      ],
+      nextStep: "Splits meta/model blockers naar feature trust, data quality, regime/session, followthrough en bad-veto bewijs.",
+      safety: "no_threshold_change"
+    }),
+    buildAction({
+      id: "exchange_safety_recovery_playbook",
+      title: "Exchange-safety recovery playbook",
+      status: exchangeSafetyRecovery.recoveryOnly || openExposureReview.manualReviewCount ? "action_required" : "observe",
+      priority: 5,
+      evidence: [
+        exchangeSafetyRecovery.reason ? `reason ${exchangeSafetyRecovery.reason}` : null,
+        openExposureReview.manualReviewCount ? `${openExposureReview.manualReviewCount} manual review` : null,
+        openExposureReview.reconcileRequiredCount ? `${openExposureReview.reconcileRequiredCount} reconcile required` : null
+      ],
+      nextStep: "Toon per symbol welke reconcile checks liepen, welke acties veilig zijn en welk signaal entries weer vrijgeeft.",
+      safety: "entries_remain_blocked_until_clean_truth"
+    }),
+    buildAction({
+      id: "golden_replay_current_blockers",
+      title: "Golden replay voor huidige blokkades",
+      status: hasMetaPressure || exchangeSafetyRecovery.recoveryOnly ? "recommended" : "observe",
+      priority: 6,
+      evidence: arr(metaCaution.topReasons).slice(0, 2).map((item) => item.id),
+      nextStep: "Maak fixture voor huidige exchange-safety/meta-confidence state en vergelijk root blocker/final edge na toekomstige patches.",
+      safety: "replay_only"
+    }),
+    buildAction({
+      id: "paper_live_parity_score",
+      title: "Paper/live parity score uitbreiden",
+      status: executionCost.reconstructedPaperFeeSample || executionCost.status === "caution" ? "recommended" : "observe",
+      priority: 7,
+      evidence: [
+        executionCost.status ? `execution cost ${executionCost.status}` : null,
+        executionCost.averageFeeBps != null ? `avg fee ${Number(executionCost.averageFeeBps).toFixed(2)} bps` : null,
+        executionCost.reconstructedPaperEntryFeeCount ? `${executionCost.reconstructedPaperEntryFeeCount} reconstructed paper fees` : null
+      ],
+      nextStep: "Vergelijk paper assumptions met demo/live fills op fees, slippage, partial fills, latency en spread.",
+      safety: "calibration_recommendation_only"
+    }),
+    buildAction({
+      id: "exit_loss_autopsy",
+      title: "Exit-loss autopsy prioriteren",
+      status: exitNeedsReview ? "review_required" : "observe",
+      priority: 8,
+      evidence: [
+        exitExpectancy != null ? `expectancy ${Number(exitExpectancy).toFixed(4)}` : null,
+        report.realizedPnl != null ? `realized PnL ${Number(report.realizedPnl).toFixed(2)}` : null,
+        report.rangeGridDamageReview?.status ? `range-grid ${report.rangeGridDamageReview.status}` : null
+      ],
+      nextStep: "Classificeer recente verliezen als late exit, bad entry, range break, execution drag, loose stop of regime misread.",
+      safety: "diagnostic_first"
+    }),
+    buildAction({
+      id: "start_everything_functional_health",
+      title: "Start-Everything functionele health",
+      status: "recommended",
+      priority: 9,
+      evidence: [
+        streamFallbackHealth.status ? `stream ${streamFallbackHealth.status}` : null,
+        exchangeSafetyRecovery.recoveryOnly ? "recovery-only active" : null
+      ],
+      nextStep: "Controleer naast processtart ook cycle advance, stream health, snapshot freshness en functionele blokkades.",
+      safety: "operator_visibility_only"
+    }),
+    buildAction({
+      id: "operator_action_audit_trail",
+      title: "Operator action audit trail",
+      status: "recommended",
+      priority: 10,
+      evidence: [],
+      nextStep: "Toon bij iedere quick action before/after root blocker, changed state, denied checks en next safe action.",
+      safety: "operator_visibility_only"
+    })
+  ];
+}
+
 export function buildTradingImprovementDiagnostics(input = {}) {
   const metaCaution = buildMetaCautionDiagnostics(input);
   const exchangeSafetyRecovery = buildExchangeSafetyRecoveryDiagnostics(input);
   const badVeto = buildBadVetoEvidenceDigest(input);
   const requestWeight = buildRequestWeightMitigationPlan(input);
   const strategyRisk = buildStrategyRiskDiagnostics(input.readModel || {});
+  const backlog = buildTradingImprovementBacklog({
+    metaCaution,
+    exchangeSafetyRecovery,
+    badVeto,
+    requestWeight,
+    strategyRisk,
+    report: input.report || {},
+    streamFallbackHealth: input.streamFallbackHealth || {}
+  });
   const priorityActions = [
     ...arr(requestWeight.actions),
     exchangeSafetyRecovery.recoveryOnly ? exchangeSafetyRecovery.recommendedAction : null,
     metaCaution.totalMetaBlocks ? metaCaution.recommendedAction : null,
     badVeto.recommendationCount ? badVeto.recommendedAction : null,
-    strategyRisk.status === "review_required" ? strategyRisk.recommendedAction : null
+    strategyRisk.status === "review_required" ? strategyRisk.recommendedAction : null,
+    ...backlog
+      .filter((item) => ["action_required", "review_required"].includes(item.status))
+      .map((item) => item.nextStep)
   ].filter(Boolean);
   return {
     status: requestWeight.status === "ban_active" || exchangeSafetyRecovery.recoveryOnly
@@ -234,6 +393,7 @@ export function buildTradingImprovementDiagnostics(input = {}) {
     badVeto,
     requestWeight,
     strategyRisk,
+    backlog,
     priorityActions: [...new Set(priorityActions)].slice(0, 8)
   };
 }

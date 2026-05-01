@@ -1136,6 +1136,8 @@ function renderHealth(snapshot) {
         tradingImprovements.metaCaution?.topReasons?.[0]?.id ? `meta ${humanizeReason(tradingImprovements.metaCaution.topReasons[0].id)} x${tradingImprovements.metaCaution.topReasons[0].count || 0}` : null,
         tradingImprovements.exchangeSafetyRecovery?.recoveryOnly ? "recovery-only actief" : null,
         tradingImprovements.strategyRisk?.dangerous?.[0]?.strategyId ? `risk ${tradingImprovements.strategyRisk.dangerous[0].strategyId}` : null,
+        arr(tradingImprovements.backlog || []).length ? `${arr(tradingImprovements.backlog || []).filter((item) => item.status !== "observe").length}/${arr(tradingImprovements.backlog || []).length} actiepunten` : null,
+        arr(tradingImprovements.backlog || [])[0]?.title || null,
         arr(tradingImprovements.priorityActions || [])[0] || null
       ]) || "Geen extra trading-improvement acties in deze snapshot.",
       tone: ["blocked_or_recovery", "action_required"].includes(tradingImprovements.status) ? "warning" : "neutral"

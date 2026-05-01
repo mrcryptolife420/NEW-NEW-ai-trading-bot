@@ -121,6 +121,8 @@ export async function registerLargeFoundationsTests({
     assert.equal(dashboard.tradingImprovementDiagnostics.metaCaution.status, "active");
     assert.equal(dashboard.tradingImprovementDiagnostics.metaCaution.topReasons[0].id, "model_confidence_too_low");
     assert.equal(dashboard.tradingImprovementDiagnostics.requestWeight.publicHotspots[0].caller, "spot:GET:/api/v3/ticker/bookTicker");
+    assert.equal(dashboard.tradingImprovementDiagnostics.backlog.length, 10);
+    assert.equal(dashboard.tradingImprovementDiagnostics.backlog[0].id, "private_rest_user_stream_primary");
     assert.equal(decisionTrace.status, "ready");
     assert.equal(decisionTrace.blockers.length, 2);
     assert.equal(cycleTrace.decisionIds.includes("decision-1"), true);
@@ -288,6 +290,22 @@ export async function registerLargeFoundationsTests({
           status: "review_required",
           topDangerous: [{ strategyId: "range_grid_reversion", status: "dangerous", sampleSize: 9 }]
         }
+      },
+      report: {
+        realizedPnl: -20,
+        averagePnlPct: -0.01,
+        executionCostSummary: {
+          status: "caution",
+          averageFeeBps: 19.9,
+          reconstructedPaperEntryFeeCount: 5
+        },
+        postTradeAnalytics: {
+          summary: { expectancyPct: -0.004 }
+        },
+        openExposureReview: {
+          manualReviewCount: 1,
+          reconcileRequiredCount: 1
+        }
       }
     });
 
@@ -300,6 +318,10 @@ export async function registerLargeFoundationsTests({
     assert.equal(diagnostics.requestWeight.privateHotspots[0].caller, "signed:GET /api/v3/openOrders");
     assert.equal(diagnostics.requestWeight.publicHotspots[0].caller, "spot_public:GET /api/v3/depth");
     assert.equal(diagnostics.strategyRisk.status, "review_required");
+    assert.equal(diagnostics.backlog.length, 10);
+    assert.equal(diagnostics.backlog.some((item) => item.id === "exit_loss_autopsy" && item.status === "review_required"), true);
+    assert.equal(diagnostics.backlog.some((item) => item.id === "paper_live_parity_score" && item.status === "recommended"), true);
+    assert.equal(diagnostics.backlog.some((item) => item.id === "exchange_safety_recovery_playbook" && item.status === "action_required"), true);
     assert.ok(diagnostics.priorityActions.some((item) => item.includes("User Data Stream")));
   });
 
