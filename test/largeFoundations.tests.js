@@ -18,6 +18,7 @@ import {
 } from "../src/runtime/operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "../src/runtime/tradingImprovementDiagnostics.js";
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "../src/runtime/restBudgetGovernor.js";
+import { StreamCoordinator } from "../src/runtime/streamCoordinator.js";
 import { getMultiHorizonOrderflow, recordAggTrade, resetBuffer } from "../src/market/orderbookDelta.js";
 import { buildStrategyLifecycleGovernance, resolveRangeGridLifecycleFromTrades } from "../src/strategy/strategyLifecycleGovernance.js";
 import { LocalOrderBookEngine } from "../src/market/localOrderBook.js";
@@ -230,6 +231,7 @@ export async function registerLargeFoundationsTests({
           topRestCallers: {
             "local_order_book.depth_snapshot": { count: 4, weight: 80 },
             "scanner.depth": { count: 2, weight: 50 },
+            "live_broker.reconcile.open_orders": { count: 2, weight: 70 },
             "ticker.light": { count: 10, weight: 10 }
           }
         }
@@ -245,6 +247,10 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.topCallers[0].weight, 80);
     assert.equal(summary.topCallers[0].restClass, "public_market_depth");
     assert.equal(summary.criticalCallers[0].caller, "local_order_book.depth_snapshot");
+    const openOrdersCaller = summary.topCallers.find((item) => item.caller === "live_broker.reconcile.open_orders");
+    assert.equal(openOrdersCaller.streamReplacementAvailable, true);
+    assert.equal(openOrdersCaller.guarded, false);
+    assert.equal(openOrdersCaller.nextSafeAction, "use_user_stream_order_truth_and_reduce_rest_sanity");
     assert.equal(summary.callerGroups[0].group, "public_depth");
     assert.equal(summary.incidents.length >= 1, true);
     assert.equal(summary.incidents.some((incident) => incident.type === "request_budget_hot_caller"), true);
@@ -768,6 +774,223 @@ export async function registerLargeFoundationsTests({
     assert.equal(settled.trades[0].commission, 0.0001);
     assert.equal(Number(settled.order.executedQty), 0.01);
     assert.equal(Number(settled.order.cummulativeQuoteQty), 600);
+  });
+
+  await runCheck("user-data stream builds active open-order truth snapshot", async () => {
+    const stream = new StreamCoordinator({
+      client: {},
+      config: {
+        enableEventDrivenData: true,
+        watchlist: ["BTCUSDT"],
+        klineInterval: "15m",
+        enableCrossTimeframeConsensus: false,
+        enableDailyTimeframe: false
+      },
+      logger: { info() {}, warn() {}, error() {}, debug() {} }
+    });
+    const now = Date.now();
+    stream.handleUserMessage({
+      e: "executionReport",
+      E: now,
+      s: "BTCUSDT",
+      S: "BUY",
+      o: "LIMIT",
+      x: "NEW",
+      X: "NEW",
+      i: 123,
+      c: "entry-123",
+      g: -1,
+      q: "0.02000000",
+      z: "0.00000000",
+      p: "60000.00",
+      O: now,
+      T: now
+    });
+    let snapshot = stream.getUserStreamOpenOrders({ symbols: ["BTCUSDT"], maxAgeMs: 60_000 });
+    assert.equal(snapshot.available, true);
+    assert.equal(snapshot.stale, false);
+    assert.equal(snapshot.items.length, 1);
+    assert.equal(snapshot.items[0].orderId, 123);
+    assert.equal(snapshot.items[0].source, "user_stream_execution_report");
+
+    stream.handleUserMessage({
+      e: "executionReport",
+      E: now + 1000,
+      s: "BTCUSDT",
+      S: "BUY",
+      o: "LIMIT",
+      x: "TRADE",
+      X: "FILLED",
+      i: 123,
+      c: "entry-123",
+      g: -1,
+      q: "0.02000000",
+      z: "0.02000000",
+      p: "60000.00",
+      l: "0.02000000",
+      L: "60000.00",
+      O: now,
+      T: now + 1000
+    });
+    snapshot = stream.getUserStreamOpenOrders({ symbols: ["BTCUSDT"], maxAgeMs: 60_000 });
+    assert.equal(snapshot.items.length, 0);
+    assert.equal(snapshot.eventCount, 2);
+  });
+
+  await runCheck("user-data stream builds active open-order-list truth snapshot", async () => {
+    const stream = new StreamCoordinator({
+      client: {},
+      config: {
+        enableEventDrivenData: true,
+        watchlist: ["ETHUSDT"],
+        klineInterval: "15m",
+        enableCrossTimeframeConsensus: false,
+        enableDailyTimeframe: false
+      },
+      logger: { info() {}, warn() {}, error() {}, debug() {} }
+    });
+    const now = Date.now();
+    stream.handleUserMessage({
+      e: "listStatus",
+      E: now,
+      s: "ETHUSDT",
+      g: 777,
+      c: "OCO",
+      l: "EXEC_STARTED",
+      L: "EXECUTING",
+      C: "oco-777",
+      r: "NONE",
+      T: now,
+      O: [
+        { s: "ETHUSDT", i: 778, c: "tp" },
+        { s: "ETHUSDT", i: 779, c: "sl" }
+      ]
+    });
+    let snapshot = stream.getUserStreamOpenOrderLists({ symbols: ["ETHUSDT"], maxAgeMs: 60_000 });
+    assert.equal(snapshot.available, true);
+    assert.equal(snapshot.items.length, 1);
+    assert.equal(snapshot.items[0].orderListId, 777);
+    assert.equal(snapshot.items[0].orders.length, 2);
+
+    stream.handleUserMessage({
+      e: "listStatus",
+      E: now + 1000,
+      s: "ETHUSDT",
+      g: 777,
+      c: "OCO",
+      l: "ALL_DONE",
+      L: "ALL_DONE",
+      C: "oco-777",
+      r: "NONE",
+      T: now + 1000,
+      O: []
+    });
+    snapshot = stream.getUserStreamOpenOrderLists({ symbols: ["ETHUSDT"], maxAgeMs: 60_000 });
+    assert.equal(snapshot.items.length, 0);
+    assert.equal(snapshot.eventCount, 2);
+  });
+
+  await runCheck("live reconcile uses fresh user-stream open-order truth when REST open-orders fails", async () => {
+    let openOrdersCalls = 0;
+    const restError = new Error("request weight pressure");
+    const stream = {
+      getStatus() {
+        return { userStreamConnected: true };
+      },
+      getUserStreamOpenOrders() {
+        return {
+          source: "user_stream_execution_report",
+          available: true,
+          confidence: 0.82,
+          stale: false,
+          ageMs: 500,
+          latestEventAt: new Date().toISOString(),
+          eventCount: 1,
+          itemCount: 1,
+          items: [{
+            symbol: "BTCUSDT",
+            orderId: 123,
+            side: "BUY",
+            type: "LIMIT",
+            status: "NEW",
+            origQty: "0.01",
+            executedQty: "0",
+            price: "60000",
+            source: "user_stream_execution_report"
+          }]
+        };
+      },
+      getUserStreamOpenOrderLists() {
+        return {
+          source: "user_stream_list_status",
+          available: true,
+          confidence: 0.82,
+          stale: false,
+          ageMs: 500,
+          latestEventAt: new Date().toISOString(),
+          eventCount: 1,
+          itemCount: 1,
+          items: [{
+            symbol: "BTCUSDT",
+            orderListId: 555,
+            listStatusType: "EXEC_STARTED",
+            listOrderStatus: "EXECUTING",
+            orders: [{ symbol: "BTCUSDT", orderId: 123 }]
+          }]
+        };
+      }
+    };
+    const broker = new LiveBroker({
+      client: {
+        async getAccountInfo() {
+          return {
+            balances: [{ asset: "BTC", free: "0", locked: "0" }, { asset: "USDT", free: "100", locked: "0" }],
+            canTrade: true,
+            accountType: "SPOT",
+            permissions: ["SPOT"]
+          };
+        },
+        async getOpenOrders() {
+          openOrdersCalls += 1;
+          throw restError;
+        },
+        async getOpenOrderLists() {
+          throw restError;
+        }
+      },
+      stream,
+      symbolRules: {
+        BTCUSDT: {
+          baseAsset: "BTC",
+          quoteAsset: "USDT",
+          minQty: 0.00001,
+          minNotional: 5,
+          stepSize: 0.00001,
+          tickSize: 0.01
+        }
+      },
+      config: makeConfig({
+        botMode: "live",
+        autoReconcileRetryCount: 2,
+        autoReconcileRetryDelayMs: 0,
+        exchangeTruthFreezeMismatchCount: 2,
+        orderStreamTruthMaxAgeMs: 60_000
+      }),
+      logger: { info() {}, warn() {}, error() {}, debug() {} }
+    });
+
+    const result = await broker.reconcileRuntime({
+      runtime: { openPositions: [] },
+      getMarketSnapshot: async () => ({ book: { mid: 60000, bid: 59999, ask: 60001 } })
+    });
+
+    assert.equal(openOrdersCalls, 1);
+    assert.equal(result.exchangeTruth.openOrderCount, 1);
+    assert.equal(result.exchangeTruth.openOrderListCount, 1);
+    assert.equal(result.exchangeTruth.status, "degraded");
+    assert.equal(result.exchangeTruth.privateStreamTruth.openOrders.fallbackUsed, true);
+    assert.equal(result.exchangeTruth.privateStreamTruth.openOrderLists.fallbackUsed, true);
+    assert.ok(result.exchangeTruth.privateStreamTruth.snapshotErrors.some((item) => item.fallback === "user_stream_execution_report"));
   });
 
   await runCheck("stream fallback health does not treat read-only status snapshots as live stream gaps", async () => {

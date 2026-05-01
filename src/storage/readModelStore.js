@@ -750,7 +750,7 @@ export class ReadModelStore {
         const privateAccount = /account/i.test(caller.caller);
         const hotThreshold = publicDepth ? 5000 : privateTradeHistory ? 2000 : privateOrders ? 8000 : 1000;
         const hot = Number(caller.weight || 0) >= hotThreshold;
-        const streamReplacementAvailable = publicDepth || privateTradeHistory;
+        const streamReplacementAvailable = publicDepth || privateTradeHistory || privateOrders;
         const restClass = publicDepth
           ? "public_market_depth"
           : publicBookTicker
@@ -769,13 +769,13 @@ export class ReadModelStore {
           restClass,
           hot,
           streamReplacementAvailable,
-          guarded: hot && streamReplacementAvailable,
+          guarded: hot && (publicDepth || privateTradeHistory),
           nextSafeAction: publicDepth
             ? "use_local_book_or_public_stream"
             : privateTradeHistory
               ? "use_user_stream_fills"
               : privateOrders
-                ? "keep_reconcile_but_reduce_poll_frequency"
+                ? "use_user_stream_order_truth_and_reduce_rest_sanity"
                 : hot
                   ? "review_rest_call_frequency"
                   : "watch"

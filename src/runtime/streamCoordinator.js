@@ -153,6 +153,95 @@ function normalizeListStatusEvent(event) {
   };
 }
 
+const ACTIVE_USER_STREAM_ORDER_STATUSES = new Set(["NEW", "PARTIALLY_FILLED", "PENDING_NEW"]);
+const TERMINAL_USER_STREAM_ORDER_STATUSES = new Set(["FILLED", "CANCELED", "EXPIRED", "REJECTED", "EXPIRED_IN_MATCH"]);
+const TERMINAL_USER_STREAM_LIST_STATUSES = new Set(["ALL_DONE", "REJECT"]);
+
+function toLatestById(events = [], idKey = "orderId") {
+  const latest = new Map();
+  for (const event of events) {
+    const id = Number(event?.[idKey] || 0);
+    if (!id) {
+      continue;
+    }
+    const current = latest.get(id);
+    const eventTime = Number(event.transactTime || 0);
+    const currentTime = Number(current?.transactTime || 0);
+    if (!current || eventTime >= currentTime) {
+      latest.set(id, event);
+    }
+  }
+  return [...latest.values()];
+}
+
+function buildUserStreamTruthSummary({
+  source,
+  eventCount,
+  latestEventAt,
+  maxAgeMs,
+  itemCount
+}) {
+  const latestMs = toEventTimeMs(latestEventAt);
+  const ageMs = Number.isFinite(latestMs) ? Math.max(0, Date.now() - latestMs) : null;
+  const stale = ageMs == null || ageMs > Math.max(0, Number(maxAgeMs || 0));
+  const available = eventCount > 0;
+  return {
+    source,
+    available,
+    confidence: available && !stale ? (itemCount > 0 ? 0.82 : 0.58) : 0,
+    stale,
+    ageMs,
+    latestEventAt: latestEventAt || null,
+    eventCount,
+    itemCount
+  };
+}
+
+function executionReportToOpenOrder(event) {
+  const status = `${event?.status || ""}`.toUpperCase();
+  if (!ACTIVE_USER_STREAM_ORDER_STATUSES.has(status) || TERMINAL_USER_STREAM_ORDER_STATUSES.has(status)) {
+    return null;
+  }
+  const quantity = Number(event.quantity || 0);
+  const executedQty = Number(event.executedQty || 0);
+  return {
+    symbol: event.symbol,
+    orderId: event.orderId,
+    clientOrderId: event.clientOrderId,
+    side: event.side,
+    type: event.orderType,
+    orderType: event.orderType,
+    status,
+    origQty: Number.isFinite(quantity) ? `${quantity}` : "0",
+    executedQty: Number.isFinite(executedQty) ? `${executedQty}` : "0",
+    price: Number.isFinite(Number(event.price || 0)) ? `${Number(event.price || 0)}` : "0",
+    orderListId: event.orderListId ?? -1,
+    time: event.creationTime || event.transactTime || Date.now(),
+    updateTime: event.transactTime || Date.now(),
+    source: "user_stream_execution_report"
+  };
+}
+
+function listStatusToOpenOrderList(event) {
+  const listStatusType = `${event?.listStatusType || ""}`.toUpperCase();
+  const listOrderStatus = `${event?.listOrderStatus || ""}`.toUpperCase();
+  if (TERMINAL_USER_STREAM_LIST_STATUSES.has(listStatusType) || TERMINAL_USER_STREAM_LIST_STATUSES.has(listOrderStatus)) {
+    return null;
+  }
+  return {
+    symbol: event.symbol,
+    orderListId: event.orderListId,
+    contingencyType: event.contingencyType,
+    listStatusType: event.listStatusType,
+    listOrderStatus: event.listOrderStatus,
+    listClientOrderId: event.listClientOrderId,
+    rejectReason: event.rejectReason,
+    transactTime: event.transactTime || Date.now(),
+    orders: event.orders || [],
+    source: "user_stream_list_status"
+  };
+}
+
 
 function unique(items = []) {
   return [...new Set(items.filter(Boolean))];
@@ -618,6 +707,54 @@ export class StreamCoordinator {
       }
       return true;
     });
+  }
+
+  getUserStreamOpenOrders({ symbols = [], maxAgeMs = 180_000 } = {}) {
+    const selectedSymbols = unique((symbols || []).length ? symbols : Object.keys(this.state.symbols || {}));
+    const events = selectedSymbols.flatMap((symbol) => this.getRecentExecutionReports(symbol, { maxAgeMs }) || []);
+    const latestEvents = toLatestById(events, "orderId");
+    const items = latestEvents
+      .map(executionReportToOpenOrder)
+      .filter(Boolean);
+    const latestEventAt = latestEvents
+      .map((event) => event.at)
+      .filter(Boolean)
+      .sort()
+      .at(-1) || null;
+    return {
+      items,
+      ...buildUserStreamTruthSummary({
+        source: "user_stream_execution_report",
+        eventCount: events.length,
+        latestEventAt,
+        maxAgeMs,
+        itemCount: items.length
+      })
+    };
+  }
+
+  getUserStreamOpenOrderLists({ symbols = [], maxAgeMs = 180_000 } = {}) {
+    const selectedSymbols = unique((symbols || []).length ? symbols : Object.keys(this.state.symbols || {}));
+    const events = selectedSymbols.flatMap((symbol) => this.getRecentListStatusEvents(symbol, { maxAgeMs }) || []);
+    const latestEvents = toLatestById(events, "orderListId");
+    const items = latestEvents
+      .map(listStatusToOpenOrderList)
+      .filter(Boolean);
+    const latestEventAt = latestEvents
+      .map((event) => event.at)
+      .filter(Boolean)
+      .sort()
+      .at(-1) || null;
+    return {
+      items,
+      ...buildUserStreamTruthSummary({
+        source: "user_stream_list_status",
+        eventCount: events.length,
+        latestEventAt,
+        maxAgeMs,
+        itemCount: items.length
+      })
+    };
   }
 
   getSymbolStreamFeatures(symbol) {

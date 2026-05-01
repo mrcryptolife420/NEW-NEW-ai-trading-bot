@@ -624,6 +624,49 @@ export class LiveBroker {
     return fetchReconcileCollection(fetcher, fallback);
   }
 
+  getPrivateStreamTruthSnapshot(runtime) {
+    const symbols = [...new Set((runtime?.openPositions || []).map((position) => position.symbol).filter(Boolean))];
+    const maxAgeMs = this.config.orderStreamTruthMaxAgeMs || 180_000;
+    const openOrders = this.stream?.getUserStreamOpenOrders
+      ? this.stream.getUserStreamOpenOrders({ symbols, maxAgeMs })
+      : null;
+    const openOrderLists = this.stream?.getUserStreamOpenOrderLists
+      ? this.stream.getUserStreamOpenOrderLists({ symbols, maxAgeMs })
+      : null;
+    return {
+      symbols,
+      maxAgeMs,
+      openOrders,
+      openOrderLists,
+      userStreamConnected: Boolean(this.stream?.getStatus?.().userStreamConnected)
+    };
+  }
+
+  applyPrivateStreamTruthFallback(result, snapshot, kind) {
+    const streamTruth = kind === "open_order_lists" ? snapshot?.openOrderLists : snapshot?.openOrders;
+    if (!result?.error || !streamTruth?.available || streamTruth.stale) {
+      return {
+        result,
+        used: false,
+        restError: result?.error || null,
+        streamTruth
+      };
+    }
+    return {
+      result: {
+        items: Array.isArray(streamTruth.items) ? [...streamTruth.items] : [],
+        error: null,
+        source: "user_stream_fallback",
+        degraded: true,
+        streamTruth,
+        restError: result.error
+      },
+      used: true,
+      restError: result.error,
+      streamTruth
+    };
+  }
+
   async fetchRecentTrades(symbol, limit = 8) {
     const streamTrades = this.getRecentUserStreamTrades(symbol, { limit });
     const allowance = evaluateRestBudgetAllowance({
@@ -2407,6 +2450,7 @@ export class LiveBroker {
         requestMeta: { caller: "live_broker.reconcile.account_info" }
       });
       const assetMap = toAssetMap(account);
+      const privateStreamTruth = this.getPrivateStreamTruthSnapshot(runtime);
       let openOrdersResult = this.client.getOpenOrders
         ? await this.fetchReconcileCollection(() => this.client.getOpenOrders(undefined, {
           requestMeta: { caller: "live_broker.reconcile.open_orders" }
@@ -2415,6 +2459,10 @@ export class LiveBroker {
       let openOrderListsResult = this.client.getOpenOrderLists
         ? await this.fetchReconcileCollection(() => this.client.getOpenOrderLists(), [])
         : { items: [], error: null };
+      let openOrdersFallback = this.applyPrivateStreamTruthFallback(openOrdersResult, privateStreamTruth, "open_orders");
+      openOrdersResult = openOrdersFallback.result;
+      let openOrderListsFallback = this.applyPrivateStreamTruthFallback(openOrderListsResult, privateStreamTruth, "open_order_lists");
+      openOrderListsResult = openOrderListsFallback.result;
       const autoReconcileSettings = this.getAutoReconcileConfig();
       for (let retry = 0; retry < autoReconcileSettings.retryCount; retry += 1) {
         if (!openOrdersResult.error && !openOrderListsResult.error) {
@@ -2425,9 +2473,13 @@ export class LiveBroker {
           openOrdersResult = await this.fetchReconcileCollection(() => this.client.getOpenOrders(undefined, {
             requestMeta: { caller: "live_broker.reconcile.open_orders_retry" }
           }), []);
+          openOrdersFallback = this.applyPrivateStreamTruthFallback(openOrdersResult, privateStreamTruth, "open_orders");
+          openOrdersResult = openOrdersFallback.result;
         }
         if (openOrderListsResult.error && this.client.getOpenOrderLists) {
           openOrderListsResult = await this.fetchReconcileCollection(() => this.client.getOpenOrderLists(), []);
+          openOrderListsFallback = this.applyPrivateStreamTruthFallback(openOrderListsResult, privateStreamTruth, "open_order_lists");
+          openOrderListsResult = openOrderListsFallback.result;
         }
       }
       let trackedOpenOrders = Array.isArray(openOrdersResult.items) ? [...openOrdersResult.items] : [];
@@ -2441,7 +2493,9 @@ export class LiveBroker {
       const autoReconcileAudits = [];
       const reconcileSnapshotErrors = [
         openOrdersResult.error ? { source: "open_orders", error: openOrdersResult.error.message } : null,
-        openOrderListsResult.error ? { source: "open_order_lists", error: openOrderListsResult.error.message } : null
+        openOrderListsResult.error ? { source: "open_order_lists", error: openOrderListsResult.error.message } : null,
+        openOrdersFallback?.used ? { source: "open_orders_rest", error: openOrdersFallback.restError?.message || "rest_failed", fallback: "user_stream_execution_report" } : null,
+        openOrderListsFallback?.used ? { source: "open_order_lists_rest", error: openOrderListsFallback.restError?.message || "rest_failed", fallback: "user_stream_list_status" } : null
       ].filter(Boolean);
       const recentTradesBySymbol = new Map();
       if (this.client.getMyTrades) {
@@ -2759,7 +2813,7 @@ export class LiveBroker {
         : null;
       const truthAt = nowIso();
       const exchangeTruth = {
-        status: freezeEntries ? "blocked" : mismatchCount ? "degraded" : "healthy",
+        status: freezeEntries ? "blocked" : (mismatchCount || reconcileSnapshotErrors.length) ? "degraded" : "healthy",
         freezeEntries,
         mismatchCount,
         runtimePositionCount: runtime.openPositions.length,
@@ -2789,6 +2843,31 @@ export class LiveBroker {
             .sort((left, right) => right[1] - left[1] || `${left[0]}`.localeCompare(`${right[0]}`))
             .slice(0, 4)
             .map(([id, count]) => ({ id, count }))
+        },
+        privateStreamTruth: {
+          userStreamConnected: privateStreamTruth.userStreamConnected,
+          symbols: privateStreamTruth.symbols,
+          openOrders: privateStreamTruth.openOrders ? {
+            source: openOrdersResult.source || "rest",
+            fallbackUsed: Boolean(openOrdersFallback?.used),
+            available: Boolean(privateStreamTruth.openOrders.available),
+            stale: Boolean(privateStreamTruth.openOrders.stale),
+            confidence: privateStreamTruth.openOrders.confidence,
+            ageMs: privateStreamTruth.openOrders.ageMs,
+            eventCount: privateStreamTruth.openOrders.eventCount,
+            itemCount: privateStreamTruth.openOrders.itemCount
+          } : null,
+          openOrderLists: privateStreamTruth.openOrderLists ? {
+            source: openOrderListsResult.source || "rest",
+            fallbackUsed: Boolean(openOrderListsFallback?.used),
+            available: Boolean(privateStreamTruth.openOrderLists.available),
+            stale: Boolean(privateStreamTruth.openOrderLists.stale),
+            confidence: privateStreamTruth.openOrderLists.confidence,
+            ageMs: privateStreamTruth.openOrderLists.ageMs,
+            eventCount: privateStreamTruth.openOrderLists.eventCount,
+            itemCount: privateStreamTruth.openOrderLists.itemCount
+          } : null,
+          snapshotErrors: reconcileSnapshotErrors
         },
         notes: [
           mismatchCount
