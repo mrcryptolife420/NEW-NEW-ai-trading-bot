@@ -45,7 +45,7 @@ function buildReplayExchangeInfo(symbol, quoteAsset = "USDT") {
   };
 }
 
-function buildHistoryActionPlan({ symbol, interval, from, to, status = "missing" }) {
+export function buildHistoryActionPlan({ symbol, interval, from, to, status = "missing" }) {
   const args = [
     "npm run download-history",
     "--",
@@ -74,10 +74,28 @@ function buildHistoryActionPlan({ symbol, interval, from, to, status = "missing"
       mutatesLiveState: false,
       placesOrders: false,
       source: "local_history_only",
+      priority: status === "missing_history" ? "high" : "medium",
+      requiresNetwork: true,
+      affectsTradingBehavior: false,
+      safeDuringLiveMode: true,
       command: recommendedCommand,
       validationCommand,
       note: "Backfill schrijft alleen lokale candle-history; replay blijft read-only voor trading state."
     },
+    readinessGate: {
+      status: status === "missing_history" ? "blocked" : status === "improve_history" ? "degraded" : "monitor",
+      blocks: ["strategy_promotion", "optimizer_trust", "scorecard_confidence"],
+      doesNotBlock: ["live_safety_reconcile", "protective_exits", "paper_shadow_recording"],
+      reason: status === "missing_history"
+        ? "No trusted local candles are available for deterministic replay."
+        : "Replay coverage can be improved before trusting learning conclusions."
+    },
+    nextSafeAction: "download_or_backfill_local_history_before_trusting_replay_scorecards",
+    operatorChecklist: [
+      "Download local candles for the replay symbol and interval.",
+      "Run replay again and confirm candle coverage is ready.",
+      "Use replay output for diagnostics only until coverage is ready."
+    ],
     recommendedCommand,
     validationCommand,
     steps: [

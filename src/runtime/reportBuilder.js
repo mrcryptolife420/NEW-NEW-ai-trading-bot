@@ -1,5 +1,6 @@
 import { getConfiguredTradingSource, matchesBrokerMode, matchesTradingSource } from "../utils/tradingSource.js";
 import { buildPaperLiveParitySummary } from "./paperLiveParity.js";
+import { buildExitRegretReview, buildOpenPositionExitReview, summarizeTradeAutopsies } from "./tradeAutopsy.js";
 
 function safeDivide(numerator, denominator, fallback = 0) {
   return denominator ? numerator / denominator : fallback;
@@ -589,6 +590,8 @@ function buildRangeGridDamageReview(trades = [], { limit = 6 } = {}) {
 function buildPostTradeAnalytics(trades = []) {
   return {
     summary: buildExpectancyMetrics(trades),
+    tradeAutopsy: summarizeTradeAutopsies(trades),
+    exitRegret: buildExitRegretReview(trades),
     resolutionDistribution: buildDistribution(trades, (trade) => bucketResolutionMinutes(resolveTradeDurationMinutes(trade))),
     stopOutDistribution: buildDistribution(
       trades.filter((trade) => {
@@ -1831,6 +1834,10 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
   const reportStats = buildTradeStats(primaryLookbackTrades, { realizedPnlAdjustment: lookbackScaleOutPnl });
   const sourceScopedStats = buildTradeStats(sourceScopedLookbackTrades, { realizedPnlAdjustment: sourceScopedLookbackScaleOutPnl });
   const postTradeAnalytics = buildPostTradeAnalytics(primaryTrades);
+  const openPositionExitReview = buildOpenPositionExitReview(openPositions, {
+    nowMs,
+    maxHoldMinutes: config.maxHoldMinutes || 360
+  });
   const performanceDiagnosis = buildPerformanceDiagnosis({
     trades: primaryLookbackTrades,
     reportStats,
@@ -1887,6 +1894,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
     openExposure,
     openPositions: openPositions.length,
     openExposureReview,
+    openPositionExitReview,
     recentTrades: primaryLookbackTrades.slice(-25).reverse(),
     executionSummary: buildExecutionSummary(primaryLookbackTrades),
     executionCostSummary,

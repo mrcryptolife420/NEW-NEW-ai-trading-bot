@@ -153,6 +153,7 @@ import { registerBinanceRestArchitectureTests } from "./binanceRestArchitecture.
 import { registerOperationalHardeningTests } from "./operationalHardening.tests.js";
 import { registerLargeFoundationsTests } from "./largeFoundations.tests.js";
 import { registerStreamRangeOrderflowTests } from "./streamRangeOrderflow.tests.js";
+import { registerExitRegretDiagnosticsTests } from "./exitRegretDiagnostics.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32300,6 +32301,12 @@ await registerLargeFoundationsTests({
 });
 
 await registerStreamRangeOrderflowTests({
+  runCheck,
+  assert,
+  makeConfig
+});
+
+await registerExitRegretDiagnosticsTests({
   runCheck,
   assert,
   makeConfig
