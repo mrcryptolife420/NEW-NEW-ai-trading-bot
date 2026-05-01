@@ -463,6 +463,56 @@ export async function registerLargeFoundationsTests({
     assert.ok(snapshot.nextPrimeAllowedAt > Date.now());
   });
 
+  await runCheck("local order book does not cold-prime REST depth before stream deltas arrive", async () => {
+    let orderBookCalls = 0;
+    const client = {
+      getRateLimitState() {
+        return {
+          usedWeight1m: 100,
+          warningActive: false,
+          banActive: false,
+          backoffActive: false,
+          topRestCallers: {}
+        };
+      },
+      async getOrderBook() {
+        orderBookCalls += 1;
+        return { lastUpdateId: 10, bids: [["10", "1"]], asks: [["10.1", "1"]] };
+      }
+    };
+    const engine = new LocalOrderBookEngine({
+      client,
+      config: {
+        enableEventDrivenData: true,
+        enableLocalOrderBook: true,
+        watchlist: ["COLDUSDT"],
+        localBookMaxSymbols: 1,
+        universeMaxSymbols: 1,
+        localBookBootstrapWaitMs: 0,
+        localBookWarmupMs: 0,
+        streamDepthSnapshotLimit: 200,
+        streamDepthLevels: 20,
+        maxDepthEventAgeMs: 15_000,
+        restDepthFallbackMinMs: 30_000,
+        restHotCallerDepthWeightThreshold: 5_000,
+        requestWeightWarnThreshold1m: 4_800
+      },
+      logger: { warn() {}, info() {} }
+    });
+    let error = null;
+    try {
+      await engine.ensurePrimed("COLDUSDT");
+    } catch (caught) {
+      error = caught;
+    }
+    const snapshot = engine.getSnapshot("COLDUSDT");
+    assert.equal(orderBookCalls, 0);
+    assert.equal(error?.code, "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED");
+    assert.equal(snapshot.lastPrimeSkipReason, "local_book_depth_stream_not_ready");
+    assert.equal(snapshot.lastPrimeRestBudget?.streamPrimary, false);
+    assert.ok(snapshot.nextPrimeAllowedAt > Date.now());
+  });
+
   await runCheck("trading improvement diagnostics combine meta caution recovery request budget and strategy risk", async () => {
     const diagnostics = buildTradingImprovementDiagnostics({
       blockedSetups: [{

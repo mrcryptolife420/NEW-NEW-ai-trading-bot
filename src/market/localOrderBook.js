@@ -157,6 +157,23 @@ export class LocalOrderBookEngine {
 
   evaluateSnapshotRestAllowance(bucket) {
     const streamPrimary = bucket.buffer.length > 0 || Boolean(bucket.lastEventAt);
+    if (
+      !streamPrimary &&
+      this.config.enableEventDrivenData !== false &&
+      this.config.enableLocalOrderBook &&
+      this.config.disableDepthRestFallbackOnStreamDegraded !== false
+    ) {
+      return {
+        allow: false,
+        reason: "local_book_depth_stream_not_ready",
+        restClass: "public_market_depth",
+        priority: "low",
+        streamPrimary,
+        callerStats: { count: 0, weight: 0 },
+        hotCallerThreshold: Math.max(0, safeNumber(this.config.restHotCallerDepthWeightThreshold, 5000)),
+        ...(this.client?.getRateLimitState ? this.client.getRateLimitState() : {})
+      };
+    }
     const allowance = evaluateRestBudgetAllowance({
       caller: "local_order_book.depth_snapshot",
       priority: "low",
@@ -473,12 +490,25 @@ export class LocalOrderBookEngine {
     const snapshots = symbols.map((symbol) => this.getSnapshot(symbol));
     const healthy = snapshots.filter((item) => item.synced && item.depthAgeMs <= this.config.maxDepthEventAgeMs).length;
     const warming = snapshots.filter((item) => item.warmupActive).length;
+    const suppressed = snapshots.filter((item) => item.lastPrimeSkipReason).length;
     return {
       enabled: this.config.enableLocalOrderBook,
       trackedSymbols: trackedSymbols.length,
       activeSymbols: activeSymbols.length,
       healthySymbols: healthy,
       warmingSymbols: warming,
+      suppressedPrimeSymbols: suppressed,
+      topPrimeSkipReasons: [...new Map(
+        snapshots
+          .filter((item) => item.lastPrimeSkipReason)
+          .map((item) => [
+            item.lastPrimeSkipReason,
+            snapshots.filter((snapshot) => snapshot.lastPrimeSkipReason === item.lastPrimeSkipReason).length
+          ])
+      ).entries()]
+        .sort((left, right) => right[1] - left[1] || `${left[0]}`.localeCompare(`${right[0]}`))
+        .slice(0, 4)
+        .map(([reason, count]) => ({ reason, count })),
       totalResyncs: snapshots.reduce((total, item) => total + (item.resyncCount || 0), 0),
       totalGaps: snapshots.reduce((total, item) => total + (item.gapCount || 0), 0),
       averageDepthConfidence: snapshots.length
