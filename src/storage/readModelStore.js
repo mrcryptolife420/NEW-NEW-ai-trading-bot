@@ -30,6 +30,36 @@ function safeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function buildReplayCoverageGate(latestReplay = null) {
+  const trace = latestReplay?.json ? parseJson(latestReplay.json, {}) : {};
+  const readiness = trace?.historyReadiness || {};
+  const actionPlan = trace?.historyActionPlan || null;
+  const status = latestReplay?.status || trace?.status || "missing";
+  const warnings = [
+    ...(Array.isArray(readiness.warnings) ? readiness.warnings : []),
+    ...(status === "empty_history" ? ["empty_history"] : [])
+  ];
+  const actionRequired = !latestReplay || status === "empty_history" || readiness.status === "degraded" || warnings.length > 0;
+  return {
+    status: actionRequired ? "action_required" : "ready",
+    latestReplayStatus: latestReplay?.status || null,
+    symbol: latestReplay?.symbol || trace?.symbol || null,
+    replayAt: latestReplay?.at || trace?.at || null,
+    candleCount: safeNumber(trace?.candleCount ?? readiness.candleCount, 0),
+    coverageRatio: readiness.coverageRatio ?? null,
+    gapCount: safeNumber(readiness.gapCount, 0),
+    stale: Boolean(readiness.stale),
+    warnings: [...new Set(warnings)],
+    actionPlan,
+    nextSafeAction: actionRequired
+      ? "download_or_backfill_local_history_before_trusting_replay_scorecards"
+      : "history_coverage_ready_for_replay_review",
+    note: actionRequired
+      ? "Replay/scorecard conclusies blijven beperkt zolang lokale candle-history ontbreekt, stale is of gaten bevat."
+      : "Lokale replay-history is bruikbaar voor policy review."
+  };
+}
+
 function tableCount(db, table) {
   return db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count || 0;
 }
@@ -631,11 +661,12 @@ export class ReadModelStore {
       LIMIT ?
     `).all(limit);
     const latestReplay = db.prepare(`
-      SELECT id, symbol, at, status
+      SELECT id, symbol, at, status, json
       FROM replay_traces
       ORDER BY COALESCE(at, '') DESC, id DESC
       LIMIT 1
     `).get() || null;
+    const replayCoverageGate = buildReplayCoverageGate(latestReplay);
     const operatorRunbooks = topBlockers
       .slice(0, 3)
       .map((item) => buildOperatorRunbookForReason(item.reason, { count: item.count }));
@@ -656,6 +687,7 @@ export class ReadModelStore {
       topBlockers,
       topScorecards,
       latestReplay,
+      replayCoverageGate,
       requestBudget,
       operatorRunbooks,
       strategyLifecycleDiagnostics,
@@ -710,14 +742,31 @@ export class ReadModelStore {
     }
     const topCallers = [...callers.values()]
       .map((caller) => {
-        const publicDepth = /depth|orderBook/i.test(caller.caller);
+        const publicDepth = /depth|orderBook|order_book/i.test(caller.caller);
+        const publicBookTicker = /bookTicker|ticker\/bookTicker/i.test(caller.caller);
+        const publicKlines = /klines|kline/i.test(caller.caller);
         const privateTradeHistory = /myTrades|recent_trades|trade_history|settle_.*trades/i.test(caller.caller);
         const privateOrders = /openOrders|open_orders|openOrderList|open_order_list/i.test(caller.caller);
+        const privateAccount = /account/i.test(caller.caller);
         const hotThreshold = publicDepth ? 5000 : privateTradeHistory ? 2000 : privateOrders ? 8000 : 1000;
         const hot = Number(caller.weight || 0) >= hotThreshold;
         const streamReplacementAvailable = publicDepth || privateTradeHistory;
+        const restClass = publicDepth
+          ? "public_market_depth"
+          : publicBookTicker
+            ? "public_book_ticker"
+            : publicKlines
+              ? "public_klines"
+              : privateTradeHistory
+                ? "private_trade_history"
+                : privateOrders
+                  ? "private_orders"
+                  : privateAccount
+                    ? "private_account"
+                    : "other";
         return {
           ...caller,
+          restClass,
           hot,
           streamReplacementAvailable,
           guarded: hot && streamReplacementAvailable,
@@ -744,20 +793,20 @@ export class ReadModelStore {
             ? "elevated"
             : "normal";
     const criticalCallers = topCallers
-      .filter((caller) => caller.weight >= 25 || /depth|orderBook|openOrders|open_orders|allOrders|account/i.test(caller.caller))
+      .filter((caller) => caller.weight >= 25 || ["public_market_depth", "private_orders", "private_account"].includes(caller.restClass))
       .slice(0, Math.max(1, Math.min(5, limit)));
     const callerGroups = topCallers.reduce((groups, caller) => {
-      const group = /depth|orderBook/i.test(caller.caller)
+      const group = caller.restClass === "public_market_depth"
         ? "public_depth"
-        : /bookTicker|ticker\/bookTicker/i.test(caller.caller)
+        : caller.restClass === "public_book_ticker"
           ? "public_book_ticker"
-          : /klines/i.test(caller.caller)
+          : caller.restClass === "public_klines"
             ? "public_klines"
-            : /openOrders|open_orders|openOrderList|open_order_list/i.test(caller.caller)
+            : caller.restClass === "private_orders"
               ? "private_orders"
-              : /myTrades|recent_trades|trade_history|settle_.*trades/i.test(caller.caller)
+              : caller.restClass === "private_trade_history"
                 ? "private_trade_history"
-              : /account/i.test(caller.caller)
+              : caller.restClass === "private_account"
                 ? "private_account"
                 : "other";
       groups[group] = groups[group] || { group, count: 0, weight: 0, callers: [] };

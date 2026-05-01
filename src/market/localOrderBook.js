@@ -1,4 +1,5 @@
 import { clamp } from "../utils/math.js";
+import { evaluateRestBudgetAllowance } from "../runtime/restBudgetGovernor.js";
 
 function createBucket(limit = 240) {
   return {
@@ -47,6 +48,11 @@ function bestQty(levels) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function safeNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function walkLevels(levels, side, { quoteAmount = 0, quantity = 0 } = {}) {
@@ -140,10 +146,37 @@ export class LocalOrderBookEngine {
         lastDepthSummary: null,
         bootstrapStartedAt: null,
         warmupUntil: null,
-        lastResetReason: null
+        lastResetReason: null,
+        nextPrimeAllowedAt: 0,
+        lastPrimeSkipReason: null,
+        lastPrimeRestBudget: null
       });
     }
     return this.buckets.get(symbol);
+  }
+
+  evaluateSnapshotRestAllowance(bucket) {
+    const streamPrimary = bucket.buffer.length > 0 || Boolean(bucket.lastEventAt);
+    const allowance = evaluateRestBudgetAllowance({
+      caller: "local_order_book.depth_snapshot",
+      priority: "low",
+      rateLimitState: this.client?.getRateLimitState ? this.client.getRateLimitState() : {},
+      config: this.config,
+      streamPrimary
+    });
+    return { ...allowance, streamPrimary };
+  }
+
+  markSnapshotRestSkipped(bucket, allowance = {}) {
+    const cooldownMs = Math.max(
+      5_000,
+      safeNumber(this.config.restDepthFallbackMinMs, 30_000),
+      safeNumber(this.config.localBookDepthSnapshotCooldownMs, 0)
+    );
+    bucket.nextPrimeAllowedAt = Date.now() + cooldownMs;
+    bucket.lastPrimeSkipReason = allowance.reason || "depth_snapshot_rest_suppressed";
+    bucket.lastPrimeRestBudget = allowance;
+    bucket.lastDepthSummary = this.computeDepthSummary(bucket);
   }
 
   resetBucket(bucket, reason = "resync") {
@@ -182,6 +215,12 @@ export class LocalOrderBookEngine {
     if (bucket.synced) {
       return bucket;
     }
+    if (bucket.nextPrimeAllowedAt && Date.now() < bucket.nextPrimeAllowedAt) {
+      const error = new Error(bucket.lastPrimeSkipReason || "local_order_book_depth_snapshot_cooldown");
+      error.code = "LOCAL_BOOK_DEPTH_SNAPSHOT_COOLDOWN";
+      error.restBudget = bucket.lastPrimeRestBudget || null;
+      throw error;
+    }
     if (bucket.primingPromise) {
       return bucket.primingPromise;
     }
@@ -189,12 +228,32 @@ export class LocalOrderBookEngine {
     bucket.primingPromise = (async () => {
       await this.waitForInitialBuffer(bucket);
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        const snapshot = await this.client.getOrderBook(symbol, this.config.streamDepthSnapshotLimit);
+        const allowance = this.evaluateSnapshotRestAllowance(bucket);
+        if (!allowance.allow) {
+          this.markSnapshotRestSkipped(bucket, allowance);
+          const error = new Error(allowance.reason || "local_order_book_depth_snapshot_suppressed");
+          error.code = "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED";
+          error.restBudget = allowance;
+          this.logger?.warn?.("Local order book depth snapshot suppressed", {
+            symbol,
+            reason: allowance.reason,
+            pressure: allowance.pressure,
+            usedWeight1m: allowance.usedWeight1m,
+            streamPrimary: allowance.streamPrimary
+          });
+          throw error;
+        }
+        const snapshot = await this.client.getOrderBook(symbol, this.config.streamDepthSnapshotLimit, {
+          requestMeta: { caller: "local_order_book.depth_snapshot" }
+        });
         bucket.bids = new Map((snapshot.bids || []).map(([price, quantity]) => [`${price}`, Number(quantity)]));
         bucket.asks = new Map((snapshot.asks || []).map(([price, quantity]) => [`${price}`, Number(quantity)]));
         bucket.lastUpdateId = Number(snapshot.lastUpdateId || 0);
         bucket.lastSnapshotAt = new Date().toISOString();
         bucket.lastEventAt = bucket.lastEventAt || bucket.lastSnapshotAt;
+        bucket.nextPrimeAllowedAt = 0;
+        bucket.lastPrimeSkipReason = null;
+        bucket.lastPrimeRestBudget = allowance;
 
         const buffered = bucket.buffer
           .filter((event) => Number(event.u || 0) > bucket.lastUpdateId)
@@ -371,7 +430,10 @@ export class LocalOrderBookEngine {
       missedEvents: bucket.missedEvents,
       warmupActive,
       warmupRemainingMs,
-      lastResetReason: bucket.lastResetReason || null
+      lastResetReason: bucket.lastResetReason || null,
+      nextPrimeAllowedAt: bucket.nextPrimeAllowedAt || 0,
+      lastPrimeSkipReason: bucket.lastPrimeSkipReason || null,
+      lastPrimeRestBudget: bucket.lastPrimeRestBudget || null
     };
   }
 

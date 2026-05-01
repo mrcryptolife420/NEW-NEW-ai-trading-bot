@@ -20,6 +20,7 @@ import { buildTradingImprovementDiagnostics } from "../src/runtime/tradingImprov
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "../src/runtime/restBudgetGovernor.js";
 import { getMultiHorizonOrderflow, recordAggTrade, resetBuffer } from "../src/market/orderbookDelta.js";
 import { buildStrategyLifecycleGovernance, resolveRangeGridLifecycleFromTrades } from "../src/strategy/strategyLifecycleGovernance.js";
+import { LocalOrderBookEngine } from "../src/market/localOrderBook.js";
 
 function buildCandles(count = 70) {
   const start = Date.parse("2026-01-01T00:00:00.000Z");
@@ -171,6 +172,7 @@ export async function registerLargeFoundationsTests({
     assert.equal(status.tables.replayTraces, 1);
     assert.ok(status.journalRefreshedAt);
     assert.equal(dashboard.latestReplay.id, "replay-1");
+    assert.equal(dashboard.replayCoverageGate.status, "ready");
   });
 
   await runCheck("operator runbooks and strategy lifecycle diagnostics are action-oriented", async () => {
@@ -226,6 +228,7 @@ export async function registerLargeFoundationsTests({
           totalRateLimitHits: 1,
           lastRateLimitStatus: 429,
           topRestCallers: {
+            "local_order_book.depth_snapshot": { count: 4, weight: 80 },
             "scanner.depth": { count: 2, weight: 50 },
             "ticker.light": { count: 10, weight: 10 }
           }
@@ -238,9 +241,10 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.latestWeight1m, 6100);
     assert.equal(summary.pressureLevel, "critical");
     assert.equal(summary.rateLimitEvents, 1);
-    assert.equal(summary.topCallers[0].caller, "scanner.depth");
-    assert.equal(summary.topCallers[0].weight, 50);
-    assert.equal(summary.criticalCallers[0].caller, "scanner.depth");
+    assert.equal(summary.topCallers[0].caller, "local_order_book.depth_snapshot");
+    assert.equal(summary.topCallers[0].weight, 80);
+    assert.equal(summary.topCallers[0].restClass, "public_market_depth");
+    assert.equal(summary.criticalCallers[0].caller, "local_order_book.depth_snapshot");
     assert.equal(summary.callerGroups[0].group, "public_depth");
     assert.equal(summary.incidents.length >= 1, true);
     assert.equal(summary.incidents.some((incident) => incident.type === "request_budget_hot_caller"), true);
@@ -402,6 +406,55 @@ export async function registerLargeFoundationsTests({
       }))
     });
     assert.equal(lifecycle.lifecycleStatus, "paper_quarantined");
+  });
+
+  await runCheck("local order book snapshot REST is guarded when depth caller is hot", async () => {
+    let orderBookCalls = 0;
+    const client = {
+      getRateLimitState() {
+        return {
+          usedWeight1m: 200,
+          topRestCallers: {
+            "local_order_book.depth_snapshot": { count: 50, weight: 100_000 }
+          }
+        };
+      },
+      async getOrderBook() {
+        orderBookCalls += 1;
+        return { lastUpdateId: 10, bids: [["10", "1"]], asks: [["10.1", "1"]] };
+      }
+    };
+    const engine = new LocalOrderBookEngine({
+      client,
+      config: {
+        enableLocalOrderBook: true,
+        watchlist: ["HOTUSDT"],
+        localBookMaxSymbols: 1,
+        universeMaxSymbols: 1,
+        localBookBootstrapWaitMs: 0,
+        localBookWarmupMs: 0,
+        streamDepthSnapshotLimit: 200,
+        streamDepthLevels: 20,
+        maxDepthEventAgeMs: 15_000,
+        restDepthFallbackMinMs: 30_000,
+        restHotCallerDepthWeightThreshold: 5_000,
+        requestWeightWarnThreshold1m: 4_800
+      },
+      logger: { warn() {}, info() {} }
+    });
+    engine.getBucket("HOTUSDT").buffer.push({ U: 11, u: 12, E: Date.now(), b: [["10", "2"]], a: [["10.1", "1"]] });
+    let error = null;
+    try {
+      await engine.ensurePrimed("HOTUSDT");
+    } catch (caught) {
+      error = caught;
+    }
+    const snapshot = engine.getSnapshot("HOTUSDT");
+    assert.equal(orderBookCalls, 0);
+    assert.equal(error?.code, "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED");
+    assert.equal(snapshot.lastPrimeSkipReason, "hot_public_depth_rest_suppressed");
+    assert.equal(snapshot.lastPrimeRestBudget?.restClass, "public_market_depth");
+    assert.ok(snapshot.nextPrimeAllowedAt > Date.now());
   });
 
   await runCheck("trading improvement diagnostics combine meta caution recovery request budget and strategy risk", async () => {
@@ -1003,6 +1056,29 @@ export async function registerLargeFoundationsTests({
     assert.equal(result.status, "ready");
     assert.equal(status.tables.replayTraces, 1);
     assert.equal(dashboard.latestReplay.symbol, "BTCUSDT");
+    assert.equal(dashboard.replayCoverageGate.status, "action_required");
+    assert.equal(dashboard.replayCoverageGate.nextSafeAction, "download_or_backfill_local_history_before_trusting_replay_scorecards");
+  });
+
+  await runCheck("read model replay coverage gate flags empty local history", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-replay-coverage-gate-"));
+    const readModel = new ReadModelStore({ runtimeDir });
+    await readModel.init();
+    readModel.upsertReplayTrace({
+      id: "market-replay:BTCUSDT:empty:empty",
+      symbol: "BTCUSDT",
+      at: "2026-01-01T00:00:00.000Z",
+      status: "empty_history",
+      candleCount: 0,
+      historyReadiness: { status: "missing", candleCount: 0, warnings: ["no_local_candles"] },
+      historyActionPlan: { status: "missing_history", command: "npm run download-history -- BTCUSDT" }
+    });
+    const dashboard = readModel.dashboardSummary();
+    readModel.close();
+    assert.equal(dashboard.replayCoverageGate.status, "action_required");
+    assert.equal(dashboard.replayCoverageGate.symbol, "BTCUSDT");
+    assert.ok(dashboard.replayCoverageGate.warnings.includes("empty_history"));
+    assert.equal(dashboard.replayCoverageGate.nextSafeAction, "download_or_backfill_local_history_before_trusting_replay_scorecards");
   });
 
   await runCheck("trading bot decomposition service map covers target services", async () => {

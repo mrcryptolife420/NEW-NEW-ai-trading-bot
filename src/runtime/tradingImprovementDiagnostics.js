@@ -199,8 +199,16 @@ export function buildRequestWeightMitigationPlan({
   const restGovernor = fallbackHealth.restBudgetGovernor || {};
   const streams = streamStatus || {};
   const topCallers = arr(budget.topCallers);
-  const privateHotspots = topCallers.filter((caller) => /openOrders|open_orders|myTrades|account|order/i.test(caller.caller || ""));
-  const publicHotspots = topCallers.filter((caller) => /depth|orderBook|bookTicker|klines|ticker/i.test(caller.caller || ""));
+  const privateHotspots = topCallers.filter((caller) => {
+    const restClass = `${caller.restClass || ""}`;
+    return restClass.startsWith("private_")
+      || /openOrders|open_orders|myTrades|account/i.test(caller.caller || "");
+  });
+  const publicHotspots = topCallers.filter((caller) => {
+    const restClass = `${caller.restClass || ""}`;
+    return restClass.startsWith("public_")
+      || /depth|orderBook|order_book|bookTicker|klines|kline|ticker/i.test(caller.caller || "");
+  });
   const pressureLevel = budget.pressureLevel || (weight.banActive ? "critical" : weight.warningActive ? "warning" : "unknown");
   const actions = [
     privateHotspots.length ? "Maak User Data Stream leidend voor orders/fills/account en beperk private REST tot reconcile sanity checks." : null,
