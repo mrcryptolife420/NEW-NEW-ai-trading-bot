@@ -74,7 +74,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "    $age=[math]::Abs(((Get-Date).ToUniversalTime()-$generatedAt).TotalSeconds);" ^
   "    $runState=$snapshot.manager.runState;" ^
   "    $readiness=$snapshot.dashboard.ops.readiness.status;" ^
-  "    if($age -le 180) { $improvement=$snapshot.dashboard.tradingImprovementDiagnostics; $improvementStatus=if($improvement){$improvement.status}else{'unknown'}; $firstAction=if($improvement -and $improvement.priorityActions -and $improvement.priorityActions.Count -gt 0){$improvement.priorityActions[0]}else{$null}; Write-Host ('Snapshot OK: age=' + [math]::Round($age,0) + 's runState=' + $runState + ' readiness=' + $readiness + ' improvement=' + $improvementStatus); if($firstAction){ Write-Host ('Functionele aandacht: ' + $firstAction) }; exit 0 }" ^
+  "    if($age -le 180) { $improvement=$snapshot.dashboard.tradingImprovementDiagnostics; $improvementStatus=if($improvement){$improvement.status}else{'unknown'}; $firstAction=if($improvement -and $improvement.priorityActions -and $improvement.priorityActions.Count -gt 0){$improvement.priorityActions[0]}else{$null}; $streamHealth=$snapshot.dashboard.streamFallbackHealth; $restGuard=if($streamHealth -and $streamHealth.restBudgetGovernor){$streamHealth.restBudgetGovernor.status}else{$null}; Write-Host ('Snapshot OK: age=' + [math]::Round($age,0) + 's runState=' + $runState + ' readiness=' + $readiness + ' improvement=' + $improvementStatus); if($restGuard){ Write-Host ('REST guard: ' + $restGuard) }; if($firstAction){ Write-Host ('Functionele aandacht: ' + $firstAction) }; exit 0 }" ^
   "    $lastError='snapshot stale: ' + [math]::Round($age,0) + 's';" ^
   "  } catch { $lastError=$_.Exception.Message }" ^
   "  Start-Sleep -Seconds 2" ^

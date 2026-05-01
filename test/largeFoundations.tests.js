@@ -17,6 +17,7 @@ import {
   buildStrategyLifecycleDiagnostics
 } from "../src/runtime/operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "../src/runtime/tradingImprovementDiagnostics.js";
+import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "../src/runtime/restBudgetGovernor.js";
 
 function buildCandles(count = 70) {
   const start = Date.parse("2026-01-01T00:00:00.000Z");
@@ -244,6 +245,44 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.recommendedActions.some((action) => action.includes("depth")), true);
   });
 
+  await runCheck("rest budget governor preserves critical calls while guarding low priority REST", async () => {
+    const rateLimitState = {
+      usedWeight1m: 3600,
+      warningActive: false,
+      banActive: false,
+      backoffActive: false,
+      topRestCallers: {
+        "market_snapshot.depth_fallback": { count: 20, weight: 1000 },
+        "live_broker.reconcile.open_orders": { count: 2, weight: 160 }
+      }
+    };
+    const config = { requestWeightWarnThreshold1m: 4800 };
+    const depth = evaluateRestBudgetAllowance({
+      caller: "market_snapshot.depth_fallback",
+      priority: "low",
+      rateLimitState,
+      config,
+      streamPrimary: true
+    });
+    const reconcile = evaluateRestBudgetAllowance({
+      caller: "live_broker.reconcile.open_orders",
+      priority: "critical",
+      rateLimitState,
+      config,
+      streamPrimary: false
+    });
+    const summary = buildRestBudgetGovernorSummary({
+      rateLimitState,
+      config,
+      streamStatus: { publicStreamConnected: true, userStreamConnected: true }
+    });
+    assert.equal(depth.allow, false);
+    assert.equal(depth.reason, "stream_primary_rest_suppressed");
+    assert.equal(reconcile.allow, true);
+    assert.equal(summary.status, "guarding");
+    assert.equal(summary.guardedCallers[0].caller, "market_snapshot.depth_fallback");
+  });
+
   await runCheck("trading improvement diagnostics combine meta caution recovery request budget and strategy risk", async () => {
     const diagnostics = buildTradingImprovementDiagnostics({
       blockedSetups: [{
@@ -285,7 +324,15 @@ export async function registerLargeFoundationsTests({
         ],
         recommendedActions: ["Pauzeer niet-kritieke dashboard/research/scanner REST acties tot weight normaliseert."]
       },
-      streamFallbackHealth: { status: "degraded", suppressedFallbackCount: 2 },
+      streamFallbackHealth: {
+        status: "degraded",
+        suppressedFallbackCount: 2,
+        restBudgetGovernor: {
+          status: "guarding",
+          guardedCallers: [{ caller: "market_snapshot.depth_fallback", reason: "stream_primary_rest_suppressed" }],
+          recommendedActions: ["Niet-kritieke REST callers worden onder pressure automatisch uitgesteld."]
+        }
+      },
       readModel: {
         strategyLifecycleDiagnostics: {
           status: "review_required",
@@ -325,6 +372,7 @@ export async function registerLargeFoundationsTests({
     assert.equal(diagnostics.backlog.some((item) => item.id === "exchange_safety_recovery_playbook" && item.status === "action_required"), true);
     assert.ok(diagnostics.priorityActions.some((item) => item.includes("User Data Stream")));
     assert.ok(diagnostics.priorityActions.some((item) => item.includes("Depth REST fallback is onderdrukt")));
+    assert.ok(diagnostics.priorityActions.some((item) => item.includes("REST budget governor")));
     assert.ok(diagnostics.backlog.find((item) => item.id === "public_depth_stream_first").evidence.some((item) => item.includes("suppressed")));
   });
 
@@ -419,6 +467,31 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.status, "rest_pressure_guarded");
     assert.equal(summary.suppressedFallbackCount, 1);
     assert.equal(summary.recentSuppressedFallbacks[0].key, "depth:BTCUSDT");
+  });
+
+  await runCheck("kline REST fallback is guarded under request-weight pressure", async () => {
+    const fakeBot = {
+      config: {
+        requestWeightWarnThreshold1m: 4800
+      },
+      runtime: {},
+      restFallbackState: {},
+      restFallbackSuppressedState: {},
+      client: {
+        getRateLimitState() {
+          return { usedWeight1m: 4200, banActive: false, backoffActive: false };
+        }
+      },
+      rememberSuppressedRestFallback: TradingBot.prototype.rememberSuppressedRestFallback
+    };
+    const allowed = TradingBot.prototype.shouldUseRestFallback.call(
+      fakeBot,
+      "klines:BTCUSDT:15m",
+      1_000,
+      { caller: "market_snapshot.primary_klines", priority: "medium", streamPrimary: true }
+    );
+    assert.equal(allowed, false);
+    assert.equal(fakeBot.restFallbackSuppressedState["klines:BTCUSDT:15m"].reason, "stream_primary_rest_suppressed");
   });
 
   await runCheck("live broker skips recent-trade REST under request-weight pressure", async () => {

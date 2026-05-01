@@ -123,6 +123,7 @@ import {
 } from "./viewMappers.js";
 import { buildOperatorActionResult } from "./operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "./tradingImprovementDiagnostics.js";
+import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "./restBudgetGovernor.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -10884,13 +10885,22 @@ export class TradingBot {
     const now = Date.now();
     const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
     const kind = `${key || ""}`.split(":")[0] || "market";
-    if (rateLimitState?.banActive || rateLimitState?.backoffActive) {
+    const budgetAllowance = evaluateRestBudgetAllowance({
+      caller: options?.caller || key,
+      priority: options?.priority || (kind === "depth" ? "low" : "medium"),
+      rateLimitState,
+      config: this.config,
+      streamPrimary: Boolean(options?.streamPrimary ?? ["depth", "book_ticker", "klines"].includes(kind))
+    });
+    if (!budgetAllowance.allow) {
+      this.rememberSuppressedRestFallback?.(key, budgetAllowance.reason);
       return false;
     }
     if (options?.pressureSensitive) {
       const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
       const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
       if (rateLimitState?.warningActive || (Number.isFinite(usedWeight1m) && usedWeight1m >= warnThreshold * 0.8)) {
+        this.rememberSuppressedRestFallback?.(key, "request_weight_pressure");
         return false;
       }
     }
@@ -10930,6 +10940,11 @@ export class TradingBot {
 
   buildStreamFallbackHealth(streamStatus = {}, referenceNow = nowIso()) {
     const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : (this.runtime.requestWeight || {});
+    const restBudgetGovernor = buildRestBudgetGovernorSummary({
+      rateLimitState,
+      config: this.config,
+      streamStatus
+    });
     const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
     const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
     const pressure = Number.isFinite(usedWeight1m) ? usedWeight1m / warnThreshold : 0;
@@ -11020,6 +11035,7 @@ export class TradingBot {
       userStreamConnected,
       privateRestWeight,
       publicFallbackWeight,
+      restBudgetGovernor,
       recentFallbacks: fallbackEntries,
       recentSuppressedFallbacks: suppressedEntries,
       recommendedAction
@@ -11041,7 +11057,11 @@ export class TradingBot {
       return mergedStreamCandles;
     }
     const fallbackKey = this.getRestFallbackKey("klines", symbol, interval);
-    if (!allowRestFallback || !this.shouldUseRestFallback(fallbackKey, this.getRestFallbackMinMs(fallbackKind))) {
+    if (!allowRestFallback || !this.shouldUseRestFallback(fallbackKey, this.getRestFallbackMinMs(fallbackKind), {
+      caller: requestKey || `market_snapshot.klines.${interval}`,
+      priority: "medium",
+      streamPrimary: true
+    })) {
       if (mergedStreamCandles.length) {
         return mergedStreamCandles;
       }
@@ -17041,12 +17061,18 @@ export class TradingBot {
       const cachedOrderBook = cachedSnapshot?.book?.orderBook || null;
       const canRestBookTickerFallback = !hasFreshStreamBookTicker &&
         this.shouldUseRestFallback(this.getRestFallbackKey("book_ticker", symbol), this.getRestFallbackMinMs("book_ticker"), {
-          pressureSensitive: true
+          caller: "market_snapshot.book_ticker_fallback",
+          pressureSensitive: true,
+          priority: "medium",
+          streamPrimary: true
         });
       const canRestDepthFallback = !useLocalBook &&
         !cachedOrderBook &&
         this.shouldUseRestFallback(this.getRestFallbackKey("depth", symbol), this.getRestFallbackMinMs("depth"), {
-          pressureSensitive: true
+          caller: "market_snapshot.depth_fallback",
+          pressureSensitive: true,
+          priority: "low",
+          streamPrimary: true
         });
       const [candles, restBookTicker, restOrderBook, lowerTimeframeSnapshot, higherTimeframeSnapshot, dailyTimeframeSnapshot] = await Promise.all([
         this.getKlineSeries(symbol, this.config.klineInterval, this.config.klineLimit, {

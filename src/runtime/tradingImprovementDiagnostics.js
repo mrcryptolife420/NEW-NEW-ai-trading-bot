@@ -172,6 +172,7 @@ export function buildRequestWeightMitigationPlan({
   const weight = requestWeight || {};
   const budget = requestBudget || {};
   const fallbackHealth = streamFallbackHealth || {};
+  const restGovernor = fallbackHealth.restBudgetGovernor || {};
   const streams = streamStatus || {};
   const topCallers = arr(budget.topCallers);
   const privateHotspots = topCallers.filter((caller) => /openOrders|open_orders|myTrades|account|order/i.test(caller.caller || ""));
@@ -182,7 +183,9 @@ export function buildRequestWeightMitigationPlan({
     publicHotspots.length ? "Gebruik public WebSocket/local book voor hot market-data callers en verhoog REST fallback TTL." : null,
     fallbackHealth.status === "degraded" ? "Herstel stream fallback health voordat scanner/deep-book REST wordt opgevoerd." : null,
     safeNumber(fallbackHealth.suppressedFallbackCount, 0) > 0 ? "Depth REST fallback is onderdrukt door de stream/local-book guard; herstel streams voordat deep-book REST terugkomt." : null,
+    restGovernor.status === "guarding" ? "REST budget governor stelt niet-kritieke callers uit; reconcile/execution blijven prioriteit houden." : null,
     weight.banActive ? "Hard pause blijft actief tot Binance banUntil verstreken is." : null,
+    ...arr(restGovernor.recommendedActions),
     ...arr(budget.recommendedActions)
   ].filter(Boolean);
   return {
@@ -192,6 +195,11 @@ export function buildRequestWeightMitigationPlan({
     privateHotspots: privateHotspots.slice(0, 5),
     publicHotspots: publicHotspots.slice(0, 5),
     streamStatus: streams.status || fallbackHealth.status || "unknown",
+    restBudgetGovernor: restGovernor.status ? {
+      status: restGovernor.status,
+      guardedCallers: arr(restGovernor.guardedCallers).slice(0, 5),
+      topCallers: arr(restGovernor.topCallers).slice(0, 5)
+    } : null,
     actions: [...new Set(actions)].slice(0, 6)
   };
 }

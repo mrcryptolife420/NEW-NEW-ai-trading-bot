@@ -57,6 +57,7 @@ import {
   buildStopPlanAtEntry
 } from "./tradeAnalyticsContext.js";
 import { summarizeTradeFees } from "./feeAccounting.js";
+import { evaluateRestBudgetAllowance } from "../runtime/restBudgetGovernor.js";
 
 function sumTradeCommissionsToQuote(trades, baseAsset, quoteAsset) {
   return summarizeTradeFees({ trades, baseAsset, quoteAsset }).feeQuote;
@@ -590,17 +591,22 @@ export class LiveBroker {
   }
 
   async fetchRecentTrades(symbol, limit = 8) {
-    const rateLimitState = this.client?.getRateLimitState ? this.client.getRateLimitState() : null;
-    const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
-    const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
-    const pressure = Number.isFinite(usedWeight1m) && warnThreshold > 0 ? usedWeight1m / warnThreshold : 0;
-    if (rateLimitState?.banActive || rateLimitState?.backoffActive || rateLimitState?.warningActive || pressure >= 0.8) {
+    const allowance = evaluateRestBudgetAllowance({
+      caller: "live_broker.reconcile.recent_trades",
+      priority: "medium",
+      rateLimitState: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
+      config: this.config,
+      streamPrimary: Boolean(this.stream?.getStatus?.().userStreamConnected)
+    });
+    if (!allowance.allow) {
       return {
         trades: [],
         error: new Error("recent_trades_skipped_request_weight_pressure"),
+        reason: allowance.reason || "request_weight_pressure",
         skipped: true,
-        pressure,
-        usedWeight1m
+        pressure: allowance.pressure,
+        usedWeight1m: allowance.usedWeight1m,
+        restBudget: allowance
       };
     }
     return fetchRecentTrades(this.client, symbol, limit);
@@ -2569,13 +2575,13 @@ export class LiveBroker {
       if (this.client.getMyTrades) {
         const tradeLookbackMs = (this.config.exchangeTruthRecentFillLookbackMinutes || 30) * 60_000;
         const recentTradeResults = await Promise.allSettled(
-          trackedTruthSymbols.map((symbol) => this.client.getMyTrades(symbol, { limit: 8 }))
+          trackedTruthSymbols.map((symbol) => this.fetchRecentTrades(symbol, 8))
         );
         recentTradeResults.forEach((result, index) => {
           if (result.status !== "fulfilled") {
             return;
           }
-          const hasRecentTrade = (result.value || []).some((trade) => {
+          const hasRecentTrade = (result.value?.trades || []).some((trade) => {
             const tradeAt = Number(trade.time || trade.transactTime || 0);
             return Number.isFinite(tradeAt) && (Date.now() - tradeAt) <= tradeLookbackMs;
           });
