@@ -8035,6 +8035,15 @@ function enrichMarketWithStreamOrderflow(marketFeatures = {}, streamFeatures = {
     cvdTrendAlignment: Number.isFinite(Number(context.trendAlignment))
       ? Number(context.trendAlignment)
       : Number(marketFeatures.cvdTrendAlignment || 0),
+    cvdAgreementScore: Number.isFinite(Number(context.agreementScore))
+      ? Number(context.agreementScore)
+      : Number(marketFeatures.cvdAgreementScore || 0),
+    cvdImpulseScore: Number.isFinite(Number(context.impulse?.score))
+      ? Number(context.impulse.score)
+      : Number(marketFeatures.cvdImpulseScore || 0),
+    cvdImpulseAcceleration: Number.isFinite(Number(context.impulse?.acceleration))
+      ? Number(context.impulse.acceleration)
+      : Number(marketFeatures.cvdImpulseAcceleration || 0),
     cvdConfidence: Math.max(Number(marketFeatures.cvdConfidence || 0), primary.dataQuality === "high" ? 0.84 : primary.dataQuality === "medium" ? 0.62 : primary.dataQuality === "low" ? 0.38 : 0),
     orderflowAbsorption: absorption,
     orderflowAbsorptionScore: Number(absorption.score || 0),
@@ -8042,7 +8051,8 @@ function enrichMarketWithStreamOrderflow(marketFeatures = {}, streamFeatures = {
     orderflowSellAbsorptionScore: Number(absorption.sellAbsorptionScore || 0),
     orderflowToxicity: toxicity,
     orderflowToxicityScore: Number(toxicity.score || 0),
-    orderflowToxicityLevel: toxicity.level || "normal"
+    orderflowToxicityLevel: toxicity.level || "normal",
+    orderflowAdverseSelectionScore: Number(context.adverseSelectionScore || streamFeatures.orderflowAdverseSelectionScore || 0)
   };
 }
 

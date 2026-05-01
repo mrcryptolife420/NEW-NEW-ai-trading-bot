@@ -144,6 +144,33 @@ function buildToxicity({ delta = {}, absorption = {}, depthConfidence = 0.5, mic
   };
 }
 
+function signAgreementScore(deltas = []) {
+  const usable = deltas.filter((item) => (item.totalVolume || 0) > 0);
+  if (usable.length < 2) {
+    return usable.length ? 0.5 : 0;
+  }
+  const signs = usable.map((item) => Math.sign(item.deltaRatio || 0)).filter((sign) => sign !== 0);
+  if (!signs.length) {
+    return 0.5;
+  }
+  const bullish = signs.filter((sign) => sign > 0).length;
+  const bearish = signs.filter((sign) => sign < 0).length;
+  return Math.max(bullish, bearish) / signs.length;
+}
+
+function buildOrderflowImpulse(short = {}, medium = {}, long = {}) {
+  const shortRatio = short.deltaRatio || 0;
+  const mediumRatio = medium.deltaRatio || 0;
+  const longRatio = long.deltaRatio || 0;
+  const rawImpulse = shortRatio * 0.55 + mediumRatio * 0.3 + longRatio * 0.15;
+  const acceleration = shortRatio - ((mediumRatio + longRatio) / 2);
+  return {
+    score: Math.max(-1, Math.min(1, rawImpulse)),
+    acceleration: Math.max(-1, Math.min(1, acceleration)),
+    direction: rawImpulse > 0.08 ? "buy" : rawImpulse < -0.08 ? "sell" : "neutral"
+  };
+}
+
 export function recordAggTrade(symbol, trade) {
   const normalizedSymbol = normalizeSymbol(symbol);
   if (!normalizedSymbol || !trade) {
@@ -189,7 +216,11 @@ export function getMultiHorizonOrderflow(symbol, horizons = DEFAULT_MULTI_HORIZO
   }
   const primary = byHorizon["5m"] || byHorizon[labelWindow(uniqueHorizons[0])] || calculateDelta(normalizedSymbol, [], uniqueHorizons[0] || DEFAULT_WINDOW_SECONDS);
   const short = byHorizon["1m"] || primary;
+  const medium = byHorizon["5m"] || primary;
   const long = byHorizon["15m"] || byHorizon["1h"] || primary;
+  const horizonDeltas = Object.values(byHorizon);
+  const agreementScore = signAgreementScore(horizonDeltas);
+  const impulse = buildOrderflowImpulse(short, medium, long);
   const divergenceScore = Math.max(0, Math.min(1,
     Math.sign(short.deltaRatio || 0) !== Math.sign(long.deltaRatio || 0) && Math.abs(short.deltaRatio || 0) >= 0.22 && Math.abs(long.deltaRatio || 0) >= 0.18
       ? (Math.abs(short.deltaRatio || 0) + Math.abs(long.deltaRatio || 0)) / 2
@@ -202,6 +233,12 @@ export function getMultiHorizonOrderflow(symbol, horizons = DEFAULT_MULTI_HORIZO
     depthConfidence: context.depthConfidence,
     microTrend: context.microTrend
   });
+  const adverseSelectionScore = Math.max(0, Math.min(1,
+    toxicity.score * 0.55 +
+      divergenceScore * 0.22 +
+      (1 - agreementScore) * 0.16 +
+      Math.max(0, absorption.score || 0) * 0.18
+  ));
   return {
     symbol: normalizedSymbol,
     status: buffer.length ? "ready" : "empty",
@@ -210,6 +247,9 @@ export function getMultiHorizonOrderflow(symbol, horizons = DEFAULT_MULTI_HORIZO
     absorption,
     toxicity,
     divergenceScore,
+    agreementScore,
+    impulse,
+    adverseSelectionScore,
     trendAlignment: Math.max(-1, Math.min(1, (short.deltaRatio || 0) * 0.55 + (long.deltaRatio || 0) * 0.45)),
     updatedAt: new Date().toISOString()
   };

@@ -3945,7 +3945,11 @@ export class RiskManager {
     const cvdConfirmation = safeValue(marketSnapshot.market.cvdConfirmationScore, 0);
     const cvdDivergence = safeValue(marketSnapshot.market.cvdDivergenceScore, 0);
     const orderflowToxicityScore = safeValue(marketSnapshot.market.orderflowToxicityScore, 0);
+    const orderflowAdverseSelectionScore = safeValue(marketSnapshot.market.orderflowAdverseSelectionScore, 0);
     const buyAbsorptionScore = safeValue(marketSnapshot.market.orderflowBuyAbsorptionScore, 0);
+    const rangeStabilityScore = safeValue(marketSnapshot.market.rangeStabilityScore, 0.5);
+    const choppinessIndex = safeValue(marketSnapshot.market.choppinessIndex, 50);
+    const hurstTrendScore = safeValue(marketSnapshot.market.hurstTrendScore, 0);
     const fvgRespect = safeValue(marketSnapshot.market.fvgRespectScore, 0);
     const hasStructureSignals = [
       marketSnapshot.market.bullishBosActive,
@@ -4374,11 +4378,11 @@ export class RiskManager {
     }
     if (
       ["trend_following", "breakout", "market_structure", "orderflow"].includes(strategySummary.family || "") &&
-      (orderflowToxicityScore >= 0.68 || buyAbsorptionScore >= 0.62) &&
+      (orderflowToxicityScore >= 0.68 || buyAbsorptionScore >= 0.62 || orderflowAdverseSelectionScore >= 0.66) &&
       score.probability < threshold + 0.12 &&
       !strongTrendGuardOverride
     ) {
-      reasons.push(orderflowToxicityScore >= 0.68 ? "orderflow_toxicity" : "orderflow_absorption");
+      reasons.push(orderflowAdverseSelectionScore >= 0.66 || orderflowToxicityScore >= 0.68 ? "orderflow_toxicity" : "orderflow_absorption");
     }
     if (
       strategySummary.family === "mean_reversion" &&
@@ -4400,6 +4404,12 @@ export class RiskManager {
       }
       if (rangeBreakRiskContext) {
         reasons.push("range_break_risk");
+      }
+      if (rangeStabilityScore < 0.42 && score.probability < threshold + 0.12) {
+        reasons.push("range_grid_low_stability");
+      }
+      if (choppinessIndex < 42 && hurstTrendScore > 0.35 && score.probability < threshold + 0.14) {
+        reasons.push("range_grid_trend_expansion");
       }
       if (strongBosContinuation) {
         reasons.push("bos_breakout_pressure");

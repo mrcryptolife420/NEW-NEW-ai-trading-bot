@@ -87,11 +87,14 @@ export function defaultPriorityForRestClass(restClass) {
   }
 }
 
-function streamReplacementAvailable(restClass, streamStatus = {}) {
+function streamReplacementAvailable(restClass, streamStatus = {}, caller = "") {
   if (restClass === "public_market_depth" || restClass === "public_market_snapshot") {
     return Boolean(streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected);
   }
   if (restClass === "private_trade_history") {
+    return Boolean(streamStatus?.userStreamConnected);
+  }
+  if (restClass === "critical_reconcile" && /openorders|open_orders|orderlist|order_lists|getorder/i.test(`${caller || ""}`)) {
     return Boolean(streamStatus?.userStreamConnected);
   }
   return false;
@@ -107,9 +110,87 @@ function nextSafeActionForCaller(restClass, allowance = {}, replacementAvailable
   if (!allowance.allow) {
     return "defer_non_critical_rest_until_budget_recovers";
   }
+  if (restClass === "critical_reconcile" && replacementAvailable) {
+    return "use_user_stream_order_truth_and_reduce_rest_sanity";
+  }
   return restClass === "critical_reconcile" || restClass === "critical_execution"
     ? "allowed_for_safety_or_execution"
     : "allowed_with_budget_watch";
+}
+
+function buildRequestBudgetSlo(topCallers = [], pressureState = {}) {
+  const groups = [
+    {
+      id: "public_depth",
+      label: "Public depth REST",
+      classes: ["public_market_depth"],
+      hotWeight: 5000,
+      action: "use_local_book_or_public_stream"
+    },
+    {
+      id: "private_trade_history",
+      label: "Private trade-history REST",
+      classes: ["private_trade_history"],
+      hotWeight: 2000,
+      action: "use_user_stream_fills"
+    },
+    {
+      id: "private_order_truth",
+      label: "Private open-order REST",
+      classes: ["critical_reconcile"],
+      callerPattern: /openorders|open_orders|orderlist|order_lists|getorder/i,
+      hotWeight: 6000,
+      action: "use_user_stream_order_truth_and_reduce_rest_sanity"
+    },
+    {
+      id: "public_klines_tickers",
+      label: "Public kline/ticker REST",
+      classes: ["public_market_snapshot"],
+      hotWeight: 2500,
+      action: "use_stream_klines_and_cached_tickers"
+    }
+  ];
+  return groups.map((group) => {
+    const callers = topCallers.filter((caller) =>
+      group.classes.includes(caller.restClass) &&
+      (!group.callerPattern || group.callerPattern.test(caller.caller || ""))
+    );
+    const weight = callers.reduce((total, caller) => total + safeNumber(caller.weight, 0), 0);
+    const count = callers.reduce((total, caller) => total + safeNumber(caller.count, 0), 0);
+    const streamReplacementAvailableForGroup = callers.some((caller) => caller.streamReplacementAvailable);
+    const hot = weight >= group.hotWeight || callers.some((caller) => caller.hot);
+    const guarded = callers.some((caller) => caller.guarded);
+    const pressure = group.hotWeight > 0 ? weight / group.hotWeight : 0;
+    const status = pressureState.banActive
+      ? "paused"
+      : guarded
+        ? "guarded"
+        : hot
+          ? "hot"
+          : pressure >= 0.65
+            ? "watch"
+            : "ready";
+    return {
+      id: group.id,
+      label: group.label,
+      status,
+      count,
+      weight,
+      hotWeight: group.hotWeight,
+      pressure: Number.isFinite(pressure) ? Number(pressure.toFixed(4)) : 0,
+      hot,
+      guarded,
+      streamReplacementAvailable: streamReplacementAvailableForGroup,
+      nextSafeAction: status === "ready" ? "none" : group.action,
+      topCallers: callers.slice(0, 4).map((caller) => ({
+        caller: caller.caller,
+        count: caller.count,
+        weight: caller.weight,
+        guarded: caller.guarded,
+        nextSafeAction: caller.nextSafeAction
+      }))
+    };
+  });
 }
 
 export function evaluateRestBudgetAllowance({
@@ -214,7 +295,7 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
       const priority = defaultPriorityForRestClass(restClass);
       const hotCallerThreshold = resolveHotCallerThreshold(restClass, config);
       const weight = safeNumber(value?.weight, 0);
-      const streamReplacement = streamReplacementAvailable(restClass, streamStatus);
+      const streamReplacement = streamReplacementAvailable(restClass, streamStatus, caller);
       const allowance = evaluateRestBudgetAllowance({
         caller,
         priority,
@@ -238,6 +319,7 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
     })
     .sort((left, right) => (right.weight - left.weight) || (right.count - left.count))
     .slice(0, 12);
+  const budgetSlo = buildRequestBudgetSlo(topCallers, pressureState);
   const publicStreamConnected = Boolean(streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected);
   const userStreamConnected = Boolean(streamStatus?.userStreamConnected);
   const guardedCallers = topCallers
@@ -266,6 +348,7 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
     publicStreamConnected,
     userStreamConnected,
     topCallers,
+    budgetSlo,
     guardedCallers: guardedCallers.slice(0, 8),
     recommendedActions: [
       topCallers.some((item) => item.restClass === "private_trade_history")

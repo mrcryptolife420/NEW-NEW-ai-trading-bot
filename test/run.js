@@ -152,6 +152,7 @@ import { registerMarketProvidersTests } from "./marketProviders.tests.js";
 import { registerBinanceRestArchitectureTests } from "./binanceRestArchitecture.tests.js";
 import { registerOperationalHardeningTests } from "./operationalHardening.tests.js";
 import { registerLargeFoundationsTests } from "./largeFoundations.tests.js";
+import { registerStreamRangeOrderflowTests } from "./streamRangeOrderflow.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32295,6 +32296,12 @@ await registerLargeFoundationsTests({
   fs,
   os,
   path,
+  makeConfig
+});
+
+await registerStreamRangeOrderflowTests({
+  runCheck,
+  assert,
   makeConfig
 });
 

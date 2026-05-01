@@ -599,6 +599,59 @@ function computeCvdContext(candles = [], lastClose = 0) {
   };
 }
 
+function choppinessIndex(candles, length = 14) {
+  if (candles.length < length + 1) {
+    return 50;
+  }
+  const recent = selectRecent(candles, length);
+  const high = Math.max(...recent.map((candle) => candle.high));
+  const low = Math.min(...recent.map((candle) => candle.low));
+  const range = Math.max(high - low, 1e-9);
+  const trueRangeSum = recent.reduce((total, candle, index) => {
+    const absoluteIndex = candles.length - recent.length + index;
+    const previousClose = candles[absoluteIndex - 1]?.close ?? candle.close;
+    return total + trueRange(candle, previousClose);
+  }, 0);
+  return clamp((Math.log10(Math.max(trueRangeSum / range, 1e-9)) / Math.log10(length)) * 100, 0, 100);
+}
+
+function hurstExponent(values = [], length = 64) {
+  const recent = selectRecent(values, length).filter((value) => Number.isFinite(value));
+  if (recent.length < 24) {
+    return 0.5;
+  }
+  const mean = average(recent, recent.at(-1) || 0);
+  let cumulative = 0;
+  const deviations = recent.map((value) => {
+    cumulative += value - mean;
+    return cumulative;
+  });
+  const range = Math.max(...deviations) - Math.min(...deviations);
+  const stdev = standardDeviation(recent, 0);
+  if (!stdev || !range) {
+    return 0.5;
+  }
+  return clamp(Math.log(range / stdev) / Math.log(recent.length), 0, 1);
+}
+
+function realizedMoments(returns = []) {
+  const sample = selectRecent(returns, 64).filter((value) => Number.isFinite(value));
+  if (sample.length < 8) {
+    return { skew: 0, kurtosis: 0 };
+  }
+  const mean = average(sample, 0);
+  const stdev = standardDeviation(sample, 0);
+  if (!stdev) {
+    return { skew: 0, kurtosis: 0 };
+  }
+  const skew = average(sample.map((value) => ((value - mean) / stdev) ** 3), 0);
+  const kurtosis = average(sample.map((value) => ((value - mean) / stdev) ** 4), 0);
+  return {
+    skew: clamp(skew, -6, 6),
+    kurtosis: clamp(kurtosis, 0, 20)
+  };
+}
+
 export function computeMarketFeatures(candles) {
   const closes = candles.map((candle) => candle.close);
   const highs = candles.map((candle) => candle.high);
@@ -631,10 +684,18 @@ export function computeMarketFeatures(candles) {
   }
   const recentReturns = selectRecent(returns, 8);
   const realizedVolPct = standardDeviation(selectRecent(returns, 30));
+  const chopIndex = choppinessIndex(candles, 14);
+  const chopScore = clamp((chopIndex - 38) / 24, 0, 1);
+  const hurst = hurstExponent(closes, 64);
+  const hurstTrendScore = clamp((hurst - 0.5) * 2.5, 0, 1);
+  const realizedTail = realizedMoments(returns);
   const upsideReturns = selectRecent(returns.filter((value) => value > 0), 20);
   const downsideReturns = selectRecent(returns.filter((value) => value < 0).map((value) => Math.abs(value)), 20);
   const upsideRealizedVolPct = standardDeviation(upsideReturns);
   const downsideRealizedVolPct = standardDeviation(downsideReturns);
+  const downsideVolDominance = upsideRealizedVolPct + downsideRealizedVolPct
+    ? downsideRealizedVolPct / (upsideRealizedVolPct + downsideRealizedVolPct)
+    : 0.5;
   const priorChannel = donchianChannel(highs, lows, 20, false);
   const currentChannel = donchianChannel(highs, lows, 20, true);
   const vwap = volumeWeightedAveragePrice(candles, 30);
@@ -775,6 +836,18 @@ export function computeMarketFeatures(candles) {
     : donchianPosition >= 0.68
       ? "sell_upper_band"
       : "none";
+  const rangeStabilityScore = clamp(
+    average([
+      chopScore,
+      rangeBoundaryRespectScore,
+      rangeMeanRevertScore,
+      clamp(1 - Math.abs(dmi.dmiSpread) * 1.8, 0, 1),
+      clamp(1 - Math.abs(bos.structureShiftScore), 0, 1),
+      clamp(1 - hurstTrendScore, 0, 1)
+    ], 0.5),
+    0,
+    1
+  );
 
   return {
     lastClose,
@@ -797,6 +870,13 @@ export function computeMarketFeatures(candles) {
     atrExpansion: atr30 ? atr14 / atr30 - 1 : 0,
     macdHistogramPct: lastClose ? macdValues.histogram / lastClose : 0,
     realizedVolPct,
+    choppinessIndex: chopIndex,
+    chopScore,
+    hurstExponent: hurst,
+    hurstTrendScore,
+    realizedSkew: realizedTail.skew,
+    realizedKurtosis: realizedTail.kurtosis,
+    downsideVolDominance,
     upsideRealizedVolPct,
     downsideRealizedVolPct,
     volumeZ,
@@ -878,6 +958,7 @@ export function computeMarketFeatures(candles) {
     rangeBottomDistancePct,
     rangeMeanRevertScore,
     rangeBoundaryRespectScore,
+    rangeStabilityScore,
     gridEntrySide
   };
 }
