@@ -211,6 +211,27 @@ export class LocalOrderBookEngine {
     this.logger?.[logMethod]?.("Local order book reset", { symbol: bucket.symbol, reason });
   }
 
+  releaseColdStartCooldownIfStreamArrived(bucket) {
+    if (
+      bucket.lastPrimeSkipReason === "local_book_depth_stream_not_ready" &&
+      bucket.buffer.length > 0 &&
+      bucket.nextPrimeAllowedAt &&
+      Date.now() < bucket.nextPrimeAllowedAt
+    ) {
+      bucket.nextPrimeAllowedAt = 0;
+      bucket.lastPrimeSkipReason = null;
+      bucket.lastPrimeRestBudget = {
+        ...(bucket.lastPrimeRestBudget || {}),
+        reason: "stream_delta_received_after_cold_start",
+        streamPrimary: true
+      };
+    }
+  }
+
+  shouldDeferPriming(bucket) {
+    return Boolean(bucket.primingPromise || (bucket.nextPrimeAllowedAt && Date.now() < bucket.nextPrimeAllowedAt));
+  }
+
   async waitForInitialBuffer(bucket) {
     const waitMs = Math.max(0, Number(this.config.localBookBootstrapWaitMs || 0));
     if (!waitMs || bucket.buffer.length > 0 || bucket.lastUpdateId > 0) {
@@ -251,7 +272,8 @@ export class LocalOrderBookEngine {
           const error = new Error(allowance.reason || "local_order_book_depth_snapshot_suppressed");
           error.code = "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED";
           error.restBudget = allowance;
-          this.logger?.warn?.("Local order book depth snapshot suppressed", {
+          const logMethod = allowance.reason === "local_book_depth_stream_not_ready" ? "info" : "warn";
+          this.logger?.[logMethod]?.("Local order book depth snapshot suppressed", {
             symbol,
             reason: allowance.reason,
             pressure: allowance.pressure,
@@ -372,11 +394,17 @@ export class LocalOrderBookEngine {
     if (bucket.buffer.length > 400) {
       bucket.buffer.shift();
     }
+    this.releaseColdStartCooldownIfStreamArrived(bucket);
 
     if (!bucket.synced) {
+      if (this.shouldDeferPriming(bucket)) {
+        return;
+      }
       void this.ensurePrimed(symbol).catch((error) => {
         bucket.missedEvents += 1;
-        this.logger?.warn?.("Local order book prime failed", { symbol, error: error.message });
+        if (error?.code !== "LOCAL_BOOK_DEPTH_SNAPSHOT_COOLDOWN") {
+          this.logger?.warn?.("Local order book prime failed", { symbol, error: error.message });
+        }
       });
       return;
     }

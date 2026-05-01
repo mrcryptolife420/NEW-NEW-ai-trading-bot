@@ -465,6 +465,8 @@ export async function registerLargeFoundationsTests({
 
   await runCheck("local order book does not cold-prime REST depth before stream deltas arrive", async () => {
     let orderBookCalls = 0;
+    const warnMessages = [];
+    const infoMessages = [];
     const client = {
       getRateLimitState() {
         return {
@@ -497,7 +499,10 @@ export async function registerLargeFoundationsTests({
         restHotCallerDepthWeightThreshold: 5_000,
         requestWeightWarnThreshold1m: 4_800
       },
-      logger: { warn() {}, info() {} }
+      logger: {
+        warn(message) { warnMessages.push(message); },
+        info(message) { infoMessages.push(message); }
+      }
     });
     let error = null;
     try {
@@ -511,6 +516,62 @@ export async function registerLargeFoundationsTests({
     assert.equal(snapshot.lastPrimeSkipReason, "local_book_depth_stream_not_ready");
     assert.equal(snapshot.lastPrimeRestBudget?.streamPrimary, false);
     assert.ok(snapshot.nextPrimeAllowedAt > Date.now());
+    assert.equal(warnMessages.length, 0);
+    assert.equal(infoMessages.includes("Local order book depth snapshot suppressed"), true);
+  });
+
+  await runCheck("local order book releases cold-start suppression after first depth stream delta", async () => {
+    let orderBookCalls = 0;
+    const warnMessages = [];
+    const client = {
+      getRateLimitState() {
+        return {
+          usedWeight1m: 100,
+          warningActive: false,
+          banActive: false,
+          backoffActive: false,
+          topRestCallers: {}
+        };
+      },
+      async getOrderBook() {
+        orderBookCalls += 1;
+        return { lastUpdateId: 10, bids: [["10", "1"]], asks: [["10.1", "1"]] };
+      }
+    };
+    const engine = new LocalOrderBookEngine({
+      client,
+      config: {
+        enableEventDrivenData: true,
+        enableLocalOrderBook: true,
+        watchlist: ["COLDUSDT"],
+        localBookMaxSymbols: 1,
+        universeMaxSymbols: 1,
+        localBookBootstrapWaitMs: 0,
+        localBookWarmupMs: 0,
+        streamDepthSnapshotLimit: 200,
+        streamDepthLevels: 20,
+        maxDepthEventAgeMs: 15_000,
+        restDepthFallbackMinMs: 30_000,
+        restHotCallerDepthWeightThreshold: 5_000,
+        requestWeightWarnThreshold1m: 4_800
+      },
+      logger: {
+        warn(message) { warnMessages.push(message); },
+        info() {}
+      }
+    });
+
+    await engine.ensurePrimed("COLDUSDT").catch(() => null);
+    assert.equal(orderBookCalls, 0);
+    assert.equal(engine.getSnapshot("COLDUSDT").lastPrimeSkipReason, "local_book_depth_stream_not_ready");
+
+    engine.handleDepthEvent("COLDUSDT", { U: 11, u: 12, E: Date.now(), b: [["10", "2"]], a: [["10.1", "1"]] });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const snapshot = engine.getSnapshot("COLDUSDT");
+
+    assert.equal(orderBookCalls, 1);
+    assert.equal(snapshot.synced, true);
+    assert.equal(warnMessages.filter((message) => message === "Local order book prime failed").length, 0);
   });
 
   await runCheck("trading improvement diagnostics combine meta caution recovery request budget and strategy risk", async () => {

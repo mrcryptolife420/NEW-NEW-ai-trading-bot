@@ -154,6 +154,7 @@ import { registerOperationalHardeningTests } from "./operationalHardening.tests.
 import { registerLargeFoundationsTests } from "./largeFoundations.tests.js";
 import { registerStreamRangeOrderflowTests } from "./streamRangeOrderflow.tests.js";
 import { registerExitRegretDiagnosticsTests } from "./exitRegretDiagnostics.tests.js";
+import { registerReconcileAutofixToleranceTests } from "./reconcileAutofixTolerance.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32310,6 +32311,11 @@ await registerExitRegretDiagnosticsTests({
   runCheck,
   assert,
   makeConfig
+});
+
+await registerReconcileAutofixToleranceTests({
+  runCheck,
+  assert
 });
 
 console.log("All checks passed.");

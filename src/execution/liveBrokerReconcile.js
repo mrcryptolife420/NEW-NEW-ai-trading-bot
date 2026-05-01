@@ -25,6 +25,45 @@ function hasUnsellableDustResidual(evidence = {}) {
   return Boolean(evidence.unsellableDustResidual);
 }
 
+function isMinorResolvableQuantityDrift({
+  absQuantityDiff,
+  quantityTolerance,
+  rules = {},
+  referenceExitPrice = null,
+  runtimeNotional = 0,
+  exchangeQuantity = 0,
+  runtimeQuantity = 0,
+  symbolOpenOrderCount = 0,
+  unexpectedOrderCount = 0,
+  protectiveListCount = 0,
+  noVenuePosition = false,
+  autoFixNotionalEligible = false
+} = {}) {
+  const stepTolerance = Math.max(
+    safeNumber(quantityTolerance, 0),
+    safeNumber(rules.stepSize, 0),
+    safeNumber(rules.minQty, 0),
+    1e-9
+  );
+  const maxQuantityDrift = stepTolerance * 1.25;
+  const driftNotional = Number.isFinite(referenceExitPrice) && referenceExitPrice > 0
+    ? safeNumber(absQuantityDiff, 0) * referenceExitPrice
+    : 0;
+  const maxDriftNotional = Math.max(1, Math.min(safeNumber(rules.minNotional, 10) || 10, safeNumber(runtimeNotional, 0) * 0.0025 || 1));
+  return Boolean(
+    autoFixNotionalEligible &&
+    !noVenuePosition &&
+    safeNumber(exchangeQuantity, 0) > 0 &&
+    safeNumber(runtimeQuantity, 0) > 0 &&
+    safeNumber(absQuantityDiff, 0) > 0 &&
+    safeNumber(absQuantityDiff, 0) <= maxQuantityDrift &&
+    driftNotional <= maxDriftNotional &&
+    symbolOpenOrderCount === 0 &&
+    unexpectedOrderCount === 0 &&
+    protectiveListCount <= 1
+  );
+}
+
 function venueFlatForDemoPaper(evidence = {}, config = {}) {
   if (!isDemoPaperMode(config)) {
     return Boolean(evidence.noVenuePosition);
@@ -128,6 +167,8 @@ export function summarizeReconcileEvidence(evidence = {}) {
     quantityDiff: roundNumber(evidence.quantityDiff || 0, 8),
     quantityTolerance: roundNumber(evidence.quantityTolerance || 0, 8),
     qtyWithinTolerance: Boolean(evidence.qtyWithinTolerance),
+    minorResolvableQuantityDrift: Boolean(evidence.minorResolvableQuantityDrift),
+    quantityDriftNotional: roundNumber(evidence.quantityDriftNotional || 0, 4),
     priceMismatchBps: roundNumber(evidence.priceMismatchBps, 2, null),
     openOrderCount: evidence.openOrderCount || 0,
     unexpectedOrderCount: evidence.unexpectedOrderCount || 0,
@@ -642,6 +683,24 @@ export function collectReconcileEvidence(broker, {
     safeNumber(position.notional, Number.NaN),
     runtimeQuantity * Math.max(safeNumber(position.entryPrice, 0), safeNumber(position.lastMarkedPrice, 0))
   );
+  const autoFixNotionalEligible = runtimeNotional <= getAutoReconcileConfig(broker.config).maxAutoFixNotional;
+  const quantityDriftNotional = Number.isFinite(referenceExitPrice) && referenceExitPrice > 0
+    ? absQuantityDiff * referenceExitPrice
+    : 0;
+  const minorResolvableQuantityDrift = isMinorResolvableQuantityDrift({
+    absQuantityDiff,
+    quantityTolerance,
+    rules,
+    referenceExitPrice,
+    runtimeNotional,
+    exchangeQuantity,
+    runtimeQuantity,
+    symbolOpenOrderCount: symbolOpenOrders.length,
+    unexpectedOrderCount: unexpectedManagedOrders.length,
+    protectiveListCount: exchangeProtectiveLists.length,
+    noVenuePosition: managedComparisonQuantity <= 0,
+    autoFixNotionalEligible
+  });
   return {
     symbol: position.symbol,
     fetchedAt,
@@ -659,6 +718,8 @@ export function collectReconcileEvidence(broker, {
     quantityDiff,
     quantityTolerance,
     qtyWithinTolerance,
+    minorResolvableQuantityDrift,
+    quantityDriftNotional,
     priceMismatchBps,
     openOrderCount: symbolOpenOrders.length,
     unexpectedOrderCount: unexpectedManagedOrders.length,
@@ -692,7 +753,7 @@ export function collectReconcileEvidence(broker, {
       protectionMissing: !position.protectiveOrderListId && exchangeProtectiveLists.length === 0,
     missingLinkedProtection: Boolean(position.protectiveOrderListId) && !openOrderListIds.has(position.protectiveOrderListId),
     runtimeNotional,
-    autoFixNotionalEligible: runtimeNotional <= getAutoReconcileConfig(broker.config).maxAutoFixNotional,
+    autoFixNotionalEligible,
     marketMid,
     marketBid,
     marketAsk,
@@ -750,11 +811,14 @@ function classifyDemoPaperMismatchSample(position, evidence = {}, settings = {},
   if (hasUnsellableDustResidual(evidence)) {
     return "unsellable_dust_residual";
   }
-  if (!evidence.qtyWithinTolerance || (evidence.noVenuePosition && !evidence.recentTradeWindowActive)) {
+  if ((!evidence.qtyWithinTolerance && !evidence.minorResolvableQuantityDrift) || (evidence.noVenuePosition && !evidence.recentTradeWindowActive)) {
     return "hard_inventory_conflict";
   }
   if (evidence.protectionMissing || evidence.missingLinkedProtection) {
     return "recoverable_missing_protection";
+  }
+  if (evidence.minorResolvableQuantityDrift) {
+    return "recoverable_minor_qty_drift";
   }
   if (Number.isFinite(evidence.priceMismatchBps) && evidence.priceMismatchBps > settings.priceMismatchToleranceBps) {
     if (evidence.recentTradeWindowActive && Number.isFinite(evidence.recentAvgBuyPrice) && evidence.recentAvgBuyPrice > 0) {
@@ -881,7 +945,8 @@ async function maybeResolveDemoPaperAutonomy(broker, {
     "recent_fill_pending",
     "missing_protection",
     "stale_local_protection_link",
-    "exchange_protection_detected_without_local_link"
+    "exchange_protection_detected_without_local_link",
+    "minor_qty_drift"
   ]);
   if (!supportedReasons.has(initialDecision.reason) && !position.reconcileRequired && !position.manualReviewRequired) {
     return { decision: initialDecision, evidence: initialEvidence };
@@ -955,6 +1020,20 @@ async function maybeResolveDemoPaperAutonomy(broker, {
         autofixKind: latestEvidence.protectiveListCount === 1 ? "adopt_exchange_protection" : "rebuild_and_revalidate_protection",
         shouldRetry: false,
         requiresProtectionRevalidation: true,
+        reconcileAutonomyState: "auto_heal_ready"
+      },
+      evidence: latestEvidence
+    };
+  }
+  if (confidence.dominantMismatchType === "recoverable_minor_qty_drift" && confidence.score >= demoSettings.minConfidence && confidence.stableConfirmationCount >= demoSettings.autoClearQuorum) {
+    return {
+      decision: {
+        ...baseDecision,
+        decision: AUTO_RECONCILE_DECISION.SAFE_AUTOFIX,
+        reason: "minor_qty_drift",
+        action: "align_local_quantity",
+        autofixKind: "minor_qty_drift",
+        shouldRetry: false,
         reconcileAutonomyState: "auto_heal_ready"
       },
       evidence: latestEvidence
@@ -1167,7 +1246,7 @@ export function classifyReconcileDecision(broker, position, evidence = {}, setti
     };
   }
   const absQuantityDiff = Math.abs(evidence.quantityDiff || 0);
-  if (absQuantityDiff > (evidence.quantityTolerance || 0)) {
+  if (absQuantityDiff > (evidence.quantityTolerance || 0) && !evidence.minorResolvableQuantityDrift) {
     return {
       decision: AUTO_RECONCILE_DECISION.NEEDS_MANUAL_REVIEW,
       reason: "large_qty_mismatch",
@@ -1217,7 +1296,7 @@ export function classifyReconcileDecision(broker, position, evidence = {}, setti
       evidenceSummary
     };
   }
-  if (absQuantityDiff > 0 && evidence.qtyWithinTolerance) {
+  if (absQuantityDiff > 0 && (evidence.qtyWithinTolerance || evidence.minorResolvableQuantityDrift)) {
     return {
       decision: AUTO_RECONCILE_DECISION.SAFE_AUTOFIX,
       reason: "minor_qty_drift",
@@ -1437,7 +1516,7 @@ export async function applySafeReconcileAutofix(broker, { position, runtime, rul
     const runtimeQuantity = Math.max(safeNumber(position.quantity, 0), 1e-9);
     const targetQuantity = Math.max(0, safeNumber(evidence.exchangeQuantity, 0));
     const absQuantityDiff = Math.abs(safeNumber(evidence.quantityDiff, 0));
-    if (targetQuantity > 0 && absQuantityDiff > 0 && evidence.qtyWithinTolerance) {
+    if (targetQuantity > 0 && absQuantityDiff > 0 && (evidence.qtyWithinTolerance || evidence.minorResolvableQuantityDrift)) {
       const quantityRatio = targetQuantity / runtimeQuantity;
       position.quantity = targetQuantity;
       position.totalCost = Math.max(0, safeNumber(position.totalCost, 0) * quantityRatio);

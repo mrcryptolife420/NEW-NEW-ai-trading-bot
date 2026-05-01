@@ -611,7 +611,11 @@ export class StreamCoordinator {
         await this.orderBook.ensurePrimed(symbol);
         return { symbol, ok: true };
       } catch (error) {
-        this.logger?.warn?.("Local order book prime failed", { symbol, error: error.message });
+        const expectedStreamWarmup =
+          error?.code === "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED" &&
+          (error?.restBudget?.reason === "local_book_depth_stream_not_ready" || error.message === "local_book_depth_stream_not_ready");
+        const logMethod = expectedStreamWarmup ? "info" : "warn";
+        this.logger?.[logMethod]?.("Local order book prime failed", { symbol, error: error.message });
         return { symbol, ok: false, error: error.message };
       }
     });
