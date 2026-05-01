@@ -3,6 +3,36 @@ function safeNumber(value, fallback = 0) {
   return Number.isFinite(number) ? number : fallback;
 }
 
+function getCallerStats(rateLimitState = {}, caller = "") {
+  const topRestCallers = rateLimitState?.topRestCallers || {};
+  const exact = topRestCallers[caller];
+  if (exact) {
+    return {
+      count: safeNumber(exact.count, 0),
+      weight: safeNumber(exact.weight ?? exact.usedWeight, 0)
+    };
+  }
+  const normalized = `${caller || ""}`.toLowerCase();
+  const match = Object.entries(topRestCallers).find(([key]) => `${key || ""}`.toLowerCase() === normalized);
+  if (!match) {
+    return { count: 0, weight: 0 };
+  }
+  return {
+    count: safeNumber(match[1]?.count, 0),
+    weight: safeNumber(match[1]?.weight ?? match[1]?.usedWeight, 0)
+  };
+}
+
+function resolveHotCallerThreshold(restClass, config = {}) {
+  if (restClass === "public_market_depth") {
+    return Math.max(0, safeNumber(config.restHotCallerDepthWeightThreshold, 5000));
+  }
+  if (restClass === "private_trade_history") {
+    return Math.max(0, safeNumber(config.restHotCallerPrivateTradeWeightThreshold, 2000));
+  }
+  return 0;
+}
+
 export function getRequestWeightPressure(rateLimitState = {}, config = {}) {
   const warnThreshold = Math.max(100, safeNumber(config.requestWeightWarnThreshold1m, 4800));
   const usedWeight1m = safeNumber(rateLimitState?.usedWeight1m, 0);
@@ -21,11 +51,11 @@ export function classifyRestCaller(caller = "") {
   if (/placeorder|cancelorder|cancelreplace|oco|protective|emergency|flatten|submit|settle_terminal_order/.test(text)) {
     return "critical_execution";
   }
-  if (/reconcile|openorders|open_orders|account_info|account|orderlist|order_lists|getorder/.test(text)) {
-    return "critical_reconcile";
-  }
   if (/mytrades|recent_trades|trade_history|settle_.*trades/.test(text)) {
     return "private_trade_history";
+  }
+  if (/reconcile|openorders|open_orders|account_info|account|orderlist|order_lists|getorder/.test(text)) {
+    return "critical_reconcile";
   }
   if (/depth|orderbook|book_ticker|bookticker/.test(text)) {
     return "public_market_depth";
@@ -68,6 +98,9 @@ export function evaluateRestBudgetAllowance({
   const effectivePriority = priority || defaultPriorityForRestClass(restClass);
   const pressureState = getRequestWeightPressure(rateLimitState, config);
   const { pressure, banActive, backoffActive, warningActive } = pressureState;
+  const callerStats = getCallerStats(rateLimitState, caller);
+  const hotCallerThreshold = resolveHotCallerThreshold(restClass, config);
+  const hotCallerActive = hotCallerThreshold > 0 && callerStats.weight >= hotCallerThreshold;
 
   if (banActive) {
     return {
@@ -75,6 +108,28 @@ export function evaluateRestBudgetAllowance({
       reason: "request_weight_ban_active",
       restClass,
       priority: effectivePriority,
+      ...pressureState
+    };
+  }
+  if (streamPrimary && restClass === "public_market_depth" && hotCallerActive) {
+    return {
+      allow: false,
+      reason: "hot_public_depth_rest_suppressed",
+      restClass,
+      priority: effectivePriority,
+      callerStats,
+      hotCallerThreshold,
+      ...pressureState
+    };
+  }
+  if (streamPrimary && restClass === "private_trade_history" && hotCallerActive) {
+    return {
+      allow: false,
+      reason: "hot_private_trade_history_rest_suppressed",
+      restClass,
+      priority: effectivePriority,
+      callerStats,
+      hotCallerThreshold,
       ...pressureState
     };
   }
@@ -119,6 +174,8 @@ export function evaluateRestBudgetAllowance({
     reason: "allowed",
     restClass,
     priority: effectivePriority,
+    callerStats,
+    hotCallerThreshold,
     ...pressureState
   };
 }
@@ -132,7 +189,8 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
       count: safeNumber(value?.count, 0),
       weight: safeNumber(value?.weight, 0),
       restClass: classifyRestCaller(caller),
-      priority: defaultPriorityForRestClass(classifyRestCaller(caller))
+      priority: defaultPriorityForRestClass(classifyRestCaller(caller)),
+      hotCallerThreshold: resolveHotCallerThreshold(classifyRestCaller(caller), config)
     }))
     .sort((left, right) => (right.weight - left.weight) || (right.count - left.count))
     .slice(0, 12);
@@ -171,6 +229,12 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
         : null,
       topCallers.some((item) => item.restClass === "public_market_depth")
         ? "Gebruik public stream/local book als primaire depth bron; REST depth blijft onder budget guard."
+        : null,
+      guardedCallers.some((item) => item.allowance?.reason === "hot_public_depth_rest_suppressed")
+        ? "Depth REST caller is historisch te heet; laat streams/local book eerst herstellen voordat fallback terugkomt."
+        : null,
+      guardedCallers.some((item) => item.allowance?.reason === "hot_private_trade_history_rest_suppressed")
+        ? "Trade-history REST caller is historisch te heet; vertrouw user-data events en gebruik myTrades alleen gericht."
         : null,
       guardedCallers.length
         ? "Niet-kritieke REST callers worden onder pressure automatisch uitgesteld."

@@ -89,6 +89,8 @@ export function validateConfig(config) {
   assertRange("STREAM_TRADE_BUFFER_SIZE", config.streamTradeBufferSize, 10, 2000, errors);
   assertRange("STREAM_DEPTH_LEVELS", config.streamDepthLevels, 5, 100, errors);
   assertRange("STREAM_DEPTH_SNAPSHOT_LIMIT", config.streamDepthSnapshotLimit, 20, 5000, errors);
+  assertRange("REST_HOT_CALLER_DEPTH_WEIGHT_THRESHOLD", config.restHotCallerDepthWeightThreshold, 0, 1_000_000, errors);
+  assertRange("REST_HOT_CALLER_PRIVATE_TRADE_WEIGHT_THRESHOLD", config.restHotCallerPrivateTradeWeightThreshold, 0, 1_000_000, errors);
   assertRange("MAX_DEPTH_EVENT_AGE_MS", config.maxDepthEventAgeMs, 100, 60_000, errors);
   assertRange("LOCAL_BOOK_BOOTSTRAP_WAIT_MS", config.localBookBootstrapWaitMs, 0, 5_000, errors);
   assertRange("LOCAL_BOOK_WARMUP_MS", config.localBookWarmupMs, 0, 30_000, errors);

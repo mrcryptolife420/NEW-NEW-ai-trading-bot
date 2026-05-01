@@ -233,15 +233,41 @@ export function buildStrategyRiskDiagnostics(readModel = {}) {
   const dangerous = arr(lifecycle.topDangerous || readModel.topScorecards)
     .filter((item) => ["dangerous", "negative_edge"].includes(item.status))
     .slice(0, 5);
+  const rangeGridDangerous = dangerous.filter((item) => `${item.strategyFamily || item.strategyId || ""}`.includes("range_grid"));
+  const quarantinePlan = rangeGridDangerous.map((item) => {
+    const sampleSize = safeNumber(item.sampleSize, 0);
+    const expectancyPct = Number(item.expectancyPct);
+    const highConfidence = safeNumber(item.confidence, 0) >= 0.65 || sampleSize >= 8;
+    const severe = item.status === "dangerous" || (Number.isFinite(expectancyPct) && expectancyPct <= -0.004);
+    return {
+      strategyId: item.strategyId || "range_grid",
+      strategyFamily: item.strategyFamily || "range_grid",
+      regime: item.regime || "unknown",
+      session: item.session || "unknown",
+      status: item.status,
+      sampleSize,
+      expectancyPct: Number.isFinite(expectancyPct) ? Number(expectancyPct.toFixed(4)) : null,
+      action: severe && highConfidence ? "paper_quarantine_recommended" : "paper_downweight_recommended",
+      scope: "paper_first",
+      liveImpact: "none",
+      reason: severe && highConfidence
+        ? "range_grid_negative_expectancy_with_sufficient_evidence"
+        : "range_grid_negative_evidence_needs_more_samples"
+    };
+  });
   return {
     status: dangerous.length ? "review_required" : lifecycle.status || "observe",
     dangerous,
     promoteCandidates: arr(lifecycle.promoteCandidates).slice(0, 5),
-    paperQuarantineAdvice: dangerous.some((item) => `${item.strategyFamily || item.strategyId || ""}`.includes("range_grid"))
+    quarantinePlan,
+    paperQuarantineAdvice: rangeGridDangerous.length
       ? {
           strategyFamily: "range_grid",
-          action: "diagnostic_downweight",
+          action: quarantinePlan.some((item) => item.action === "paper_quarantine_recommended")
+            ? "paper_quarantine_recommended"
+            : "diagnostic_downweight",
           scope: "paper_first",
+          contexts: quarantinePlan.slice(0, 5),
           note: "Range-grid toont negatieve/dangerous evidence; houd live streng en gebruik paper/replay voordat allocation stijgt."
         }
       : null,
@@ -313,7 +339,9 @@ export function buildTradingImprovementBacklog({
       status: hasDangerousStrategy ? "review_required" : "observe",
       priority: 3,
       evidence: arr(strategyRisk.dangerous).map((item) => `${item.strategyId || item.strategyFamily}:${item.regime || "unknown"}/${item.session || "unknown"} ${item.status}`),
-      nextStep: "Toon downweight/quarantine advies per regime/session; pas live allocator pas aan na replaybewijs.",
+      nextStep: arr(strategyRisk.quarantinePlan).some((item) => item.action === "paper_quarantine_recommended")
+        ? "Zet range-grid in paper quarantine per gevaarlijke regime/session context; pas live allocator pas aan na replaybewijs."
+        : "Toon downweight/quarantine advies per regime/session; pas live allocator pas aan na replaybewijs.",
       safety: "diagnostic_only"
     }),
     buildAction({

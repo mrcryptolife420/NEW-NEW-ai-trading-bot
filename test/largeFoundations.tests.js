@@ -283,6 +283,58 @@ export async function registerLargeFoundationsTests({
     assert.equal(summary.guardedCallers[0].caller, "market_snapshot.depth_fallback");
   });
 
+  await runCheck("rest budget governor suppresses hot stream-replaceable callers even before 1m pressure spikes", async () => {
+    const rateLimitState = {
+      usedWeight1m: 1200,
+      warningActive: false,
+      banActive: false,
+      backoffActive: false,
+      topRestCallers: {
+        "spot_public:GET /api/v3/depth": { count: 260, weight: 6500 },
+        "live_broker.reconcile.recent_trades": { count: 70, weight: 2600 },
+        "live_broker.reconcile.open_orders": { count: 2, weight: 160 }
+      }
+    };
+    const config = {
+      requestWeightWarnThreshold1m: 4800,
+      restHotCallerDepthWeightThreshold: 5000,
+      restHotCallerPrivateTradeWeightThreshold: 2000
+    };
+    const depth = evaluateRestBudgetAllowance({
+      caller: "spot_public:GET /api/v3/depth",
+      rateLimitState,
+      config,
+      streamPrimary: true
+    });
+    const recentTrades = evaluateRestBudgetAllowance({
+      caller: "live_broker.reconcile.recent_trades",
+      rateLimitState,
+      config,
+      streamPrimary: true
+    });
+    const openOrders = evaluateRestBudgetAllowance({
+      caller: "live_broker.reconcile.open_orders",
+      priority: "critical",
+      rateLimitState,
+      config,
+      streamPrimary: true
+    });
+    const summary = buildRestBudgetGovernorSummary({
+      rateLimitState,
+      config,
+      streamStatus: { publicStreamConnected: true, userStreamConnected: true }
+    });
+
+    assert.equal(depth.allow, false);
+    assert.equal(depth.reason, "hot_public_depth_rest_suppressed");
+    assert.equal(recentTrades.allow, false);
+    assert.equal(recentTrades.reason, "hot_private_trade_history_rest_suppressed");
+    assert.equal(openOrders.allow, true);
+    assert.equal(summary.status, "guarding");
+    assert.equal(summary.guardedCallers.some((item) => item.allowance.reason === "hot_public_depth_rest_suppressed"), true);
+    assert.equal(summary.recommendedActions.some((item) => item.includes("historisch te heet")), true);
+  });
+
   await runCheck("trading improvement diagnostics combine meta caution recovery request budget and strategy risk", async () => {
     const diagnostics = buildTradingImprovementDiagnostics({
       blockedSetups: [{
@@ -377,7 +429,8 @@ export async function registerLargeFoundationsTests({
     assert.equal(diagnostics.requestWeight.privateHotspots[0].caller, "signed:GET /api/v3/openOrders");
     assert.equal(diagnostics.requestWeight.publicHotspots[0].caller, "spot_public:GET /api/v3/depth");
     assert.equal(diagnostics.strategyRisk.status, "review_required");
-    assert.equal(diagnostics.strategyRisk.paperQuarantineAdvice.action, "diagnostic_downweight");
+    assert.equal(diagnostics.strategyRisk.paperQuarantineAdvice.action, "paper_quarantine_recommended");
+    assert.equal(diagnostics.strategyRisk.quarantinePlan[0].liveImpact, "none");
     assert.equal(diagnostics.backlog.length, 10);
     assert.equal(diagnostics.backlog.some((item) => item.id === "exit_loss_autopsy" && item.status === "review_required"), true);
     assert.equal(diagnostics.backlog.some((item) => item.id === "paper_live_parity_score" && item.status === "recommended"), true);
