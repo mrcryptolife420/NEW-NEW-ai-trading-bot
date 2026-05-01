@@ -17022,11 +17022,11 @@ await runCheck("exchange safety demo paper freezes at configured mismatch thresh
   assert.equal(blockedByHardDrift.freezeEntries, true);
 });
 
-await runCheck("binance demo paper mismatch symbol count ignores bare mismatchCount and recent fills", async () => {
-  assert.equal(
-    buildBinanceDemoPaperMismatchSymbolCount({
-      mismatchCount: 2,
-      recentFillSymbols: ["BTCUSDT", "ETHUSDT"],
+  await runCheck("binance demo paper mismatch symbol count ignores bare mismatchCount and recent fills", async () => {
+    assert.equal(
+      buildBinanceDemoPaperMismatchSymbolCount({
+        mismatchCount: 2,
+        recentFillSymbols: ["BTCUSDT", "ETHUSDT"],
       warnings: []
     }),
     0
@@ -17039,14 +17039,143 @@ await runCheck("binance demo paper mismatch symbol count ignores bare mismatchCo
         { symbol: "GNOUSDT", issue: "protective_order_rebuild_failed" }
       ]
     }),
-    2
-  );
-});
+      2
+    );
+  });
 
-await runCheck("pure paper sanitizes stale live exchange truth symbol lists", async () => {
-  const cleaned = sanitizeStaleLiveExchangeTruthFlagsOnPurePaper(
-    {
-      mismatchCount: 0,
+  await runCheck("trading bot refreshes exchange safety from latest reconcile truth", async () => {
+    const bot = Object.create(TradingBot.prototype);
+    bot.config = makeConfig({
+      botMode: "paper",
+      paperExecutionVenue: "binance_demo_spot",
+      exchangeTruthFreezeMismatchCount: 2
+    });
+    bot.runtime = {
+      openPositions: [],
+      latestDecisions: [],
+      exchangeTruth: {
+        mismatchCount: 3,
+        warnings: [
+          { symbol: "BTCUSDT", issue: "protective_order_rebuild_failed" },
+          { symbol: "ETHUSDT", issue: "protective_order_rebuild_failed" },
+          { symbol: "BNBUSDT", issue: "protective_order_rebuild_failed" }
+        ]
+      },
+      orderLifecycle: { pendingActions: [] },
+      exchangeSafety: {}
+    };
+    bot.journal = { events: [] };
+    bot.stream = { getStatus: () => ({}) };
+    bot.getPerformanceReport = () => ({ recentEvents: [] });
+    bot.recordEvent = (type, payload) => bot.journal.events.push({ type, ...payload });
+
+    const refreshed = bot.refreshExchangeSafetyState({
+      report: { recentEvents: [] },
+      nowIso: "2026-05-01T09:00:00.000Z"
+    });
+
+    assert.equal(refreshed.globalFreezeEntries, true);
+    assert.equal(bot.runtime.exchangeSafety.globalFreezeEntries, true);
+    assert.equal(bot.runtime.exchangeSafety.globalFreezeReason, "multi_symbol_exchange_mismatch");
+  });
+
+  await runCheck("runCycleCore enters exchange-safety recovery-only mode after position management", async () => {
+    const bot = Object.create(TradingBot.prototype);
+    const events = [];
+    let scanCalled = false;
+    let manageCalled = false;
+    bot.config = makeConfig({
+      botMode: "paper",
+      paperExecutionVenue: "binance_demo_spot",
+      exchangeTruthFreezeMismatchCount: 2,
+      enableScannerAutoRefresh: false,
+      watchlist: ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+    });
+    bot.runtime = {
+      mode: "paper",
+      openPositions: [{ symbol: "BTCUSDT", quantity: 0.01, brokerMode: "paper" }],
+      latestDecisions: [{ symbol: "STALEUSDT", allow: true }],
+      latestBlockedSetups: [{ symbol: "OLDUSDT" }],
+      exchangeTruth: { mismatchCount: 0 },
+      exchangeSafety: {},
+      orderLifecycle: { pendingActions: [], positions: {}, recentTransitions: [], activeActions: {}, actionJournal: [] },
+      signalFlow: {},
+      ops: {},
+      health: {},
+      service: {},
+      requestWeight: {}
+    };
+    bot.journal = {
+      events,
+      trades: [],
+      scaleOuts: [],
+      blockedSetups: [],
+      counterfactuals: [],
+      researchRuns: [],
+      scannerRuns: [],
+      equitySnapshots: [],
+      cycles: []
+    };
+    bot.logger = { info() {}, warn() {}, error() {} };
+    bot.client = { syncServerTime: async () => {} };
+    bot.health = {
+      enforceClockDrift: () => [],
+      getStatus: () => ({ status: "ready" })
+    };
+    bot.stream = {
+      getStatus: () => ({}),
+      getSymbolStreamFeatures: () => ({})
+    };
+    bot.model = {
+      getCalibrationSummary: () => ({}),
+      getDeploymentSummary: () => ({}),
+      getState: () => ({})
+    };
+    bot.backupManager = { maybeBackup: async () => {}, getSummary: () => ({}) };
+    bot.dataRecorder = { getSummary: () => ({}) };
+    bot.recordRequestWeightBudgetEvent = () => {};
+    bot.updateSafetyState = () => ({ driftSummary: {}, selfHealState: {} });
+    bot.refreshGovernanceViews = () => ({ report: {} });
+    bot.getPerformanceReport = () => ({ recentEvents: [] });
+    bot.markReportDirty = () => {};
+    bot.recordEvent = (type, payload = {}) => events.push({ type, ...payload });
+    bot.syncOrderLifecycleState = () => bot.runtime.orderLifecycle;
+    bot.manageOpenPositions = async () => {
+      manageCalled = true;
+      bot.runtime.exchangeTruth = {
+        mismatchCount: 3,
+        warnings: [
+          { symbol: "BTCUSDT", issue: "protective_order_rebuild_failed" },
+          { symbol: "ETHUSDT", issue: "protective_order_rebuild_failed" },
+          { symbol: "BNBUSDT", issue: "protective_order_rebuild_failed" }
+        ]
+      };
+      return { BTCUSDT: 70000 };
+    };
+    bot.scanCandidatesForCycle = async () => {
+      scanCalled = true;
+      return [];
+    };
+    bot.updatePortfolioSnapshot = async () => ({ balance: { quoteFree: 1000 }, equity: 1000 });
+    bot.safeRecordDataRecorder = async () => true;
+    bot.dispatchOperatorAlerts = async () => {};
+    bot.refreshAuditSummary = async () => ({});
+
+    const result = await bot.runCycleCore();
+
+    assert.equal(manageCalled, true);
+    assert.equal(scanCalled, false);
+    assert.equal(result.entryAttempt.status, "exchange_safety_recovery_only");
+    assert.deepEqual(result.entryAttempt.allowedOperations, ["reconcile", "exit", "protective_rebuild"]);
+    assert.equal(bot.runtime.latestDecisions.length, 0);
+    assert.equal(bot.journal.cycles.at(-1).entryStatus, "exchange_safety_recovery_only");
+    assert.ok(events.some((event) => event.type === "exchange_safety_recovery_only_cycle"));
+  });
+
+  await runCheck("pure paper sanitizes stale live exchange truth symbol lists", async () => {
+    const cleaned = sanitizeStaleLiveExchangeTruthFlagsOnPurePaper(
+      {
+        mismatchCount: 0,
       unmatchedOrderSymbols: ["BTCUSDT"],
       orphanedSymbols: ["ETHUSDT"],
       manualInterferenceSymbols: []

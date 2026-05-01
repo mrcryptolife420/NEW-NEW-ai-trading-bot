@@ -16294,50 +16294,7 @@ export class TradingBot {
       config: this.config,
       nowIso: referenceNow
     });
-    if ((this.config.botMode || "paper") !== "live") {
-      const et = this.runtime.exchangeTruth || {};
-      const mismatch = Number(et.mismatchCount) || 0;
-      const criticalPending = materialPaperLifecyclePendingForEntryFreeze(
-        this.runtime.orderLifecycle?.pendingActions || [],
-        this.config
-      );
-      if (et.freezeEntries && mismatch === 0 && criticalPending.length === 0) {
-        this.runtime.exchangeTruth = {
-          ...et,
-          freezeEntries: false
-        };
-        if (Array.isArray(this.journal?.events)) {
-          this.recordEvent("paper_cleared_stale_exchange_freeze", { mismatchCount: mismatch });
-        }
-      }
-    }
-    const exchangeSafety = summarizeExchangeSafety(buildExchangeSafetyAudit({
-      runtime: this.runtime,
-      report: evaluation,
-      config: this.config,
-      streamStatus: this.stream.getStatus(),
-      nowIso: referenceNow
-    }));
-    this.runtime.exchangeSafety = exchangeSafety;
-    if ((this.config.botMode || "paper") === "live") {
-      const previousFreeze = Boolean(this.runtime.exchangeTruth?.freezeEntries);
-      const nextFreeze = Boolean(exchangeSafety.freezeEntries);
-      const prevEt = this.runtime.exchangeTruth || {};
-      this.runtime.exchangeTruth = {
-        ...prevEt,
-        freezeEntries: nextFreeze,
-        notes: nextFreeze
-          ? [...new Set([...(prevEt.notes || []), ...(exchangeSafety.notes || [])])].slice(0, 6)
-          : (prevEt.notes || []).slice(0, 6)
-      };
-      if (previousFreeze !== nextFreeze) {
-        this.recordEvent("exchange_truth_freeze_toggled", {
-          freezeEntries: nextFreeze,
-          mismatchCount: this.runtime.exchangeTruth?.mismatchCount || 0,
-          reason: nextFreeze ? "exchange_safety_freeze" : "exchange_safety_cleared"
-        });
-      }
-    }
+    const exchangeSafety = this.refreshExchangeSafetyState({ report: evaluation, nowIso: referenceNow });
     if (!skipLearningSnapshotRebuild) {
       this.runtime.shadowTrading = this.buildShadowTradingView(arr(this.runtime.latestDecisions), referenceNow);
       this.runtime.paperLearning = this.buildPaperLearningSummary(arr(this.runtime.latestDecisions), referenceNow);
@@ -16430,6 +16387,55 @@ export class TradingBot {
       watchdogStatus: this.runtime.lifecycle?.activeRun ? "running" : (this.runtime.service?.watchdogStatus || "idle")
     };
     return this.runtime.ops;
+  }
+
+  refreshExchangeSafetyState({ report = null, nowIso: referenceNow = nowIso() } = {}) {
+    const evaluation = report || this.getPerformanceReport();
+    if ((this.config.botMode || "paper") !== "live") {
+      const et = this.runtime.exchangeTruth || {};
+      const mismatch = Number(et.mismatchCount) || 0;
+      const criticalPending = materialPaperLifecyclePendingForEntryFreeze(
+        this.runtime.orderLifecycle?.pendingActions || [],
+        this.config
+      );
+      if (et.freezeEntries && mismatch === 0 && criticalPending.length === 0) {
+        this.runtime.exchangeTruth = {
+          ...et,
+          freezeEntries: false
+        };
+        if (Array.isArray(this.journal?.events)) {
+          this.recordEvent("paper_cleared_stale_exchange_freeze", { mismatchCount: mismatch });
+        }
+      }
+    }
+    const exchangeSafety = summarizeExchangeSafety(buildExchangeSafetyAudit({
+      runtime: this.runtime,
+      report: evaluation,
+      config: this.config,
+      streamStatus: this.stream.getStatus(),
+      nowIso: referenceNow
+    }));
+    this.runtime.exchangeSafety = exchangeSafety;
+    if ((this.config.botMode || "paper") === "live") {
+      const previousFreeze = Boolean(this.runtime.exchangeTruth?.freezeEntries);
+      const nextFreeze = Boolean(exchangeSafety.freezeEntries);
+      const prevEt = this.runtime.exchangeTruth || {};
+      this.runtime.exchangeTruth = {
+        ...prevEt,
+        freezeEntries: nextFreeze,
+        notes: nextFreeze
+          ? [...new Set([...(prevEt.notes || []), ...(exchangeSafety.notes || [])])].slice(0, 6)
+          : (prevEt.notes || []).slice(0, 6)
+      };
+      if (previousFreeze !== nextFreeze) {
+        this.recordEvent("exchange_truth_freeze_toggled", {
+          freezeEntries: nextFreeze,
+          mismatchCount: this.runtime.exchangeTruth?.mismatchCount || 0,
+          reason: nextFreeze ? "exchange_safety_freeze" : "exchange_safety_cleared"
+        });
+      }
+    }
+    return exchangeSafety;
   }
 
   async dispatchOperatorAlerts(referenceNow = nowIso()) {
@@ -22494,25 +22500,84 @@ export class TradingBot {
     }
     const driftIssues = this.health.enforceClockDrift(this.client, this.runtime);
     const markedPrices = await this.manageOpenPositions();
+    const exchangeSafetyAfterRecovery = this.refreshExchangeSafetyState({ nowIso: cycleAt });
     this.refreshGovernanceViews(cycleAt);
-    const balance = await this.broker.getBalance(this.runtime);
-    if (this.config.enableScannerSoftSeed || this.config.enableScannerAutoRefresh !== false) {
-      await this.safeRefreshScannerSnapshot({
-        referenceNow: cycleAt,
-        context: "runtime_cycle",
-        persist: false
+    let candidates = [];
+    let entryAttempt = null;
+    let openedPosition = null;
+    const exchangeSafetyRecoveryOnly = Boolean(exchangeSafetyAfterRecovery?.globalFreezeEntries || exchangeSafetyAfterRecovery?.freezeEntries);
+    if (exchangeSafetyRecoveryOnly) {
+      const blockedReason = exchangeSafetyAfterRecovery.globalFreezeReason || "exchange_safety_blocked";
+      entryAttempt = {
+        status: "exchange_safety_recovery_only",
+        selectedSymbol: null,
+        openedPosition: null,
+        attemptedSymbols: [],
+        allowedCandidates: 0,
+        skippedCandidates: 0,
+        allowedButZeroEffectiveSize: 0,
+        allowedButTinyEffectiveSize: 0,
+        blockedReasons: [blockedReason],
+        entryErrors: [],
+        symbolBlockers: arr(exchangeSafetyAfterRecovery.blockedSymbols || []).map((item) => ({
+          symbol: item.symbol || null,
+          reason: item.reason || blockedReason
+        })).filter((item) => item.symbol),
+        skipReasonCounts: { [blockedReason]: 1 },
+        blockedReasonDetails: {
+          lowConfidenceDrivers: [],
+          featurePressureSources: [],
+          metaActions: [],
+          strategyBlockers: []
+        },
+        recoveryOnly: true,
+        allowedOperations: ["reconcile", "exit", "protective_rebuild"]
+      };
+      this.runtime.latestDecisions = [];
+      this.runtime.latestBlockedSetups = [];
+      this.noteCandidateSignalFlow([], cycleAt, {
+        symbolsScanned: 0,
+        candidatesScored: 0,
+        decisionFunnel: {
+          at: cycleAt,
+          mode: "exchange_safety_recovery_only",
+          watchlistCount: this.config.watchlist.length,
+          watchlistSymbols: arr(this.config.watchlist).slice(0, 24),
+          candidatesCreated: 0,
+          viableCandidates: 0,
+          executionAttempts: 0,
+          dominantReason: blockedReason,
+          dominantCategory: classifySignalRejectionCategory(blockedReason),
+          dominantStage: "recovery_only",
+          inactivityWarning: "Exchange safety blokkeert nieuwe entries; alleen reconcile, exits en protective rebuilds lopen."
+        }
       });
+      this.recordEvent("exchange_safety_recovery_only_cycle", {
+        at: cycleAt,
+        reason: blockedReason,
+        blockedSymbols: arr(exchangeSafetyAfterRecovery.blockedSymbols || []).map((item) => item.symbol).filter(Boolean),
+        allowedOperations: ["reconcile", "exit", "protective_rebuild"]
+      });
+    } else {
+      const balance = await this.broker.getBalance(this.runtime);
+      if (this.config.enableScannerSoftSeed || this.config.enableScannerAutoRefresh !== false) {
+        await this.safeRefreshScannerSnapshot({
+          referenceNow: cycleAt,
+          context: "runtime_cycle",
+          persist: false
+        });
+      }
+      candidates = await this.scanCandidatesForCycle(balance);
+      await this.resolveCounterfactualQueue(cycleAt);
+      const decisionPipeline = await executeDecisionPipeline(this, {
+        cycleAt,
+        balance,
+        candidates,
+        executionBlockers: this.config.botMode === "live" ? driftIssues : []
+      });
+      entryAttempt = decisionPipeline.entryAttempt;
+      openedPosition = decisionPipeline.openedPosition || null;
     }
-    const candidates = await this.scanCandidatesForCycle(balance);
-    await this.resolveCounterfactualQueue(cycleAt);
-    const decisionPipeline = await executeDecisionPipeline(this, {
-      cycleAt,
-      balance,
-      candidates,
-      executionBlockers: this.config.botMode === "live" ? driftIssues : []
-    });
-    const entryAttempt = decisionPipeline.entryAttempt;
-    const openedPosition = decisionPipeline.openedPosition || null;
     this.finalizeSignalFlowCycle({ at: cycleAt, entryAttempt, openedPosition });
     this.applyEntryAttemptToDecisions(entryAttempt);
     this.syncOrderLifecycleState("entry_attempt");
