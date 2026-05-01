@@ -124,6 +124,9 @@ function normalizeExecutionReport(event) {
     peggedPrice: Number(event.gp ?? event.peggedPrice ?? 0),
     strategyId: event.j ?? event.strategyId ?? null,
     strategyType: event.J ?? event.strategyType ?? null,
+    tradeId: event.t != null ? Number(event.t) : null,
+    commission: Number(event.n || 0),
+    commissionAsset: event.N || null,
     raw: event,
     at: new Date(event.E || Date.now()).toISOString()
   };

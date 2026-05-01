@@ -101,6 +101,7 @@ function buildRecoveredRationale(symbol) {
 
 function tradeKey(trade = {}, index = 0) {
   const stableParts = [
+    trade.orderId ?? "",
     trade.time ?? trade.transactTime ?? "",
     trade.price ?? "",
     trade.qty ?? trade.executedQty ?? "",
@@ -109,6 +110,16 @@ function tradeKey(trade = {}, index = 0) {
     trade.commissionAsset ?? ""
   ];
   const explicitId = trade.id ?? trade.tradeId ?? trade.orderId ?? null;
+  const executionFingerprint = [
+    trade.price ?? "",
+    trade.qty ?? trade.executedQty ?? "",
+    trade.quoteQty ?? trade.cummulativeQuoteQty ?? "",
+    trade.commission ?? "",
+    trade.commissionAsset ?? ""
+  ];
+  if (executionFingerprint.some((part) => `${part}` !== "")) {
+    return executionFingerprint.join(":");
+  }
   if (explicitId != null) {
     return [explicitId, ...stableParts].join(":");
   }
@@ -141,6 +152,29 @@ function sumTradeQuoteQuantity(trades = []) {
     }
     return total + (Number(trade.qty || trade.executedQty || 0) * Number(trade.price || 0));
   }, 0);
+}
+
+function executionReportToTrade(event = {}) {
+  const qty = Number(event.lastExecutedQty || event.executedQty || 0);
+  const price = Number(event.lastPrice || event.price || 0);
+  const quoteQty = Number(event.lastQuoteQty || 0) || (qty > 0 && price > 0 ? qty * price : 0);
+  if (!(qty > 0) || !(price > 0)) {
+    return null;
+  }
+  return {
+    id: event.tradeId ?? `${event.orderId || "order"}:${event.transactTime || event.at || ""}:${qty}:${price}`,
+    orderId: event.orderId,
+    tradeId: event.tradeId ?? null,
+    price,
+    qty,
+    quoteQty,
+    commission: Number(event.commission || event.raw?.n || 0),
+    commissionAsset: event.commissionAsset || event.raw?.N || null,
+    isBuyer: event.side === "BUY",
+    isMaker: Boolean(event.maker),
+    time: Number(event.transactTime || event.raw?.T || event.raw?.E || Date.now()),
+    source: "user_stream_execution_report"
+  };
 }
 
 function normalizeExecution(execution) {
@@ -591,14 +625,27 @@ export class LiveBroker {
   }
 
   async fetchRecentTrades(symbol, limit = 8) {
+    const streamTrades = this.getRecentUserStreamTrades(symbol, { limit });
     const allowance = evaluateRestBudgetAllowance({
       caller: "live_broker.reconcile.recent_trades",
       priority: "medium",
       rateLimitState: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
       config: this.config,
-      streamPrimary: Boolean(this.stream?.getStatus?.().userStreamConnected)
+      streamPrimary: Boolean(this.stream?.getStatus?.().userStreamConnected || streamTrades.length)
     });
     if (!allowance.allow) {
+      if (streamTrades.length) {
+        return {
+          trades: streamTrades,
+          source: "user_stream",
+          degraded: true,
+          restSkipped: true,
+          reason: allowance.reason || "request_weight_pressure",
+          pressure: allowance.pressure,
+          usedWeight1m: allowance.usedWeight1m,
+          restBudget: allowance
+        };
+      }
       return {
         trades: [],
         error: new Error("recent_trades_skipped_request_weight_pressure"),
@@ -610,6 +657,86 @@ export class LiveBroker {
       };
     }
     return fetchRecentTrades(this.client, symbol, limit);
+  }
+
+  getUserStreamOrderTrades(symbol, orderId, { maxAgeMs = 10 * 60_000 } = {}) {
+    if (!symbol || !orderId || !this.stream?.getRecentExecutionReports) {
+      return [];
+    }
+    const events = this.stream.getRecentExecutionReports(symbol, { orderIds: [orderId], maxAgeMs }) || [];
+    return events
+      .filter((event) => `${event.executionType || ""}`.toUpperCase() === "TRADE")
+      .map(executionReportToTrade)
+      .filter(Boolean);
+  }
+
+  getRecentUserStreamTrades(symbol, { limit = 8, maxAgeMs = 30 * 60_000 } = {}) {
+    if (!symbol || !this.stream?.getRecentExecutionReports) {
+      return [];
+    }
+    const events = this.stream.getRecentExecutionReports(symbol, { maxAgeMs }) || [];
+    return events
+      .filter((event) => `${event.executionType || ""}`.toUpperCase() === "TRADE")
+      .map(executionReportToTrade)
+      .filter(Boolean)
+      .sort((left, right) => Number(right.time || 0) - Number(left.time || 0))
+      .slice(0, Math.max(0, Number(limit || 8)));
+  }
+
+  async fetchOrderTradesWithStreamFallback(symbol, orderId, { caller, fallbackTrades = [] } = {}) {
+    const streamTrades = this.getUserStreamOrderTrades(symbol, orderId);
+    const allowance = evaluateRestBudgetAllowance({
+      caller,
+      priority: "medium",
+      rateLimitState: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
+      config: this.config,
+      streamPrimary: Boolean(this.stream?.getStatus?.().userStreamConnected || streamTrades.length)
+    });
+    if (!allowance.allow) {
+      if (streamTrades.length) {
+        return {
+          trades: mergeTrades(fallbackTrades, streamTrades),
+          source: "user_stream",
+          restSkipped: true,
+          restBudget: allowance
+        };
+      }
+      return {
+        trades: fallbackTrades,
+        source: "fallback",
+        restSkipped: true,
+        restBudget: allowance
+      };
+    }
+    if (!this.client.getMyTrades) {
+      return {
+        trades: mergeTrades(fallbackTrades, streamTrades),
+        source: streamTrades.length ? "user_stream" : "fallback",
+        restSkipped: true,
+        restBudget: allowance
+      };
+    }
+    try {
+      const fetchedTrades = await this.client.getMyTrades(symbol, { orderId, limit: 50 }, {
+        requestMeta: { caller }
+      });
+      const restTrades = Array.isArray(fetchedTrades) ? fetchedTrades : [];
+      return {
+        trades: restTrades.length ? restTrades : mergeTrades(fallbackTrades, streamTrades),
+        source: restTrades.length ? "rest" : (streamTrades.length ? "user_stream" : "fallback"),
+        restSkipped: false,
+        restBudget: allowance
+      };
+    } catch (error) {
+      this.logger?.warn?.("Order trade fetch failed", { symbol, orderId, caller, error: error.message });
+      return {
+        trades: mergeTrades(fallbackTrades, streamTrades),
+        source: streamTrades.length ? "user_stream" : "fallback",
+        restSkipped: false,
+        restBudget: allowance,
+        error
+      };
+    }
   }
 
   async fetchReconcileRetrySnapshot(symbol, runtime) {
@@ -892,9 +1019,10 @@ export class LiveBroker {
     const order = await this.client.getOrder(symbol, { orderId }, {
       requestMeta: { caller: "live_broker.settle_maker_order" }
     });
-    const trades = await this.client.getMyTrades(symbol, { orderId, limit: 50 }, {
-      requestMeta: { caller: "live_broker.settle_maker_order_trades" }
-    }).catch(() => []);
+    const tradeResult = await this.fetchOrderTradesWithStreamFallback(symbol, orderId, {
+      caller: "live_broker.settle_maker_order_trades"
+    });
+    const trades = tradeResult.trades || [];
     const normalized = normalizeExecution({ order, trades });
     const executedQuote = Number(normalized.order.cummulativeQuoteQty || 0);
     const executedQty = Number(normalized.order.executedQty || 0);
@@ -1293,15 +1421,12 @@ export class LiveBroker {
 
     const fallbackTrades = Array.isArray(defaultTrades) ? [...defaultTrades] : [];
     let trades = fallbackTrades;
-    if (this.client.getMyTrades && latestOrder?.orderId) {
-      try {
-        const fetchedTrades = await this.client.getMyTrades(symbol, { orderId: latestOrder.orderId, limit: 50 }, {
-          requestMeta: { caller: "live_broker.settle_terminal_order_trades" }
-        });
-        trades = Array.isArray(fetchedTrades) && fetchedTrades.length ? fetchedTrades : fallbackTrades;
-      } catch (error) {
-        this.logger?.warn?.("Terminal order trade fetch failed", { symbol, orderId: latestOrder.orderId, error: error.message });
-      }
+    if (latestOrder?.orderId) {
+      const tradeResult = await this.fetchOrderTradesWithStreamFallback(symbol, latestOrder.orderId, {
+        caller: "live_broker.settle_terminal_order_trades",
+        fallbackTrades
+      });
+      trades = Array.isArray(tradeResult.trades) && tradeResult.trades.length ? tradeResult.trades : fallbackTrades;
     }
     const normalized = normalizeExecution({ order: latestOrder, trades });
     return { order: normalized.order, trades: normalized.trades };
@@ -2153,9 +2278,10 @@ export class LiveBroker {
     if (orderStatus !== "FILLED" && executedQty <= 0) {
       return null;
     }
-    const trades = this.client.getMyTrades
-      ? await this.client.getMyTrades(position.symbol, { orderId, limit: 50 }).catch(() => [])
-      : [];
+    const tradeResult = await this.fetchOrderTradesWithStreamFallback(position.symbol, orderId, {
+      caller: "live_broker.settle_protective_order_trades"
+    });
+    const trades = tradeResult.trades || [];
     const orderTelemetry = await this.collectOrderTelemetry(position.symbol, [orderId]).catch(() => ({}));
     const remainingQuantity = Math.max(0, Number(position.quantity || 0) - executedQty);
     const fallbackMarkedPrice = Number(order?.price || order?.stopPrice || position.lastMarkedPrice || position.entryPrice || 0);
@@ -2225,7 +2351,10 @@ export class LiveBroker {
       for (const listOrder of orderList.orders || []) {
         const order = await this.client.getOrder(position.symbol, { orderId: listOrder.orderId });
         if (order.status === "FILLED") {
-          const trades = await this.client.getMyTrades(position.symbol, { orderId: order.orderId, limit: 50 });
+          const tradeResult = await this.fetchOrderTradesWithStreamFallback(position.symbol, order.orderId, {
+            caller: "live_broker.settle_protective_order_list_trades"
+          });
+          const trades = tradeResult.trades || [];
           const orderTelemetry = await this.collectOrderTelemetry(position.symbol, [order.orderId]);
           runtime.openPositions = runtime.openPositions.filter((item) => item.id !== position.id);
           return this.buildTradeFromOrder(

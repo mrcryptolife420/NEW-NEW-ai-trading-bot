@@ -582,6 +582,72 @@ export async function registerLargeFoundationsTests({
     assert.equal(myTradesCalls, 0);
   });
 
+  await runCheck("live broker uses user-data stream fills when private trade-history REST is hot", async () => {
+    let myTradesCalls = 0;
+    const tradeEvent = {
+      executionType: "TRADE",
+      symbol: "BTCUSDT",
+      side: "BUY",
+      orderId: 42,
+      tradeId: 9001,
+      lastExecutedQty: 0.01,
+      lastPrice: 60000,
+      lastQuoteQty: 600,
+      commission: 0.0001,
+      commissionAsset: "BNB",
+      maker: true,
+      transactTime: Date.now()
+    };
+    const broker = new LiveBroker({
+      client: {
+        getRateLimitState() {
+          return {
+            usedWeight1m: 1200,
+            warningActive: false,
+            banActive: false,
+            backoffActive: false,
+            topRestCallers: {
+              "live_broker.settle_terminal_order_trades": { count: 70, weight: 2600 }
+            }
+          };
+        },
+        async getMyTrades() {
+          myTradesCalls += 1;
+          return [];
+        }
+      },
+      stream: {
+        getStatus() {
+          return { userStreamConnected: true };
+        },
+        getRecentExecutionReports(symbol, { orderIds }) {
+          assert.equal(symbol, "BTCUSDT");
+          assert.deepEqual(orderIds, [42]);
+          return [tradeEvent];
+        }
+      },
+      symbolRules: {},
+      config: {
+        requestWeightWarnThreshold1m: 4800,
+        restHotCallerPrivateTradeWeightThreshold: 2000
+      },
+      logger: { info() {}, warn() {}, error() {}, debug() {} }
+    });
+
+    const settled = await broker.settleTerminalOrder({
+      symbol: "BTCUSDT",
+      order: { orderId: 42, status: "FILLED", executedQty: "0.01", cummulativeQuoteQty: "600" }
+    });
+
+    assert.equal(myTradesCalls, 0);
+    assert.equal(settled.trades.length, 1);
+    assert.equal(settled.trades[0].source, "user_stream_execution_report");
+    assert.equal(settled.trades[0].commissionAsset, "BNB");
+    assert.equal(settled.trades[0].commission, 0.0001);
+    assert.equal(Number(settled.order.executedQty), 0.01);
+    assert.equal(Number(settled.order.cummulativeQuoteQty), 600);
+  });
+
   await runCheck("stream fallback health does not treat read-only status snapshots as live stream gaps", async () => {
     const fakeBot = {
       config: { requestWeightWarnThreshold1m: 4800 },

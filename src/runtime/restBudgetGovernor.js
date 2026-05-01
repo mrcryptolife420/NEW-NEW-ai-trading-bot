@@ -48,11 +48,11 @@ export function getRequestWeightPressure(rateLimitState = {}, config = {}) {
 
 export function classifyRestCaller(caller = "") {
   const text = `${caller || ""}`.toLowerCase();
-  if (/placeorder|cancelorder|cancelreplace|oco|protective|emergency|flatten|submit|settle_terminal_order/.test(text)) {
-    return "critical_execution";
-  }
   if (/mytrades|recent_trades|trade_history|settle_.*trades/.test(text)) {
     return "private_trade_history";
+  }
+  if (/placeorder|cancelorder|cancelreplace|oco|protective|emergency|flatten|submit|settle_terminal_order/.test(text)) {
+    return "critical_execution";
   }
   if (/reconcile|openorders|open_orders|account_info|account|orderlist|order_lists|getorder/.test(text)) {
     return "critical_reconcile";
