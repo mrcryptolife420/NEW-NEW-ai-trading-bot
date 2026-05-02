@@ -107,3 +107,18 @@ Status after Batch 4:
 
 - `feature:audit` reports no `missing_dashboard` classifications for the audited feature-completion targets.
 - Remaining review items are live-risk-review or broader config/test hygiene, not missing operator visibility for the audited features.
+
+## Batch 5: feature-flag hygiene
+
+Batch 5 keeps the audit source-of-truth cleaner without changing trading behavior:
+
+- document missing env keys for existing runtime flags: `BASELINE_CORE_ENABLED`, `ENABLE_SEQUENCE_CHALLENGER`, and `HISTORY_CACHE_ENABLED`
+- add audit-visible tests for runtime diagnostic flags that already have implementation callsites
+- keep known config-only/alias flags visible for future cleanup instead of silently treating them as active behavior
+
+The contract remains non-behavioral:
+
+- no risk or strategy gate changes
+- no live behavior changes
+- no paper threshold changes
+- no request/execution behavior changes
