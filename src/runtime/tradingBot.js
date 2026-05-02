@@ -1891,6 +1891,7 @@ function summarizePatterns(market = {}) {
 }
 
 function summarizeIndicators(market = {}) {
+  const indicatorRegistry = summarizeIndicatorRegistry(market.indicatorRegistry || {});
   return {
     adx14: num(market.adx14 || 0, 2),
     plusDi14: num(market.plusDi14 || 0, 2),
@@ -1924,7 +1925,42 @@ function summarizeIndicators(market = {}) {
     volumeAcceptanceScore: num(market.volumeAcceptanceScore || 0, 3),
     keltnerWidthPct: num(market.keltnerWidthPct || 0, 4),
     keltnerSqueezeScore: num(market.keltnerSqueezeScore || 0, 3),
-    squeezeReleaseScore: num(market.squeezeReleaseScore || 0, 3)
+    squeezeReleaseScore: num(market.squeezeReleaseScore || 0, 3),
+    indicatorRegistry,
+    indicatorPackUsed: indicatorRegistry.indicatorPackUsed,
+    topPositiveFeatures: indicatorRegistry.topPositiveFeatures,
+    topNegativeFeatures: indicatorRegistry.topNegativeFeatures,
+    missingIndicatorFeatures: indicatorRegistry.missingIndicatorFeatures
+  };
+}
+
+function summarizeIndicatorRegistry(pack = {}) {
+  const quality = pack.quality || {};
+  const missingFeatures = pack.missingIndicatorFeatures || pack.missingFeatures || quality.missingFeatures || [];
+  return {
+    packId: pack.packId || null,
+    version: pack.version || null,
+    status: pack.status || (pack.packId ? "unknown" : "missing"),
+    candleCount: Number.isFinite(Number(pack.candleCount)) ? Number(pack.candleCount) : 0,
+    warmupCandlesRequired: Number.isFinite(Number(pack.warmupCandlesRequired)) ? Number(pack.warmupCandlesRequired) : 0,
+    qualityScore: num(pack.qualityScore ?? quality.qualityScore ?? 0, 4),
+    stale: Boolean(pack.stale ?? quality.stale),
+    source: pack.source || quality.source || null,
+    lastTimestamp: pack.lastTimestamp || quality.lastTimestamp || null,
+    indicatorPackUsed: arr(pack.indicatorPackUsed || pack.usedIndicators || []).slice(0, 12),
+    topPositiveFeatures: arr(pack.topPositiveFeatures || []).slice(0, 5).map((item) => ({
+      id: item.id || item.feature || null,
+      value: num(item.value || 0, 4)
+    })),
+    topNegativeFeatures: arr(pack.topNegativeFeatures || []).slice(0, 5).map((item) => ({
+      id: item.id || item.feature || null,
+      value: num(item.value || 0, 4)
+    })),
+    missingIndicatorFeatures: arr(missingFeatures).slice(0, 12),
+    missingIndicators: arr(pack.missingIndicators || []).slice(0, 8).map((item) => ({
+      id: item.id || item.indicator || null,
+      warmupCandles: item.warmupCandles || item.warmupCandlesRequired || null
+    }))
   };
 }
 
@@ -9554,6 +9590,7 @@ export class TradingBot {
       featureIntegrationAudit: this.runtime.ops?.featureIntegrationAudit || null,
         performanceDiagnosis: summarizePerformanceDiagnosis(report.performanceDiagnosis || {}),
         tradeQualityReview: report.tradeQualityReview || null,
+        tradeQualitySummary: report.tradeQualitySummary || report.tradeQualityReview || null,
         attribution: report.attribution || {},
         windows: Object.fromEntries(
           Object.entries(report.windows || {}).map(([name, stats]) => [name, this.buildPerformanceBucketView(stats)])
@@ -23130,6 +23167,10 @@ export class TradingBot {
     const rationale = positionView.entryRationale || {};
     const strategy = rationale.strategy || {};
     const exitIntelligence = positionView.latestExitIntelligence || {};
+    const dynamicExitLevels = positionView.dynamicExitLevelsAtEntry || rationale.dynamicExitLevels || null;
+    const exitIntelligenceV2 = exitIntelligence.exitIntelligenceV2 || null;
+    const exitQuality = exitIntelligence.exitQuality == null ? null : num(exitIntelligence.exitQuality, 4);
+    const currentExitRecommendation = exitIntelligence.currentExitRecommendation || exitIntelligence.contextualAction || exitIntelligence.action || "hold";
     return {
       id: positionView.id,
       symbol: positionView.symbol,
@@ -23144,6 +23185,9 @@ export class TradingBot {
       stopLossPrice: positionView.stopLossPrice,
       takeProfitPrice: positionView.takeProfitPrice,
       dynamicExitLevelsAtEntry: positionView.dynamicExitLevelsAtEntry || null,
+      dynamicExitLevels,
+      suggestedStopPct: dynamicExitLevels?.suggestedStopPct == null ? null : num(dynamicExitLevels.suggestedStopPct, 4),
+      suggestedTakeProfitPct: dynamicExitLevels?.suggestedTakeProfitPct == null ? null : num(dynamicExitLevels.suggestedTakeProfitPct, 4),
       unrealizedPnl: positionView.unrealizedPnl,
       unrealizedPnlPct: positionView.unrealizedPnlPct,
       regimeAtEntry: positionView.regimeAtEntry || null,
@@ -23175,8 +23219,8 @@ export class TradingBot {
         action: exitIntelligence.action || "hold",
         confidence: num(exitIntelligence.confidence || 0, 4),
         reason: exitIntelligence.reason || null,
-        exitQuality: exitIntelligence.exitQuality == null ? null : num(exitIntelligence.exitQuality, 4),
-        currentExitRecommendation: exitIntelligence.currentExitRecommendation || exitIntelligence.contextualAction || exitIntelligence.action || "hold",
+        exitQuality,
+        currentExitRecommendation,
         contextualAction: exitIntelligence.contextualAction || exitIntelligence.action || "hold",
         contextualPrimaryReason: exitIntelligence.contextualPrimaryReason || exitIntelligence.reason || null,
         continuationQuality: num(exitIntelligence.continuationQuality || 0, 4),
@@ -23184,8 +23228,11 @@ export class TradingBot {
         executionFragility: num(exitIntelligence.executionFragility || 0, 4),
         timeDecayScore: num(exitIntelligence.timeDecayScore || 0, 4),
         riskReasons: arr(exitIntelligence.riskReasons || []).slice(0, 3),
-        exitIntelligenceV2: exitIntelligence.exitIntelligenceV2 || null
+        exitIntelligenceV2
       },
+      exitIntelligenceV2,
+      exitQuality,
+      currentExitRecommendation,
       entryRationale: {
         summary: rationale.summary || null,
         setupStyle: rationale.setupStyle || null,
@@ -23202,7 +23249,7 @@ export class TradingBot {
         sessionBlockers: arr(rationale.sessionBlockers || rationale.session?.blockerReasons || []).slice(0, 2),
         headlines: arr(rationale.headlines || []).slice(0, 2).map((item) => item.title || item)
       },
-      dynamicExitLevels: positionView.dynamicExitLevelsAtEntry || rationale.dynamicExitLevels || null
+      dynamicExitLevels
     };
   }
 
@@ -23290,11 +23337,39 @@ export class TradingBot {
     const entryTimingRefinement = buildEntryTimingRefinementView(decision);
     const learningImpact = buildLearningImpactView(decision);
     const scannerPriority = buildScannerPriorityView(decision);
+    const market = decision.marketSnapshot?.market || {};
     const decisionSupportDiagnostics = decision.decisionSupportDiagnostics || buildDecisionSupportDiagnostics({
       candidate: decision,
       config: this.config || {},
       botMode: this.config?.botMode || "paper"
     });
+    const indicatorRegistry = summarizeIndicatorRegistry(
+      decision.indicatorRegistry ||
+      decision.indicatorRegistryContext ||
+      decision.signalQuality?.indicatorRegistryContext ||
+      decision.signalQualitySummary?.indicatorRegistryContext ||
+      market.indicatorRegistry ||
+      {}
+    );
+    const sectorRotationScore = decision.marketContext?.sectorRotationScore ??
+      decision.sectorRotationScore ??
+      decision.leadershipContext?.sectorRotationScore ??
+      decisionSupportDiagnostics.leadershipContext?.sectorRotationScore ??
+      market.sectorRotationScore;
+    const sectorRotationState = decision.marketContext?.sectorRotationState ??
+      decision.sectorRotationState ??
+      decision.leadershipContext?.sectorRotationState ??
+      decisionSupportDiagnostics.leadershipContext?.sectorRotationState ??
+      market.sectorRotationState ??
+      "neutral";
+    const sectorRotation = decision.marketContext?.sectorRotation || {
+      enabled: Boolean(this.config?.enableSectorRotation),
+      score: num(sectorRotationScore || 0, 4),
+      state: sectorRotationState || "neutral",
+      clusterRotationScore: num(market.clusterRotationScore || decision.marketContext?.clusterRotationScore || 0, 4),
+      clusterRotationState: market.clusterRotationState || decision.marketContext?.clusterRotationState || "neutral",
+      diagnosticOnly: true
+    };
     const structureContext = decision.structureContext || decision.signalQuality?.structureContext || decision.signalQualitySummary?.structureContext || {
       bos: decision.marketSnapshot?.market?.bullishBosActive ? "bullish" : decision.marketSnapshot?.market?.bearishBosActive ? "bearish" : "none",
       bosStrengthScore: num(decision.marketSnapshot?.market?.bosStrengthScore || 0, 4),
@@ -23436,6 +23511,11 @@ export class TradingBot {
       opportunityScore: num(decision.opportunityScore || 0, 4),
       expectedNetEdge,
       decisionSupportDiagnostics,
+      indicatorRegistry,
+      topPositiveFeatures: indicatorRegistry.topPositiveFeatures,
+      topNegativeFeatures: indicatorRegistry.topNegativeFeatures,
+      missingIndicatorFeatures: indicatorRegistry.missingIndicatorFeatures,
+      indicatorPackUsed: indicatorRegistry.indicatorPackUsed,
       netEdgeGate: decision.netEdgeGate || decisionSupportDiagnostics.netEdgeGate || null,
       failedBreakoutDetector: decision.failedBreakoutDetector || decisionSupportDiagnostics.failedBreakoutDetector || null,
       leadershipContext: decision.leadershipContext || decisionSupportDiagnostics.leadershipContext || null,
@@ -23445,7 +23525,10 @@ export class TradingBot {
         fundingOiMatrixStatus: decision.marketContext?.fundingOiMatrixStatus || decisionSupportDiagnostics.fundingOiMatrix?.status || null,
         spotFuturesDivergence: decision.marketContext?.spotFuturesDivergence || decisionSupportDiagnostics.spotFuturesDivergence || null,
         spotFuturesDivergenceStatus: decision.marketContext?.spotFuturesDivergenceStatus || decisionSupportDiagnostics.spotFuturesDivergence?.status || null,
-        btcEthLeadership: decision.marketContext?.btcEthLeadership || decisionSupportDiagnostics.leadershipContext || null
+        btcEthLeadership: decision.marketContext?.btcEthLeadership || decisionSupportDiagnostics.leadershipContext || null,
+        sectorRotation,
+        sectorRotationScore: num(sectorRotationScore || 0, 4),
+        sectorRotationState
       },
       marketProviders,
       entryTimingRefinement,
@@ -23722,6 +23805,16 @@ export class TradingBot {
       reason: tradeView.reason || null,
       reasonLabel: tradeView.reasonLabel || tradeView.reason || null,
       reasonNote: tradeView.reasonNote || null,
+      maximumFavorableExcursionPct: tradeView.maximumFavorableExcursionPct == null ? null : num(tradeView.maximumFavorableExcursionPct, 4),
+      maximumAdverseExcursionPct: tradeView.maximumAdverseExcursionPct == null ? null : num(tradeView.maximumAdverseExcursionPct, 4),
+      exitEfficiencyPct: tradeView.exitEfficiencyPct == null ? null : num(tradeView.exitEfficiencyPct, 4),
+      gaveBackPct: tradeView.gaveBackPct == null ? null : num(tradeView.gaveBackPct, 4),
+      bestPossibleExitPrice: tradeView.bestPossibleExitPrice == null ? null : num(tradeView.bestPossibleExitPrice, 6),
+      worstAdversePrice: tradeView.worstAdversePrice == null ? null : num(tradeView.worstAdversePrice, 6),
+      timeToMfeMinutes: tradeView.timeToMfeMinutes == null ? null : num(tradeView.timeToMfeMinutes, 2),
+      timeToMaeMinutes: tradeView.timeToMaeMinutes == null ? null : num(tradeView.timeToMaeMinutes, 2),
+      tradeQualityLabel: tradeView.tradeQualityLabel || null,
+      tradeQualityLabels: arr(tradeView.tradeQualityLabels || []).slice(0, 8),
       grossMovePnl: num(tradeView.grossMovePnl || 0, 2),
       totalFees: num(tradeView.totalFees || 0, 2),
       netAfterFees: num(tradeView.netAfterFees || 0, 2),
@@ -25456,6 +25549,7 @@ export class TradingBot {
           notes: []
         },
         tradeQualityReview: report.tradeQualityReview || null,
+        tradeQualitySummary: report.tradeQualitySummary || report.tradeQualityReview || null,
         featureIntegrationAudit,
         blockedSetupLifecycle: report.blockedSetupLifecycle || null,
         recentReviews: arr(report.recentReviews || []).slice(0, 12),

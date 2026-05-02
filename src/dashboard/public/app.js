@@ -749,6 +749,27 @@ function renderPositions(snapshot) {
       ]),
       makePositionGauge(position)
     );
+    const dynamicExitLevels = position.dynamicExitLevels || {};
+    const exitIntelligenceV2 = position.exitIntelligenceV2 || position.latestExitIntelligence?.exitIntelligenceV2 || {};
+    if (position.suggestedStopPct != null || position.suggestedTakeProfitPct != null || position.currentExitRecommendation) {
+      body.append(makeMetricRow([
+        {
+          label: "Dynamic stop",
+          value: position.suggestedStopPct != null ? formatPct(position.suggestedStopPct, 1) : "n/a",
+          detail: dynamicExitLevels.appliedMode ? titleize(dynamicExitLevels.appliedMode) : "diagnostic"
+        },
+        {
+          label: "Dynamic target",
+          value: position.suggestedTakeProfitPct != null ? formatPct(position.suggestedTakeProfitPct, 1) : "n/a",
+          detail: dynamicExitLevels.targetDriver ? titleize(dynamicExitLevels.targetDriver) : "-"
+        },
+        {
+          label: "Exit v2",
+          value: titleize(position.currentExitRecommendation || "hold"),
+          detail: position.exitQuality != null ? `quality ${formatPct(position.exitQuality, 0)}` : (exitIntelligenceV2.explanation?.primaryReason || "-")
+        }
+      ]));
+    }
     if (lifecycleLabel) {
       body.append(makeNode("p", { className: "position-lifecycle-hint", text: lifecycleLabel }));
     }
@@ -837,21 +858,36 @@ function renderRecentTrades(snapshot) {
     replaceChildren(elements.recentTradesList, [makeEmptyState(buildRecentTradeEmptyState(snapshot))]);
     return;
   }
-  replaceChildren(elements.recentTradesList, trades.slice(0, 5).map((trade) => makeCard({
-    title: trade.symbol || "-",
-    detail: compactJoin([
-      trade.brokerMode ? titleize(trade.brokerMode) : null,
-      trade.strategyLabel || trade.strategyAtEntry || null,
-      (trade.reasonLabel || trade.exitReason || trade.reason) ? `exit ${titleize(trade.reasonLabel || trade.exitReason || trade.reason)}` : null,
-      trade.exitAt ? formatDate(trade.exitAt) : null
-    ]),
-    body: makeMetricRow([
+  replaceChildren(elements.recentTradesList, trades.slice(0, 5).map((trade) => {
+    const body = makeNode("div");
+    body.append(makeMetricRow([
       { label: "PnL", value: formatMoney(trade.pnlQuote || 0), detail: formatSignedPct(trade.netPnlPct || 0, 1) },
       { label: "Entry", value: formatMoney(trade.entryPrice || 0) },
       { label: "Exit", value: formatMoney(trade.exitPrice || 0) }
-    ]),
-    tone: Number(trade.pnlQuote || 0) >= 0 ? "positive" : "negative"
-  }, "trade-card")));
+    ]));
+    if (trade.maximumFavorableExcursionPct != null || trade.maximumAdverseExcursionPct != null || trade.exitEfficiencyPct != null) {
+      body.append(makeMetricRow([
+        { label: "MFE", value: trade.maximumFavorableExcursionPct == null ? "n/a" : formatPct(trade.maximumFavorableExcursionPct, 1) },
+        { label: "MAE", value: trade.maximumAdverseExcursionPct == null ? "n/a" : formatPct(trade.maximumAdverseExcursionPct, 1) },
+        {
+          label: "Exit eff.",
+          value: trade.exitEfficiencyPct == null ? "n/a" : formatPct(trade.exitEfficiencyPct, 0),
+          detail: trade.tradeQualityLabel ? titleize(trade.tradeQualityLabel) : "-"
+        }
+      ]));
+    }
+    return makeCard({
+      title: trade.symbol || "-",
+      detail: compactJoin([
+        trade.brokerMode ? titleize(trade.brokerMode) : null,
+        trade.strategyLabel || trade.strategyAtEntry || null,
+        (trade.reasonLabel || trade.exitReason || trade.reason) ? `exit ${titleize(trade.reasonLabel || trade.exitReason || trade.reason)}` : null,
+        trade.exitAt ? formatDate(trade.exitAt) : null
+      ]),
+      body,
+      tone: Number(trade.pnlQuote || 0) >= 0 ? "positive" : "negative"
+    }, "trade-card");
+  }));
 }
 
 function buildOpportunityCards(snapshot) {
@@ -890,6 +926,8 @@ function renderOpportunityBoard(snapshot) {
   replaceChildren(elements.opportunityList, cards.map((decision) => {
     const support = decision.decisionSupportDiagnostics || {};
     const supportSummary = support.summary || {};
+    const indicatorRegistry = decision.indicatorRegistry || decision.indicators?.indicatorRegistry || {};
+    const sectorRotation = decision.marketContext?.sectorRotation || {};
     const tags = [
       makeTag(decision.allow ? "tradebaar" : "blocked", decision.allow ? "tag positive" : "tag negative"),
       decision.strategy?.strategyLabel ? makeTag(decision.strategy.strategyLabel) : null,
@@ -932,6 +970,31 @@ function renderOpportunityBoard(snapshot) {
           ]) || "-"
         }
       ])] : []),
+      makeMetricRow([
+        {
+          label: "Indicators",
+          value: indicatorRegistry.status ? titleize(indicatorRegistry.status) : "n/a",
+          detail: compactJoin([
+            indicatorRegistry.packId || null,
+            indicatorRegistry.qualityScore != null ? `q ${formatPct(indicatorRegistry.qualityScore, 0)}` : null,
+            arr(decision.missingIndicatorFeatures || indicatorRegistry.missingIndicatorFeatures || []).length
+              ? `${arr(decision.missingIndicatorFeatures || indicatorRegistry.missingIndicatorFeatures || []).length} missing`
+              : null
+          ]) || "-"
+        },
+        {
+          label: "Top feature",
+          value: arr(decision.topPositiveFeatures || indicatorRegistry.topPositiveFeatures || [])[0]?.id || "n/a",
+          detail: arr(decision.topNegativeFeatures || indicatorRegistry.topNegativeFeatures || [])[0]?.id
+            ? `risk ${arr(decision.topNegativeFeatures || indicatorRegistry.topNegativeFeatures || [])[0].id}`
+            : "-"
+        },
+        {
+          label: "Sector rotation",
+          value: sectorRotation.state ? titleize(sectorRotation.state) : "n/a",
+          detail: sectorRotation.score != null ? formatPct(sectorRotation.score, 0) : "-"
+        }
+      ]),
       makeSignalMiniChart(decision),
       makeTagList(tags)
     );

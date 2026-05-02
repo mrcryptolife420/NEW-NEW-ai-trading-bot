@@ -60,6 +60,21 @@ export async function registerDashboardSnapshotTests({
             appliedScopes: ["family:breakout", "session:us"],
             profile: { thresholdShift: -0.01 }
           }
+        },
+        marketSnapshot: {
+          market: {
+            sectorRotationScore: 0.72,
+            sectorRotationState: "leading",
+            indicatorRegistry: {
+              packId: "phase1_core_indicators",
+              status: "ready",
+              quality: { qualityScore: 0.82, missingFeatures: ["macdBearishDivergenceScore"] },
+              usedIndicators: ["ema_ribbon", "vwap_bands"],
+              topPositiveFeatures: [{ id: "emaRibbonExpansionScore", value: 0.41 }],
+              topNegativeFeatures: [{ id: "rsiBearishDivergenceScore", value: -0.22 }]
+            }
+          },
+          book: {}
         }
       }],
       latestBlockedSetups: [],
@@ -73,7 +88,22 @@ export async function registerDashboardSnapshotTests({
         entryAt: "2026-04-21T00:00:00.000Z",
         manualReviewRequired: true,
         lifecycleState: "manual_review",
-        operatorMode: "manual_review"
+        operatorMode: "manual_review",
+        dynamicExitLevelsAtEntry: {
+          appliedMode: "paper",
+          suggestedStopPct: 0.018,
+          suggestedTakeProfitPct: 0.042
+        },
+        latestExitIntelligence: {
+          action: "trail",
+          exitQuality: 0.77,
+          currentExitRecommendation: "trail",
+          exitIntelligenceV2: {
+            version: "exit_intelligence_v2",
+            currentExitRecommendation: "trail",
+            exitQualityScore: 0.77
+          }
+        }
       }],
       signalFlow: { dashboardFeedFailures: 1 },
       orderLifecycle: { pendingActions: [{ id: "pos-1", symbol: "BTCUSDT", state: "manual_review", updatedAt: "2026-04-21T00:00:00.000Z" }] },
@@ -113,7 +143,31 @@ export async function registerDashboardSnapshotTests({
     bot.safeRefreshScannerSnapshot = async () => ({});
     bot.shouldRefreshPortfolioSnapshot = () => false;
     bot.getPerformanceReport = () => ({
-      recentTrades: [],
+      recentTrades: [{
+        id: "trade-1",
+        symbol: "SOLUSDT",
+        brokerMode: "paper",
+        entryAt: "2026-04-21T00:00:00.000Z",
+        exitAt: "2026-04-21T00:30:00.000Z",
+        entryPrice: 100,
+        exitPrice: 104,
+        quantity: 1,
+        totalCost: 100,
+        proceeds: 104,
+        pnlQuote: 3.8,
+        netPnlPct: 0.038,
+        maximumFavorableExcursionPct: 0.06,
+        maximumAdverseExcursionPct: -0.012,
+        exitEfficiencyPct: 0.63,
+        gaveBackPct: 0.02,
+        tradeQualityLabel: "good_entry_good_exit"
+      }],
+      tradeQualityReview: {
+        tradeCount: 1,
+        averageMfePct: 0.06,
+        averageMaePct: -0.012,
+        averageExitEfficiencyPct: 0.63
+      },
       openExposureReview: { manualReviewCount: 1, protectOnlyCount: 0, notes: [] },
       executionSummary: {},
       executionCostSummary: {}
@@ -148,11 +202,22 @@ export async function registerDashboardSnapshotTests({
     assert.equal(snapshot.ops.marketProviders.status, "ready");
     assert.equal(snapshot.topDecisions[0].entryDiagnostics.marketProviders.status, "ready");
     assert.equal(snapshot.topDecisions[0].entryDiagnostics.policyProfile.status, "scoped");
+    assert.equal(snapshot.topDecisions[0].indicatorRegistry.packId, "phase1_core_indicators");
+    assert.equal(snapshot.topDecisions[0].topPositiveFeatures[0].id, "emaRibbonExpansionScore");
+    assert.equal(snapshot.topDecisions[0].missingIndicatorFeatures[0], "macdBearishDivergenceScore");
+    assert.equal(snapshot.topDecisions[0].marketContext.sectorRotation.state, "leading");
+    assert.equal(snapshot.positions[0].suggestedStopPct, 0.018);
+    assert.equal(snapshot.positions[0].currentExitRecommendation, "trail");
+    assert.equal(snapshot.positions[0].exitIntelligenceV2.currentExitRecommendation, "trail");
+    assert.equal(snapshot.report.recentTrades[0].maximumFavorableExcursionPct, 0.06);
+    assert.equal(snapshot.report.recentTrades[0].maximumAdverseExcursionPct, -0.012);
+    assert.equal(snapshot.report.recentTrades[0].exitEfficiencyPct, 0.63);
+    assert.equal(snapshot.report.tradeQualitySummary.averageExitEfficiencyPct, 0.63);
     assert.equal(snapshot.featureIntegrationAudit.status, "review_required");
     assert.equal(snapshot.ops.featureIntegrationAudit.status, "review_required");
     assert.equal(snapshot.report.featureIntegrationAudit.status, "review_required");
     assert.ok(snapshot.featureIntegrationAudit.topP1.some((item) => item.id === "net_edge_gate"));
-    assert.ok(snapshot.featureIntegrationAudit.topMissingDashboard.some((item) => item.id === "indicator_feature_registry"));
+    assert.equal(snapshot.featureIntegrationAudit.classificationCounts.missing_dashboard || 0, 0);
     assert.equal(snapshot.topDecisions[0].decisionSupportDiagnostics.status, "disabled");
     assert.equal(snapshot.ops.riskLocks.manualReviewPending, true);
     assert.ok(snapshot.ops.audit);

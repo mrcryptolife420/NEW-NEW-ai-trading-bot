@@ -56,10 +56,9 @@ Acceptance:
 
 ## Later batches
 
-1. Dashboard/read-model visibility for all P3 items.
-2. Diagnostics-only runtime wiring for P1/P2 items behind existing flags.
-3. Paper/shadow-only behavior after replay evidence.
-4. Live review for stricter-only changes; no live threshold relief or safety weakening.
+1. Diagnostics/read-model refinement for remaining audit-only flags and generic config-only items.
+2. Paper/shadow-only behavior after replay evidence.
+3. Live review for stricter-only changes; no live threshold relief or safety weakening.
 
 ## Batch 3: diagnostics-only runtime wiring
 
@@ -85,3 +84,26 @@ Status after Batch 3:
 - `failed_breakout_detector`, `funding_oi_matrix`, `spot_futures_divergence`, and `leadership_context` are complete by the audit contract for diagnostics visibility.
 - `net_edge_gate` is diagnostically wired, but remains `live_risk_review_needed` before any live blocking behavior can be treated as active.
 - Remaining `missing_dashboard` items are P3/P4 surfaces such as indicator registry detail, dynamic exit suggestions, exit intelligence v2, trade quality analytics, and sector rotation.
+
+## Batch 4: remaining P3 dashboard visibility
+
+Batch 4 exposes the remaining P3 surfaces without changing trading behavior:
+
+- `indicator_feature_registry`: candidate cards now carry `indicatorRegistry`, `topPositiveFeatures`, `topNegativeFeatures`, `missingIndicatorFeatures`, and `indicatorPackUsed`.
+- `dynamic_exit_levels`: open-position cards now carry `dynamicExitLevels`, `suggestedStopPct`, and `suggestedTakeProfitPct`.
+- `exit_intelligence_v2`: open-position cards now carry `exitIntelligenceV2`, `exitQuality`, and `currentExitRecommendation`.
+- `trade_quality_analytics`: recent-trade cards and report snapshots now carry MFE, MAE, exit efficiency, give-back, and `tradeQualitySummary`.
+- `sector_rotation`: decision market context now carries `sectorRotation`, `sectorRotationScore`, and `sectorRotationState`.
+
+The contract remains read-only:
+
+- no entry permissioning changes
+- no threshold changes
+- no sizing changes
+- no execution style changes
+- no live safety changes
+
+Status after Batch 4:
+
+- `feature:audit` reports no `missing_dashboard` classifications for the audited feature-completion targets.
+- Remaining review items are live-risk-review or broader config/test hygiene, not missing operator visibility for the audited features.
