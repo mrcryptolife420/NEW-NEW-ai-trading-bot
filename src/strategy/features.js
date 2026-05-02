@@ -72,6 +72,7 @@ function strategyFlags(strategySummary = {}) {
     strategy_family_orderflow: family === "orderflow" ? 1 : 0,
     strategy_family_range_grid: family === "range_grid" ? 1 : 0,
     strategy_ema_trend: active === "ema_trend" ? 1 : 0,
+    strategy_breakout_retest: active === "breakout_retest" ? 1 : 0,
     strategy_donchian_breakout: active === "donchian_breakout" ? 1 : 0,
     strategy_vwap_trend: active === "vwap_trend" ? 1 : 0,
     strategy_bollinger_squeeze: active === "bollinger_squeeze" ? 1 : 0,
@@ -168,6 +169,19 @@ export function buildFeatureVector({
     ].filter((value) => Number.isFinite(value)),
     0.5
   );
+  const strategyMetrics = strategySummary.metrics || {};
+  const breakoutRetestQuality = Number.isFinite(strategyMetrics.retestQuality)
+    ? strategyMetrics.retestQuality
+    : marketFeatures.breakoutRetestQuality;
+  const breakoutRetestReclaim = Number.isFinite(strategyMetrics.reclaimScore)
+    ? strategyMetrics.reclaimScore
+    : marketFeatures.breakoutRetestReclaimScore;
+  const breakoutRetestDistancePct = Number.isFinite(strategyMetrics.retestDistancePct)
+    ? strategyMetrics.retestDistancePct
+    : marketFeatures.breakoutRetestDistancePct;
+  const falseBreakoutRisk = Number.isFinite(strategyMetrics.falseBreakoutRisk)
+    ? strategyMetrics.falseBreakoutRisk
+    : marketFeatures.falseBreakoutRisk;
   const executionQualityComposite = average(
     [
       bookFeatures.depthConfidence,
@@ -270,6 +284,10 @@ export function buildFeatureVector({
     volume_acceptance: clamp((marketFeatures.volumeAcceptanceScore || 0) * 3, 0, 3),
     acceptance_quality: clamp(acceptanceQuality * 3, 0, 3),
     breakout_quality_composite: clamp(breakoutQualityComposite * 3, 0, 3),
+    breakout_retest_quality: clamp((breakoutRetestQuality || 0) * 3, 0, 3),
+    breakout_retest_reclaim: clamp((breakoutRetestReclaim || 0) * 3, 0, 3),
+    breakout_retest_distance: clamp((breakoutRetestDistancePct || 0) * 160, 0, 4),
+    breakout_false_breakout_risk: clamp((falseBreakoutRisk || 0) * 3, 0, 3),
     bullish_fvg_active: marketFeatures.bullishFvgActive ? 1 : 0,
     bearish_fvg_active: marketFeatures.bearishFvgActive ? 1 : 0,
     fvg_fill_progress: clamp((marketFeatures.fvgFillProgress || 0) * 3, 0, 3),

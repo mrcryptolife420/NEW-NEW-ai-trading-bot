@@ -7,6 +7,7 @@ export const STRATEGY_META = {
   trend_following: { label: "Trend following composite", family: "trend_following", familyLabel: "Trend following", setupStyle: "trend_following" },
   ema_trend: { label: "EMA trend", family: "trend_following", familyLabel: "Trend following", setupStyle: "ema_trend" },
   trend_pullback_reclaim: { label: "Trend pullback reclaim", family: "trend_following", familyLabel: "Trend following", setupStyle: "trend_pullback_reclaim" },
+  breakout_retest: { label: "Breakout retest", family: "breakout", familyLabel: "Breakout", setupStyle: "breakout_retest" },
   donchian_breakout: { label: "Donchian breakout", family: "breakout", familyLabel: "Breakout", setupStyle: "donchian_breakout" },
   vwap_trend: { label: "VWAP trend", family: "trend_following", familyLabel: "Trend following", setupStyle: "vwap_trend" },
   bollinger_squeeze: { label: "Bollinger squeeze", family: "breakout", familyLabel: "Breakout", setupStyle: "bollinger_squeeze" },
@@ -670,6 +671,157 @@ function evaluateBreakout(context) {
     safeValue(context.marketSnapshot?.book?.bookPressure) < -0.22 ? "sell_pressure" : null,
     bearishPattern > 0.68 ? "bearish_pattern_conflict" : null
   ], { regimeFit, breakoutImpulse, compression, squeeze, keltnerSqueeze, squeezeRelease, participation, acceptanceQuality, relativeStrength, bosSupport, fvgSupport, cvdSupport, releaseScore: breakoutContext.releaseScore, chopRisk: breakoutContext.chopRisk, falseBreakoutRisk: breakoutContext.falseBreakoutRisk });
+}
+
+function evaluateBreakoutRetest(context) {
+  const inputs = buildInputs(context);
+  const {
+    market,
+    book,
+    stream,
+    regime,
+    eventRisk,
+    orderflow,
+    bullishPattern,
+    bearishPattern,
+    relativeStrength,
+    downsideVolDominance,
+    acceptanceQuality,
+    replenishmentQuality
+  } = inputs;
+  const breakoutContext = buildBreakoutContextState({ ...inputs, orderflow });
+  const entryPrice = safeValue(book.mid) || safeValue(book.ask) || safeValue(market.close) || safeValue(market.lastPrice);
+  const explicitLevel = safeValue(market.priorRangeHigh) || safeValue(market.rangeHigh) || safeValue(market.donchianUpper) || safeValue(market.swingHighPrice);
+  const breakoutPct = Math.max(safeValue(market.breakoutPct), safeValue(market.donchianBreakoutPct), 0);
+  const inferredLevel = entryPrice > 0 && breakoutPct > 0 ? entryPrice / (1 + breakoutPct) : 0;
+  const breakoutLevel = explicitLevel || inferredLevel;
+  const retestDistancePct = breakoutLevel > 0 && entryPrice > 0 ? Math.abs(entryPrice - breakoutLevel) / entryPrice : 1;
+  const atrPct = Math.max(safeValue(market.atrPct), safeValue(market.realizedVolPct) * 0.35, 0.0025);
+  const maxRetestDistancePct = clamp(Math.max(atrPct * 0.65, safeValue(market.donchianWidthPct) * 0.18, 0.0035), 0.0035, 0.014);
+  const nearBreakoutLevel = retestDistancePct <= maxRetestDistancePct ? 1 : 0;
+  const reclaimed = breakoutLevel > 0 && entryPrice >= breakoutLevel * 0.9985;
+  const breakoutEvidence = clamp(
+    ratio(breakoutPct * 100, 0.03, 1.35) * 0.28 +
+      ratio(safeValue(market.breakoutFollowThroughScore), 0.32, 0.9) * 0.2 +
+      ratio(safeValue(market.volumeZ), 0.25, 2.7) * 0.18 +
+      ratio(safeValue(market.relativeVolumeByUtcHour), 1.02, 1.7) * 0.1 +
+      ratio(safeValue(market.volumeAcceptanceScore), 0.36, 0.88) * 0.12 +
+      ratio(safeValue(market.bosStrengthScore), 0.08, 0.9) * 0.12,
+    0,
+    1
+  );
+  const volumeExpansion = clamp(
+    ratio(safeValue(market.volumeZ), 0.35, 2.5) * 0.55 +
+      ratio(safeValue(market.relativeVolumeByUtcHour), 1.05, 1.75) * 0.25 +
+      ratio(safeValue(market.volumeAcceptanceScore), 0.4, 0.9) * 0.2,
+    0,
+    1
+  );
+  const orderflowBearish = Math.max(
+    ratio(-safeValue(book.bookPressure), 0.12, 0.48),
+    ratio(-safeValue(stream.tradeFlowImbalance), 0.12, 0.55),
+    ratio(safeValue(market.cvdDivergenceScore), 0.42, 0.84),
+    ratio(safeValue(market.orderflowToxicityScore), 0.55, 0.9)
+  );
+  const orderflowSupport = clamp(1 - orderflowBearish, 0, 1);
+  const executionFragility = Math.max(
+    ratio(safeValue(book.spreadBps), 8, 22),
+    ratio(safeValue(book.entryEstimate?.expectedImpactBps), 6, 24),
+    ratio(0.45 - safeValue(book.depthConfidence), 0.02, 0.32)
+  );
+  const reclaimScore = clamp(
+    (reclaimed ? 0.28 : 0) +
+      nearBreakoutLevel * 0.18 +
+      ratio(safeValue(market.closeLocation), 0.5, 0.82) * 0.16 +
+      ratio(safeValue(market.closeLocationQuality), 0.42, 0.9) * 0.12 +
+      ratio(safeValue(market.anchoredVwapAcceptanceScore), 0.35, 0.85) * 0.12 +
+      acceptanceQuality * 0.08 +
+      orderflowSupport * 0.06,
+    0,
+    1
+  );
+  const chaseRisk = retestDistancePct > maxRetestDistancePct && entryPrice > breakoutLevel ? ratio(retestDistancePct, maxRetestDistancePct, maxRetestDistancePct * 3.5) : 0;
+  const falseBreakoutRisk = clamp(
+    breakoutContext.falseBreakoutRisk * 0.34 +
+      orderflowBearish * 0.24 +
+      executionFragility * 0.14 +
+      chaseRisk * 0.16 +
+      bearishPattern * 0.08 +
+      eventRisk * 0.04,
+    0,
+    1
+  );
+  const retestQuality = clamp(
+    breakoutEvidence * 0.22 +
+      volumeExpansion * 0.15 +
+      reclaimScore * 0.28 +
+      orderflowSupport * 0.15 +
+      acceptanceQuality * 0.08 +
+      replenishmentQuality * 0.05 +
+      ratio(relativeStrength * 100, -0.3, 2.8) * 0.05 +
+      (breakoutContext.bullishBos ? 0.02 : 0) -
+      falseBreakoutRisk * 0.2,
+    0,
+    1
+  );
+  const regimeFit = regime === "breakout" ? 1 : regime === "trend" ? 0.72 : regime === "high_vol" ? 0.52 : 0.28;
+  const score = clamp(
+    regimeFit * 0.12 +
+      breakoutEvidence * 0.18 +
+      volumeExpansion * 0.1 +
+      reclaimScore * 0.22 +
+      retestQuality * 0.18 +
+      orderflowSupport * 0.08 +
+      acceptanceQuality * 0.06 +
+      replenishmentQuality * 0.04 +
+      bullishPattern * 0.03 -
+      falseBreakoutRisk * 0.18 -
+      chaseRisk * 0.14 -
+      Math.max(0, downsideVolDominance) * 0.06 -
+      eventRisk * 0.06 -
+      bearishPattern * 0.06,
+    0,
+    1
+  );
+  const confidence = clamp(
+    0.26 +
+      average([regimeFit, breakoutEvidence, volumeExpansion, reclaimScore, retestQuality, orderflowSupport, acceptanceQuality], 0) * 0.56 -
+      falseBreakoutRisk * 0.1 -
+      chaseRisk * 0.07 -
+      executionFragility * 0.05,
+    0,
+    1
+  );
+  return buildStrategy("breakout_retest", score, confidence, [
+    `level ${breakoutLevel > 0 ? breakoutLevel.toFixed(6) : "n/a"}`,
+    `retest ${(retestDistancePct * 100).toFixed(2)}%`,
+    `reclaim ${(reclaimScore * 100).toFixed(0)}%`,
+    `quality ${(retestQuality * 100).toFixed(0)}%`,
+    orderflowSupport >= 0.5 ? "orderflow_not_bearish" : "orderflow_bearish",
+    volumeExpansion >= 0.5 ? "volume_expansion" : "volume_needs_expansion"
+  ], [
+    breakoutEvidence < 0.42 ? "breakout_not_confirmed" : null,
+    volumeExpansion < 0.38 ? "volume_expansion_missing" : null,
+    chaseRisk > 0.36 ? "no_retest_chase_block" : null,
+    !reclaimed || reclaimScore < 0.46 ? "reclaim_not_confirmed" : null,
+    orderflowBearish > 0.52 ? "bearish_orderflow" : null,
+    executionFragility > 0.58 ? "execution_too_fragile" : null,
+    falseBreakoutRisk > 0.58 ? "false_breakout_risk" : null
+  ], {
+    breakoutLevel,
+    retestDistancePct,
+    maxRetestDistancePct,
+    reclaimScore,
+    falseBreakoutRisk,
+    retestQuality,
+    breakoutEvidence,
+    volumeExpansion,
+    orderflowSupport,
+    orderflowBearish,
+    executionFragility,
+    chaseRisk,
+    regimeFit
+  });
 }
 
 function evaluateMeanReversion(context) {
@@ -1435,6 +1587,7 @@ function evaluateOrderbookImbalance(context) {
 }
 
 export function evaluateStrategySet(context) {
+  const botMode = context?.botMode || context?.config?.botMode || "paper";
   const baseStrategies = [
     evaluateBreakout(context),
     evaluateMeanReversion(context),
@@ -1454,6 +1607,12 @@ export function evaluateStrategySet(context) {
     evaluateOpenInterestBreakout(context),
     evaluateOrderbookImbalance(context)
   ];
+  if (
+    context?.config?.enableBreakoutRetestStrategy === true &&
+    (context?.config?.breakoutRetestPaperOnly !== true || botMode === "paper")
+  ) {
+    baseStrategies.push(evaluateBreakoutRetest(context));
+  }
   if (context?.config?.enableRangeGridStrategy !== false) {
     baseStrategies.push(evaluateRangeGridReversion(context));
   }
@@ -1486,6 +1645,7 @@ export function evaluateStrategySet(context) {
     selectionScore: active?.selectionScore ?? active?.fitScore ?? 0,
     score: active?.score || 0,
     confidence,
+    metrics: active?.metrics || {},
     agreementGap,
     reasons: [...(active?.reasons || [])],
     blockers: [...(active?.blockers || [])],

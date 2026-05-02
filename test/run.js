@@ -159,6 +159,7 @@ import { registerIndicatorFeatureRegistryTests } from "./indicatorFeatureRegistr
 import { registerExitIntelligenceV2Tests } from "./exitIntelligenceV2.tests.js";
 import { registerTradeQualityAnalyticsTests } from "./tradeQualityAnalytics.tests.js";
 import { registerDynamicExitLevelsTests } from "./dynamicExitLevels.tests.js";
+import { registerBreakoutRetestStrategyTests } from "./breakoutRetestStrategy.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -278,6 +279,8 @@ function makeConfig(overrides = {}) {
     enablePriceActionStructure: true,
     enableCvdConfirmation: true,
     enableLiquidationMagnetContext: true,
+    enableBreakoutRetestStrategy: false,
+    breakoutRetestPaperOnly: true,
     enableRangeGridStrategy: true,
     enableLiveRangeGrid: false,
     maxGridLegs: 3,
@@ -32345,6 +32348,12 @@ await registerTradeQualityAnalyticsTests({
 });
 
 await registerDynamicExitLevelsTests({
+  runCheck,
+  assert,
+  makeConfig
+});
+
+await registerBreakoutRetestStrategyTests({
   runCheck,
   assert,
   makeConfig
