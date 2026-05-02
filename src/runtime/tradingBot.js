@@ -2013,6 +2013,7 @@ function summarizeAttributionSnapshot(snapshot = {}) {
 }
 
 function summarizeExitIntelligence(summary = {}) {
+  const exitV2 = summary.exitIntelligenceV2 || {};
   return {
     action: summary.action || "hold",
     reason: summary.reason || null,
@@ -2027,6 +2028,8 @@ function summarizeExitIntelligence(summary = {}) {
     progressToScaleOut: num(summary.progressToScaleOut || 0, 4),
     suggestedStopLossPrice: num(summary.suggestedStopLossPrice || 0, 6),
     shouldTightenStop: Boolean(summary.shouldTightenStop),
+    exitQuality: summary.exitQuality == null ? null : num(summary.exitQuality, 4),
+    currentExitRecommendation: summary.currentExitRecommendation || exitV2.currentExitRecommendation || summary.contextualAction || summary.action || "hold",
     contextualAction: summary.contextualAction || summary.action || "hold",
     contextualPrimaryReason: summary.contextualPrimaryReason || summary.reason || null,
     contextualConfidence: num(summary.contextualConfidence || summary.confidence || 0, 4),
@@ -2054,6 +2057,30 @@ function summarizeExitIntelligence(summary = {}) {
       exitScore: num(summary.neural?.exitScore || 0, 4),
       drivers: arr(summary.neural?.drivers || []).slice(0, 4)
     },
+    exitIntelligenceV2: exitV2.version ? {
+      version: exitV2.version,
+      currentExitRecommendation: exitV2.currentExitRecommendation || "hold",
+      exitQualityScore: num(exitV2.exitQualityScore || 0, 4),
+      structureInvalidationScore: num(exitV2.structureInvalidationScore || 0, 4),
+      vwapLossScore: num(exitV2.vwapLossScore || 0, 4),
+      orderflowReversalScore: num(exitV2.orderflowReversalScore || 0, 4),
+      btcShockExitScore: num(exitV2.btcShockExitScore || 0, 4),
+      fundingOiCrowdingFlipScore: num(exitV2.fundingOiCrowdingFlipScore || 0, 4),
+      timeDecayScore: num(exitV2.timeDecayScore || 0, 4),
+      trailingProtectionScore: num(exitV2.trailingProtectionScore || 0, 4),
+      partialTakeProfitScore: num(exitV2.partialTakeProfitScore || 0, 4),
+      fullExitScore: num(exitV2.fullExitScore || 0, 4),
+      suggestedStops: exitV2.suggestedStops || {},
+      suggestedTargets: exitV2.suggestedTargets || {},
+      reasons: arr(exitV2.reasons || []).slice(0, 5),
+      explanation: {
+        primaryReason: exitV2.explanation?.primaryReason || null,
+        whyHold: arr(exitV2.explanation?.whyHold || []).slice(0, 3),
+        whyTrim: arr(exitV2.explanation?.whyTrim || []).slice(0, 3),
+        whyTrail: arr(exitV2.explanation?.whyTrail || []).slice(0, 3),
+        whyExit: arr(exitV2.explanation?.whyExit || []).slice(0, 3)
+      }
+    } : null,
     nextReviewBias: summary.nextReviewBias || "hold"
   };
 }
@@ -20665,6 +20692,26 @@ export class TradingBot {
           parameterGovernorSummary: this.runtime.parameterGovernor || {},
           nowIso: nowIso()
         });
+        const enrichedExitIntelligenceSummary = {
+          ...exitIntelligenceSummary,
+          exitIntelligenceV2: exitDecision.exitIntelligenceV2 || exitIntelligenceSummary.exitIntelligenceV2 || null,
+          exitQuality: exitDecision.exitQuality ?? exitIntelligenceSummary.exitQuality ?? null,
+          currentExitRecommendation: exitDecision.currentExitRecommendation || exitIntelligenceSummary.currentExitRecommendation || exitIntelligenceSummary.contextualAction || exitIntelligenceSummary.action || "hold",
+          suggestedStopLossPrice: exitDecision.suggestedStopLossPrice || exitIntelligenceSummary.suggestedStopLossPrice || null,
+          shouldTightenStop: Boolean(exitDecision.shouldTightenStop || exitIntelligenceSummary.shouldTightenStop)
+        };
+        if (
+          enrichedExitIntelligenceSummary.shouldTightenStop &&
+          enrichedExitIntelligenceSummary.suggestedStopLossPrice > (position.stopLossPrice || 0) &&
+          enrichedExitIntelligenceSummary.suggestedStopLossPrice < marketSnapshot.book.mid
+        ) {
+          position.stopLossPrice = enrichedExitIntelligenceSummary.suggestedStopLossPrice;
+          this.recordEvent("position_stop_tightened", {
+            symbol: position.symbol,
+            stopLossPrice: position.stopLossPrice,
+            reason: exitDecision.exitIntelligenceV2 ? "exit_intelligence_v2_trail" : (exitIntelligenceSummary.reason || "protect_winner")
+          });
+        }
         position.highestPrice = exitDecision.updatedHigh;
         position.lowestPrice = exitDecision.updatedLow;
         position.lastMarkedPrice = marketSnapshot.book.mid;
@@ -20676,7 +20723,7 @@ export class TradingBot {
         position.latestTimeframeSummary = timeframeSummary;
         position.latestOnChainLiteSummary = onChainLiteSummary;
         position.latestMarketConditionSummary = marketConditionSummary;
-        position.latestExitIntelligence = exitIntelligenceSummary;
+        position.latestExitIntelligence = enrichedExitIntelligenceSummary;
         position.latestExitPolicy = exitDecision.exitPolicy || null;
         position.replayCheckpoints = arr(position.replayCheckpoints || []);
         position.replayCheckpoints.push({ at: nowIso(), price: num(marketSnapshot.book.mid, 6), spreadBps: num(marketSnapshot.book.spreadBps || 0, 2), bookPressure: num(marketSnapshot.book.bookPressure || 0, 3), newsRisk: num(newsSummary.riskScore || 0, 3), tfAlignment: num(timeframeSummary.alignmentScore || 0, 4), onChainStress: num(onChainLiteSummary.stressScore || 0, 4) });
@@ -20714,7 +20761,7 @@ export class TradingBot {
             runtime: this.runtime
           });
           if (scaleOut?.closedTrade) {
-            scaleOut.closedTrade.exitIntelligenceSummary = exitIntelligenceSummary;
+            scaleOut.closedTrade.exitIntelligenceSummary = enrichedExitIntelligenceSummary;
             scaleOut.closedTrade.replayCheckpoints = arr(position.replayCheckpoints || []);
             this.journal.trades.push(scaleOut.closedTrade);
             this.markReportDirty();
@@ -20757,7 +20804,7 @@ export class TradingBot {
           reason: exitDecision.reason,
           runtime: this.runtime
         });
-        trade.exitIntelligenceSummary = exitIntelligenceSummary;
+        trade.exitIntelligenceSummary = enrichedExitIntelligenceSummary;
         trade.replayCheckpoints = arr(position.replayCheckpoints || []);
         this.journal.trades.push(trade);
         this.markReportDirty();
@@ -23002,13 +23049,16 @@ export class TradingBot {
         action: exitIntelligence.action || "hold",
         confidence: num(exitIntelligence.confidence || 0, 4),
         reason: exitIntelligence.reason || null,
+        exitQuality: exitIntelligence.exitQuality == null ? null : num(exitIntelligence.exitQuality, 4),
+        currentExitRecommendation: exitIntelligence.currentExitRecommendation || exitIntelligence.contextualAction || exitIntelligence.action || "hold",
         contextualAction: exitIntelligence.contextualAction || exitIntelligence.action || "hold",
         contextualPrimaryReason: exitIntelligence.contextualPrimaryReason || exitIntelligence.reason || null,
         continuationQuality: num(exitIntelligence.continuationQuality || 0, 4),
         structureDeterioration: num(exitIntelligence.structureDeterioration || 0, 4),
         executionFragility: num(exitIntelligence.executionFragility || 0, 4),
         timeDecayScore: num(exitIntelligence.timeDecayScore || 0, 4),
-        riskReasons: arr(exitIntelligence.riskReasons || []).slice(0, 3)
+        riskReasons: arr(exitIntelligence.riskReasons || []).slice(0, 3),
+        exitIntelligenceV2: exitIntelligence.exitIntelligenceV2 || null
       },
       entryRationale: {
         summary: rationale.summary || null,

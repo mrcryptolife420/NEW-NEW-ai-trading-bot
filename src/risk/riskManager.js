@@ -15,6 +15,7 @@ import { buildPermissioningScore } from "./policies/governancePolicy.js";
 import { buildSizingPolicySummary } from "./policies/sizingPolicy.js";
 import { buildRecoveryProbePolicy, isRecoveryProbeSoftBlocker } from "./policies/recoveryProbePolicy.js";
 import { resolvePolicyProfile } from "./policyProfiles.js";
+import { buildExitIntelligenceV2 } from "./exitIntelligenceV2.js";
 import { resolveRangeGridLifecycleFromTrades } from "../strategy/strategyLifecycleGovernance.js";
 
 function safeValue(value, fallback = 0) {
@@ -6661,6 +6662,55 @@ export class RiskManager {
         (1 - contextExitUrgency * 0.5)
       )
     );
+    const exitIntelligenceV2 = this.config.enableExitIntelligence === false
+      ? null
+      : buildExitIntelligenceV2({
+          position,
+          currentPrice,
+          marketSnapshot,
+          marketStructureSummary,
+          newsSummary,
+          announcementSummary,
+          calendarSummary,
+          exitIntelligenceSummary,
+          config: this.config,
+          nowIso
+        });
+    const withExitV2 = (decision = {}) => {
+      if (!exitIntelligenceV2) {
+        return decision;
+      }
+      const suggestedStopLossPrice = safeValue(exitIntelligenceV2.suggestedStops?.tightenedStopPrice, 0);
+      const shouldTightenStop = Boolean(
+        decision.shouldTightenStop ||
+        (
+          exitIntelligenceV2.currentExitRecommendation === "trail" &&
+          suggestedStopLossPrice > safeValue(position.stopLossPrice, 0) &&
+          suggestedStopLossPrice < currentPrice
+        )
+      );
+      return {
+        ...decision,
+        suggestedStopLossPrice: decision.suggestedStopLossPrice || (shouldTightenStop ? suggestedStopLossPrice : null),
+        shouldTightenStop,
+        exitQuality: exitIntelligenceV2.exitQualityScore,
+        currentExitRecommendation: exitIntelligenceV2.currentExitRecommendation,
+        exitIntelligenceV2,
+        exitContext: {
+          ...(decision.exitContext || {}),
+          exitV2: {
+            fullExitScore: exitIntelligenceV2.fullExitScore,
+            partialTakeProfitScore: exitIntelligenceV2.partialTakeProfitScore,
+            trailingProtectionScore: exitIntelligenceV2.trailingProtectionScore,
+            structureInvalidationScore: exitIntelligenceV2.structureInvalidationScore,
+            vwapLossScore: exitIntelligenceV2.vwapLossScore,
+            orderflowReversalScore: exitIntelligenceV2.orderflowReversalScore,
+            currentExitRecommendation: exitIntelligenceV2.currentExitRecommendation,
+            primaryReason: exitIntelligenceV2.explanation?.primaryReason || null
+          }
+        }
+      };
+    };
     const isRangeGrid = (position.strategyFamily || position.strategyDecision?.family || position.entryRationale?.strategy?.family || "") === "range_grid" || Boolean(position.gridContext?.gridMode);
     const gridContext = position.gridContext || {};
     if (isRangeGrid) {
@@ -6673,16 +6723,16 @@ export class RiskManager {
           ? Math.min(rangeMid, oppositeBand * 1.08)
           : rangeMid;
       if ((marketStructureSummary.liquidationTrapRisk || 0) >= 0.52) {
-        return { shouldExit: true, shouldScaleOut: false, reason: "grid_liquidation_trap_exit", updatedHigh, updatedLow };
+        return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "grid_liquidation_trap_exit", updatedHigh, updatedLow });
       }
       if ((marketSnapshot.market?.bullishBosActive || 0) > 0 || (marketSnapshot.market?.bearishBosActive || 0) > 0) {
-        return { shouldExit: true, shouldScaleOut: false, reason: "grid_bos_invalidation_exit", updatedHigh, updatedLow };
+        return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "grid_bos_invalidation_exit", updatedHigh, updatedLow });
       }
       if (["range_break_risk", "breakout_release"].includes(position.marketConditionAtEntry || "") && heldMinutes >= Math.max(12, Math.round(effectiveMaxHoldMinutes * 0.35))) {
-        return { shouldExit: true, shouldScaleOut: false, reason: "grid_regime_shift_exit", updatedHigh, updatedLow };
+        return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "grid_regime_shift_exit", updatedHigh, updatedLow });
       }
       if (currentPrice >= gridTakeProfit) {
-        return { shouldExit: true, shouldScaleOut: false, reason: "grid_take_profit", updatedHigh, updatedLow };
+        return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "grid_take_profit", updatedHigh, updatedLow });
       }
     }
     const canScaleOut =
@@ -6699,8 +6749,56 @@ export class RiskManager {
       timeDecayScore <= 0.56 &&
       contextualHoldConfidence >= Math.max(0.2, this.config.exitIntelligenceMinConfidence - 0.08);
 
+    const v2SevereExit =
+      exitIntelligenceV2?.currentExitRecommendation === "exit" &&
+      (
+        exitIntelligenceV2.fullExitScore >= Math.max(0.62, this.config.exitIntelligenceExitScore - 0.04) ||
+        (
+          exitIntelligenceV2.structureInvalidationScore >= 0.78 &&
+          (exitIntelligenceV2.vwapLossScore >= 0.7 || exitIntelligenceV2.orderflowReversalScore >= 0.55)
+        ) ||
+        (exitIntelligenceV2.orderflowReversalScore >= 0.82 && exitIntelligenceV2.vwapLossScore >= 0.55)
+      );
+    if (v2SevereExit && !strongContinuationHold) {
+      return withExitV2({
+        shouldExit: true,
+        shouldScaleOut: false,
+        reason: exitIntelligenceV2.explanation?.primaryReason
+          ? `exit_v2_${exitIntelligenceV2.explanation.primaryReason}`
+          : "exit_intelligence_v2_exit",
+        updatedHigh,
+        updatedLow,
+        exitPolicy: adaptiveExitPolicy
+      });
+    }
+    if (
+      canScaleOut &&
+      exitIntelligenceV2?.currentExitRecommendation === "trim" &&
+      exitIntelligenceV2.partialTakeProfitScore >= Math.max(0.5, this.config.exitIntelligenceTrimScore - 0.08) &&
+      !strongContinuationHold
+    ) {
+      return withExitV2({
+        shouldExit: false,
+        shouldScaleOut: true,
+        scaleOutFraction: clamp(
+          (exitIntelligenceSummary.trimFraction || position.scaleOutFraction || this.config.scaleOutFraction) *
+          (adaptiveExitPolicy.scaleOutFractionMultiplier || 1) *
+          (parameterGovernorAdjustment.scaleOutFractionMultiplier || 1) *
+          (1 + clamp(exitTrimBias, -0.18, 0.18)),
+          0.05,
+          0.95
+        ),
+        scaleOutReason: exitIntelligenceV2.explanation?.primaryReason
+          ? `exit_v2_trim_${exitIntelligenceV2.explanation.primaryReason}`
+          : "exit_intelligence_v2_trim",
+        updatedHigh,
+        updatedLow,
+        exitPolicy: adaptiveExitPolicy
+      });
+    }
+
     if (canScaleOut && !strongContinuationHold) {
-      return {
+      return withExitV2({
         shouldExit: false,
         shouldScaleOut: true,
         scaleOutFraction: clamp(
@@ -6715,53 +6813,53 @@ export class RiskManager {
         updatedHigh,
         updatedLow,
         exitPolicy: adaptiveExitPolicy
-      };
+      });
     }
     if (currentPrice <= position.stopLossPrice) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "stop_loss", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "stop_loss", updatedHigh, updatedLow });
     }
     if (currentPrice >= position.takeProfitPrice) {
       if (
         (exitIntelligenceSummary.preferredExitStyle || adaptiveExitPolicy.preferredExitStyle) === "trail" &&
         (holdToleranceBias > 0.04 || strongContinuationHold)
       ) {
-        return {
+        return withExitV2({
           shouldExit: false,
           shouldScaleOut: false,
           reason: null,
           updatedHigh,
           updatedLow,
           exitPolicy: adaptiveExitPolicy
-        };
+        });
       }
-      return { shouldExit: true, shouldScaleOut: false, reason: "take_profit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "take_profit", updatedHigh, updatedLow });
     }
     if (updatedHigh > position.entryPrice * 1.004 && currentPrice <= trailingStopPrice) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "trailing_stop", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "trailing_stop", updatedHigh, updatedLow });
     }
     if (heldMinutes >= effectiveMaxHoldMinutes && (holdToleranceBias - contextExitUrgency * 0.4) <= 0.08) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "time_stop", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "time_stop", updatedHigh, updatedLow });
     }
     if ((marketSnapshot.book?.spreadBps || 0) >= this.config.exitOnSpreadShockBps) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "spread_shock_exit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "spread_shock_exit", updatedHigh, updatedLow });
     }
     if ((marketSnapshot.book?.bookPressure || 0) < -0.62 && (marketSnapshot.market?.bearishPatternScore || 0) > 0.45) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "orderbook_reversal_exit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "orderbook_reversal_exit", updatedHigh, updatedLow });
     }
     if ((marketStructureSummary.liquidationImbalance || 0) < -0.55 && (marketStructureSummary.riskScore || 0) > 0.55 && (marketStructureSummary.liquidationCount || 0) > 0) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "liquidation_shock_exit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "liquidation_shock_exit", updatedHigh, updatedLow });
     }
     if (newsSummary.riskScore > 0.8 && newsSummary.sentimentScore < -0.2) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "news_risk_exit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "news_risk_exit", updatedHigh, updatedLow });
     }
     if ((announcementSummary.riskScore || 0) > 0.82) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "exchange_notice_exit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "exchange_notice_exit", updatedHigh, updatedLow });
     }
     if ((calendarSummary.riskScore || 0) > 0.8 && (calendarSummary.proximityHours || 999) <= 6) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "calendar_risk_exit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "calendar_risk_exit", updatedHigh, updatedLow });
     }
     if ((marketStructureSummary.riskScore || 0) > 0.85 && (marketStructureSummary.signalScore || 0) < -0.15) {
-      return { shouldExit: true, shouldScaleOut: false, reason: "market_structure_exit", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "market_structure_exit", updatedHigh, updatedLow });
     }
     if (
       canScaleOut &&
@@ -6774,7 +6872,7 @@ export class RiskManager {
         (exitIntelligenceSummary.contextualTrimScore || 0) >= 0.56
       )
     ) {
-      return {
+      return withExitV2({
         shouldExit: false,
         shouldScaleOut: true,
         scaleOutFraction: clamp(
@@ -6789,7 +6887,7 @@ export class RiskManager {
         updatedHigh,
         updatedLow,
         exitPolicy: adaptiveExitPolicy
-      };
+      });
     }
     if (
       canScaleOut &&
@@ -6797,7 +6895,7 @@ export class RiskManager {
       (exitIntelligenceSummary.confidence || 0) >= this.config.exitIntelligenceMinConfidence &&
       (exitIntelligenceSummary.trimScore || 0) >= this.config.exitIntelligenceTrimScore
     ) {
-      return {
+      return withExitV2({
         shouldExit: false,
         shouldScaleOut: true,
         scaleOutFraction: clamp(
@@ -6812,7 +6910,7 @@ export class RiskManager {
         updatedHigh,
         updatedLow,
         exitPolicy: adaptiveExitPolicy
-      };
+      });
     }
     if (
       contextualAction === "exit" &&
@@ -6824,17 +6922,17 @@ export class RiskManager {
         (exitIntelligenceSummary.contextualExitScore || 0) >= 0.68
       )
     ) {
-      return { shouldExit: true, shouldScaleOut: false, reason: contextualReason || exitIntelligenceSummary.reason || "context_exit_signal", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: contextualReason || exitIntelligenceSummary.reason || "context_exit_signal", updatedHigh, updatedLow });
     }
     if (
       exitIntelligenceSummary.action === "exit" &&
       (exitIntelligenceSummary.confidence || 0) >= Math.max(0.2, this.config.exitIntelligenceMinConfidence - contextExitUrgency * 0.08) &&
       (exitIntelligenceSummary.exitScore || 0) >= Math.max(0.2, this.config.exitIntelligenceExitScore - contextExitUrgency * 0.06)
     ) {
-      return { shouldExit: true, shouldScaleOut: false, reason: exitIntelligenceSummary.reason || "exit_ai_signal", updatedHigh, updatedLow };
+      return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: exitIntelligenceSummary.reason || "exit_ai_signal", updatedHigh, updatedLow });
     }
 
-    return {
+    return withExitV2({
       shouldExit: false,
       shouldScaleOut: false,
       reason: null,
@@ -6852,6 +6950,6 @@ export class RiskManager {
         contextualAction,
         contextualReason
       }
-    };
+    });
   }
 }

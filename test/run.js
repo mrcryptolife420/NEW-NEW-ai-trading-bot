@@ -156,6 +156,7 @@ import { registerStreamRangeOrderflowTests } from "./streamRangeOrderflow.tests.
 import { registerExitRegretDiagnosticsTests } from "./exitRegretDiagnostics.tests.js";
 import { registerReconcileAutofixToleranceTests } from "./reconcileAutofixTolerance.tests.js";
 import { registerIndicatorFeatureRegistryTests } from "./indicatorFeatureRegistry.tests.js";
+import { registerExitIntelligenceV2Tests } from "./exitIntelligenceV2.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32322,6 +32323,13 @@ await registerReconcileAutofixToleranceTests({
 await registerIndicatorFeatureRegistryTests({
   runCheck,
   assert
+});
+
+await registerExitIntelligenceV2Tests({
+  runCheck,
+  assert,
+  RiskManager,
+  makeConfig
 });
 
 console.log("All checks passed.");
