@@ -4,9 +4,11 @@ import { parseBacktestWalkForwardArgs, runBacktestWalkForward } from "../runtime
 import { buildFeatureAudit } from "../runtime/featureAudit.js";
 import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayEngine.js";
 import { runReadModelCommand, runReadModelTraceCommand } from "../storage/readModelStore.js";
+import { StateStore } from "../storage/stateStore.js";
 import { TradingBot } from "../runtime/tradingBot.js";
 import { BotManager } from "../runtime/botManager.js";
 import { buildRestArchitectureAudit, scanRestCallers } from "../runtime/restArchitectureAudit.js";
+import { buildExecutionIntentRows, buildExecutionIntentSummary } from "../execution/executionIntentView.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -181,6 +183,25 @@ export default async function runCli({
             ? "request-budget"
             : "status"
     });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "intents:list" || command === "intents:summary") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const result = command === "intents:list"
+      ? {
+          status: "ok",
+          unresolvedOnly: true,
+          intents: buildExecutionIntentRows(runtime, { unresolvedOnly: true })
+        }
+      : {
+          status: "ok",
+          ...buildExecutionIntentSummary(runtime)
+        };
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;

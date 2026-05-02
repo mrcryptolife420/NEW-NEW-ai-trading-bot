@@ -84,6 +84,7 @@ import { recordDomainEvent } from "./domainEvents.js";
 import { ensureSignalFlowMetricsState } from "./signalFlowService.js";
 import { PersistenceCoordinator } from "./persistenceCoordinator.js";
 import { executeDecisionPipeline } from "./decisionPipeline.js";
+import { normalizeDecisionForAudit } from "./decisionContract.js";
 import { runTradingCycle } from "./cycleRunner.js";
 import {
   buildDashboardSnapshotContract,
@@ -23487,6 +23488,13 @@ export class TradingBot {
     const marketProviders = summarizeMarketProviders(decision.marketProviderSummary || {});
     return {
       symbol: decision.symbol,
+      auditContract: normalizeDecisionForAudit({
+        ...decision,
+        mode: this.config?.botMode || "paper",
+        configHash: this.config?.configHash || null,
+        rootBlocker: effectivePrimaryReason,
+        reasons: blockerReasons
+      }),
       summary: decision.summary || null,
       setupStyle: decision.setupStyle || null,
       regime: decision.regime || null,
@@ -25626,6 +25634,9 @@ export class TradingBot {
       },
       modelWeights: this.buildModelWeightsView(),
       configSummary: {
+        configHash: this.config.configHash || null,
+        paperModeProfile: this.config.paperModeProfileSummary || null,
+        profileAudit: this.config.profileAudit || this.config.validation?.profileAudit || null,
         dashboardPort: this.config.dashboardPort,
         dashboardEquityPointLimit: this.config.dashboardEquityPointLimit,
         dashboardCyclePointLimit: this.config.dashboardCyclePointLimit,

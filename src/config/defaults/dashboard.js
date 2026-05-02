@@ -1,0 +1,22 @@
+export const dashboardDefaults = {
+  "reportLookbackTrades": 50,
+  "operatorAlertMaxItems": 8,
+  "operatorAlertWebhookUrls": [],
+  "operatorAlertDiscordWebhookUrls": [],
+  "operatorAlertTelegramBotToken": "",
+  "operatorAlertTelegramChatId": "",
+  "operatorAlertDispatchMinSeverity": "high",
+  "operatorAlertDispatchCooldownMinutes": 30,
+  "operatorAlertSilenceMinutes": 180,
+  "inactivityWatchdogNoCandidateHours": 3,
+  "inactivityWatchdogNoExecutionHours": 2,
+  "inactivityWatchdogDominantBlockerHours": 2,
+  "inactivityWatchdogSizingFailureCycles": 3,
+  "inactivityWatchdogDashboardDriftCycles": 2,
+  "inactivityWatchdogStateStallHours": 2,
+  "dashboardPort": 3011,
+  "dashboardPortfolioRefreshSeconds": 5,
+  "dashboardEquityPointLimit": 1440,
+  "dashboardCyclePointLimit": 720,
+  "dashboardDecisionLimit": 24
+};

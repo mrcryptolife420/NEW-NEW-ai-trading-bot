@@ -166,6 +166,7 @@ import { registerWalkForwardBacktestTests } from "./walkForwardBacktest.tests.js
 import { registerFeatureAuditTests } from "./featureAudit.tests.js";
 import { registerFeatureFlagHygieneTests } from "./featureFlagHygiene.tests.js";
 import { registerSafetyMaintenanceTests } from "./safetyMaintenance.tests.js";
+import { registerConfigOperatorMaintenanceTests } from "./configOperatorMaintenance.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32417,6 +32418,15 @@ await registerSafetyMaintenanceTests({
   ConfigValidationError,
   TradingBot,
   makeConfig
+});
+
+await registerConfigOperatorMaintenanceTests({
+  runCheck,
+  assert,
+  fs,
+  os,
+  loadConfig,
+  runCli
 });
 
 console.log("All checks passed.");
