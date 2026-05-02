@@ -160,6 +160,7 @@ import { registerExitIntelligenceV2Tests } from "./exitIntelligenceV2.tests.js";
 import { registerTradeQualityAnalyticsTests } from "./tradeQualityAnalytics.tests.js";
 import { registerDynamicExitLevelsTests } from "./dynamicExitLevels.tests.js";
 import { registerBreakoutRetestStrategyTests } from "./breakoutRetestStrategy.tests.js";
+import { registerPullbackReclaimV2Tests } from "./pullbackReclaimV2.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -281,6 +282,7 @@ function makeConfig(overrides = {}) {
     enableLiquidationMagnetContext: true,
     enableBreakoutRetestStrategy: false,
     breakoutRetestPaperOnly: true,
+    enablePullbackReclaimV2: false,
     enableRangeGridStrategy: true,
     enableLiveRangeGrid: false,
     maxGridLegs: 3,
@@ -32354,6 +32356,12 @@ await registerDynamicExitLevelsTests({
 });
 
 await registerBreakoutRetestStrategyTests({
+  runCheck,
+  assert,
+  makeConfig
+});
+
+await registerPullbackReclaimV2Tests({
   runCheck,
   assert,
   makeConfig

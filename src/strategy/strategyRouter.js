@@ -1030,14 +1030,15 @@ function evaluateTrendPullbackReclaim(context) {
       0,
       1
     );
-  return buildStrategy("trend_pullback_reclaim", score, confidence, [
+  const baseReasons = [
     `pullback ${(pullbackDepth * 100).toFixed(0)}%`,
     `reclaim ${(reclaimQuality * 100).toFixed(0)}%`,
     `anchored accept ${(anchoredAcceptance * 100).toFixed(0)}%`,
     `close ${(safeValue(market.closeLocation) * 100).toFixed(0)}%`,
     `vwap ${(safeValue(market.vwapGapPct) * 100).toFixed(2)}%`,
     `rel ${(relativeStrength * 100).toFixed(2)}%`
-  ], [
+  ];
+  const baseBlockers = [
     trendHealth < 0.48 ? "trend_not_healthy" : null,
     pullbackDepth < 0.3 ? "pullback_not_deep_enough" : null,
     reclaimQuality < 0.42 ? "reclaim_not_confirmed" : null,
@@ -1045,7 +1046,8 @@ function evaluateTrendPullbackReclaim(context) {
     trendTiming.lateCrowdingRisk > 0.52 ? "late_trend_crowding" : null,
     bearishPattern > 0.64 ? "pattern_reversal_risk" : null,
     eventRisk > 0.74 ? "event_risk_headwind" : null
-  ], {
+  ];
+  const baseMetrics = {
     regimeFit,
     trendHealth,
     uptrendScore,
@@ -1059,7 +1061,132 @@ function evaluateTrendPullbackReclaim(context) {
       reclaimWindowBonus,
       overextensionRisk: trendTiming.overextensionRisk,
       lateCrowdingRisk: trendTiming.lateCrowdingRisk
-    });
+    };
+  if (context?.config?.enablePullbackReclaimV2 !== true) {
+    return buildStrategy("trend_pullback_reclaim", score, confidence, baseReasons, baseBlockers, baseMetrics);
+  }
+
+  const higherMarket = context.marketSnapshot?.timeframes?.higher?.market || {};
+  const timeframeSummary = context.timeframeSummary || {};
+  const globalContext = context.globalMarketContextSummary || context.marketSnapshot?.globalMarketContext || {};
+  const onChainLite = context.onChainLiteSummary || {};
+  const htfTrendScore = clamp(average([
+    ratio(safeValue(timeframeSummary.higherBias), 0.02, 0.35),
+    ratio(safeValue(timeframeSummary.alignmentScore), 0.5, 0.82),
+    ratio(safeValue(higherMarket.emaTrendScore) * 100, 0.02, 0.82),
+    safeValue(higherMarket.supertrendDirection) > 0 ? 1 : 0,
+    ratio(safeValue(higherMarket.momentum20) * 100, 0.02, 1.4)
+  ], 0.5), 0, 1);
+  const htfAlignment = clamp(
+    htfTrendScore * 0.58 +
+      ratio(safeValue(timeframeSummary.directionAgreement), 0.5, 0.9) * 0.22 +
+      ratio(safeValue(timeframeSummary.alignmentScore), 0.48, 0.82) * 0.2,
+    0,
+    1
+  );
+  const pullbackDepthPct = Math.max(
+    0,
+    -safeValue(market.anchoredVwapGapPct),
+    -safeValue(market.vwapGapPct),
+    -safeValue(market.emaRibbonDistancePct),
+    -safeValue(market.emaGap) * 0.4,
+    safeValue(market.pullbackDepthPct)
+  );
+  const sweepSupport = clamp(Math.max(
+    safeValue(market.liquiditySweepScore),
+    safeValue(market.bullishSweepScore),
+    safeValue(market.localLowSweepScore)
+  ), 0, 1);
+  const currentMeanProximity = clamp(average([
+    ratio(-safeValue(market.anchoredVwapGapPct) * 100, 0.03, 0.85),
+    ratio(-safeValue(market.vwapGapPct) * 100, 0.04, 1.0),
+    ratio(safeValue(market.emaRibbonCompressionScore), 0.18, 0.82),
+    ratio(safeValue(market.vwapBandPosition) * -1, 0.04, 0.8),
+    ratio(pullbackDepthPct * 100, 0.08, 1.25)
+  ], pullbackDepth), 0, 1);
+  const recentPullbackEvidence = clamp(
+    ratio(pullbackDepthPct * 100, 0.25, 1.4) * 0.62 +
+      pullbackDepth * 0.22 +
+      sweepSupport * 0.16,
+    0,
+    1
+  );
+  const pullbackToMeanScore = Math.max(currentMeanProximity, recentPullbackEvidence);
+  const reclaimStrength = clamp(average([
+    reclaimQuality,
+    anchoredAcceptance,
+    ratio(safeValue(market.vwapGapPct) * 100, -0.08, 0.62),
+    ratio(safeValue(market.emaGap) * 100, -0.04, 0.65),
+    ratio(safeValue(market.closeLocation), 0.54, 0.86),
+    ratio(safeValue(market.closeLocationQuality), 0.48, 0.92),
+    ratio(safeValue(market.cvdTrendAlignment), -0.08, 0.6),
+    ratio(safeValue(context.marketSnapshot?.stream?.tradeFlowImbalance), -0.04, 0.65),
+    orderflow
+  ], 0), 0, 1);
+  const btcShock = Math.max(
+    safeValue(market.btcShockScore),
+    safeValue(globalContext.btcShockScore),
+    safeValue(globalContext.riskScore),
+    safeValue(onChainLite.riskOffScore) * 0.9,
+    safeValue(context.marketSentimentSummary?.riskScore) * 0.8,
+    safeValue(market.relativeStrengthVsBtc) < -0.018 ? ratio(Math.abs(safeValue(market.relativeStrengthVsBtc)), 0.018, 0.06) : 0,
+    safeValue(market.relativeStrengthVsEth) < -0.018 ? ratio(Math.abs(safeValue(market.relativeStrengthVsEth)), 0.018, 0.06) : 0
+  );
+  const spreadTooHigh = safeValue(context.marketSnapshot?.book?.spreadBps) > Math.max(10, context.config?.maxSpreadBps ? context.config.maxSpreadBps * 0.55 : 14);
+  const failedReclaim = reclaimStrength < 0.48 || anchoredRejection > 0.58 || safeValue(market.closeLocation) < 0.52;
+  const lateCrowded = trendTiming.lateCrowdingRisk > 0.48 || trendTiming.overextensionRisk > 0.62 || safeValue(market.trendMaturityScore) > 0.82 || safeValue(market.trendExhaustionScore) > 0.62;
+  const localInvalidationPrice = safeValue(market.localLow) || safeValue(market.swingLowPrice) || safeValue(market.recentSwingLow);
+  const currentPrice = safeValue(context.marketSnapshot?.book?.mid) || safeValue(market.close) || safeValue(context.marketSnapshot?.book?.bid);
+  const invalidationDistancePct = currentPrice > 0 && localInvalidationPrice > 0 && localInvalidationPrice < currentPrice
+    ? (currentPrice - localInvalidationPrice) / currentPrice
+    : Math.max(safeValue(market.atrPct) * 0.9, pullbackDepthPct * 0.65, 0);
+  const v2Score = clamp(
+    score +
+      htfAlignment * 0.055 +
+      pullbackToMeanScore * 0.04 +
+      reclaimStrength * 0.055 +
+      sweepSupport * 0.02 -
+      (failedReclaim ? 0.1 : 0) -
+      (lateCrowded ? 0.07 : 0) -
+      btcShock * 0.08 -
+      (spreadTooHigh ? 0.06 : 0),
+    0,
+    1
+  );
+  const v2Confidence = clamp(
+    confidence +
+      average([htfAlignment, pullbackToMeanScore, reclaimStrength], 0.5) * 0.09 -
+      (failedReclaim ? 0.08 : 0) -
+      btcShock * 0.06 -
+      (lateCrowded ? 0.04 : 0),
+    0,
+    1
+  );
+  return buildStrategy("trend_pullback_reclaim", v2Score, v2Confidence, [
+    ...baseReasons,
+    `htf ${(htfAlignment * 100).toFixed(0)}%`,
+    `reclaim strength ${(reclaimStrength * 100).toFixed(0)}%`
+  ], [
+    ...baseBlockers,
+    htfAlignment < 0.46 ? "higher_timeframe_not_up" : null,
+    pullbackToMeanScore < 0.34 ? "pullback_not_to_mean" : null,
+    failedReclaim ? "failed_reclaim" : null,
+    lateCrowded ? "late_crowded" : null,
+    btcShock > 0.52 ? "btc_shock" : null,
+    spreadTooHigh ? "spread_too_high_for_pullback" : null
+  ], {
+    ...baseMetrics,
+    pullbackDepthPct,
+    reclaimStrength,
+    trendHealth,
+    htfAlignment,
+    invalidationDistancePct,
+    pullbackToMeanScore,
+    sweepSupport,
+    btcShock,
+    failedReclaim,
+    lateCrowded
+  });
 }
 
 function evaluateDonchianBreakout(context) {
