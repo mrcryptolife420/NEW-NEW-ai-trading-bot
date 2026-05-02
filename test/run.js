@@ -155,6 +155,7 @@ import { registerLargeFoundationsTests } from "./largeFoundations.tests.js";
 import { registerStreamRangeOrderflowTests } from "./streamRangeOrderflow.tests.js";
 import { registerExitRegretDiagnosticsTests } from "./exitRegretDiagnostics.tests.js";
 import { registerReconcileAutofixToleranceTests } from "./reconcileAutofixTolerance.tests.js";
+import { registerIndicatorFeatureRegistryTests } from "./indicatorFeatureRegistry.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32314,6 +32315,11 @@ await registerExitRegretDiagnosticsTests({
 });
 
 await registerReconcileAutofixToleranceTests({
+  runCheck,
+  assert
+});
+
+await registerIndicatorFeatureRegistryTests({
   runCheck,
   assert
 });

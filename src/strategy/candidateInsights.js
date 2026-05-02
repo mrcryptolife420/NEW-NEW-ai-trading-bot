@@ -229,6 +229,16 @@ export function buildSignalQualitySummary({
       absorptionScore: clamp(safeValue(marketFeatures.orderflowAbsorptionScore), 0, 1),
       toxicityScore: clamp(safeValue(marketFeatures.orderflowToxicityScore), 0, 1)
     },
+    indicatorRegistryContext: {
+      packId: marketFeatures.indicatorRegistry?.packId || null,
+      version: marketFeatures.indicatorRegistry?.version || null,
+      status: marketFeatures.indicatorRegistry?.status || "missing",
+      qualityScore: clamp(safeValue(marketFeatures.indicatorRegistry?.quality?.qualityScore), 0, 1),
+      indicatorPackUsed: marketFeatures.indicatorRegistry?.usedIndicators || [],
+      topPositiveFeatures: marketFeatures.indicatorRegistry?.topPositiveFeatures || [],
+      topNegativeFeatures: marketFeatures.indicatorRegistry?.topNegativeFeatures || [],
+      missingFeatures: marketFeatures.indicatorRegistry?.quality?.missingFeatures || []
+    },
     gridContext: {
       rangeWidthPct: safeValue(marketFeatures.rangeWidthPct),
       rangeMeanRevertScore: clamp(safeValue(marketFeatures.rangeMeanRevertScore), 0, 1),

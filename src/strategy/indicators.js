@@ -1,4 +1,5 @@
 import { average, clamp, pctChange, standardDeviation } from "../utils/math.js";
+import { buildIndicatorFeaturePack } from "./indicatorFeatureRegistry.js";
 
 function selectRecent(values, length) {
   return values.slice(Math.max(0, values.length - length));
@@ -733,6 +734,7 @@ export function computeMarketFeatures(candles) {
   const fvg = detectFairValueGap(candles);
   const bos = detectBreakOfStructure(candles);
   const cvd = computeCvdContext(candles, lastClose);
+  const indicatorRegistry = buildIndicatorFeaturePack(candles);
   const keltnerWidthPct = keltner.basis ? (keltner.upper - keltner.lower) / keltner.basis : 0;
   const insideKeltner = bollinger.upper <= keltner.upper && bollinger.lower >= keltner.lower ? 1 : 0;
   const squeezeCompression = keltnerWidthPct > 0 ? 1 - clamp(bollingerWidthPct / Math.max(keltnerWidthPct, 1e-9), 0, 1.6) : 0;
@@ -953,6 +955,24 @@ export function computeMarketFeatures(candles) {
     cvdConfirmationScore: cvd.cvdConfirmationScore,
     cvdTrendAlignment: cvd.cvdTrendAlignment,
     cvdConfidence: cvd.cvdConfidence,
+    indicatorRegistry,
+    emaRibbonWidthPct: indicatorRegistry.features.emaRibbonWidthPct,
+    emaRibbonCompressionScore: indicatorRegistry.features.emaRibbonCompressionScore,
+    emaRibbonExpansionScore: indicatorRegistry.features.emaRibbonExpansionScore,
+    emaRibbonBullishScore: indicatorRegistry.features.emaRibbonBullishScore,
+    emaRibbonBearishScore: indicatorRegistry.features.emaRibbonBearishScore,
+    vwapBandPosition: indicatorRegistry.features.vwapBandPosition,
+    vwapBandWidthPct: indicatorRegistry.features.vwapBandWidthPct,
+    vwapUpperBandDistancePct: indicatorRegistry.features.vwapUpperBandDistancePct,
+    vwapLowerBandDistancePct: indicatorRegistry.features.vwapLowerBandDistancePct,
+    rsiBullishDivergenceScore: indicatorRegistry.features.rsiBullishDivergenceScore,
+    rsiBearishDivergenceScore: indicatorRegistry.features.rsiBearishDivergenceScore,
+    macdBullishDivergenceScore: indicatorRegistry.features.macdBullishDivergenceScore,
+    macdBearishDivergenceScore: indicatorRegistry.features.macdBearishDivergenceScore,
+    relativeVolumeByUtcHour: indicatorRegistry.features.relativeVolumeByUtcHour,
+    relativeVolumeByUtcHourZ: indicatorRegistry.features.relativeVolumeByUtcHourZ,
+    volatilityOfVolatility: indicatorRegistry.features.volatilityOfVolatility,
+    volatilityOfVolatilityScore: indicatorRegistry.features.volatilityOfVolatilityScore,
     rangeWidthPct,
     rangeTopDistancePct,
     rangeBottomDistancePct,

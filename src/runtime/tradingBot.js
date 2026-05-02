@@ -19998,6 +19998,8 @@ export class TradingBot {
       calendarSummary,
       regimeSummary,
       streamFeatures,
+      botMode: this.config.botMode,
+      config: this.config,
       sessionSummary,
       strategyAllocationScorer: (strategyCandidate = {}) => this.model.scoreStrategyAllocation({
         score: {

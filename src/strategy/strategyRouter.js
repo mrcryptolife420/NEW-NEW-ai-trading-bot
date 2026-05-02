@@ -155,7 +155,101 @@ function buildInputs(context) {
     relativeStrength,
     downsideVolDominance,
     acceptanceQuality,
-    replenishmentQuality
+    replenishmentQuality,
+    indicatorRegistry: market.indicatorRegistry || null
+  };
+}
+
+function buildIndicatorRegistryDiagnostics(context = {}) {
+  const config = context.config || {};
+  const pack = context.marketSnapshot?.market?.indicatorRegistry || null;
+  const enabled = config.enableIndicatorFeatureRegistry === true;
+  const paperScoringEnabled = enabled && config.enableIndicatorRegistryPaperScoring === true && (context.botMode || config.botMode || "paper") === "paper";
+  return {
+    enabled,
+    paperScoringEnabled,
+    packId: pack?.packId || null,
+    version: pack?.version || null,
+    status: pack?.status || "disabled",
+    qualityScore: pack?.quality?.qualityScore ?? 0,
+    usedIndicators: pack?.usedIndicators || [],
+    missingFeatures: pack?.quality?.missingFeatures || [],
+    topPositiveFeatures: pack?.topPositiveFeatures || [],
+    topNegativeFeatures: pack?.topNegativeFeatures || []
+  };
+}
+
+function resolveIndicatorRegistryAdjustment(strategy = {}, diagnostics = {}, market = {}) {
+  if (!diagnostics.paperScoringEnabled || diagnostics.status === "disabled") {
+    return { scoreShift: 0, confidenceShift: 0, reasons: [], blockers: [] };
+  }
+  const quality = clamp(diagnostics.qualityScore || 0, 0, 1);
+  if (quality < 0.45) {
+    return {
+      scoreShift: 0,
+      confidenceShift: -0.01,
+      reasons: [],
+      blockers: ["indicator_registry_warmup"]
+    };
+  }
+  const ribbonBias = clamp(safeValue(market.emaRibbonBullishScore) - safeValue(market.emaRibbonBearishScore), -1, 1);
+  const expansion = clamp(safeValue(market.emaRibbonExpansionScore), -1, 1);
+  const vwapPosition = clamp(safeValue(market.vwapBandPosition), -1, 1);
+  const rsiDivergence = clamp(safeValue(market.rsiBullishDivergenceScore) - safeValue(market.rsiBearishDivergenceScore), -1, 1);
+  const macdDivergence = clamp(safeValue(market.macdBullishDivergenceScore) - safeValue(market.macdBearishDivergenceScore), -1, 1);
+  const relativeVolumeRaw = Number.isFinite(market.relativeVolumeByUtcHour) ? market.relativeVolumeByUtcHour : 1;
+  const relativeVolume = clamp((relativeVolumeRaw - 1) / 1.8, -1, 1);
+  const vovRisk = clamp(safeValue(market.volatilityOfVolatilityScore), 0, 1);
+  let rawShift = 0;
+  if (strategy.family === "trend_following") {
+    rawShift = ribbonBias * 0.018 + expansion * 0.008 + macdDivergence * 0.008 - Math.max(0, -ribbonBias) * 0.014 - vovRisk * 0.006;
+  } else if (strategy.family === "breakout") {
+    rawShift = Math.max(0, expansion) * 0.014 + Math.max(0, relativeVolume) * 0.01 + Math.max(0, vwapPosition) * 0.006 - Math.max(0, -macdDivergence) * 0.012 - vovRisk * 0.01;
+  } else if (strategy.family === "mean_reversion") {
+    rawShift = Math.max(0, rsiDivergence) * 0.016 + Math.max(0, macdDivergence) * 0.008 + Math.max(0, -vwapPosition) * 0.008 - Math.max(0, expansion) * 0.008 - vovRisk * 0.004;
+  } else if (strategy.family === "market_structure") {
+    rawShift = rsiDivergence * 0.01 + macdDivergence * 0.012 + Math.max(0, relativeVolume) * 0.006 - vovRisk * 0.006;
+  }
+  const scoreShift = clamp(rawShift * clamp(quality, 0.45, 1), -0.035, 0.035);
+  const confidenceShift = clamp(Math.abs(scoreShift) * 0.35, 0, 0.012);
+  return {
+    scoreShift,
+    confidenceShift,
+    reasons: scoreShift > 0.006 ? ["indicator_registry_tailwind"] : [],
+    blockers: scoreShift < -0.006 ? ["indicator_registry_headwind"] : []
+  };
+}
+
+function applyIndicatorRegistryPaperScoring(strategies = [], context = {}) {
+  const diagnostics = buildIndicatorRegistryDiagnostics(context);
+  const market = context.marketSnapshot?.market || {};
+  const adjusted = strategies.map((strategy) => {
+    const adjustment = resolveIndicatorRegistryAdjustment(strategy, diagnostics, market);
+    const score = clamp((strategy.score || 0) + adjustment.scoreShift, 0, 1);
+    const confidence = clamp((strategy.confidence || 0) + adjustment.confidenceShift, 0, 1);
+    const fitScore = clamp(score * 0.68 + confidence * 0.32, 0, 1);
+    return {
+      ...strategy,
+      score,
+      confidence,
+      fitScore,
+      reasons: [...(strategy.reasons || []), ...adjustment.reasons].slice(0, 6),
+      blockers: [...(strategy.blockers || []), ...adjustment.blockers].slice(0, 4),
+      metrics: {
+        ...(strategy.metrics || {}),
+        indicatorRegistry: {
+          applied: diagnostics.paperScoringEnabled,
+          scoreShift: adjustment.scoreShift,
+          qualityScore: diagnostics.qualityScore,
+          packId: diagnostics.packId,
+          status: diagnostics.status
+        }
+      }
+    };
+  });
+  return {
+    strategies: adjusted,
+    diagnostics
   };
 }
 
@@ -1363,7 +1457,8 @@ export function evaluateStrategySet(context) {
   if (context?.config?.enableRangeGridStrategy !== false) {
     baseStrategies.push(evaluateRangeGridReversion(context));
   }
-  const optimizedStrategies = applyOptimizer(baseStrategies, context.optimizerSummary).sort((left, right) => right.fitScore - left.fitScore);
+  const indicatorRegistrySelection = applyIndicatorRegistryPaperScoring(applyOptimizer(baseStrategies, context.optimizerSummary), context);
+  const optimizedStrategies = indicatorRegistrySelection.strategies.sort((left, right) => right.fitScore - left.fitScore);
   const familyBalancedStrategies = applyContextualFamilyBalancing(optimizedStrategies, context)
     .sort((left, right) => right.fitScore - left.fitScore);
   const adaptiveSelection = applyAdaptiveAllocation(familyBalancedStrategies, context);
@@ -1398,7 +1493,8 @@ export function evaluateStrategySet(context) {
     familyRankings,
     strategyMap: Object.fromEntries(strategies.map((strategy) => [strategy.id, strategy])),
     optimizer: context.optimizerSummary || null,
-    adaptiveSelection: adaptiveSelection.selection
+    adaptiveSelection: adaptiveSelection.selection,
+    indicatorRegistry: indicatorRegistrySelection.diagnostics
   };
 }
 
