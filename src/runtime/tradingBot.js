@@ -125,6 +125,7 @@ import {
 import { buildOperatorActionResult } from "./operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "./tradingImprovementDiagnostics.js";
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "./restBudgetGovernor.js";
+import { buildFeatureAudit } from "./featureAudit.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -9218,7 +9219,8 @@ export class TradingBot {
       reportVersion: 0,
       reportBuiltVersion: -1,
       report: null,
-      reportGeneratedAt: null
+      reportGeneratedAt: null,
+      featureIntegrationAudit: null
     };
   }
 
@@ -9242,7 +9244,8 @@ export class TradingBot {
       reportVersion: 0,
       reportBuiltVersion: -1,
       report: null,
-      reportGeneratedAt: null
+      reportGeneratedAt: null,
+      featureIntegrationAudit: null
     };
     this.observabilityCache.reportVersion = (this.observabilityCache.reportVersion || 0) + 1;
   }
@@ -9252,7 +9255,8 @@ export class TradingBot {
       reportVersion: 0,
       reportBuiltVersion: -1,
       report: null,
-      reportGeneratedAt: null
+      reportGeneratedAt: null,
+      featureIntegrationAudit: null
     };
     if (this.observabilityCache.report && this.observabilityCache.reportBuiltVersion === this.observabilityCache.reportVersion) {
       return this.observabilityCache.report;
@@ -9262,6 +9266,97 @@ export class TradingBot {
     this.observabilityCache.reportBuiltVersion = this.observabilityCache.reportVersion;
     this.observabilityCache.reportGeneratedAt = nowIso();
     return report;
+  }
+
+  summarizeFeatureIntegrationAudit(audit = {}) {
+    const features = arr(audit.features || []).map((feature) => ({
+      id: feature.id || null,
+      status: feature.status || null,
+      priority: feature.priority || null,
+      classifications: arr(feature.classifications || []),
+      completionPlan: feature.completionPlan || null,
+      missingDashboardFields: arr(feature.missingDashboardFields || []),
+      filesToChange: arr(feature.filesToChange || []),
+      testsToAdd: arr(feature.testsToAdd || []),
+      liveBehaviorPolicy: feature.liveBehaviorPolicy || null,
+      configStatus: feature.configStatus || null,
+      runtimeRefCount: arr(feature.runtimeRefs || []).length,
+      dashboardRefCount: arr(feature.dashboardRefs || []).length,
+      testRefCount: arr(feature.testRefs || []).length
+    }));
+    const priorityCounts = {};
+    for (const feature of features) {
+      const priority = feature.priority || "unknown";
+      priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
+    }
+    const incomplete = features.filter((feature) => feature.status !== "complete");
+    const p1 = features.filter((feature) => feature.priority === "P1");
+    const p3 = features.filter((feature) => feature.priority === "P3");
+    return {
+      status: audit.status || (incomplete.length ? "review_required" : "complete"),
+      generatedAt: audit.generatedAt || null,
+      auditedFeatureCount: audit.auditedFeatureCount || features.length,
+      featureFlagCount: audit.featureFlagCount || 0,
+      classificationCounts: audit.classificationCounts || {},
+      priorityCounts,
+      incompleteCount: incomplete.length,
+      p1Count: p1.length,
+      p3Count: p3.length,
+      topP1: p1.slice(0, 6),
+      topMissingDashboard: features
+        .filter((feature) => arr(feature.classifications).includes("missing_dashboard"))
+        .slice(0, 8),
+      features,
+      findings: arr(audit.findings || []).slice(0, 12),
+      note: incomplete.length
+        ? `${incomplete.length} feature-completion item(s) vragen nog zichtbaarheid, wiring of live-risk review.`
+        : "Alle audited feature-completion items zijn compleet."
+    };
+  }
+
+  async buildFeatureIntegrationAuditSummary({ force = false } = {}) {
+    const nowMs = Date.now();
+    const ttlMs = 15 * 60_000;
+    const cached = this.observabilityCache?.featureIntegrationAudit;
+    if (!force && cached?.summary && Number.isFinite(cached.builtAtMs) && nowMs - cached.builtAtMs <= ttlMs) {
+      return cached.summary;
+    }
+    try {
+      const audit = await buildFeatureAudit({
+        config: this.config,
+        projectRoot: this.config.projectRoot || process.cwd()
+      });
+      const summary = this.summarizeFeatureIntegrationAudit(audit);
+      this.observabilityCache = this.observabilityCache || {};
+      this.observabilityCache.featureIntegrationAudit = {
+        builtAtMs: nowMs,
+        summary
+      };
+      this.runtime.ops = this.runtime.ops || {};
+      this.runtime.ops.featureIntegrationAudit = summary;
+      return summary;
+    } catch (error) {
+      const summary = {
+        status: "unavailable",
+        generatedAt: nowIso(),
+        error: error?.message || "feature_audit_failed",
+        auditedFeatureCount: 0,
+        featureFlagCount: 0,
+        classificationCounts: {},
+        priorityCounts: {},
+        incompleteCount: 0,
+        p1Count: 0,
+        p3Count: 0,
+        topP1: [],
+        topMissingDashboard: [],
+        features: [],
+        findings: [],
+        note: "Feature integration audit kon niet worden opgebouwd."
+      };
+      this.runtime.ops = this.runtime.ops || {};
+      this.runtime.ops.featureIntegrationAudit = summary;
+      return summary;
+    }
   }
 
   createPersistenceCoordinator() {
@@ -9455,6 +9550,7 @@ export class TradingBot {
       executionCostSummary: report.executionCostSummary || {},
       pnlDecomposition: report.pnlDecomposition || {},
       postTradeAnalytics: report.postTradeAnalytics || null,
+      featureIntegrationAudit: this.runtime.ops?.featureIntegrationAudit || null,
         performanceDiagnosis: summarizePerformanceDiagnosis(report.performanceDiagnosis || {}),
         tradeQualityReview: report.tradeQualityReview || null,
         attribution: report.attribution || {},
@@ -25073,6 +25169,7 @@ export class TradingBot {
       schemaVersion: 3
     });
     const readModelSummary = await this.buildReadModelDashboardSummary();
+    const featureIntegrationAudit = await this.buildFeatureIntegrationAuditSummary();
     const decoratedStreamStatus = decorateStreamStatus(this.stream.getStatus(), this.runtime.service || {});
     const streamFallbackHealth = this.buildStreamFallbackHealth(decoratedStreamStatus, referenceNow);
     const tradingImprovementDiagnostics = buildTradingImprovementDiagnostics({
@@ -25086,6 +25183,7 @@ export class TradingBot {
       signalFlow: signalFlowSummary,
       rejectAdaptiveLearning: rejectAdaptiveLearningSummary,
       offlineTrainer: offlineTrainerSummary,
+      featureIntegrationAudit,
       requestWeight: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
       requestBudget: readModelSummary?.requestBudget || {},
       streamFallbackHealth,
@@ -25249,6 +25347,7 @@ export class TradingBot {
         badVetoLearning: rejectAdaptiveLearningSummary,
         tradingImprovementDiagnostics,
         marketProviders: marketProvidersSummary,
+        featureIntegrationAudit,
         onlineAdaptation: onlineAdaptationSummary,
         adaptiveLearning: adaptiveLearningSummary,
         lastEntryAttempt: summarizeLastEntryAttempt(this.runtime.lastEntryAttempt || {}),
@@ -25287,6 +25386,7 @@ export class TradingBot {
       offlineTrainer: offlineTrainerSummary,
       marketHistory: marketHistorySummary,
       readModel: readModelSummary,
+      featureIntegrationAudit,
       upcomingEvents: arr(topDecision.calendarEvents || leadPosition?.entryRationale?.calendarEvents || []).slice(0, 4),
       officialNotices: arr(topDecision.officialNotices || leadPosition?.entryRationale?.officialNotices || []).slice(0, 4),
       watchlist: this.runtime.watchlistSummary || null,
@@ -25320,6 +25420,7 @@ export class TradingBot {
           notes: []
         },
         tradeQualityReview: report.tradeQualityReview || null,
+        featureIntegrationAudit,
         blockedSetupLifecycle: report.blockedSetupLifecycle || null,
         recentReviews: arr(report.recentReviews || []).slice(0, 12),
         equitySeries: arr(report.equitySeries || []).slice(-(this.config.dashboardEquityPointLimit || 1440)).map((item) => ({

@@ -1258,9 +1258,25 @@ function renderLearning(snapshot) {
   const digest = buildLearningDigest(snapshot);
   replaceChildren(elements.learningList, digest.map((item) => makeCard(item, "detail-card")));
   const diagnostics = snapshot?.dashboard?.operatorDiagnostics || {};
+  const featureAudit = snapshot?.dashboard?.featureIntegrationAudit
+    || snapshot?.dashboard?.ops?.featureIntegrationAudit
+    || snapshot?.dashboard?.report?.featureIntegrationAudit
+    || {};
+  const topP1 = arr(featureAudit.topP1 || []);
+  const topMissingDashboard = arr(featureAudit.topMissingDashboard || []);
   const cards = [
     { title: "Action items", detail: diagnostics.actionItems?.length ? diagnostics.actionItems.map((item) => item.title).slice(0, 2).join(" · ") : "Geen extra operator-diagnostiek." },
-    { title: "Readiness", detail: compactJoin([titleize(snapshot?.dashboard?.ops?.readiness?.status || "unknown"), snapshot?.dashboard?.ops?.missedTradeTuning?.actionClass ? titleize(snapshot.dashboard.ops.missedTradeTuning.actionClass) : null]) }
+    { title: "Readiness", detail: compactJoin([titleize(snapshot?.dashboard?.ops?.readiness?.status || "unknown"), snapshot?.dashboard?.ops?.missedTradeTuning?.actionClass ? titleize(snapshot.dashboard.ops.missedTradeTuning.actionClass) : null]) },
+    {
+      title: "Feature completion",
+      detail: compactJoin([
+        featureAudit.status ? titleize(featureAudit.status) : "Onbekend",
+        Number.isFinite(Number(featureAudit.incompleteCount)) ? `${featureAudit.incompleteCount} incomplete` : null,
+        topP1[0]?.id ? `P1 ${titleize(topP1[0].id)}` : null,
+        topMissingDashboard[0]?.id ? `dashboard ${titleize(topMissingDashboard[0].id)}` : null
+      ]) || "Feature audit nog niet beschikbaar.",
+      tone: topP1.length ? "warning" : topMissingDashboard.length ? "neutral" : featureAudit.status === "complete" ? "positive" : "neutral"
+    }
   ];
   replaceChildren(elements.diagnosticsList, cards.map((item) => makeCard(item, "detail-card")));
 }
@@ -1676,6 +1692,7 @@ export function __dashboardSmokeRender(snapshot) {
       healthText: flattenNodeText(elements.healthList),
       focusText: flattenNodeText(elements.focusList),
       positionsText: flattenNodeText(elements.positionsList),
+      diagnosticsText: flattenNodeText(elements.diagnosticsList),
       quickActionsText: flattenNodeText(elements.quickActionsList)
     };
   } finally {

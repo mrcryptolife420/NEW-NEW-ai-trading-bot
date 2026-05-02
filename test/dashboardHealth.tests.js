@@ -230,6 +230,12 @@ export async function registerDashboardHealthTests({
             { id: "public_depth_stream_first", title: "Public depth REST terugdringen", status: "action_required" }
           ],
           priorityActions: ["Maak User Data Stream leidend voor orders/fills/account."]
+        },
+        featureIntegrationAudit: {
+          status: "review_required",
+          incompleteCount: 11,
+          topP1: [{ id: "net_edge_gate" }],
+          topMissingDashboard: [{ id: "indicator_feature_registry" }]
         }
       }
     });
@@ -244,5 +250,8 @@ export async function registerDashboardHealthTests({
     assert.ok(readModelRender.healthText.includes("signed:GET /api/v3/openOrders"));
     assert.ok(readModelRender.healthText.includes("Meta Followthrough Caution"));
     assert.ok(readModelRender.healthText.includes("Private REST-druk verlagen"));
+    assert.ok(readModelRender.diagnosticsText.includes("Feature completion"));
+    assert.ok(readModelRender.diagnosticsText.includes("Net Edge Gate"));
+    assert.ok(readModelRender.diagnosticsText.includes("Indicator Feature Registry"));
   });
 }

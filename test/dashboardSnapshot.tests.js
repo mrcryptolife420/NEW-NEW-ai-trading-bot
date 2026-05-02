@@ -148,6 +148,11 @@ export async function registerDashboardSnapshotTests({
     assert.equal(snapshot.ops.marketProviders.status, "ready");
     assert.equal(snapshot.topDecisions[0].entryDiagnostics.marketProviders.status, "ready");
     assert.equal(snapshot.topDecisions[0].entryDiagnostics.policyProfile.status, "scoped");
+    assert.equal(snapshot.featureIntegrationAudit.status, "review_required");
+    assert.equal(snapshot.ops.featureIntegrationAudit.status, "review_required");
+    assert.equal(snapshot.report.featureIntegrationAudit.status, "review_required");
+    assert.ok(snapshot.featureIntegrationAudit.topP1.some((item) => item.id === "net_edge_gate"));
+    assert.ok(snapshot.featureIntegrationAudit.topMissingDashboard.some((item) => item.id === "indicator_feature_registry"));
     assert.equal(snapshot.ops.riskLocks.manualReviewPending, true);
     assert.ok(snapshot.ops.audit);
     assert.equal(snapshot.operatorDeck.cards.some((item) => item.id === "manual_review"), true);
