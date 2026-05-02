@@ -72,6 +72,10 @@ export function validateConfig(config) {
   assertRange("MODEL_PROMOTION_MIN_LIVE_TRADES", config.modelPromotionMinLiveTrades, 0, 500, errors);
   assertRange("MODEL_PROMOTION_MIN_LIVE_QUALITY", config.modelPromotionMinLiveQuality, 0, 1, errors);
   assertRange("STRATEGY_MIN_CONFIDENCE", config.strategyMinConfidence, 0, 1, errors);
+  assertRange("MIN_NET_EDGE_BPS", config.minNetEdgeBps, -250, 250, errors);
+  assertRange("NET_EDGE_SAFETY_BUFFER_BPS", config.netEdgeSafetyBufferBps, 0, 100, errors);
+  assertRange("NET_EDGE_EXECUTION_PAIN_BPS", config.netEdgeExecutionPainBps, 0, 100, errors);
+  assertRange("FAILED_BREAKOUT_RISK_THRESHOLD", config.failedBreakoutRiskThreshold, 0, 1, errors);
   assertRange("TRANSFORMER_LOOKBACK_CANDLES", config.transformerLookbackCandles, 8, 120, errors);
   assertRange("TRANSFORMER_LEARNING_RATE", config.transformerLearningRate, 0.0001, 0.5, errors);
   assertRange("TRANSFORMER_MIN_CONFIDENCE", config.transformerMinConfidence, 0, 1, errors);

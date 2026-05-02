@@ -161,6 +161,7 @@ import { registerTradeQualityAnalyticsTests } from "./tradeQualityAnalytics.test
 import { registerDynamicExitLevelsTests } from "./dynamicExitLevels.tests.js";
 import { registerBreakoutRetestStrategyTests } from "./breakoutRetestStrategy.tests.js";
 import { registerPullbackReclaimV2Tests } from "./pullbackReclaimV2.tests.js";
+import { registerDecisionSupportFoundationTests } from "./decisionSupportFoundation.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -283,6 +284,17 @@ function makeConfig(overrides = {}) {
     enableBreakoutRetestStrategy: false,
     breakoutRetestPaperOnly: true,
     enablePullbackReclaimV2: false,
+    enableNetEdgeGate: false,
+    netEdgeGateLiveBlockOnly: true,
+    minNetEdgeBps: 0,
+    netEdgeSafetyBufferBps: 3,
+    netEdgeExecutionPainBps: 12,
+    enableFailedBreakoutDetector: false,
+    failedBreakoutRiskThreshold: 0.58,
+    enableFundingOiMatrix: false,
+    enableSpotFuturesDivergence: false,
+    enableLeadershipContext: false,
+    enableSectorRotation: false,
     enableRangeGridStrategy: true,
     enableLiveRangeGrid: false,
     maxGridLegs: 3,
@@ -32362,6 +32374,12 @@ await registerBreakoutRetestStrategyTests({
 });
 
 await registerPullbackReclaimV2Tests({
+  runCheck,
+  assert,
+  makeConfig
+});
+
+await registerDecisionSupportFoundationTests({
   runCheck,
   assert,
   makeConfig
