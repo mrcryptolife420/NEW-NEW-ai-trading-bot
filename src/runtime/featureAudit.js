@@ -15,6 +15,12 @@ const TARGET_FEATURES = [
     docs: ["docs/INDICATOR_REGISTRY.md"],
     tests: ["test/indicatorFeatureRegistry.tests.js"],
     dashboardExpected: true,
+    priority: "P3",
+    completionPlan: "Add read-only candidate/dashboard visibility for indicator pack usage, top feature drivers, and missing/stale feature quality before treating this feature as complete.",
+    filesToChange: ["src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js"],
+    testsToAdd: ["test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["candidate.indicatorRegistry", "candidate.topPositiveFeatures", "candidate.topNegativeFeatures", "candidate.missingIndicatorFeatures"],
+    liveBehaviorPolicy: "No live behavior change; existing paper-scoring flag remains the only scoring gate.",
     note: "Indicator pack is computed in indicators and paper-scoring is gated in strategyRouter."
   },
   {
@@ -25,6 +31,12 @@ const TARGET_FEATURES = [
     tests: ["test/dynamicExitLevels.tests.js"],
     dashboardExpected: true,
     liveRisk: true,
+    priority: "P3",
+    completionPlan: "Expose existing dynamic stop/target suggestions on open positions and reports before any live-risk review.",
+    filesToChange: ["src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js", "src/runtime/reportBuilder.js"],
+    testsToAdd: ["test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["position.dynamicExitLevels", "position.suggestedStopPct", "position.suggestedTakeProfitPct"],
+    liveBehaviorPolicy: "No live behavior change in the completion batch; live remains conservative while dynamicExitPaperOnly is true.",
     note: "Live remains conservative unless dynamicExitPaperOnly is false."
   },
   {
@@ -35,6 +47,12 @@ const TARGET_FEATURES = [
     tests: ["test/exitIntelligenceV2.tests.js"],
     dashboardExpected: true,
     liveRisk: true,
+    priority: "P3",
+    completionPlan: "Expose existing v2 exit recommendation and component scores in operator surfaces before changing execution posture.",
+    filesToChange: ["src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js", "src/runtime/reportBuilder.js"],
+    testsToAdd: ["test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["position.exitIntelligenceV2", "position.exitQuality", "position.currentExitRecommendation"],
+    liveBehaviorPolicy: "No live behavior change in the completion batch; future live use may only tighten exits after review.",
     note: "Shared exit flag gates legacy exit intelligence plus v2 risk output."
   },
   {
@@ -44,6 +62,12 @@ const TARGET_FEATURES = [
     expectedRuntimeRefs: ["buildTradeQualityAnalytics", "updateOpenPositionExcursion"],
     tests: ["test/tradeQualityAnalytics.tests.js"],
     dashboardExpected: true,
+    priority: "P3",
+    completionPlan: "Surface existing MFE/MAE/exit-efficiency analytics in dashboard/report summaries.",
+    filesToChange: ["src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js", "src/runtime/reportBuilder.js"],
+    testsToAdd: ["test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["trade.maximumFavorableExcursionPct", "trade.maximumAdverseExcursionPct", "trade.exitEfficiencyPct", "report.tradeQualitySummary"],
+    liveBehaviorPolicy: "No live behavior change; analytics are observational and journal/report-only.",
     note: "No feature flag; this is persistent analytics around closed/open trade quality."
   },
   {
@@ -55,6 +79,12 @@ const TARGET_FEATURES = [
     dashboardExpected: false,
     liveRisk: true,
     allowModuleInternalRuntime: true,
+    priority: "P4",
+    completionPlan: "Keep paper-only default and add live-risk-review documentation before any live enablement discussion.",
+    filesToChange: ["docs/FEATURE_COMPLETION_PLAN.md"],
+    testsToAdd: [],
+    missingDashboardFields: [],
+    liveBehaviorPolicy: "No live auto-promotion; paper-only remains the safe default.",
     note: "Strategy is explicitly paper-only by default."
   },
   {
@@ -66,6 +96,12 @@ const TARGET_FEATURES = [
     dashboardExpected: true,
     liveRisk: true,
     expectedUnusedUntilIntegrated: true,
+    priority: "P1",
+    completionPlan: "Wire module into candidate diagnostics first; only after review may it become a stricter live block, never live relief.",
+    filesToChange: ["src/runtime/candidateRanking.js", "src/risk/riskManager.js", "src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js"],
+    testsToAdd: ["test/netEdgeGateIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["candidate.netEdgeGate", "decision.netEdgeGate", "candidate.netExecutableExpectancyScore"],
+    liveBehaviorPolicy: "Future live behavior may only block or add caution when enabled; no threshold lowering or softening.",
     note: "Module/config/tests exist, but runtime callsite is not wired yet."
   },
   {
@@ -76,6 +112,12 @@ const TARGET_FEATURES = [
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
+    priority: "P1",
+    completionPlan: "Use the central detector in diagnostics to replace scattered inline interpretation before any gating change.",
+    filesToChange: ["src/strategy/strategyRouter.js", "src/risk/riskManager.js", "src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js"],
+    testsToAdd: ["test/failedBreakoutDetectorIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["candidate.failedBreakoutDetector", "candidate.falseBreakoutRisk"],
+    liveBehaviorPolicy: "Future live behavior may only add caution/blocking for negative evidence; no positive live relief.",
     note: "Central detector exists, while risk/strategy still use older inline failed-breakout logic."
   },
   {
@@ -86,6 +128,12 @@ const TARGET_FEATURES = [
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
+    priority: "P1",
+    completionPlan: "Wire derivatives matrix into market-context diagnostics with degraded-provider fallback before risk consumption.",
+    filesToChange: ["src/market/providers/derivativesContextProvider.js", "src/strategy/features.js", "src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js"],
+    testsToAdd: ["test/fundingOiMatrixIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["marketContext.fundingOiMatrix", "marketContext.fundingOiMatrixStatus"],
+    liveBehaviorPolicy: "Diagnostics first; future live use may only add negative risk drag when data quality is sufficient.",
     note: "Pure derivatives matrix exists but is not yet fed into market features/risk."
   },
   {
@@ -96,6 +144,12 @@ const TARGET_FEATURES = [
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
+    priority: "P1",
+    completionPlan: "Expose spot/futures divergence from leadership context into market diagnostics with safe missing-reference fallback.",
+    filesToChange: ["src/market/leadershipContext.js", "src/runtime/tradingBot.js", "src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js"],
+    testsToAdd: ["test/leadershipContextIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["marketContext.spotFuturesDivergence", "marketContext.spotFuturesDivergenceStatus"],
+    liveBehaviorPolicy: "Diagnostics first; future live use may only add caution for adverse divergence.",
     note: "Leadership module can compute divergence, but the flag is not wired into runtime context."
   },
   {
@@ -106,6 +160,12 @@ const TARGET_FEATURES = [
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
+    priority: "P1",
+    completionPlan: "Feed BTC/ETH leadership context into candidate and market diagnostics before ranking or risk use.",
+    filesToChange: ["src/market/leadershipContext.js", "src/runtime/tradingBot.js", "src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js"],
+    testsToAdd: ["test/leadershipContextIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["candidate.leadershipContext", "marketContext.btcEthLeadership"],
+    liveBehaviorPolicy: "Diagnostics first; positive signals cannot lower live thresholds without a separate review.",
     note: "Pure module exists but is not yet consumed by scanner/risk outside tests."
   },
   {
@@ -116,6 +176,12 @@ const TARGET_FEATURES = [
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
+    priority: "P3",
+    completionPlan: "Expose existing sector score and flag state in market dashboard/report surfaces.",
+    filesToChange: ["src/runtime/dashboardSnapshotBuilder.js", "src/dashboard/public/app.js", "src/runtime/reportBuilder.js"],
+    testsToAdd: ["test/dashboardSnapshot.tests.js"],
+    missingDashboardFields: ["marketContext.sectorRotation", "marketContext.sectorRotationScore"],
+    liveBehaviorPolicy: "No live behavior change; keep as market diagnostics until evidence supports allocator use.",
     note: "Sector score exists inside leadership context; the dedicated flag is not wired."
   },
   {
@@ -126,6 +192,12 @@ const TARGET_FEATURES = [
     docs: ["docs/BACKTESTING.md"],
     tests: ["test/walkForwardBacktest.tests.js"],
     dashboardExpected: false,
+    priority: "complete",
+    completionPlan: "No feature-completion work needed beyond regression protection.",
+    filesToChange: [],
+    testsToAdd: [],
+    missingDashboardFields: [],
+    liveBehaviorPolicy: "Offline only; no live behavior.",
     note: "Offline CLI/reporting path only; no live behavior."
   }
 ];
@@ -297,6 +369,61 @@ function classifyFlag({ key, refs, envPresent, mappedFeature = null }) {
   };
 }
 
+function derivePriority(classifications = [], definition = {}) {
+  if (definition.priority) {
+    return definition.priority;
+  }
+  if (classifications.includes("complete")) {
+    return "complete";
+  }
+  if (classifications.includes("config_only") || classifications.includes("module_exists_but_unused")) {
+    return "P1";
+  }
+  if (classifications.includes("missing_dashboard") || classifications.includes("missing_tests")) {
+    return "P3";
+  }
+  if (classifications.includes("live_risk_review_needed")) {
+    return "P4";
+  }
+  return "P4";
+}
+
+function buildPriorityReasons(classifications = []) {
+  const reasons = [];
+  if (classifications.includes("config_only")) {
+    reasons.push("config_exists_but_behavior_or_env_is_incomplete");
+  }
+  if (classifications.includes("module_exists_but_unused")) {
+    reasons.push("module_exists_but_runtime_callsite_is_missing");
+  }
+  if (classifications.includes("missing_dashboard")) {
+    reasons.push("operator_visibility_missing");
+  }
+  if (classifications.includes("missing_tests")) {
+    reasons.push("test_coverage_missing");
+  }
+  if (classifications.includes("live_risk_review_needed")) {
+    reasons.push("live_risk_review_required_before_live_behavior_change");
+  }
+  if (classifications.includes("complete")) {
+    reasons.push("complete_by_audit_contract");
+  }
+  return reasons;
+}
+
+function buildConfigStatus(flags = []) {
+  const missingConfigKeys = flags.filter((flag) => !flag.configured).map((flag) => flag.key);
+  const missingEnvKeys = flags.filter((flag) => !flag.envPresent).map((flag) => flag.envKey);
+  return {
+    flagCount: flags.length,
+    configured: missingConfigKeys.length === 0,
+    envDocumented: missingEnvKeys.length === 0,
+    missingConfigKeys,
+    missingEnvKeys,
+    status: missingConfigKeys.length || missingEnvKeys.length ? "incomplete" : "complete"
+  };
+}
+
 export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd() } = {}) {
   const entries = await buildSourceIndex(projectRoot);
   const envKeys = await readEnvExampleKeys(projectRoot);
@@ -353,17 +480,28 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
       dashboardRefs,
       definition
     });
+    const featureFlags = (definition.flags || []).map((key) => ({
+      key,
+      envKey: camelToEnvKey(key),
+      configured: Object.prototype.hasOwnProperty.call(config, key),
+      currentValue: config[key],
+      envPresent: envKeys.has(camelToEnvKey(key))
+    }));
     features.push({
       id: definition.id,
-      flags: (definition.flags || []).map((key) => ({
-        key,
-        envKey: camelToEnvKey(key),
-        configured: Object.prototype.hasOwnProperty.call(config, key),
-        currentValue: config[key],
-        envPresent: envKeys.has(camelToEnvKey(key))
-      })),
+      flags: featureFlags,
       classifications,
       status: classifications[0],
+      priority: derivePriority(classifications, definition),
+      priorityReasons: buildPriorityReasons(classifications),
+      completionPlan: definition.completionPlan || "Review integration status before adding behavior.",
+      filesToChange: definition.filesToChange || [],
+      testsToAdd: definition.testsToAdd || [],
+      missingDashboardFields: definition.missingDashboardFields || [],
+      liveBehaviorPolicy: definition.liveBehaviorPolicy || (definition.liveRisk
+        ? "Live behavior requires a separate risk review before changes."
+        : "No live behavior change required by this audit item."),
+      configStatus: buildConfigStatus(featureFlags),
       modules,
       runtimeRefs,
       testRefs,
