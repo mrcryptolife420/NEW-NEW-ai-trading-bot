@@ -80,7 +80,7 @@ function buildBacktestContext({ window, candle, symbol, model, config }) {
   return { market, book, newsSummary, regimeSummary, strategySummary, trendStateSummary, marketStateSummary, rawFeatures };
 }
 
-export async function runBacktest({ config, logger, symbol, client = null, historyStore = null, candles = null }) {
+export async function runBacktest({ config, logger, symbol, client = null, historyStore = null, candles = null, includeArtifacts = false }) {
   const effectiveClient = client || new BinanceClient({
     apiKey: "",
     apiSecret: "",
@@ -431,11 +431,21 @@ export async function runBacktest({ config, logger, symbol, client = null, histo
     config
   });
 
-  return {
+  const result = {
     symbol,
     calibration: model.getCalibrationSummary(),
     deployment: model.getDeploymentSummary(),
     ...report
   };
+  if (includeArtifacts) {
+    result.artifacts = {
+      trades,
+      scaleOuts,
+      equitySnapshots,
+      candleCount: candleSeries.length,
+      openPosition: position
+    };
+  }
+  return result;
 }
 

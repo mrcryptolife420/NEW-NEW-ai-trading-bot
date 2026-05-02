@@ -1,5 +1,6 @@
 ﻿import { runBacktest } from "../runtime/backtestRunner.js";
 import { runHistoryCommand } from "../runtime/marketHistory.js";
+import { parseBacktestWalkForwardArgs, runBacktestWalkForward } from "../runtime/walkForwardBacktest.js";
 import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayEngine.js";
 import { runReadModelCommand, runReadModelTraceCommand } from "../storage/readModelStore.js";
 import { TradingBot } from "../runtime/tradingBot.js";
@@ -144,6 +145,17 @@ export default async function runCli({
   if (command === "backtest") {
     const symbol = (args[0] || config.watchlist[0] || "BTCUSDT").toUpperCase();
     const result = await runBacktest({ config, logger, symbol });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "backtest:walkforward") {
+    const result = await runBacktestWalkForward({
+      config,
+      logger,
+      ...parseBacktestWalkForwardArgs(args, config)
+    });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;

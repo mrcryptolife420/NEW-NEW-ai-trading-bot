@@ -162,6 +162,7 @@ import { registerDynamicExitLevelsTests } from "./dynamicExitLevels.tests.js";
 import { registerBreakoutRetestStrategyTests } from "./breakoutRetestStrategy.tests.js";
 import { registerPullbackReclaimV2Tests } from "./pullbackReclaimV2.tests.js";
 import { registerDecisionSupportFoundationTests } from "./decisionSupportFoundation.tests.js";
+import { registerWalkForwardBacktestTests } from "./walkForwardBacktest.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32383,6 +32384,11 @@ await registerDecisionSupportFoundationTests({
   runCheck,
   assert,
   makeConfig
+});
+
+await registerWalkForwardBacktestTests({
+  runCheck,
+  assert
 });
 
 console.log("All checks passed.");

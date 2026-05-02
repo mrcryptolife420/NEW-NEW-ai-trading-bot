@@ -26,6 +26,7 @@
     "trace-symbol": "node src/cli.js trace-symbol",
     "download-history": "node src/cli.js download-history",
     "backtest": "node src/cli.js backtest",
+    "backtest:walkforward": "node src/cli.js backtest:walkforward",
     "dashboard": "node src/cli.js dashboard",
     "service:windows": ".\\Start-BotService.cmd",
     "install:windows": ".\\Install-Windows11.cmd",
