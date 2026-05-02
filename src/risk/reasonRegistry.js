@@ -2,11 +2,15 @@ const DEFAULT_REASON = {
   category: "other",
   plane: "other",
   severity: "low",
+  severityLevel: 3,
   hardSafety: false,
   paperSoftEligible: false,
+  paperCanRelax: false,
   probeEligible: false,
+  liveBlocks: false,
   rootPriority: 500,
   dashboardLabel: null,
+  operatorMessage: null,
   operatorAction: "observe"
 };
 
@@ -63,6 +67,20 @@ function humanize(code = "") {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function severityToLevel(severity = "low") {
+  switch (`${severity || ""}`.toLowerCase()) {
+    case "critical":
+      return 0;
+    case "high":
+      return 1;
+    case "medium":
+      return 2;
+    case "low":
+    default:
+      return 3;
+  }
+}
+
 function inferReasonDefinition(code = "") {
   const normalized = `${code || ""}`.trim().toLowerCase();
   if (!normalized) {
@@ -97,10 +115,20 @@ export function getReasonDefinition(code = "") {
   const explicit = DEFINITIONS[normalized] || {};
   const inferred = inferReasonDefinition(normalized);
   const merged = { ...DEFAULT_REASON, ...inferred, ...explicit };
+  const dashboardLabel = merged.dashboardLabel || humanize(normalized);
+  const paperCanRelax = Boolean((explicit.paperCanRelax ?? inferred.paperCanRelax) ?? merged.paperSoftEligible);
+  const liveBlocks = Boolean((explicit.liveBlocks ?? inferred.liveBlocks) ?? merged.hardSafety);
   return {
     ...merged,
+    severityLevel: Number.isFinite(Number(explicit.severityLevel ?? inferred.severityLevel))
+      ? Number(explicit.severityLevel ?? inferred.severityLevel)
+      : severityToLevel(merged.severity),
+    paperCanRelax,
+    paperSoftEligible: Boolean(merged.paperSoftEligible ?? paperCanRelax),
+    liveBlocks,
     code: normalized,
-    dashboardLabel: merged.dashboardLabel || humanize(normalized)
+    dashboardLabel,
+    operatorMessage: merged.operatorMessage || dashboardLabel
   };
 }
 
@@ -116,6 +144,10 @@ export function getReasonSeverity(code) {
   return getReasonDefinition(code).severity;
 }
 
+export function getReasonSeverityLevel(code) {
+  return getReasonDefinition(code).severityLevel;
+}
+
 export function isHardSafetyReason(code) {
   return Boolean(getReasonDefinition(code).hardSafety);
 }
@@ -124,8 +156,16 @@ export function isPaperSoftEligible(code) {
   return Boolean(getReasonDefinition(code).paperSoftEligible);
 }
 
+export function canPaperRelaxReason(code) {
+  return Boolean(getReasonDefinition(code).paperCanRelax);
+}
+
 export function isProbeEligibleReason(code) {
   return Boolean(getReasonDefinition(code).probeEligible);
+}
+
+export function reasonBlocksLive(code) {
+  return Boolean(getReasonDefinition(code).liveBlocks);
 }
 
 export function getReasonRootPriority(code) {
@@ -138,6 +178,10 @@ export function getDashboardLabel(code) {
 
 export function getOperatorAction(code) {
   return getReasonDefinition(code).operatorAction;
+}
+
+export function getOperatorMessage(code) {
+  return getReasonDefinition(code).operatorMessage;
 }
 
 export function sortReasonsByRootPriority(reasons = []) {

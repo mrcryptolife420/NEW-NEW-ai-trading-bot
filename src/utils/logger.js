@@ -1,5 +1,7 @@
-﻿function formatContext(context = {}) {
-  const entries = Object.entries(context).filter(
+import { redactSecrets } from "./redactSecrets.js";
+
+function formatContext(context = {}) {
+  const entries = Object.entries(redactSecrets(context)).filter(
     ([, value]) => value !== undefined && value !== null
   );
   if (entries.length === 0) {

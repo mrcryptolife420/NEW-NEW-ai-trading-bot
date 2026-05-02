@@ -25323,6 +25323,21 @@ export class TradingBot {
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),
       generatedAt: referenceNow,
+      mode: overview.mode,
+      running: Boolean(this.runtime.lifecycle?.activeRun),
+      status: readinessSummary.status || serviceSummary.status || "unknown",
+      readiness: readinessSummary,
+      risk: {
+        readiness: readinessSummary,
+        rootBlocker: rootBlockerSummary,
+        safety: currentSafety
+      },
+      capital: {
+        governor: summarizeCapitalGovernor(this.runtime.capitalGovernor || {}),
+        policy: capitalPolicySummary
+      },
+      lifecycle: summarizeOrderLifecycle(this.runtime.orderLifecycle || {}),
+      alerts: alertsSummary,
       analysis: {
         lastError: this.runtime.lastAnalysisError || null
       },
