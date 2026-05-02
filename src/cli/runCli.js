@@ -9,6 +9,11 @@ import { TradingBot } from "../runtime/tradingBot.js";
 import { BotManager } from "../runtime/botManager.js";
 import { buildRestArchitectureAudit, scanRestCallers } from "../runtime/restArchitectureAudit.js";
 import { buildExecutionIntentRows, buildExecutionIntentSummary } from "../execution/executionIntentView.js";
+import {
+  buildLearningFailureSummary,
+  buildLearningPromotionSummary,
+  buildLearningReplayPackSummary
+} from "../runtime/learningAnalytics.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -202,6 +207,21 @@ export default async function runCli({
           status: "ok",
           ...buildExecutionIntentSummary(runtime)
         };
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "learning:failures" || command === "learning:promotion" || command === "learning:replay-packs") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const journal = await store.loadJournal();
+    const result = command === "learning:failures"
+      ? buildLearningFailureSummary({ journal, runtime, config })
+      : command === "learning:promotion"
+        ? buildLearningPromotionSummary({ journal, runtime, config })
+        : buildLearningReplayPackSummary({ journal, runtime, config });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;

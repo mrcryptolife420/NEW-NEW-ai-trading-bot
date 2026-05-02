@@ -12,6 +12,15 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Execution intent CLI | Read-only | `src/cli/runCli.js`, `src/execution/executionIntentView.js` | `test/configOperatorMaintenance.tests.js` |
 | Reconcile evidence summary | Pure helper | `src/execution/reconcileEvidenceSummary.js` | `test/configOperatorMaintenance.tests.js` |
 | Dashboard payload normalizers | Pure helper | `src/runtime/dashboardPayloadNormalizers.js` | `test/configOperatorMaintenance.tests.js` |
+| Trade thesis | Analytics metadata | `src/runtime/tradeThesis.js`, `src/runtime/tradingBot.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Exit quality labels | Analytics only | `src/runtime/exitQuality.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Veto outcome labels | Analytics only | `src/runtime/vetoOutcome.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Failure library | Analytics only | `src/runtime/failureLibrary.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Regime confusion | Analytics only | `src/runtime/regimeConfusion.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Promotion dossier | Read-only diagnostics | `src/runtime/promotionDossier.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Rollback watch | Read-only diagnostics | `src/runtime/rollbackWatch.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Replay pack scoring | Read-only diagnostics | `src/runtime/replayPackScoring.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Learning analytics CLI | Read-only | `src/runtime/learningAnalytics.js`, `src/cli/runCli.js` | `test/learningAnalyticsMaintenance.tests.js` |
 | Reason registry metadata | Implemented | `src/risk/reasonRegistry.js` | `test/safetyMaintenance.tests.js` |
 | Secret redaction | Implemented | `src/utils/redactSecrets.js`, `src/utils/logger.js` | `test/safetyMaintenance.tests.js` |
 | OCO geometry regressions | Implemented | `src/execution/liveBroker.js` | `test/safetyMaintenance.tests.js` |
@@ -26,3 +35,5 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 - New paper profiles are diagnostics-first and do not allow hard-safety relaxation.
 - New CLI intent commands are read-only.
 - Reconcile evidence summaries do not change autofix behavior.
+- Learning analytics, promotion dossiers, rollback watch and replay-pack scoring are diagnostics only.
+- No automatic live promotion or live rollback is performed.

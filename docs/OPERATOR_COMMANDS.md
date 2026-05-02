@@ -15,9 +15,13 @@ All commands below are intended to be safe in the default paper setup. Commands 
 | `npm run readmodel:status` / `node src/cli.js readmodel:status` | Inspect read-model health | Read-only. |
 | `node src/cli.js readmodel:dashboard` | Export read-model dashboard summary | Read-only. |
 | `node src/cli.js request-budget` | Inspect REST/request-budget pressure from read-model | Read-only diagnostics. |
+| `node src/cli.js learning:failures` | Summarize exit-quality and failure-library labels | Read-only analytics. |
+| `node src/cli.js learning:promotion` | Build paper-to-live promotion dossier and rollback watch | Diagnostics only; no live promotion/rollback. |
+| `node src/cli.js learning:replay-packs` | Rank replay candidates for bad-veto, reconcile and complexity review | Read-only analytics. |
 
 ## Safety Notes
 
 - Do not set `BOT_MODE=live` unless the live acknowledgement, credentials and exchange protection checks pass.
 - `intents:list` and `intents:summary` intentionally do not resolve, delete or mutate intents.
+- `learning:*` commands intentionally do not promote strategies, roll back live settings or change thresholds.
 - Paper profile values are `sim`, `learn`, `research` and `demo_spot`; hard-safety blockers remain hard in all profiles.

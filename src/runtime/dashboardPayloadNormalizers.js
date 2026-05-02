@@ -36,6 +36,12 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     lifecycle: objectOrFallback(source.lifecycle, { status: "unknown" }),
     alerts: arrayOrEmpty(source.alerts),
     paperLearning: objectOrFallback(source.paperLearning || ops.paperLearning, { status: "unavailable" }),
-    recorder: objectOrFallback(source.recorder || source.dataRecorder, { status: "unavailable" })
+    recorder: objectOrFallback(source.recorder || source.dataRecorder, { status: "unavailable" }),
+    failureLibrarySummary: objectOrFallback(source.failureLibrarySummary || source.learningAnalytics?.failureLibrarySummary, { status: "unavailable" }),
+    exitQualitySummary: objectOrFallback(source.exitQualitySummary || source.learningAnalytics?.exitQualitySummary, { status: "unavailable" }),
+    vetoOutcomeSummary: objectOrFallback(source.vetoOutcomeSummary || source.learningAnalytics?.vetoOutcomeSummary, { status: "unavailable" }),
+    promotionDossierSummary: objectOrFallback(source.promotionDossierSummary || source.learningAnalytics?.promotionDossierSummary, { status: "unavailable" }),
+    rollbackWatchSummary: objectOrFallback(source.rollbackWatchSummary || source.learningAnalytics?.rollbackWatchSummary, { status: "unavailable" }),
+    regimeConfusionSummary: objectOrFallback(source.regimeConfusionSummary || source.learningAnalytics?.regimeConfusionSummary, { status: "unavailable" })
   };
 }

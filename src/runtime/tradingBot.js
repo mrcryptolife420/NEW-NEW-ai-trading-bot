@@ -128,6 +128,12 @@ import { buildOperatorActionResult } from "./operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "./tradingImprovementDiagnostics.js";
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "./restBudgetGovernor.js";
 import { buildFeatureAudit } from "./featureAudit.js";
+import {
+  buildLearningFailureSummary,
+  buildLearningPromotionSummary,
+  buildLearningReplayPackSummary
+} from "./learningAnalytics.js";
+import { buildTradeThesis } from "./tradeThesis.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -23495,6 +23501,13 @@ export class TradingBot {
         rootBlocker: effectivePrimaryReason,
         reasons: blockerReasons
       }),
+      tradeThesis: decision.tradeThesis || buildTradeThesis({
+        decision,
+        candidate: decision,
+        marketSnapshot: decision.marketSnapshot || {},
+        riskSummary: decision.riskSummary || decision.entryDiagnostics || {},
+        strategySummary: strategy
+      }),
       summary: decision.summary || null,
       setupStyle: decision.setupStyle || null,
       regime: decision.regime || null,
@@ -25328,6 +25341,9 @@ export class TradingBot {
       readModel: readModelSummary,
       report
     });
+    const learningFailureSummary = buildLearningFailureSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
+    const learningPromotionSummary = buildLearningPromotionSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
+    const learningReplayPackSummary = buildLearningReplayPackSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),
       generatedAt: referenceNow,
@@ -25533,6 +25549,12 @@ export class TradingBot {
       adaptiveLearning: adaptiveLearningSummary,
       badVetoLearning: rejectAdaptiveLearningSummary,
       tradingImprovementDiagnostics,
+      failureLibrarySummary: learningFailureSummary.failureLibrarySummary,
+      exitQualitySummary: learningFailureSummary.exitQualitySummary,
+      vetoOutcomeSummary: learningReplayPackSummary.vetoOutcomeSummary || {},
+      promotionDossierSummary: learningPromotionSummary.promotionDossierSummary,
+      rollbackWatchSummary: learningPromotionSummary.rollbackWatchSummary,
+      regimeConfusionSummary: learningReplayPackSummary.regimeConfusionSummary,
       marketProviders: marketProvidersSummary,
       requestWeight: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
       offlineTrainer: offlineTrainerSummary,
