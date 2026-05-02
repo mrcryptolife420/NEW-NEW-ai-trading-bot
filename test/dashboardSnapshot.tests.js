@@ -153,8 +153,69 @@ export async function registerDashboardSnapshotTests({
     assert.equal(snapshot.report.featureIntegrationAudit.status, "review_required");
     assert.ok(snapshot.featureIntegrationAudit.topP1.some((item) => item.id === "net_edge_gate"));
     assert.ok(snapshot.featureIntegrationAudit.topMissingDashboard.some((item) => item.id === "indicator_feature_registry"));
+    assert.equal(snapshot.topDecisions[0].decisionSupportDiagnostics.status, "disabled");
     assert.equal(snapshot.ops.riskLocks.manualReviewPending, true);
     assert.ok(snapshot.ops.audit);
     assert.equal(snapshot.operatorDeck.cards.some((item) => item.id === "manual_review"), true);
+  });
+
+  await runCheck("dashboard decision view exposes diagnostic-only decision support modules", async () => {
+    const bot = Object.create(TradingBot.prototype);
+    bot.config = makeConfig({
+      botMode: "paper",
+      enableNetEdgeGate: true,
+      minNetEdgeBps: 180,
+      enableFailedBreakoutDetector: true,
+      enableFundingOiMatrix: true,
+      enableSpotFuturesDivergence: true,
+      enableLeadershipContext: true
+    });
+    bot.journal = { counterfactuals: [] };
+
+    const view = bot.buildDashboardDecisionView({
+      symbol: "SOLUSDT",
+      allow: false,
+      probability: 0.57,
+      threshold: 0.55,
+      blockerReasons: ["model_confidence_too_low"],
+      marketSnapshot: {
+        market: {
+          priorRangeHigh: 100,
+          close: 99.2,
+          closeLocation: 0.32,
+          breakoutFollowThroughScore: 0.22,
+          volumeAcceptanceScore: 0.28,
+          cvdDivergenceScore: 0.78,
+          cvdTrendAlignment: -0.32,
+          momentum20: -0.018
+        },
+        book: {
+          mid: 99.2,
+          spreadBps: 16,
+          depthConfidence: 0.38,
+          bookPressure: -0.4
+        }
+      },
+      streamFeatures: { tradeFlowImbalance: -0.44 },
+      marketStructureSummary: {
+        fundingRate: 0.001,
+        fundingAcceleration: 0.0004,
+        openInterestDeltaPct: 0.04,
+        basisBps: 110,
+        takerImbalance: -0.4
+      },
+      marketProviderSummary: {
+        macro: { sectorReturnPct: -0.015, sectorBreadth: 0.25 },
+        crossExchange: { futuresPrice: 99.85 }
+      }
+    });
+
+    assert.equal(view.decisionSupportDiagnostics.runtimeApplied, false);
+    assert.equal(view.netEdgeGate.block, false);
+    assert.equal(view.netEdgeGate.wouldBlock, true);
+    assert.equal(view.failedBreakoutDetector.status, "failed_breakout");
+    assert.equal(view.marketContext.fundingOiMatrix.enabled, true);
+    assert.equal(view.marketContext.spotFuturesDivergence.status, "diverged");
+    assert.equal(view.leadershipContext.enabled, true);
   });
 }

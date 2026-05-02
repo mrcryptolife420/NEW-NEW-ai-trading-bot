@@ -92,6 +92,7 @@ const TARGET_FEATURES = [
     flags: ["enableNetEdgeGate", "netEdgeGateLiveBlockOnly"],
     modules: ["src/runtime/netEdgeGate.js"],
     expectedRuntimeRefs: ["buildNetEdgeGate"],
+    expectedDashboardRefs: ["netEdgeGate"],
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     liveRisk: true,
@@ -102,13 +103,14 @@ const TARGET_FEATURES = [
     testsToAdd: ["test/netEdgeGateIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
     missingDashboardFields: ["candidate.netEdgeGate", "decision.netEdgeGate", "candidate.netExecutableExpectancyScore"],
     liveBehaviorPolicy: "Future live behavior may only block or add caution when enabled; no threshold lowering or softening.",
-    note: "Module/config/tests exist, but runtime callsite is not wired yet."
+    note: "Module/config/tests exist and diagnostics are wired; live blocking behavior still requires explicit review."
   },
   {
     id: "failed_breakout_detector",
     flags: ["enableFailedBreakoutDetector"],
     modules: ["src/strategy/failedBreakoutDetector.js"],
     expectedRuntimeRefs: ["detectFailedBreakout"],
+    expectedDashboardRefs: ["failedBreakoutDetector"],
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
@@ -118,13 +120,14 @@ const TARGET_FEATURES = [
     testsToAdd: ["test/failedBreakoutDetectorIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
     missingDashboardFields: ["candidate.failedBreakoutDetector", "candidate.falseBreakoutRisk"],
     liveBehaviorPolicy: "Future live behavior may only add caution/blocking for negative evidence; no positive live relief.",
-    note: "Central detector exists, while risk/strategy still use older inline failed-breakout logic."
+    note: "Central detector is visible in diagnostics; risk/strategy behavior still uses older inline failed-breakout logic."
   },
   {
     id: "funding_oi_matrix",
     flags: ["enableFundingOiMatrix"],
     modules: ["src/market/derivativesMatrix.js"],
     expectedRuntimeRefs: ["buildFundingOiMatrix"],
+    expectedDashboardRefs: ["fundingOiMatrix"],
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
@@ -134,13 +137,14 @@ const TARGET_FEATURES = [
     testsToAdd: ["test/fundingOiMatrixIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
     missingDashboardFields: ["marketContext.fundingOiMatrix", "marketContext.fundingOiMatrixStatus"],
     liveBehaviorPolicy: "Diagnostics first; future live use may only add negative risk drag when data quality is sufficient.",
-    note: "Pure derivatives matrix exists but is not yet fed into market features/risk."
+    note: "Pure derivatives matrix is visible in diagnostics but is not yet fed into market features/risk behavior."
   },
   {
     id: "spot_futures_divergence",
     flags: ["enableSpotFuturesDivergence"],
     modules: ["src/market/leadershipContext.js"],
     expectedRuntimeRefs: ["spotFuturesDivergenceBps", "enableSpotFuturesDivergence"],
+    expectedDashboardRefs: ["spotFuturesDivergence"],
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
@@ -150,13 +154,14 @@ const TARGET_FEATURES = [
     testsToAdd: ["test/leadershipContextIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
     missingDashboardFields: ["marketContext.spotFuturesDivergence", "marketContext.spotFuturesDivergenceStatus"],
     liveBehaviorPolicy: "Diagnostics first; future live use may only add caution for adverse divergence.",
-    note: "Leadership module can compute divergence, but the flag is not wired into runtime context."
+    note: "Leadership module computes divergence for diagnostics; risk behavior remains unchanged."
   },
   {
     id: "leadership_context",
     flags: ["enableLeadershipContext"],
     modules: ["src/market/leadershipContext.js"],
     expectedRuntimeRefs: ["buildLeadershipContext"],
+    expectedDashboardRefs: ["leadershipContext"],
     tests: ["test/decisionSupportFoundation.tests.js"],
     dashboardExpected: true,
     expectedUnusedUntilIntegrated: true,
@@ -166,7 +171,7 @@ const TARGET_FEATURES = [
     testsToAdd: ["test/leadershipContextIntegration.tests.js", "test/dashboardSnapshot.tests.js"],
     missingDashboardFields: ["candidate.leadershipContext", "marketContext.btcEthLeadership"],
     liveBehaviorPolicy: "Diagnostics first; positive signals cannot lower live thresholds without a separate review.",
-    note: "Pure module exists but is not yet consumed by scanner/risk outside tests."
+    note: "Pure module is visible in diagnostics; scanner/risk behavior remains unchanged."
   },
   {
     id: "sector_rotation",
@@ -457,7 +462,9 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
       modules.push({ path: modulePath, exists: await pathExists(projectRoot, modulePath) });
     }
     const expectedRefs = definition.expectedRuntimeRefs || [];
+    const expectedDashboardRefs = definition.expectedDashboardRefs || expectedRefs;
     const allRefs = [...new Set(expectedRefs.flatMap((token) => findRefs(entries, token)))].sort((left, right) => left.localeCompare(right));
+    const allDashboardRefs = [...new Set(expectedDashboardRefs.flatMap((token) => findRefs(entries, token)))].sort((left, right) => left.localeCompare(right));
     const rawRuntimeRefs = filterRuntimeRefs(allRefs);
     const runtimeRefs = rawRuntimeRefs.filter((file) => (
       definition.allowModuleInternalRuntime || !(definition.modules || []).includes(file)
@@ -468,7 +475,7 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
         ...(definition.tests || []).filter((testPath) => entries.some((entry) => entry.relativePath === testPath))
       ])
     ].sort((left, right) => left.localeCompare(right));
-    const dashboardRefs = filterDashboardRefs(allRefs);
+    const dashboardRefs = filterDashboardRefs(allDashboardRefs);
     const docs = [];
     for (const docPath of definition.docs || []) {
       docs.push({ path: docPath, exists: await pathExists(projectRoot, docPath) });

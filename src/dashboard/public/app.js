@@ -888,11 +888,14 @@ function renderOpportunityBoard(snapshot) {
     return;
   }
   replaceChildren(elements.opportunityList, cards.map((decision) => {
+    const support = decision.decisionSupportDiagnostics || {};
+    const supportSummary = support.summary || {};
     const tags = [
       makeTag(decision.allow ? "tradebaar" : "blocked", decision.allow ? "tag positive" : "tag negative"),
       decision.strategy?.strategyLabel ? makeTag(decision.strategy.strategyLabel) : null,
       decision.scannerPriority?.scannerLane ? makeTag(`lane ${decision.scannerPriority.scannerLane}`) : null,
-      decision.gridContext?.gridEntrySide ? makeTag(titleize(decision.gridContext.gridEntrySide)) : null
+      decision.gridContext?.gridEntrySide ? makeTag(titleize(decision.gridContext.gridEntrySide)) : null,
+      support.status && support.status !== "disabled" ? makeTag(`support ${titleize(support.status)}`) : null
     ].filter(Boolean);
     const body = makeNode("div");
     body.append(
@@ -909,6 +912,26 @@ function renderOpportunityBoard(snapshot) {
         },
         { label: "Reason", value: humanizeReason(decisionPrimaryReason(decision), "-"), detail: decision.marketState?.phase ? titleize(decision.marketState.phase) : "-" }
       ]),
+      ...(support.status && support.status !== "disabled" ? [makeMetricRow([
+        {
+          label: "Net edge",
+          value: Number.isFinite(Number(supportSummary.netEdgeBps)) ? `${formatNumber(supportSummary.netEdgeBps, 1)} bps` : "n/a",
+          detail: support.netEdgeGate?.status ? titleize(support.netEdgeGate.status) : "-"
+        },
+        {
+          label: "Breakout risk",
+          value: Number.isFinite(Number(supportSummary.failedBreakoutRisk)) ? formatPct(supportSummary.failedBreakoutRisk, 0) : "n/a",
+          detail: support.failedBreakoutDetector?.status ? titleize(support.failedBreakoutDetector.status) : "-"
+        },
+        {
+          label: "Leadership",
+          value: support.leadershipContext?.leadershipState ? titleize(support.leadershipContext.leadershipState) : "n/a",
+          detail: compactJoin([
+            support.spotFuturesDivergence?.status ? `basis ${titleize(support.spotFuturesDivergence.status)}` : null,
+            support.fundingOiMatrix?.status ? `OI ${titleize(support.fundingOiMatrix.status)}` : null
+          ]) || "-"
+        }
+      ])] : []),
       makeSignalMiniChart(decision),
       makeTagList(tags)
     );

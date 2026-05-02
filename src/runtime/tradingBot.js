@@ -103,6 +103,7 @@ import { ReplayLabService } from "./replayLabService.js";
 import { BadVetoLearningService } from "./badVetoLearningService.js";
 import { buildFeatureGovernanceDecision } from "./featureGovernanceService.js";
 import { compareByNetExecutableExpectancy, resolveCandidateNetExecutableExpectancyScore } from "./candidateRanking.js";
+import { buildDecisionSupportDiagnostics } from "./decisionSupportDiagnostics.js";
 import {
   buildOnlineAdaptationGuidance,
   buildOnlineAdaptationState,
@@ -21273,7 +21274,13 @@ export class TradingBot {
       this.runtime.pairHealth = summarizePairHealth({ ...pairHealthSnapshot, leadSymbol: rankedCandidates[0]?.symbol || null, leadScore: rankedCandidates[0]?.pairHealthSummary?.score ?? null });
       this.runtime.qualityQuorum = summarizeQualityQuorum(buildRuntimeQualityQuorum(rankedCandidates, now.toISOString()));
       this.runtime.venueConfirmation = summarizeVenueConfirmation(this.referenceVenue.summarizeRuntime(rankedCandidates, now.toISOString()));
-      const dashboardDecisionViews = rankedCandidates.map((candidate) => ({
+      const dashboardDecisionViews = rankedCandidates.map((candidate) => {
+        const decisionSupportDiagnostics = buildDecisionSupportDiagnostics({
+          candidate,
+          config: this.config,
+          botMode: this.config.botMode
+        });
+        return ({
       symbol: candidate.symbol,
       summary: this.buildCandidateSummary(candidate),
       setupStyle: buildSetupStyle(candidate),
@@ -21283,6 +21290,17 @@ export class TradingBot {
       baselineCore: candidate.strategySummary?.baselineCore || candidate.decision.baselineCoreApplied || null,
       marketCondition: candidate.marketConditionSummary || null,
       missedTradeTuning: candidate.decision.missedTradeTuningApplied || null,
+      decisionSupportDiagnostics,
+      netEdgeGate: decisionSupportDiagnostics.netEdgeGate || null,
+      failedBreakoutDetector: decisionSupportDiagnostics.failedBreakoutDetector || null,
+      leadershipContext: decisionSupportDiagnostics.leadershipContext || null,
+      marketContext: {
+        fundingOiMatrix: decisionSupportDiagnostics.fundingOiMatrix || null,
+        fundingOiMatrixStatus: decisionSupportDiagnostics.fundingOiMatrix?.status || null,
+        spotFuturesDivergence: decisionSupportDiagnostics.spotFuturesDivergence || null,
+        spotFuturesDivergenceStatus: decisionSupportDiagnostics.spotFuturesDivergence?.status || null,
+        btcEthLeadership: decisionSupportDiagnostics.leadershipContext || null
+      },
       probability: num(candidate.score.probability, 4),
       rawProbability: num(candidate.score.rawProbability || 0, 4),
       confidence: num(candidate.score.confidence || 0, 4),
@@ -21631,7 +21649,8 @@ export class TradingBot {
       exitPolicy: candidate.decision.exitPolicy || null,
       adaptiveContext: candidate.decision.adaptiveContext || null,
       familyOpportunityBudget: candidate.decision.familyOpportunityBudget || null
-    }));
+        });
+      });
       this.runtime.latestDecisions = this.prioritizeDashboardDecisionViews(dashboardDecisionViews)
         .slice(0, this.config.dashboardDecisionLimit);
       const dashboardVisibleSymbols = new Set(this.runtime.latestDecisions.map((item) => item.symbol).filter(Boolean));
@@ -23271,6 +23290,11 @@ export class TradingBot {
     const entryTimingRefinement = buildEntryTimingRefinementView(decision);
     const learningImpact = buildLearningImpactView(decision);
     const scannerPriority = buildScannerPriorityView(decision);
+    const decisionSupportDiagnostics = decision.decisionSupportDiagnostics || buildDecisionSupportDiagnostics({
+      candidate: decision,
+      config: this.config || {},
+      botMode: this.config?.botMode || "paper"
+    });
     const structureContext = decision.structureContext || decision.signalQuality?.structureContext || decision.signalQualitySummary?.structureContext || {
       bos: decision.marketSnapshot?.market?.bullishBosActive ? "bullish" : decision.marketSnapshot?.market?.bearishBosActive ? "bearish" : "none",
       bosStrengthScore: num(decision.marketSnapshot?.market?.bosStrengthScore || 0, 4),
@@ -23411,6 +23435,18 @@ export class TradingBot {
       edgeToThreshold: num(decisionTruth.thresholdBuffer ?? decision.edgeToThreshold ?? ((decision.probability || 0) - (decision.threshold || 0)), 4),
       opportunityScore: num(decision.opportunityScore || 0, 4),
       expectedNetEdge,
+      decisionSupportDiagnostics,
+      netEdgeGate: decision.netEdgeGate || decisionSupportDiagnostics.netEdgeGate || null,
+      failedBreakoutDetector: decision.failedBreakoutDetector || decisionSupportDiagnostics.failedBreakoutDetector || null,
+      leadershipContext: decision.leadershipContext || decisionSupportDiagnostics.leadershipContext || null,
+      marketContext: {
+        ...(decision.marketContext || {}),
+        fundingOiMatrix: decision.marketContext?.fundingOiMatrix || decisionSupportDiagnostics.fundingOiMatrix || null,
+        fundingOiMatrixStatus: decision.marketContext?.fundingOiMatrixStatus || decisionSupportDiagnostics.fundingOiMatrix?.status || null,
+        spotFuturesDivergence: decision.marketContext?.spotFuturesDivergence || decisionSupportDiagnostics.spotFuturesDivergence || null,
+        spotFuturesDivergenceStatus: decision.marketContext?.spotFuturesDivergenceStatus || decisionSupportDiagnostics.spotFuturesDivergence?.status || null,
+        btcEthLeadership: decision.marketContext?.btcEthLeadership || decisionSupportDiagnostics.leadershipContext || null
+      },
       marketProviders,
       entryTimingRefinement,
       portfolioAllocator: summarizePortfolioAllocator(decision.portfolioAllocator || {}),

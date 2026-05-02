@@ -1,5 +1,6 @@
 import { buildFundingOiMatrix } from "../src/market/derivativesMatrix.js";
 import { buildLeadershipContext } from "../src/market/leadershipContext.js";
+import { buildDecisionSupportDiagnostics } from "../src/runtime/decisionSupportDiagnostics.js";
 import { estimateRiskOfRuin } from "../src/runtime/riskOfRuinSimulator.js";
 import { buildNetEdgeGate } from "../src/runtime/netEdgeGate.js";
 import { buildWalkForwardStudy } from "../src/runtime/walkForwardBacktest.js";
@@ -95,6 +96,95 @@ export async function registerDecisionSupportFoundationTests({ runCheck, assert,
     assert.equal(leader.divergenceState, "diverged");
     const riskOff = buildLeadershipContext({ symbolReturnPct: -0.02, btcReturnPct: -0.04, ethReturnPct: -0.045, sectorBreadth: 0.2 });
     assert.ok(riskOff.riskOffScore > 0.45);
+  });
+
+  await runCheck("decision support diagnostics stay disabled until feature flags are enabled", () => {
+    const diagnostics = buildDecisionSupportDiagnostics({
+      config: makeConfig({
+        enableNetEdgeGate: false,
+        enableFailedBreakoutDetector: false,
+        enableFundingOiMatrix: false,
+        enableSpotFuturesDivergence: false,
+        enableLeadershipContext: false
+      }),
+      candidate: {
+        symbol: "BTCUSDT",
+        probability: 0.7,
+        threshold: 0.55
+      }
+    });
+    assert.equal(diagnostics.status, "disabled");
+    assert.equal(diagnostics.netEdgeGate.status, "disabled");
+    assert.equal(diagnostics.failedBreakoutDetector.status, "disabled");
+    assert.equal(diagnostics.fundingOiMatrix.status, "disabled");
+    assert.equal(diagnostics.leadershipContext.status, "disabled");
+    assert.equal(diagnostics.spotFuturesDivergence.status, "disabled");
+  });
+
+  await runCheck("decision support diagnostics surface existing modules without applying trading behavior", () => {
+    const diagnostics = buildDecisionSupportDiagnostics({
+      botMode: "live",
+      config: makeConfig({
+        botMode: "live",
+        enableNetEdgeGate: true,
+        minNetEdgeBps: 220,
+        enableFailedBreakoutDetector: true,
+        enableFundingOiMatrix: true,
+        enableSpotFuturesDivergence: true,
+        enableLeadershipContext: true
+      }),
+      candidate: {
+        symbol: "SOLUSDT",
+        score: { probability: 0.57 },
+        decision: {
+          threshold: 0.55,
+          executionPlan: { expectedSlippageBps: 8 }
+        },
+        marketSnapshot: {
+          market: {
+            priorRangeHigh: 100,
+            close: 99.2,
+            closeLocation: 0.32,
+            breakoutFollowThroughScore: 0.22,
+            volumeAcceptanceScore: 0.28,
+            cvdDivergenceScore: 0.78,
+            cvdTrendAlignment: -0.32,
+            momentum20: -0.018
+          },
+          book: {
+            mid: 99.2,
+            spreadBps: 16,
+            depthConfidence: 0.38,
+            bookPressure: -0.4
+          }
+        },
+        streamFeatures: { tradeFlowImbalance: -0.44 },
+        marketStructureSummary: {
+          fundingRate: 0.001,
+          fundingAcceleration: 0.0004,
+          openInterestDeltaPct: 0.04,
+          basisBps: 110,
+          takerImbalance: -0.4
+        },
+        globalMarketContextSummary: {
+          btcReturnPct: -0.025,
+          ethReturnPct: -0.03
+        },
+        marketProviderSummary: {
+          macro: { sectorReturnPct: -0.015, sectorBreadth: 0.25 },
+          crossExchange: { futuresPrice: 99.85 }
+        }
+      }
+    });
+    assert.equal(diagnostics.runtimeApplied, false);
+    assert.equal(diagnostics.diagnosticOnly, true);
+    assert.equal(diagnostics.netEdgeGate.runtimeApplied, false);
+    assert.equal(diagnostics.netEdgeGate.block, false);
+    assert.equal(diagnostics.netEdgeGate.wouldBlock, true);
+    assert.equal(diagnostics.failedBreakoutDetector.status, "failed_breakout");
+    assert.equal(diagnostics.fundingOiMatrix.enabled, true);
+    assert.equal(diagnostics.leadershipContext.enabled, true);
+    assert.equal(diagnostics.spotFuturesDivergence.status, "diverged");
   });
 
   await runCheck("walk-forward study is deterministic and detects degradation", () => {

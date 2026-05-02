@@ -60,3 +60,28 @@ Acceptance:
 2. Diagnostics-only runtime wiring for P1/P2 items behind existing flags.
 3. Paper/shadow-only behavior after replay evidence.
 4. Live review for stricter-only changes; no live threshold relief or safety weakening.
+
+## Batch 3: diagnostics-only runtime wiring
+
+Batch 3 wires existing P1/P2 modules into candidate and dashboard diagnostics only:
+
+- `net_edge_gate`
+- `failed_breakout_detector`
+- `funding_oi_matrix`
+- `spot_futures_divergence`
+- `leadership_context`
+
+The contract is intentionally read-only:
+
+- `runtimeApplied` is always `false`.
+- `diagnosticOnly` is always `true`.
+- net-edge output exposes `wouldBlock`, but keeps `block: false` in the dashboard diagnostic wrapper.
+- no entry permissioning, ranking, sizing, execution style, thresholds, or live safety behavior changes.
+
+Future behavior changes must start paper/shadow-only unless the live change is strictly more conservative and separately reviewed.
+
+Status after Batch 3:
+
+- `failed_breakout_detector`, `funding_oi_matrix`, `spot_futures_divergence`, and `leadership_context` are complete by the audit contract for diagnostics visibility.
+- `net_edge_gate` is diagnostically wired, but remains `live_risk_review_needed` before any live blocking behavior can be treated as active.
+- Remaining `missing_dashboard` items are P3/P4 surfaces such as indicator registry detail, dynamic exit suggestions, exit intelligence v2, trade quality analytics, and sector rotation.
