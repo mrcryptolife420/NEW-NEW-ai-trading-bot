@@ -109,6 +109,7 @@ import {
   summarizeOnlineAdaptation,
   updateOnlineAdaptationState
 } from "./onlineAdaptationController.js";
+import { updateOpenPositionExcursion } from "./tradeQualityAnalytics.js";
 import { AuditLogService } from "./auditLogService.js";
 import { AdaptiveGovernanceService } from "./adaptiveGovernanceService.js";
 import {
@@ -20712,8 +20713,14 @@ export class TradingBot {
             reason: exitDecision.exitIntelligenceV2 ? "exit_intelligence_v2_trail" : (exitIntelligenceSummary.reason || "protect_winner")
           });
         }
-        position.highestPrice = exitDecision.updatedHigh;
-        position.lowestPrice = exitDecision.updatedLow;
+        updateOpenPositionExcursion(position, {
+          price: marketSnapshot.book.mid,
+          highPrice: marketSnapshot.market?.high || exitDecision.updatedHigh,
+          lowPrice: marketSnapshot.market?.low || exitDecision.updatedLow,
+          at: nowIso()
+        });
+        position.highestPrice = Math.max(position.highestPrice || exitDecision.updatedHigh, exitDecision.updatedHigh);
+        position.lowestPrice = Math.min(position.lowestPrice || exitDecision.updatedLow, exitDecision.updatedLow);
         position.lastMarkedPrice = marketSnapshot.book.mid;
         position.latestSpreadBps = marketSnapshot.book.spreadBps;
         position.latestNewsSummary = newsSummary;
@@ -23596,6 +23603,7 @@ export class TradingBot {
   buildTradeView(trade) {
     const pnl = buildTradePnlBreakdown(trade, this.config);
     const reasonView = summarizeTradeReasonView(trade, pnl);
+    const review = buildTradeQualityReview(trade);
     return {
       id: trade.id,
       symbol: trade.symbol,
@@ -23615,6 +23623,16 @@ export class TradingBot {
       netPnlPct: num(trade.netPnlPct || 0, 4),
       mfePct: num(trade.mfePct || 0, 4),
       maePct: num(trade.maePct || 0, 4),
+      maximumFavorableExcursionPct: num(trade.maximumFavorableExcursionPct ?? trade.mfePct ?? 0, 4),
+      maximumAdverseExcursionPct: num(trade.maximumAdverseExcursionPct ?? trade.maePct ?? 0, 4),
+      exitEfficiencyPct: num(trade.exitEfficiencyPct ?? review.pathQuality?.exitEfficiencyPct ?? 0, 4),
+      gaveBackPct: num(trade.gaveBackPct ?? review.pathQuality?.gaveBackPct ?? 0, 4),
+      bestPossibleExitPrice: trade.bestPossibleExitPrice == null ? null : num(trade.bestPossibleExitPrice, 6),
+      worstAdversePrice: trade.worstAdversePrice == null ? null : num(trade.worstAdversePrice, 6),
+      timeToMfeMinutes: trade.timeToMfeMinutes == null ? null : num(trade.timeToMfeMinutes, 2),
+      timeToMaeMinutes: trade.timeToMaeMinutes == null ? null : num(trade.timeToMaeMinutes, 2),
+      tradeQualityLabel: trade.tradeQualityLabel || review.pathQuality?.tradeQualityLabel || null,
+      tradeQualityLabels: arr(trade.tradeQualityLabels || review.pathQuality?.tradeQualityLabels || []).slice(0, 8),
       labelScore: num(trade.labelScore || 0, 4),
       brokerMode: trade.brokerMode || null,
       executionQualityScore: num(trade.executionQualityScore || 0, 4),
@@ -23634,7 +23652,7 @@ export class TradingBot {
       reasonNote: reasonView.reasonNote,
       exitSource: trade.exitSource || null,
       exitIntelligence: summarizeExitIntelligence(trade.exitIntelligenceSummary || {}),
-      review: buildTradeQualityReview(trade),
+      review,
       learningAttribution: summarizeLearningAttribution(resolveTradeLearningAttribution(trade)),
         onlineAdaptation: trade.onlineAdaptation || null,
         entryRationale: sanitizeEntryRationaleForView(trade.entryRationale || null)
@@ -23755,6 +23773,7 @@ export class TradingBot {
       exitPrice: num(trade.exitPrice || 0, 6),
       pnlQuote: num(trade.pnlQuote || 0, 2),
       netPnlPct: num(trade.netPnlPct || 0, 4),
+      tradePathQuality: review.pathQuality || null,
       strategy: trade.strategyAtEntry || rationale.strategy?.strategyLabel || rationale.strategy?.activeStrategy || null,
       regime: trade.regimeAtEntry || rationale.regimeSummary?.regime || null,
       whyOpened: rationale.summary || `${trade.symbol} trade geopend.`,

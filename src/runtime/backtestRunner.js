@@ -19,6 +19,11 @@ import {
   resolveSimulationBuyFill,
   resolveSimulationSellQuantity
 } from "./backtestExecution.js";
+import {
+  buildTradeQualityAnalytics,
+  initializePositionExcursionTracking,
+  updateOpenPositionExcursion
+} from "./tradeQualityAnalytics.js";
 
 function buildNewsSummary() {
   return {
@@ -174,11 +179,21 @@ export async function runBacktest({ config, logger, symbol, client = null, histo
           requestedQuoteAmount: pendingEntry.quoteAmount,
           entryExecutionAttribution
         };
+        initializePositionExcursionTracking(position, {
+          price: fillEstimate.fillPrice,
+          at: new Date(position.entryTime).toISOString()
+        });
       }
       pendingEntry = null;
     }
 
     if (position) {
+      updateOpenPositionExcursion(position, {
+        price: context.book.mid,
+        highPrice: candle.high,
+        lowPrice: candle.low,
+        at: new Date(candle.closeTime).toISOString()
+      });
       const exitDecision = buildSimulationExitDecision({
         config,
         position,
@@ -269,6 +284,7 @@ export async function runBacktest({ config, logger, symbol, client = null, histo
         if (!executedQuantity) {
           continue;
         }
+        const exitAt = new Date(candle.closeTime).toISOString();
         const grossProceeds = executedQuantity * fillEstimate.fillPrice;
         const fee = grossProceeds * feeRate;
         const proceeds = grossProceeds - fee;
@@ -276,6 +292,13 @@ export async function runBacktest({ config, logger, symbol, client = null, histo
         const allocatedCost = position.totalCost * proportion;
         const pnlQuote = proceeds - allocatedCost;
         const netPnlPct = allocatedCost ? pnlQuote / allocatedCost : 0;
+        const tradeQualityAnalytics = buildTradeQualityAnalytics({
+          position,
+          exitPrice: fillEstimate.fillPrice,
+          netPnlPct,
+          reason: exitDecision.reason,
+          exitAt
+        });
         quoteFree += proceeds;
         if (executedQuantity < originalQuantity) {
           position.quantity -= executedQuantity;
@@ -288,7 +311,7 @@ export async function runBacktest({ config, logger, symbol, client = null, histo
         const trade = {
           symbol,
           entryAt: new Date(position.entryTime).toISOString(),
-          exitAt: new Date(candle.closeTime).toISOString(),
+          exitAt,
           entryPrice: position.entryPrice,
           exitPrice: fillEstimate.fillPrice,
           quantity: executedQuantity,
@@ -298,6 +321,7 @@ export async function runBacktest({ config, logger, symbol, client = null, histo
           netPnlPct,
           mfePct: position.entryPrice ? Math.max(0, (position.highestPrice - position.entryPrice) / position.entryPrice) : 0,
           maePct: position.entryPrice ? Math.min(0, (position.lowestPrice - position.entryPrice) / position.entryPrice) : 0,
+          ...tradeQualityAnalytics,
           executionQualityScore: execution.buildExecutionQuality({ marketSnapshot: { book: exitBook }, fillPrice: fillEstimate.fillPrice, side: "SELL" }),
           captureEfficiency: position.probabilityAtEntry ? netPnlPct / Math.max(position.probabilityAtEntry, 0.05) : 0,
           regimeAtEntry: position.regimeAtEntry,

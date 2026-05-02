@@ -10,6 +10,7 @@ import {
   buildPortfolioOverlapAtEntry,
   buildStopPlanAtEntry
 } from "./tradeAnalyticsContext.js";
+import { buildTradeQualityAnalytics, initializePositionExcursionTracking } from "../runtime/tradeQualityAnalytics.js";
 
 function ensurePaperState(runtime, startingCash) {
   if (!runtime.paperPortfolio) {
@@ -396,6 +397,7 @@ export class PaperBroker {
 
     runtime.openPositions.push(position);
     validatePaperPortfolioState(runtime);
+    initializePositionExcursionTracking(position, { price: executionPrice, at: position.entryAt });
     return position;
   }
 
@@ -556,11 +558,19 @@ export class PaperBroker {
       throw partialExitError;
     }
 
+    const exitAt = nowIso();
+    const tradeQualityAnalytics = buildTradeQualityAnalytics({
+      position,
+      exitPrice: executionPrice,
+      netPnlPct,
+      reason,
+      exitAt
+    });
     return {
       id: position.id,
       symbol: position.symbol,
       entryAt: position.entryAt,
-      exitAt: nowIso(),
+      exitAt,
       entryPrice: position.entryPrice,
       exitPrice: executionPrice,
       quantity: executedQuantity,
@@ -572,6 +582,7 @@ export class PaperBroker {
       netPnlPct,
       mfePct,
       maePct,
+      ...tradeQualityAnalytics,
       executionQualityScore,
       captureEfficiency,
       entryExecutionAttribution: position.entryExecutionAttribution || null,

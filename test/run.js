@@ -157,6 +157,7 @@ import { registerExitRegretDiagnosticsTests } from "./exitRegretDiagnostics.test
 import { registerReconcileAutofixToleranceTests } from "./reconcileAutofixTolerance.tests.js";
 import { registerIndicatorFeatureRegistryTests } from "./indicatorFeatureRegistry.tests.js";
 import { registerExitIntelligenceV2Tests } from "./exitIntelligenceV2.tests.js";
+import { registerTradeQualityAnalyticsTests } from "./tradeQualityAnalytics.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32329,6 +32330,12 @@ await registerExitIntelligenceV2Tests({
   runCheck,
   assert,
   RiskManager,
+  makeConfig
+});
+
+await registerTradeQualityAnalyticsTests({
+  runCheck,
+  assert,
   makeConfig
 });
 

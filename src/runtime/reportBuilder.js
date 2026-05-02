@@ -1,6 +1,7 @@
 import { getConfiguredTradingSource, matchesBrokerMode, matchesTradingSource } from "../utils/tradingSource.js";
 import { buildPaperLiveParitySummary } from "./paperLiveParity.js";
 import { buildExitRegretReview, buildOpenPositionExitReview, summarizeTradeAutopsies } from "./tradeAutopsy.js";
+import { buildTradePathQualitySummary, buildTradeQualityAnalytics } from "./tradeQualityAnalytics.js";
 
 function safeDivide(numerator, denominator, fallback = 0) {
   return denominator ? numerator / denominator : fallback;
@@ -592,6 +593,7 @@ function buildPostTradeAnalytics(trades = []) {
     summary: buildExpectancyMetrics(trades),
     tradeAutopsy: summarizeTradeAutopsies(trades),
     exitRegret: buildExitRegretReview(trades),
+    tradePathQuality: buildTradePathQualitySummary(trades),
     resolutionDistribution: buildDistribution(trades, (trade) => bucketResolutionMinutes(resolveTradeDurationMinutes(trade))),
     stopOutDistribution: buildDistribution(
       trades.filter((trade) => {
@@ -1482,6 +1484,7 @@ function buildAttributionSummary(trades = []) {
 }
 
 export function buildTradeQualityReview(trade = {}) {
+  const pathQuality = buildTradeQualityAnalytics({ trade });
   const entry = trade.entryExecutionAttribution || {};
   const rationale = trade.entryRationale || {};
   const signalEdge = (rationale.probability || trade.probabilityAtEntry || 0) - (rationale.threshold || 0);
@@ -1552,7 +1555,8 @@ export function buildTradeQualityReview(trade = {}) {
     outcomeScore: Number(outcomeScore.toFixed(4)),
     compositeScore: Number(compositeScore.toFixed(4)),
     verdict,
-    notes: notes.slice(0, 4)
+    notes: notes.slice(0, 4),
+    pathQuality
   };
 }
 

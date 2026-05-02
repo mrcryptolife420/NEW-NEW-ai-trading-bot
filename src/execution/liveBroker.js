@@ -58,6 +58,7 @@ import {
 } from "./tradeAnalyticsContext.js";
 import { summarizeTradeFees } from "./feeAccounting.js";
 import { evaluateRestBudgetAllowance } from "../runtime/restBudgetGovernor.js";
+import { buildTradeQualityAnalytics, initializePositionExcursionTracking } from "../runtime/tradeQualityAnalytics.js";
 
 function sumTradeCommissionsToQuote(trades, baseAsset, quoteAsset) {
   return summarizeTradeFees({ trades, baseAsset, quoteAsset }).feeQuote;
@@ -816,6 +817,15 @@ export class LiveBroker {
     const proceeds = quantity * exitPrice;
     const pnlQuote = proceeds - totalCost;
     const netPnlPct = totalCost ? pnlQuote / totalCost : 0;
+    const exitAt = nowIso();
+    const reason = overrides.reason || "exchange_reconcile_confirmed_flat";
+    const tradeQualityAnalytics = buildTradeQualityAnalytics({
+      position,
+      exitPrice,
+      netPnlPct,
+      reason,
+      exitAt
+    });
     const syntheticSnapshot = marketSnapshot || {
       book: {
         bid: exitPrice,
@@ -828,7 +838,7 @@ export class LiveBroker {
       id: position.id,
       symbol: position.symbol,
       entryAt: position.entryAt,
-      exitAt: nowIso(),
+      exitAt,
       entryPrice: position.entryPrice,
       exitPrice,
       quantity,
@@ -838,6 +848,7 @@ export class LiveBroker {
       netPnlPct,
       mfePct: position.entryPrice ? Math.max(0, ((position.highestPrice || position.entryPrice) - position.entryPrice) / position.entryPrice) : 0,
       maePct: position.entryPrice ? Math.min(0, ((position.lowestPrice || position.entryPrice) - position.entryPrice) / position.entryPrice) : 0,
+      ...tradeQualityAnalytics,
       executionQualityScore: 0,
       entryExecutionAttribution: position.entryExecutionAttribution || null,
       exitExecutionAttribution: this.execution.buildExecutionAttribution({
@@ -857,7 +868,7 @@ export class LiveBroker {
       strategyAtEntry: position.strategyAtEntry || position.entryRationale?.strategy?.activeStrategy || null,
       entrySpreadBps: position.entrySpreadBps || 0,
       exitSpreadBps: syntheticSnapshot.book.spreadBps || 0,
-      reason: overrides.reason || "exchange_reconcile_confirmed_flat",
+      reason,
       exchangeOrderId: null,
       rawFeatures: position.rawFeatures,
       newsSummary: position.newsSummary,
@@ -1612,7 +1623,7 @@ export class LiveBroker {
       entryRationale?.marketCondition?.conditionId ||
       decision.entryDiagnostics?.marketCondition?.id ||
       null;
-    return {
+    const position = {
       id: crypto.randomUUID(),
       symbol,
       entryAt: nowIso(),
@@ -1686,6 +1697,8 @@ export class LiveBroker {
       manualReviewRequired: false,
       reconcileRequired: false
     };
+    initializePositionExcursionTracking(position, { price: averagePrice, at: position.entryAt });
+    return position;
   }
 
   async recoverPendingEntryExecutions({ symbol, orderId, quoteAmount, rules }) {
@@ -2198,11 +2211,19 @@ export class LiveBroker {
     });
     const mfePct = position.entryPrice ? Math.max(0, ((position.highestPrice || position.entryPrice) - position.entryPrice) / position.entryPrice) : 0;
     const maePct = position.entryPrice ? Math.min(0, ((position.lowestPrice || position.entryPrice) - position.entryPrice) / position.entryPrice) : 0;
+    const exitAt = nowIso();
+    const tradeQualityAnalytics = buildTradeQualityAnalytics({
+      position,
+      exitPrice: averagePrice,
+      netPnlPct,
+      reason,
+      exitAt
+    });
     return {
       id: position.id,
       symbol: position.symbol,
       entryAt: position.entryAt,
-      exitAt: nowIso(),
+      exitAt,
       entryPrice: position.entryPrice,
       exitPrice: averagePrice,
       quantity: executedQty,
@@ -2222,6 +2243,7 @@ export class LiveBroker {
       netPnlPct,
       mfePct,
       maePct,
+      ...tradeQualityAnalytics,
       executionQualityScore: this.execution.buildExecutionQuality({ marketSnapshot: syntheticSnapshot, fillPrice: averagePrice, side: "SELL" }),
       entryExecutionAttribution: position.entryExecutionAttribution || null,
       exitExecutionAttribution,
