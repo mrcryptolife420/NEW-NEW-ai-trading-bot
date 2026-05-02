@@ -163,6 +163,7 @@ import { registerBreakoutRetestStrategyTests } from "./breakoutRetestStrategy.te
 import { registerPullbackReclaimV2Tests } from "./pullbackReclaimV2.tests.js";
 import { registerDecisionSupportFoundationTests } from "./decisionSupportFoundation.tests.js";
 import { registerWalkForwardBacktestTests } from "./walkForwardBacktest.tests.js";
+import { registerFeatureAuditTests } from "./featureAudit.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32389,6 +32390,13 @@ await registerDecisionSupportFoundationTests({
 await registerWalkForwardBacktestTests({
   runCheck,
   assert
+});
+
+await registerFeatureAuditTests({
+  runCheck,
+  assert,
+  fs,
+  os
 });
 
 console.log("All checks passed.");

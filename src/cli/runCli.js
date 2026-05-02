@@ -1,6 +1,7 @@
 ﻿import { runBacktest } from "../runtime/backtestRunner.js";
 import { runHistoryCommand } from "../runtime/marketHistory.js";
 import { parseBacktestWalkForwardArgs, runBacktestWalkForward } from "../runtime/walkForwardBacktest.js";
+import { buildFeatureAudit } from "../runtime/featureAudit.js";
 import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayEngine.js";
 import { runReadModelCommand, runReadModelTraceCommand } from "../storage/readModelStore.js";
 import { TradingBot } from "../runtime/tradingBot.js";
@@ -156,6 +157,13 @@ export default async function runCli({
       logger,
       ...parseBacktestWalkForwardArgs(args, config)
     });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "feature:audit") {
+    const result = await buildFeatureAudit({ config, projectRoot: config.projectRoot });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;
