@@ -158,6 +158,7 @@ import { registerReconcileAutofixToleranceTests } from "./reconcileAutofixTolera
 import { registerIndicatorFeatureRegistryTests } from "./indicatorFeatureRegistry.tests.js";
 import { registerExitIntelligenceV2Tests } from "./exitIntelligenceV2.tests.js";
 import { registerTradeQualityAnalyticsTests } from "./tradeQualityAnalytics.tests.js";
+import { registerDynamicExitLevelsTests } from "./dynamicExitLevels.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -211,6 +212,10 @@ function makeConfig(overrides = {}) {
     stopLossPct: 0.02,
     takeProfitPct: 0.03,
     trailingStopPct: 0.01,
+    enableDynamicExitLevels: false,
+    dynamicExitPaperOnly: true,
+    maxDynamicStopMultiplier: 1.6,
+    minRiskReward: 1.35,
     maxSpreadBps: 25,
     maxRealizedVolPct: 0.07,
     maxHoldMinutes: 360,
@@ -32334,6 +32339,12 @@ await registerExitIntelligenceV2Tests({
 });
 
 await registerTradeQualityAnalyticsTests({
+  runCheck,
+  assert,
+  makeConfig
+});
+
+await registerDynamicExitLevelsTests({
   runCheck,
   assert,
   makeConfig

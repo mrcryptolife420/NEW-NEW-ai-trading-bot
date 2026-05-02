@@ -56,6 +56,8 @@ const RANGE_RULES = {
   stopLossPct: [0.001, 0.2],
   takeProfitPct: [0.001, 0.5],
   trailingStopPct: [0.001, 0.2],
+  maxDynamicStopMultiplier: [1, 4],
+  minRiskReward: [0.5, 10],
   minTradeUsdt: [1, 100000000],
   paperMinTradeUsdt: [1, 100000000],
   tradingIntervalSeconds: [1, 86400],

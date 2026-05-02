@@ -16,6 +16,7 @@ import { buildSizingPolicySummary } from "./policies/sizingPolicy.js";
 import { buildRecoveryProbePolicy, isRecoveryProbeSoftBlocker } from "./policies/recoveryProbePolicy.js";
 import { resolvePolicyProfile } from "./policyProfiles.js";
 import { buildExitIntelligenceV2 } from "./exitIntelligenceV2.js";
+import { buildDynamicExitLevels } from "./dynamicExitLevels.js";
 import { resolveRangeGridLifecycleFromTrades } from "../strategy/strategyLifecycleGovernance.js";
 
 function safeValue(value, fallback = 0) {
@@ -4619,6 +4620,16 @@ export class RiskManager {
     const effectivePaperRecoveryCooldownMinutes = this.config.botMode === "paper"
       ? Math.min(this.config.paperRecoveryProbeCooldownMinutes || 0, 3)
       : (this.config.paperRecoveryProbeCooldownMinutes || 0);
+    const entryReferencePrice = safeValue(
+      marketSnapshot.book.ask,
+      safeValue(
+        marketSnapshot.book.mid,
+        safeValue(
+          marketSnapshot.market.close,
+          safeValue(marketSnapshot.market.lastPrice, Number.NaN)
+        )
+      )
+    );
 
     const stopLossPct = clamp(Math.max(this.config.stopLossPct, marketSnapshot.market.atrPct * 1.2), 0.008, 0.04);
     const adjustedStopLossPct = clamp(stopLossPct * parameterGovernorAdjustment.stopLossMultiplier * clamp(safeValue(strategyMetaSummary.stopLossMultiplier || 1), 0.88, 1.12), 0.006, 0.05);
@@ -4629,7 +4640,18 @@ export class RiskManager {
       high_vol: 1.5,
       event_risk: 1.3
     }[regimeSummary.regime] || 1.6;
-    const takeProfitPct = clamp(Math.max(this.config.takeProfitPct, adjustedStopLossPct * regimeTakeProfitMultiplier) * parameterGovernorAdjustment.takeProfitMultiplier, 0.008, 0.5);
+    const fixedTakeProfitPct = clamp(Math.max(this.config.takeProfitPct, adjustedStopLossPct * regimeTakeProfitMultiplier) * parameterGovernorAdjustment.takeProfitMultiplier, 0.008, 0.5);
+    const dynamicExitLevels = buildDynamicExitLevels({
+      config: this.config,
+      botMode: this.config.botMode,
+      marketSnapshot,
+      strategySummary,
+      entryPrice: entryReferencePrice,
+      baseStopPct: adjustedStopLossPct,
+      baseTakeProfitPct: fixedTakeProfitPct
+    });
+    const effectiveStopLossPct = dynamicExitLevels.effectiveStopPct || adjustedStopLossPct;
+    const takeProfitPct = dynamicExitLevels.effectiveTakeProfitPct || fixedTakeProfitPct;
     const expectedNetEdge = buildExpectedNetEdgeSummary({
       score,
       threshold,
@@ -4643,7 +4665,7 @@ export class RiskManager {
       volatilitySummary,
       newsSummary,
       executionCostBudget,
-      stopLossPct: adjustedStopLossPct,
+      stopLossPct: effectiveStopLossPct,
       takeProfitPct
     });
     const entryTimingRefinement = buildEntryTimingRefinementSummary({
@@ -4663,18 +4685,8 @@ export class RiskManager {
       expectedNetEdge
     });
     const quoteFree = balance.quoteFree || 0;
-    const entryReferencePrice = safeValue(
-      marketSnapshot.book.ask,
-      safeValue(
-        marketSnapshot.book.mid,
-        safeValue(
-          marketSnapshot.market.close,
-          safeValue(marketSnapshot.market.lastPrice, Number.NaN)
-        )
-      )
-    );
     const maxByPosition = quoteFree * this.config.maxPositionFraction;
-    const maxByRisk = adjustedStopLossPct > 0 ? (quoteFree * this.config.riskPerTrade) / adjustedStopLossPct : maxByPosition;
+    const maxByRisk = effectiveStopLossPct > 0 ? (quoteFree * this.config.riskPerTrade) / effectiveStopLossPct : maxByPosition;
     const remainingExposureBudget = Math.max(0, totalEquityProxy * this.config.maxTotalExposureFraction - currentExposure);
     const confidenceFactor = clamp(0.65 + Math.max(0, score.probability - threshold) * 3.5, 0.6, 1.25);
     const calibrationFactor = clamp(0.75 + (score.calibrationConfidence || 0) * 0.4, 0.75, 1.15);
@@ -6520,13 +6532,14 @@ export class RiskManager {
         strategyConfidenceTilt: optimizerAdjustments.strategyConfidenceTilt
       },
       quoteAmount: finalQuoteAmount,
-      stopLossPct: adjustedStopLossPct,
+      stopLossPct: effectiveStopLossPct,
       takeProfitPct,
+      dynamicExitLevels,
       maxHoldMinutes: Math.max(1, Math.round((this.config.maxHoldMinutes || 1) * parameterGovernorAdjustment.maxHoldMinutesMultiplier * clamp(safeValue(strategyMetaSummary.holdMultiplier || 1), 0.84, 1.14))),
       scaleOutPlan: {
         enabled: this.config.scaleOutFraction > 0,
         fraction: clamp(this.config.scaleOutFraction * parameterGovernorAdjustment.scaleOutFractionMultiplier, 0.05, 0.95),
-        triggerPct: Math.max(this.config.scaleOutTriggerPct, adjustedStopLossPct * 0.9) * parameterGovernorAdjustment.scaleOutTriggerMultiplier,
+        triggerPct: Math.max(this.config.scaleOutTriggerPct, effectiveStopLossPct * 0.9) * parameterGovernorAdjustment.scaleOutTriggerMultiplier,
         minNotionalUsd: this.config.scaleOutMinNotionalUsd,
         trailOffsetPct: this.config.scaleOutTrailOffsetPct
       },

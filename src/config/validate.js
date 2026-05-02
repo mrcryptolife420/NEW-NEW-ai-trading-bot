@@ -32,6 +32,8 @@ export function validateConfig(config) {
   assertRange("STOP_LOSS_PCT", config.stopLossPct, 0.001, 0.2, errors);
   assertRange("TAKE_PROFIT_PCT", config.takeProfitPct, 0.001, 0.5, errors);
   assertRange("TRAILING_STOP_PCT", config.trailingStopPct, 0.001, 0.2, errors);
+  assertRange("MAX_DYNAMIC_STOP_MULTIPLIER", config.maxDynamicStopMultiplier, 1, 4, errors);
+  assertRange("MIN_RISK_REWARD", config.minRiskReward, 0.5, 10, errors);
   assertRange("MAX_SPREAD_BPS", config.maxSpreadBps, 1, 500, errors);
   assertRange("MAX_REALIZED_VOL_PCT", config.maxRealizedVolPct, 0.001, 0.5, errors);
   assertRange("PAPER_LATENCY_MS", config.paperLatencyMs, 0, 5000, errors);

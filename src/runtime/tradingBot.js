@@ -19894,6 +19894,7 @@ export class TradingBot {
       venueConfirmation: summarizeVenueConfirmation(candidate.venueConfirmationSummary || {}),
       stopLossPct: num(candidate.decision.stopLossPct, 4),
       takeProfitPct: num(candidate.decision.takeProfitPct, 4),
+      dynamicExitLevels: candidate.decision.dynamicExitLevels || null,
       blockerReasons: [...(candidate.decision.reasons || [])],
       regimeReasons: [...(candidate.regimeSummary.reasons || [])],
       executionReasons: [...(candidate.decision.executionPlan?.rationale || [])],
@@ -22901,6 +22902,7 @@ export class TradingBot {
       stopLossPrice: num(position.stopLossPrice || 0, 6),
       takeProfitPrice: num(position.takeProfitPrice || 0, 6),
       trailingStopPct: num(position.trailingStopPct || 0, 4),
+      dynamicExitLevelsAtEntry: position.dynamicExitLevelsAtEntry || position.entryRationale?.dynamicExitLevels || null,
       latestSpreadBps: num(position.latestSpreadBps || 0, 2),
       probabilityAtEntry: position.probabilityAtEntry == null ? null : num(position.probabilityAtEntry, 4),
       regimeAtEntry: position.regimeAtEntry || null,
@@ -23025,6 +23027,8 @@ export class TradingBot {
       marketValue: positionView.marketValue,
       entryFee: positionView.entryFee,
       stopLossPrice: positionView.stopLossPrice,
+      takeProfitPrice: positionView.takeProfitPrice,
+      dynamicExitLevelsAtEntry: positionView.dynamicExitLevelsAtEntry || null,
       unrealizedPnl: positionView.unrealizedPnl,
       unrealizedPnlPct: positionView.unrealizedPnlPct,
       regimeAtEntry: positionView.regimeAtEntry || null,
@@ -23082,7 +23086,8 @@ export class TradingBot {
         selfHealIssues: arr(rationale.selfHealIssues || rationale.selfHeal?.issues || []).slice(0, 2),
         sessionBlockers: arr(rationale.sessionBlockers || rationale.session?.blockerReasons || []).slice(0, 2),
         headlines: arr(rationale.headlines || []).slice(0, 2).map((item) => item.title || item)
-      }
+      },
+      dynamicExitLevels: positionView.dynamicExitLevelsAtEntry || rationale.dynamicExitLevels || null
     };
   }
 

@@ -344,6 +344,7 @@ export class PaperBroker {
       stopLossPrice: executionPrice * (1 - decision.stopLossPct),
       takeProfitPrice: executionPrice * (1 + decision.takeProfitPct),
       trailingStopPct: this.config.trailingStopPct,
+      dynamicExitLevelsAtEntry: decision.dynamicExitLevels || entryRationale?.dynamicExitLevels || null,
       probabilityAtEntry: score.probability,
       regimeAtEntry: decision.regime || score.regime || "range",
       strategyAtEntry: strategySummary?.activeStrategy || decision.strategySummary?.activeStrategy || entryRationale?.strategy?.activeStrategy || null,

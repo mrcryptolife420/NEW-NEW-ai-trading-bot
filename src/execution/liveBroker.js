@@ -1644,6 +1644,7 @@ export class LiveBroker {
       stopLossPrice: averagePrice * (1 - decision.stopLossPct),
       takeProfitPrice: averagePrice * (1 + decision.takeProfitPct),
       trailingStopPct: this.config.trailingStopPct,
+      dynamicExitLevelsAtEntry: decision.dynamicExitLevels || entryRationale?.dynamicExitLevels || null,
       probabilityAtEntry: score.probability,
       regimeAtEntry: decision.regime || score.regime || "range",
       entrySpreadBps: marketSnapshot.book.spreadBps || 0,
