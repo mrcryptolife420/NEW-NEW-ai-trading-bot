@@ -102,4 +102,46 @@ export async function registerFeatureAuditTests({ runCheck, assert, fs, os }) {
     assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").priority, "P3");
     assert.equal(audit.features.find((item) => item.id === "indicator_feature_registry").priority, "P3");
   });
+
+  await runCheck("feature audit classifies known legacy umbrella flags as documented config-only", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "feature-audit-config-only-"));
+    await writeFile(fs, path.join(root, ".env.example"), [
+      "ENABLE_CVD_CONFIRMATION=true",
+      "ENABLE_LIQUIDATION_MAGNET_CONTEXT=true",
+      "ENABLE_PRICE_ACTION_STRUCTURE=true",
+      "ENABLE_STRATEGY_ROUTER=true",
+      "ENABLE_TRAILING_PROTECTION=true"
+    ].join("\n"));
+    await writeFile(fs, path.join(root, "test/featureFlagHygiene.tests.js"), [
+      "enableCvdConfirmation",
+      "enableLiquidationMagnetContext",
+      "enablePriceActionStructure",
+      "enableStrategyRouter",
+      "enableTrailingProtection"
+    ].join("\n"));
+    const audit = await buildFeatureAudit({
+      projectRoot: root,
+      config: {
+        enableCvdConfirmation: true,
+        enableLiquidationMagnetContext: true,
+        enablePriceActionStructure: true,
+        enableStrategyRouter: true,
+        enableTrailingProtection: true
+      }
+    });
+    for (const key of [
+      "enableCvdConfirmation",
+      "enableLiquidationMagnetContext",
+      "enablePriceActionStructure",
+      "enableStrategyRouter",
+      "enableTrailingProtection"
+    ]) {
+      const flag = audit.flags.find((item) => item.key === key);
+      assert.ok(flag.classifications.includes("documented_config_only"));
+      assert.equal(flag.classifications.includes("config_only"), false);
+      assert.equal(flag.auditStatus, "documented_config_placeholder");
+      assert.ok(flag.note.length > 20);
+      assert.ok(flag.nextSafeAction.length > 10);
+    }
+  });
 }

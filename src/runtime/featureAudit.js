@@ -6,6 +6,34 @@ const ENV_KEY_OVERRIDES = {
   enableOnChainLiteContext: "ENABLE_ONCHAIN_LITE_CONTEXT"
 };
 
+const DOCUMENTED_CONFIG_ONLY_FLAGS = {
+  enableCvdConfirmation: {
+    status: "documented_config_placeholder",
+    note: "CVD behavior is currently controlled by concrete orderflow/indicator modules; this legacy umbrella flag is retained for config compatibility.",
+    nextSafeAction: "deprecate_or_wire_umbrella_flag_after_replay_review"
+  },
+  enableLiquidationMagnetContext: {
+    status: "documented_config_placeholder",
+    note: "Liquidation magnet context is surfaced by market-structure/provider summaries; this umbrella flag is retained until provider-level gating is consolidated.",
+    nextSafeAction: "map_to_provider_flag_or_deprecate_after_config_registry_pass"
+  },
+  enablePriceActionStructure: {
+    status: "documented_config_placeholder",
+    note: "Price-action structure is computed by the core indicator stack; this flag no longer gates a separate runtime branch.",
+    nextSafeAction: "deprecate_or_wire_to_indicator_registry_after_replay_review"
+  },
+  enableStrategyRouter: {
+    status: "documented_config_placeholder",
+    note: "Strategy routing is a mandatory core path; this legacy flag is retained for backward-compatible config files.",
+    nextSafeAction: "deprecate_after_operator_config_migration"
+  },
+  enableTrailingProtection: {
+    status: "documented_config_placeholder",
+    note: "Trailing protection is governed by exit/trailing parameters and exchange protection state rather than this umbrella flag.",
+    nextSafeAction: "deprecate_or_wire_to_exit_policy_after_live_safety_review"
+  }
+};
+
 const TARGET_FEATURES = [
   {
     id: "indicator_feature_registry",
@@ -352,12 +380,13 @@ function classifyFeature({ modulesPresent, runtimeRefs, testsPresent, dashboardR
 function classifyFlag({ key, refs, envPresent, mappedFeature = null }) {
   const runtimeRefs = filterRuntimeRefs(refs);
   const testRefs = filterTestRefs(refs);
+  const documentedConfigOnly = DOCUMENTED_CONFIG_ONLY_FLAGS[key] || null;
   const classifications = [];
   if (!envPresent) {
     classifications.push("config_only");
   }
   if (!runtimeRefs.length) {
-    classifications.push("config_only");
+    classifications.push(documentedConfigOnly && envPresent ? "documented_config_only" : "config_only");
   }
   if (!testRefs.length) {
     classifications.push("missing_tests");
@@ -375,6 +404,9 @@ function classifyFlag({ key, refs, envPresent, mappedFeature = null }) {
     valueType: "boolean",
     currentValue: null,
     classifications: [...new Set(classifications)],
+    auditStatus: documentedConfigOnly?.status || null,
+    note: documentedConfigOnly?.note || null,
+    nextSafeAction: documentedConfigOnly?.nextSafeAction || null,
     referencedIn: refs
   };
 }

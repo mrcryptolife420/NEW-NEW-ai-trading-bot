@@ -115,6 +115,7 @@ Batch 5 keeps the audit source-of-truth cleaner without changing trading behavio
 - document missing env keys for existing runtime flags: `BASELINE_CORE_ENABLED`, `ENABLE_SEQUENCE_CHALLENGER`, and `HISTORY_CACHE_ENABLED`
 - add audit-visible tests for runtime diagnostic flags that already have implementation callsites
 - keep known config-only/alias flags visible for future cleanup instead of silently treating them as active behavior
+- classify legacy umbrella flags as `documented_config_only` instead of treating them like broken wiring
 
 The contract remains non-behavioral:
 
@@ -122,3 +123,13 @@ The contract remains non-behavioral:
 - no live behavior changes
 - no paper threshold changes
 - no request/execution behavior changes
+
+Known `documented_config_only` flags after this batch:
+
+- `enableCvdConfirmation`
+- `enableLiquidationMagnetContext`
+- `enablePriceActionStructure`
+- `enableStrategyRouter`
+- `enableTrailingProtection`
+
+These flags stay operator-visible with notes and `nextSafeAction`; future cleanup should either wire them to a real module boundary or deprecate them through a config migration.
