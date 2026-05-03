@@ -276,10 +276,11 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
   });
 
   await runCheck("portfolio crowding supports multiple positions while blocking duplicate symbol", async () => {
-    const empty = buildPortfolioCrowdingSummary({ openPositions: [], candidate: { symbol: "BTCUSDT", strategyFamily: "trend" } });
+    const empty = buildPortfolioCrowdingSummary({ openPositions: [], candidate: { symbol: "BTCUSDT", strategyFamily: "trend" }, config: { maxOpenPositions: 3 } });
     const mixed = buildPortfolioCrowdingSummary({
       openPositions: [{ symbol: "ETHUSDT", cluster: "majors", strategyFamily: "trend", regime: "trend", notional: 100 }],
-      candidate: { symbol: "SOLUSDT", cluster: "alts", strategyFamily: "breakout", regime: "breakout", quoteAmount: 50 }
+      candidate: { symbol: "SOLUSDT", cluster: "alts", strategyFamily: "breakout", regime: "breakout", quoteAmount: 50 },
+      config: { maxOpenPositions: 3 }
     });
     const crowded = buildPortfolioCrowdingSummary({
       openPositions: [
@@ -287,17 +288,36 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
         { symbol: "BNBUSDT", cluster: "majors", strategyFamily: "trend", regime: "trend", notional: 80 },
         { symbol: "SOLUSDT", cluster: "majors", strategyFamily: "trend", regime: "trend", notional: 70 }
       ],
-      candidate: { symbol: "XRPUSDT", cluster: "majors", strategyFamily: "trend", regime: "trend" }
+      candidate: { symbol: "XRPUSDT", cluster: "majors", strategyFamily: "trend", regime: "trend" },
+      config: { maxOpenPositions: 5 }
     });
     const duplicate = buildPortfolioCrowdingSummary({
       openPositions: [{ symbol: "BTCUSDT", cluster: "majors" }],
       candidate: { symbol: "BTCUSDT", cluster: "majors" }
     });
+    const full = buildPortfolioCrowdingSummary({
+      openPositions: [{ symbol: "ETHUSDT" }, { symbol: "BNBUSDT" }, { symbol: "SOLUSDT" }],
+      candidate: { symbol: "XRPUSDT" },
+      config: { maxOpenPositions: 3 }
+    });
+    const exposure = buildPortfolioCrowdingSummary({
+      openPositions: [{ symbol: "ETHUSDT", notional: 100 }],
+      candidate: { symbol: "BNBUSDT", exposureFraction: 0.25 },
+      marketContext: { currentExposureFraction: 0.82 },
+      config: { maxOpenPositions: 5, maxTotalExposureFraction: 1 }
+    });
     assert.equal(empty.crowdingRisk, "low");
+    assert.equal(empty.remainingSlots, 3);
     assert.equal(mixed.sameSymbolBlocked, false);
+    assert.equal(mixed.remainingSlots, 2);
     assert.equal(["medium", "high", "blocked"].includes(crowded.crowdingRisk), true);
+    assert.equal(crowded.sizeMultiplier < 1, true);
     assert.equal(duplicate.sameSymbolBlocked, true);
     assert.equal(duplicate.crowdingRisk, "blocked");
+    assert.equal(full.crowdingRisk, "blocked");
+    assert.equal(full.reasons.includes("max_open_positions_reached"), true);
+    assert.equal(exposure.crowdingRisk, "blocked");
+    assert.equal(exposure.reasons.includes("total_exposure_cap"), true);
   });
 
   await runCheck("post reconcile remains multi-position compatible", async () => {

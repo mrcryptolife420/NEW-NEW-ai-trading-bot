@@ -323,31 +323,33 @@ Gebruik bestaande module indien aanwezig:
 
 Output moet bevatten:
 
-- [ ] `sameSymbolBlocked`.
-- [ ] `sameClusterCount`.
-- [ ] `sameStrategyFamilyCount`.
-- [ ] `sameRegimeCount`.
-- [ ] `btcBetaExposure`.
-- [ ] `crowdingRisk`: low / medium / high / blocked.
-- [ ] `sizeMultiplier`.
-- [ ] `reasons`.
-- [ ] `remainingSlots`.
+- [x] `sameSymbolBlocked`.
+- [x] `sameClusterCount`.
+- [x] `sameStrategyFamilyCount`.
+- [x] `sameRegimeCount`.
+- [x] `btcBetaExposure`.
+- [x] `crowdingRisk`: low / medium / high / blocked.
+- [x] `sizeMultiplier`.
+- [x] `reasons`.
+- [x] `remainingSlots`.
 
 Regels:
 
-- [ ] Same symbol duplicate blockt nieuwe entry.
-- [ ] Same cluster/regime verlaagt size.
-- [ ] Extreme crowding blockt.
-- [ ] Gezonde state respecteert `MAX_OPEN_POSITIONS`.
-- [ ] Geen hardcoded max 1 positie.
+- [x] Same symbol duplicate blockt nieuwe entry.
+- [x] Same cluster/regime verlaagt size.
+- [x] Extreme crowding blockt.
+- [x] Gezonde state respecteert `MAX_OPEN_POSITIONS`.
+- [x] Geen hardcoded max 1 positie.
 
 Tests:
 
-- [ ] Geen posities => low risk.
-- [ ] Diverse posities => allowed.
-- [ ] Same cluster => size omlaag.
-- [ ] Same symbol => blocked.
-- [ ] Exposure cap => blocked.
+- [x] Geen posities => low risk.
+- [x] Diverse posities => allowed.
+- [x] Same cluster => size omlaag.
+- [x] Same symbol => blocked.
+- [x] Exposure cap => blocked.
+
+Notitie 2026-05-03: `src/risk/portfolioCrowding.js` uitgebreid met `remainingSlots`, `maxOpenPositions` en projected exposure diagnostics. Tests dekken empty/diverse/crowded/duplicate/full-slot/exposure-cap cases. Meerdere posities blijven mogelijk tot configlimieten; geen hardcoded max 1 toegevoegd.
 
 ## 5.2 Post-reconcile multi-position
 

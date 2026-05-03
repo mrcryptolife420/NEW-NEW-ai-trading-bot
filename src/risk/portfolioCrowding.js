@@ -25,7 +25,7 @@ function identity(position = {}) {
   };
 }
 
-export function buildPortfolioCrowdingSummary({ openPositions = [], candidate = {}, correlations = {}, marketContext = {} } = {}) {
+export function buildPortfolioCrowdingSummary({ openPositions = [], candidate = {}, correlations = {}, marketContext = {}, config = {} } = {}) {
   const positions = arr(openPositions).map(identity);
   const candidateIdentity = identity({
     ...candidate,
@@ -33,6 +33,12 @@ export function buildPortfolioCrowdingSummary({ openPositions = [], candidate = 
     strategyFamily: candidate.strategyFamily || candidate.strategy?.family || candidate.strategySummary?.family,
     regime: candidate.regime || candidate.regimeSummary?.regime
   });
+  const maxOpenPositions = Math.max(1, Math.floor(num(config.maxOpenPositions ?? marketContext.maxOpenPositions ?? candidate.maxOpenPositions, 10)));
+  const remainingSlots = Math.max(0, maxOpenPositions - positions.length);
+  const currentExposureFraction = Math.max(0, num(marketContext.currentExposureFraction ?? config.currentExposureFraction, 0));
+  const candidateExposureFraction = Math.max(0, num(candidate.exposureFraction ?? candidate.positionFraction ?? marketContext.candidateExposureFraction, 0));
+  const maxTotalExposureFraction = Math.max(0, num(config.maxTotalExposureFraction ?? marketContext.maxTotalExposureFraction, 0));
+  const projectedExposureFraction = currentExposureFraction + candidateExposureFraction;
   const sameSymbolBlocked = positions.some((position) => position.symbol && position.symbol === candidateIdentity.symbol);
   const sameClusterCount = positions.filter((position) => position.cluster === candidateIdentity.cluster).length;
   const sameStrategyFamilyCount = positions.filter((position) => position.family === candidateIdentity.family).length;
@@ -44,6 +50,8 @@ export function buildPortfolioCrowdingSummary({ openPositions = [], candidate = 
   );
   const reasons = [];
   if (sameSymbolBlocked) reasons.push("same_symbol_duplicate");
+  if (remainingSlots <= 0) reasons.push("max_open_positions_reached");
+  if (maxTotalExposureFraction > 0 && projectedExposureFraction > maxTotalExposureFraction) reasons.push("total_exposure_cap");
   if (sameClusterCount >= 2) reasons.push("cluster_crowding");
   if (sameStrategyFamilyCount >= 2) reasons.push("strategy_family_crowding");
   if (sameRegimeCount >= 3) reasons.push("regime_crowding");
@@ -51,7 +59,7 @@ export function buildPortfolioCrowdingSummary({ openPositions = [], candidate = 
   if (num(marketContext.btcShockRisk, 0) > 0.7) reasons.push("btc_shock_beta_risk");
 
   let crowdingRisk = "low";
-  if (sameSymbolBlocked || sameClusterCount >= 4 || candidateCorrelation >= 0.95) {
+  if (sameSymbolBlocked || remainingSlots <= 0 || (maxTotalExposureFraction > 0 && projectedExposureFraction > maxTotalExposureFraction) || sameClusterCount >= 4 || candidateCorrelation >= 0.95) {
     crowdingRisk = "blocked";
   } else if (sameClusterCount >= 3 || sameStrategyFamilyCount >= 3 || sameRegimeCount >= 4 || candidateCorrelation >= 0.85) {
     crowdingRisk = "high";
@@ -74,6 +82,9 @@ export function buildPortfolioCrowdingSummary({ openPositions = [], candidate = 
     crowdingRisk,
     sizeMultiplier: clamp(sizeMultiplier, 0, 1),
     reasons,
+    maxOpenPositions,
+    remainingSlots,
+    projectedExposureFraction,
     multiPositionSupported: true
   };
 }
