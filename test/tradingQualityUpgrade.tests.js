@@ -133,6 +133,34 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
     assert.equal(breakout.warnings.includes("squeeze_expansion_watch_only"), true);
     assert.equal(highVol.score < 0.5, true);
     assert.equal(highVol.warnings.includes("atr_percentile_extreme"), true);
+    assert.equal(highVol.sizeHintMultiplier < 1, true);
+    assert.equal(highVol.confidencePenalty > 0, true);
+  });
+
+  await runCheck("regime scoring is fallback-safe for missing features and unknown regime", async () => {
+    const missing = scoreIndicatorRegimeFit({
+      regime: "unknown_regime",
+      setupType: "unknown_setup",
+      features: {}
+    });
+    const executionConflict = scoreIndicatorRegimeFit({
+      regime: "breakout",
+      setupType: "breakout_retest",
+      features: {
+        emaSlopeScore: 0.2,
+        donchianBreakoutScore: 0.3,
+        spreadPercentile: { percentile: 0.94 },
+        slippageConfidenceScore: { confidence: 0.25 }
+      }
+    });
+
+    assertFiniteTree(assert, missing);
+    assertFiniteTree(assert, executionConflict);
+    assert.equal(missing.warnings.includes("indicator_features_sparse"), true);
+    assert.equal(executionConflict.warnings.includes("spread_percentile_high"), true);
+    assert.equal(executionConflict.warnings.includes("slippage_confidence_low"), true);
+    assert.equal(executionConflict.sizeHintMultiplier < 1, true);
+    assert.equal(executionConflict.confidencePenalty > 0, true);
   });
 
   await runCheck("setup thesis supports all requested setup types", async () => {

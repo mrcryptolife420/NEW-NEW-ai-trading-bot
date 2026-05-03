@@ -29,6 +29,19 @@ export function scoreIndicatorRegimeFit({ features = {}, regime = "range", setup
   const squeezeExpansion = num(features.squeezeExpansionScore ?? features.bollingerKeltnerSqueeze?.expansionScore, 0);
   const cvdDivergence = num(features.cvdDivergenceScore ?? features.orderflowDivergence ?? 0, 0);
   const obvDivergence = features.obvDivergence?.direction || features.obvDivergenceDirection || "none";
+  const spreadPctile = num(features.spreadPercentile?.percentile ?? features.spreadPercentile, 0.5);
+  const slippageConfidence = num(features.slippageConfidenceScore?.confidence ?? features.slippageConfidenceScore?.score ?? features.slippageConfidence, 0.65);
+  const missingFeatureKeys = [
+    features.rsi14 ?? features.rsi,
+    features.mfi14 ?? features.mfi,
+    features.emaSlopeScore ?? features.emaTrendSlopePct ?? features.emaSlopeStack?.score,
+    features.donchianBreakoutScore ?? features.structureBreakScore ?? features.bosStrengthScore,
+    features.choppinessIndex ?? features.choppiness
+  ].filter((value) => value == null).length;
+
+  if (missingFeatureKeys >= 4) {
+    warnings.push("indicator_features_sparse");
+  }
 
   if (["range", "mean_reversion"].includes(resolvedRegime) || resolvedSetup.includes("reversion")) {
     const oscillatorFit = average([
@@ -61,13 +74,41 @@ export function scoreIndicatorRegimeFit({ features = {}, regime = "range", setup
   } else if (obvDivergence === "bullish") {
     add(supportingIndicators, "obv_bullish_divergence", 0.08, "OBV bullish divergence supports reclaim/reversion diagnostics.");
   }
+  if (spreadPctile >= 0.85) {
+    warnings.push("spread_percentile_high");
+    add(conflictingIndicators, "spread_percentile", -0.12, "High spread percentile lowers execution confidence.");
+  }
+  if (slippageConfidence < 0.4) {
+    warnings.push("slippage_confidence_low");
+    add(conflictingIndicators, "slippage_confidence", -0.12, "Weak slippage confidence lowers execution confidence.");
+  }
 
   const supportScore = supportingIndicators.reduce((total, item) => total + Math.max(0, item.score), 0);
   const conflictScore = conflictingIndicators.reduce((total, item) => total + Math.abs(Math.min(0, item.score)), 0);
+  const confidencePenalty = clamp(
+    conflictScore * 0.28 +
+      (atrPctile >= 0.9 ? 0.08 : 0) +
+      (spreadPctile >= 0.85 ? 0.05 : 0) +
+      (slippageConfidence < 0.4 ? 0.05 : 0) +
+      (missingFeatureKeys >= 4 ? 0.04 : 0),
+    0,
+    0.45
+  );
+  const sizeHintMultiplier = clamp(
+    1 -
+      conflictScore * 0.35 -
+      (atrPctile >= 0.9 ? 0.2 : 0) -
+      (spreadPctile >= 0.85 ? 0.1 : 0) -
+      (slippageConfidence < 0.4 ? 0.1 : 0),
+    0.35,
+    1
+  );
   return {
     score: clamp(0.5 + supportScore - conflictScore, 0, 1),
     supportingIndicators: supportingIndicators.sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 8),
     conflictingIndicators: conflictingIndicators.sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 8),
-    warnings
+    warnings,
+    sizeHintMultiplier,
+    confidencePenalty
   };
 }

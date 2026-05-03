@@ -210,33 +210,35 @@ Notitie 2026-05-03: `src/strategy/advancedIndicators.js` bevat alle gevraagde he
 
 ## 3.2 Regime-specific indicator scoring
 
-- [ ] Maak of update `src/strategy/indicatorRegimeScoring.js`.
-- [ ] Exporteer `scoreIndicatorRegimeFit({ features, regime, setupType })`.
-- [ ] Output bevat `score`.
-- [ ] Output bevat `supportingIndicators`.
-- [ ] Output bevat `conflictingIndicators`.
-- [ ] Output bevat `warnings`.
-- [ ] Output bevat `sizeHintMultiplier`.
-- [ ] Output bevat `confidencePenalty`.
+- [x] Maak of update `src/strategy/indicatorRegimeScoring.js`.
+- [x] Exporteer `scoreIndicatorRegimeFit({ features, regime, setupType })`.
+- [x] Output bevat `score`.
+- [x] Output bevat `supportingIndicators`.
+- [x] Output bevat `conflictingIndicators`.
+- [x] Output bevat `warnings`.
+- [x] Output bevat `sizeHintMultiplier`.
+- [x] Output bevat `confidencePenalty`.
 
 Regels:
 
-- [ ] RSI/MFI/Stoch RSI zwaarder in range/mean reversion.
-- [ ] Donchian/BOS/EMA slope zwaarder in trend/breakout.
-- [ ] Choppiness hoog verlaagt breakout confidence.
-- [ ] ATR percentile extreem hoog verlaagt confidence en size hint.
-- [ ] Squeeze expansion geeft breakout-watch, geen automatische entry.
-- [ ] CVD/OBV divergence geeft conflict/warning.
-- [ ] Spread/slippage slecht verlaagt execution confidence.
+- [x] RSI/MFI/Stoch RSI zwaarder in range/mean reversion.
+- [x] Donchian/BOS/EMA slope zwaarder in trend/breakout.
+- [x] Choppiness hoog verlaagt breakout confidence.
+- [x] ATR percentile extreem hoog verlaagt confidence en size hint.
+- [x] Squeeze expansion geeft breakout-watch, geen automatische entry.
+- [x] CVD/OBV divergence geeft conflict/warning.
+- [x] Spread/slippage slecht verlaagt execution confidence.
 
 Acceptatie:
 
-- [ ] Tests voor trend.
-- [ ] Tests voor range.
-- [ ] Tests voor breakout.
-- [ ] Tests voor high_vol.
-- [ ] Tests voor missing features.
-- [ ] Tests voor unknown regime.
+- [x] Tests voor trend.
+- [x] Tests voor range.
+- [x] Tests voor breakout.
+- [x] Tests voor high_vol.
+- [x] Tests voor missing features.
+- [x] Tests voor unknown regime.
+
+Notitie 2026-05-03: scoring output uitgebreid met diagnostische `sizeHintMultiplier` en `confidencePenalty`; spread/slippage conflicts en sparse-feature warnings toegevoegd. Geen live gates of thresholds gewijzigd; `npm test` geslaagd.
 
 ---
 
