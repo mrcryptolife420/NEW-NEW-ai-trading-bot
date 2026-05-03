@@ -179,6 +179,7 @@ import { registerFeatureActivationGovernorTests } from "./featureActivationGover
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
 import { registerDecisionInputLineageTests } from "./decisionInputLineage.tests.js";
+import { registerCanaryReleaseGateTests } from "./canaryReleaseGate.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32506,6 +32507,14 @@ await registerFeatureActivationGovernorTests({
 await registerDecisionInputLineageTests({
   runCheck,
   assert
+});
+
+await registerCanaryReleaseGateTests({
+  runCheck,
+  assert,
+  fs,
+  os,
+  runCli
 });
 
 await registerStopLimitStuckTests({

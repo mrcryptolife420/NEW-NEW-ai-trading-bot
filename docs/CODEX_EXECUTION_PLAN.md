@@ -710,24 +710,27 @@ Notitie: `decisionInputLineage` toegevoegd als pure diagnostics helper en gekopp
 ## B2 — Canary release gates voor strategie- en parameterwijzigingen
 
 Bron: nieuwe analyse / safety improvement
-Status: proposed
+Status: completed
 
 Doel: nieuwe strategy parameters of model changes mogen niet direct normale live exposure krijgen.
 
-- [ ] Maak of update `src/runtime/canaryReleaseGate.js`.
-- [ ] Definieer release states: `shadow`, `paper`, `canary`, `limited_live`, `normal`, `rollback_recommended`.
-- [ ] Vereis minimum samples, paper/live parity en anti-overfit pass voordat promotie mogelijk is.
-- [ ] Verbind met `antiOverfitGovernor` en `paperLiveParity` waar veilig.
-- [ ] Voeg read-only CLI output toe: `node src/cli.js canary:status` indien passend.
-- [ ] Tests toevoegen voor low samples, paper-only evidence, failed parity, passed canary en rollback recommendation.
-- [ ] Docs bijwerken in `docs/OPERATOR_COMMANDS.md`.
+- [x] Maak of update `src/runtime/canaryReleaseGate.js`.
+- [x] Definieer release states: `shadow`, `paper`, `canary`, `limited_live`, `normal`, `rollback_recommended`.
+- [x] Vereis minimum samples, paper/live parity en anti-overfit pass voordat promotie mogelijk is.
+- [x] Verbind met `antiOverfitGovernor` en `paperLiveParity` waar veilig.
+- [x] Voeg read-only CLI output toe: `node src/cli.js canary:status` indien passend.
+- [x] Tests toevoegen voor low samples, paper-only evidence, failed parity, passed canary en rollback recommendation.
+- [x] Docs bijwerken in `docs/OPERATOR_COMMANDS.md`.
 
 Acceptatie:
 
-- [ ] Geen automatische live promotie.
-- [ ] Canary gate is diagnostics/governance-first.
-- [ ] Live safety blijft gelijk of strenger.
-- [ ] `npm test` slaagt.
+- [x] Geen automatische live promotie.
+- [x] Canary gate is diagnostics/governance-first.
+- [x] Live safety blijft gelijk of strenger.
+- [x] `npm test` slaagt.
+
+Status: completed
+Notitie: `canaryReleaseGate` toegevoegd als pure governance helper met read-only `canary:status`. De gate blokkeert low-sample, paper-only-live, parity-fail en rollback cases en voert geen live promotie of execution-mutaties uit.
 
 ## B3 — Alert escalation en operator action queue
 
@@ -1022,7 +1025,7 @@ Doel: strategieën die structureel slecht presteren automatisch naar watch/quara
 
 Acceptatie:
 
-- [ ] Geen automatische live promotie.
+- [x] Geen automatische live promotie.
 - [ ] Slechte strategieën kunnen diagnostisch worden gedegradeerd of live-blocked volgens bestaande safety policy.
 - [ ] `npm test` slaagt.
 

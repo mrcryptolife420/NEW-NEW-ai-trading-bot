@@ -19,6 +19,7 @@ All commands below are intended to be safe in the default paper setup. Commands 
 | `node src/cli.js learning:failures` | Summarize exit-quality and failure-library labels | Read-only analytics. |
 | `node src/cli.js learning:promotion` | Build paper-to-live promotion dossier and rollback watch | Diagnostics only; no live promotion/rollback. |
 | `node src/cli.js learning:replay-packs` | Rank replay candidates for bad-veto, reconcile and complexity review | Read-only analytics. |
+| `node src/cli.js canary:status` | Show canary release gate status for strategy/config changes | Read-only governance. Does not promote to live or place orders. |
 | `node src/cli.js incidents:create --type manual_review` | Create a local incident report from runtime state | Safe local write under runtime incidents directory; no exchange calls. |
 | `node src/cli.js incidents:summary` | List local incident reports | Read-only. |
 | `node src/cli.js live:panic-plan` | Build panic flatten plan | Dry-run only; no orders or cancels. |
@@ -36,6 +37,7 @@ All commands below are intended to be safe in the default paper setup. Commands 
 - `trading-path:debug` is diagnostic-only. It does not unlock entries, mutate runtime state, call live execution or override exchange safety.
 - `intents:list` and `intents:summary` intentionally do not resolve, delete or mutate intents.
 - `learning:*` commands intentionally do not promote strategies, roll back live settings or change thresholds.
+- `canary:status` is governance-only. It can show a change as eligible for operator-reviewed rollout, but it never enables live behavior automatically.
 - `incidents:*` commands do not place orders. `incidents:create` only writes a local JSON report.
 - `live:panic-plan` is a dry-run planner and never flattens automatically.
 - `reconcile:plan` never mutates state. Use it first when entries are blocked by exchange safety.

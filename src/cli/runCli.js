@@ -33,6 +33,7 @@ import {
   buildTradingPathHealth,
   normalizeDashboardFreshness
 } from "../runtime/tradingPathHealth.js";
+import { buildCanaryReleaseGate, buildCanaryReleaseSummary } from "../runtime/canaryReleaseGate.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -220,6 +221,37 @@ export default async function runCli({
 
   if (command === "feature:audit") {
     const result = await buildFeatureAudit({ config, projectRoot: config.projectRoot });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "canary:status") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const configuredItems = Array.isArray(runtime.canaryReleaseGates)
+      ? runtime.canaryReleaseGates
+      : Array.isArray(runtime.canary?.items)
+        ? runtime.canary.items
+        : [];
+    const gates = configuredItems.length
+      ? configuredItems.map((item) => buildCanaryReleaseGate({ config, ...item }))
+      : [
+          buildCanaryReleaseGate({
+            scope: "global",
+            requestedState: "shadow",
+            currentState: "shadow",
+            evidence: { source: "unknown" },
+            config
+          })
+        ];
+    const result = {
+      readOnly: true,
+      status: buildCanaryReleaseSummary(gates).status,
+      summary: buildCanaryReleaseSummary(gates),
+      gates
+    };
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;
