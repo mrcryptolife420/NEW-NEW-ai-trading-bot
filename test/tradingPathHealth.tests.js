@@ -225,6 +225,35 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.equal(health.nextAction, "run_readmodel_rebuild");
   });
 
+  await runCheck("readmodel freshness uses latest journal refresh over older rebuild timestamp", async () => {
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } },
+        latestDecisions: [{ symbol: "BTCUSDT", marketData: { status: "ready" } }]
+      },
+      dashboardSnapshot: { generatedAt: "2026-05-03T11:59:50.000Z", topDecisions: [{ symbol: "BTCUSDT" }] },
+      feedSummary: {
+        status: "ready",
+        symbolsRequested: 1,
+        symbolsReady: 1,
+        missingSymbols: [],
+        staleSources: [],
+        lastSuccessfulAggregationAt: "2026-05-03T11:59:30.000Z"
+      },
+      readmodelSummary: {
+        status: "ready",
+        rebuiltAt: "2026-05-03T10:00:00.000Z",
+        journalRefreshedAt: "2026-05-03T11:59:20.000Z"
+      }
+    });
+    assert.equal(health.readmodelFresh, true);
+    assert.equal(health.readmodelFreshness.lastUpdatedAt, "2026-05-03T11:59:20.000Z");
+    assert.equal(health.staleSources.includes("readmodel_snapshot_stale"), false);
+  });
+
   await runCheck("market snapshot flow debug compacts runtime snapshots without candle bloat", async () => {
     const compact = summarizeMarketSnapshotForRuntime({
       symbol: "BTCUSDT",

@@ -219,7 +219,14 @@ export function buildTradingPathHealth({
   });
   const dashboardFreshness = normalizeDashboardFreshness(dashboard, now, config);
   const readmodel = objectOrFallback(readmodelSummary || dashboard.readModel || runtime.readModelRefresh, {});
-  const readmodelAt = readmodel.rebuiltAt || readmodel.lastRefreshAt || readmodel.lastCompletedAt || readmodel.generatedAt || null;
+  const readmodelAt = latestTimestamp(
+    readmodel.rebuiltAt,
+    readmodel.journalRefreshedAt,
+    readmodel.lastRefreshAt,
+    readmodel.lastCompletedAt,
+    readmodel.completedAt,
+    readmodel.generatedAt
+  );
   const readmodelAgeMs = ageMs(readmodelAt, nowMs);
   const readmodelFresh = readmodel.status === "ready" && (readmodelAgeMs == null || readmodelAgeMs <= Math.max(300_000, Number(config.tradingPathReadModelStaleMs || 900_000)));
   const frontendPolling = normalizeFrontendPollingHealth({
