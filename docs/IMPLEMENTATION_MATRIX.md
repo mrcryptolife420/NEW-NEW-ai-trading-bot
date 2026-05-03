@@ -27,6 +27,8 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Panic flatten plan | Dry-run only | `src/runtime/panicFlattenPlan.js`, `src/cli/runCli.js` | `test/operatorSafetyTooling.tests.js` |
 | Runtime safety snapshot | Dashboard diagnostics | `src/runtime/safetySnapshot.js`, `src/runtime/tradingBot.js` | `test/operatorSafetyTooling.tests.js` |
 | Alert severity normalization | Implemented | `src/runtime/alertSeverity.js` | `test/operatorSafetyTooling.tests.js` |
+| Auto-reconcile coordinator | Evidence-first controlled recovery | `src/execution/autoReconcileCoordinator.js`, `src/cli/runCli.js`, `src/runtime/tradingBot.js` | `test/autoReconcileCoordinator.tests.js` |
+| Exchange safety CLI visibility | Read-only/controlled | `src/cli/runCli.js`, `docs/EXCHANGE_SAFETY.md` | `test/autoReconcileCoordinator.tests.js` |
 | Schema version helpers | Implemented | `src/storage/schemaVersion.js` | `test/dataIntegrityMaintenance.tests.js` |
 | Storage migration framework | Safe no-op/fallback | `src/storage/migrations/index.js` | `test/dataIntegrityMaintenance.tests.js` |
 | Recorder integrity audit | Read-only diagnostics | `src/storage/recorderIntegrityAudit.js`, `src/storage/storageAudit.js` | `test/dataIntegrityMaintenance.tests.js` |
@@ -54,5 +56,7 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 - Operator modes can restrict entries, but do not loosen live safety.
 - Panic flatten tooling is dry-run planning only.
 - Incident commands are read-only except writing local incident JSON reports under the runtime directory.
+- Auto-reconcile never disables exchange safety and never force-unlocks entries without evidence-backed unlock evaluation.
+- Protective rebuild remains gated by exchange protection, symbol rules, market snapshot and OCO geometry validation.
 - Storage, recorder and replay-manifest commands are read-only and do not rewrite persisted trading state.
 - Dataset quality gates are diagnostics for research/retrain trust; they do not change live execution.

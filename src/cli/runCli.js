@@ -18,6 +18,12 @@ import { buildIncidentReport, summarizeIncidentReports, writeIncidentReport } fr
 import { buildPanicFlattenPlan } from "../runtime/panicFlattenPlan.js";
 import { buildRecorderAuditSummary, buildStorageAuditSummary } from "../storage/storageAudit.js";
 import { buildReplayPackManifest } from "../runtime/replayPackManifest.js";
+import {
+  buildAutoReconcilePlan,
+  buildExchangeSafetyStatus,
+  evaluateExchangeSafetyUnlock,
+  runAutoReconcilePlan
+} from "../execution/autoReconcileCoordinator.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -116,6 +122,22 @@ function parseReplayArgs(args = []) {
 
 function parseTraceValue(args = []) {
   return `${args?.[0] || ""}`.trim();
+}
+
+function buildAutoReconcileInputs({ config, runtime }) {
+  const exchangeTruth = runtime.exchangeTruth || {};
+  return {
+    config,
+    runtime,
+    positions: runtime.openPositions || [],
+    accountSnapshot: exchangeTruth.accountSnapshot || runtime.accountSnapshot || runtime.portfolio || {},
+    openOrders: exchangeTruth.openOrders || runtime.openOrders || [],
+    openOrderLists: exchangeTruth.openOrderLists || runtime.openOrderLists || [],
+    recentTradesBySymbol: exchangeTruth.recentTradesBySymbol || runtime.recentTradesBySymbol || {},
+    userStreamSnapshot: runtime.userStreamSnapshot || runtime.userDataStream || exchangeTruth.userStreamSnapshot || {},
+    marketSnapshots: runtime.latestMarketSnapshots || runtime.marketSnapshots || {},
+    symbolRules: runtime.symbolRules || config.symbolRules || {}
+  };
 }
 
 function parseNamedArg(args = [], name, fallback = null) {
@@ -288,6 +310,60 @@ export default async function runCli({
       openOrders
     });
     console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "reconcile:plan" || command === "reconcile:run" || command === "exchange-safety:status") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const plan = buildAutoReconcilePlan(buildAutoReconcileInputs({ config, runtime }));
+    const unlock = evaluateExchangeSafetyUnlock({
+      plan,
+      runtime,
+      alerts: runtime.alerts || runtime.ops?.alerts?.items || []
+    });
+    if (command === "exchange-safety:status") {
+      console.log(JSON.stringify(buildExchangeSafetyStatus({ plan, unlock, runtime }), null, 2));
+      markCommandSuccess(processState);
+      return;
+    }
+    if (command === "reconcile:plan") {
+      console.log(JSON.stringify({
+        readOnly: true,
+        plan,
+        unlock
+      }, null, 2));
+      markCommandSuccess(processState);
+      return;
+    }
+    const runResult = await runAutoReconcilePlan({
+      runtime,
+      plan,
+      logger,
+      broker: {
+        clearPositionReconcileFlags(position, result = {}) {
+          position.reconcileRequired = false;
+          position.manualReviewRequired = false;
+          position.lifecycleState = position.protectiveOrderListId ? "protected" : "open";
+          position.lastAutoReconcileAction = result.reason || "cli_auto_reconcile_clear";
+          position.lastAutoReconcileAt = new Date().toISOString();
+        }
+      }
+    });
+    await store.saveRuntime(runtime);
+    console.log(JSON.stringify({
+      dryRun: false,
+      safety: "no_force_unlock_only_evidence_based_actions",
+      planStatus: plan.status,
+      unlock: evaluateExchangeSafetyUnlock({
+        plan: buildAutoReconcilePlan(buildAutoReconcileInputs({ config, runtime })),
+        runtime,
+        alerts: runtime.alerts || runtime.ops?.alerts?.items || []
+      }),
+      result: runResult
+    }, null, 2));
     markCommandSuccess(processState);
     return;
   }

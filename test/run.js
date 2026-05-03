@@ -170,6 +170,7 @@ import { registerConfigOperatorMaintenanceTests } from "./configOperatorMaintena
 import { registerLearningAnalyticsMaintenanceTests } from "./learningAnalyticsMaintenance.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
+import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32451,6 +32452,14 @@ await registerOperatorSafetyToolingTests({
 });
 
 await registerDataIntegrityMaintenanceTests({
+  runCheck,
+  assert,
+  fs,
+  os,
+  runCli
+});
+
+await registerAutoReconcileCoordinatorTests({
   runCheck,
   assert,
   fs,

@@ -545,9 +545,14 @@ export async function loadConfig(projectRoot = process.cwd()) {
     modelPromotionProbationLiveTrades: parseNumber(env.MODEL_PROMOTION_PROBATION_LIVE_TRADES, DEFAULTS.modelPromotionProbationLiveTrades),
     exchangeTruthFreezeMismatchCount: parseNumber(env.EXCHANGE_TRUTH_FREEZE_MISMATCH_COUNT, DEFAULTS.exchangeTruthFreezeMismatchCount),
     exchangeTruthRecentFillLookbackMinutes: parseNumber(env.EXCHANGE_TRUTH_RECENT_FILL_LOOKBACK_MINUTES, DEFAULTS.exchangeTruthRecentFillLookbackMinutes),
-      enableAutoReconcile: parseBoolean(env.ENABLE_AUTO_RECONCILE, DEFAULTS.enableAutoReconcile),
+      enableAutoReconcile: parseBoolean(env.AUTO_RECONCILE_ENABLED ?? env.ENABLE_AUTO_RECONCILE, DEFAULTS.enableAutoReconcile),
       autoReconcileRetryCount: parseNumber(env.AUTO_RECONCILE_RETRY_COUNT, DEFAULTS.autoReconcileRetryCount),
       autoReconcileRetryDelayMs: parseNumber(env.AUTO_RECONCILE_RETRY_DELAY_MS, DEFAULTS.autoReconcileRetryDelayMs),
+      autoReconcileAllowFlatClose: parseBoolean(env.AUTO_RECONCILE_ALLOW_FLAT_CLOSE, DEFAULTS.autoReconcileAllowFlatClose),
+      autoReconcileAllowProtectiveRebuild: parseBoolean(env.AUTO_RECONCILE_ALLOW_PROTECTIVE_REBUILD, DEFAULTS.autoReconcileAllowProtectiveRebuild),
+      autoReconcileMinConfidence: parseNumber(env.AUTO_RECONCILE_MIN_CONFIDENCE, DEFAULTS.autoReconcileMinConfidence),
+      autoReconcileRequireFreshStreamOrRest: parseBoolean(env.AUTO_RECONCILE_REQUIRE_FRESH_STREAM_OR_REST, DEFAULTS.autoReconcileRequireFreshStreamOrRest),
+      autoReconcileMaxActionsPerRun: parseNumber(env.AUTO_RECONCILE_MAX_ACTIONS_PER_RUN, DEFAULTS.autoReconcileMaxActionsPerRun),
       demoPaperReconcileConfirmationSamples: parseNumber(
         env.DEMO_PAPER_RECONCILE_CONFIRMATION_SAMPLES,
         DEFAULTS.demoPaperReconcileConfirmationSamples

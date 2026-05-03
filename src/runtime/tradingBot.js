@@ -143,6 +143,12 @@ import { scoreDataFreshness } from "./dataFreshnessScore.js";
 import { evaluateDatasetQuality } from "./datasetQualityGate.js";
 import { buildReplayContext, hashReplayInput } from "./replayDeterminism.js";
 import { buildRecorderAuditSummary, buildStorageAuditSummary } from "../storage/storageAudit.js";
+import {
+  buildAutoReconcilePlan,
+  buildExchangeSafetyStatus,
+  evaluateExchangeSafetyUnlock,
+  runAutoReconcilePlan
+} from "../execution/autoReconcileCoordinator.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -22805,6 +22811,72 @@ export class TradingBot {
     }
   }
 
+  async maybeRunAutoReconcileCoordinator({ context = "cycle" } = {}) {
+    if (this.config.enableAutoReconcile === false) {
+      return null;
+    }
+    const plan = buildAutoReconcilePlan({
+      config: this.config,
+      runtime: this.runtime,
+      positions: this.runtime.openPositions || [],
+      accountSnapshot: this.runtime.exchangeTruth?.accountSnapshot || this.runtime.accountSnapshot || this.runtime.portfolio || {},
+      openOrders: this.runtime.exchangeTruth?.openOrders || this.runtime.openOrders || [],
+      openOrderLists: this.runtime.exchangeTruth?.openOrderLists || this.runtime.openOrderLists || [],
+      recentTradesBySymbol: this.runtime.exchangeTruth?.recentTradesBySymbol || this.runtime.recentTradesBySymbol || {},
+      userStreamSnapshot: this.runtime.userStreamSnapshot || this.runtime.userDataStream || this.runtime.exchangeTruth?.userStreamSnapshot || {},
+      marketSnapshots: this.runtime.latestMarketSnapshots || {},
+      symbolRules: this.broker?.symbolRules || this.runtime.symbolRules || {}
+    });
+    const unlock = evaluateExchangeSafetyUnlock({
+      plan,
+      runtime: this.runtime,
+      alerts: this.runtime.alerts || this.runtime.ops?.alerts?.items || [],
+      positions: this.runtime.openPositions || []
+    });
+    const safeActions = plan.actions.filter((action) => action.type !== "manual_review");
+    let runResult = null;
+    if (safeActions.length) {
+      runResult = await runAutoReconcilePlan({
+        broker: this.broker,
+        runtime: this.runtime,
+        plan: { ...plan, actions: safeActions },
+        logger: this.logger
+      });
+      this.recordEvent("auto_reconcile_coordinator_run", {
+        context,
+        planStatus: plan.status,
+        appliedCount: runResult.appliedCount,
+        actionTypes: safeActions.map((action) => action.type),
+        entryUnlockEligible: Boolean(plan.entryUnlockEligible)
+      });
+    }
+    this.runtime.exchangeSafety = {
+      ...(this.runtime.exchangeSafety || {}),
+      autoReconcileCoordinator: {
+        checkedAt: nowIso(),
+        context,
+        status: plan.status,
+        confidence: plan.confidence,
+        entryUnlockEligible: plan.entryUnlockEligible,
+        blockingReasons: plan.blockingReasons,
+        nextAction: plan.actions[0]?.type || null,
+        actions: plan.actions.map((action) => ({
+          type: action.type,
+          symbol: action.symbol || null,
+          reason: action.reason || null,
+          reasons: action.reasons || []
+        })),
+        unlock,
+        lastRunResult: runResult ? {
+          status: runResult.status,
+          appliedCount: runResult.appliedCount,
+          manualReviewRequired: runResult.manualReviewRequired
+        } : null
+      }
+    };
+    return { plan, unlock, runResult };
+  }
+
   async runCycleCore() {
     const cycleAt = nowIso();
     this.logger.info("Starting cycle", { mode: this.config.botMode, watchlist: this.config.watchlist.length });
@@ -22846,6 +22918,7 @@ export class TradingBot {
     }
     const driftIssues = this.health.enforceClockDrift(this.client, this.runtime);
     const markedPrices = await this.manageOpenPositions();
+    await this.maybeRunAutoReconcileCoordinator({ context: "runtime_cycle" });
     const exchangeSafetyAfterRecovery = this.refreshExchangeSafetyState({ nowIso: cycleAt });
     this.refreshGovernanceViews(cycleAt);
     let candidates = [];
@@ -25159,6 +25232,45 @@ export class TradingBot {
     });
     const exchangeTruthSummary = summarizeExchangeTruth(this.runtime.exchangeTruth || {});
     const exchangeSafetySummary = summarizeExchangeSafety(this.runtime.exchangeSafety || {});
+    const autoReconcilePlan = buildAutoReconcilePlan({
+      config: this.config,
+      runtime: this.runtime,
+      positions: this.runtime.openPositions || sourceTruth.sourceScopedPositions || [],
+      accountSnapshot: this.runtime.exchangeTruth?.accountSnapshot || this.runtime.accountSnapshot || this.runtime.portfolio || {},
+      openOrders: this.runtime.exchangeTruth?.openOrders || this.runtime.openOrders || [],
+      openOrderLists: this.runtime.exchangeTruth?.openOrderLists || this.runtime.openOrderLists || [],
+      recentTradesBySymbol: this.runtime.exchangeTruth?.recentTradesBySymbol || this.runtime.recentTradesBySymbol || {},
+      userStreamSnapshot: this.runtime.userStreamSnapshot || this.runtime.userDataStream || this.runtime.exchangeTruth?.userStreamSnapshot || {},
+      marketSnapshots: this.runtime.latestMarketSnapshots || {},
+      symbolRules: this.broker?.symbolRules || this.runtime.symbolRules || {}
+    });
+    const autoReconcileUnlock = evaluateExchangeSafetyUnlock({
+      plan: autoReconcilePlan,
+      runtime: this.runtime,
+      alerts: this.runtime.alerts || this.runtime.ops?.alerts?.items || [],
+      positions: this.runtime.openPositions || sourceTruth.sourceScopedPositions || []
+    });
+    const autoReconcileStatus = buildExchangeSafetyStatus({
+      plan: autoReconcilePlan,
+      unlock: autoReconcileUnlock,
+      runtime: { ...this.runtime, openPositions: this.runtime.openPositions || sourceTruth.sourceScopedPositions || [] }
+    });
+    exchangeSafetySummary.entryBlocked = autoReconcileStatus.entryBlocked;
+    exchangeSafetySummary.autoReconcileStatus = autoReconcileStatus.autoReconcileStatus;
+    exchangeSafetySummary.blockingPositions = autoReconcileStatus.blockingPositions;
+    exchangeSafetySummary.nextAction = autoReconcileStatus.nextAction;
+    exchangeSafetySummary.entryUnlockEligible = autoReconcileStatus.entryUnlockEligible;
+    exchangeSafetySummary.autoReconcilePlan = {
+      status: autoReconcilePlan.status,
+      confidence: autoReconcilePlan.confidence,
+      blockingReasons: autoReconcilePlan.blockingReasons,
+      actions: autoReconcilePlan.actions.map((action) => ({
+        type: action.type,
+        symbol: action.symbol || null,
+        reason: action.reason || null,
+        reasons: action.reasons || []
+      }))
+    };
     const paperLearningSummary = summarizePaperLearning(this.runtime.ops?.paperLearning || this.runtime.paperLearning || {});
     const adaptationSummary = summarizeAdaptationHealth(this.runtime.adaptation || this.buildAdaptationHealthSnapshot(referenceNow));
     const offlineTrainerSummary = summarizeOfflineTrainer(this.runtime.offlineTrainer || {});

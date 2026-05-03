@@ -191,6 +191,8 @@ export function validateConfig(config) {
   assertRange("EXCHANGE_TRUTH_LOOP_INTERVAL_SECONDS", config.exchangeTruthLoopIntervalSeconds, 15, 3600, errors);
   assertRange("AUTO_RECONCILE_RETRY_COUNT", config.autoReconcileRetryCount, 0, 6, errors);
   assertRange("AUTO_RECONCILE_RETRY_DELAY_MS", config.autoReconcileRetryDelayMs, 0, 30_000, errors);
+  assertRange("AUTO_RECONCILE_MIN_CONFIDENCE", config.autoReconcileMinConfidence, 0.78, 1, errors);
+  assertRange("AUTO_RECONCILE_MAX_ACTIONS_PER_RUN", config.autoReconcileMaxActionsPerRun, 1, 25, errors);
   assertRange("QTY_MISMATCH_TOLERANCE", config.qtyMismatchTolerance, 0, 10_000, errors);
   assertRange("PRICE_MISMATCH_TOLERANCE_BPS", config.priceMismatchToleranceBps, 0, 5_000, errors);
   assertRange("MAX_AUTO_FIX_NOTIONAL", config.maxAutoFixNotional, 1, 1_000_000, errors);
