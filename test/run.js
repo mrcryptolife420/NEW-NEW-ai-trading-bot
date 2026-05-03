@@ -146,6 +146,7 @@ import { registerMarketProviderHubTests } from "./marketProviderHub.tests.js";
 import { registerRecoveryProbePolicyTests } from "./recoveryProbePolicy.tests.js";
 import { registerCandidateRankingTests } from "./candidateRanking.tests.js";
 import { registerExecutionFeedbackLearningTests } from "./executionFeedbackLearning.tests.js";
+import { registerExecutionSafetyFilterTests } from "./executionSafetyFilters.tests.js";
 import { registerFeatureGovernanceTests } from "./featureGovernance.tests.js";
 import { registerReplayDeterminismTests } from "./replayDeterminism.tests.js";
 import { registerMarketProvidersTests } from "./marketProviders.tests.js";
@@ -32299,6 +32300,11 @@ await registerCandidateRankingTests({
 });
 
 await registerExecutionFeedbackLearningTests({
+  runCheck,
+  assert
+});
+
+await registerExecutionSafetyFilterTests({
   runCheck,
   assert
 });

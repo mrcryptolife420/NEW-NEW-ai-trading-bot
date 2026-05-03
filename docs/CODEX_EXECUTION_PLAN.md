@@ -435,13 +435,15 @@ Notitie 2026-05-03: `src/execution/stopLimitGap.js` toegevoegd als pure diagnost
 
 ## 6.3 OCO / symbol filter tests
 
-- [ ] SELL OCO geometry: takeProfit > current > stopTrigger >= stopLimit.
-- [ ] Invalid geometry blockt.
-- [ ] tickSize rounding tests.
-- [ ] stepSize rounding tests.
-- [ ] minNotional tests.
-- [ ] fee accounting tests.
-- [ ] slippage sign tests.
+- [x] SELL OCO geometry: takeProfit > current > stopTrigger >= stopLimit.
+- [x] Invalid geometry blockt.
+- [x] tickSize rounding tests.
+- [x] stepSize rounding tests.
+- [x] minNotional tests.
+- [x] fee accounting tests.
+- [x] slippage sign tests.
+
+Notitie 2026-05-03: P6.3 is afgerond met `test/executionSafetyFilters.tests.js`. De tests dekken pure OCO-geometry, tick/step/minNotional symbol filters, quote/base/third-asset fee accounting inclusief unconverted fees en slippage-sign handling. Geen live calls of tradinggedrag gewijzigd; `npm test` geslaagd.
 
 ---
 
