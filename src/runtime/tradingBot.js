@@ -153,6 +153,10 @@ import {
   buildPostReconcileProbationStatus,
   resolvePostReconcileProbationState
 } from "../risk/postReconcileEntryLimits.js";
+import { scoreIndicatorRegimeFit } from "../strategy/indicatorRegimeScoring.js";
+import { buildSetupThesis as buildStrategySetupThesis } from "../strategy/setupThesis.js";
+import { buildExitPlanHint } from "../strategy/exitPlanHints.js";
+import { buildPortfolioCrowdingSummary } from "../risk/portfolioCrowding.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -23457,6 +23461,50 @@ export class TradingBot {
       market.indicatorRegistry ||
       {}
     );
+    const setupType = decision.setupStyle ||
+      strategy.setupStyle ||
+      strategy.activeStrategy ||
+      strategy.family ||
+      "trend_continuation";
+    const regimeFitDiagnostics = scoreIndicatorRegimeFit({
+      features: market,
+      regime: decision.regime || decision.regimeSummary?.regime || decision.marketState?.regime || "unknown",
+      setupType
+    });
+    const strategySetupThesis = decision.setupThesis || buildStrategySetupThesis({
+      setupType,
+      features: market,
+      regime: decision.regime || decision.regimeSummary?.regime || "unknown",
+      marketSnapshot: decision.marketSnapshot || {},
+      orderBook: decision.marketSnapshot?.book || decision.orderBook || {},
+      config: this.config || {}
+    });
+    const exitPlanHint = decision.exitPlanHint || buildExitPlanHint({
+      setupType,
+      features: market,
+      thesis: strategySetupThesis,
+      config: this.config || {}
+    });
+    const portfolioCrowding = decision.portfolioCrowding || buildPortfolioCrowdingSummary({
+      openPositions: this.runtime?.openPositions || [],
+      candidate: {
+        symbol: decision.symbol,
+        quoteAmount: decision.quoteAmount,
+        strategyFamily: strategy.family,
+        regime: decision.regime || decision.regimeSummary?.regime,
+        cluster: decision.profile?.cluster || decision.portfolioCluster || decision.marketContext?.cluster
+      },
+      correlations: decision.correlations || {},
+      marketContext: decision.marketContext || {}
+    });
+    const tradingQualitySummary = decision.tradingQualitySummary || {
+      topSetupType: setupType,
+      regimeFit: regimeFitDiagnostics,
+      bestEvidence: regimeFitDiagnostics.supportingIndicators?.[0] || strategySetupThesis.evidenceFor?.[0] || null,
+      mainConflict: regimeFitDiagnostics.conflictingIndicators?.[0] || strategySetupThesis.evidenceAgainst?.[0] || null,
+      portfolioCrowdingRisk: portfolioCrowding.crowdingRisk,
+      exitPlanHint
+    };
     const sectorRotationScore = decision.marketContext?.sectorRotationScore ??
       decision.sectorRotationScore ??
       decision.leadershipContext?.sectorRotationScore ??
@@ -23630,12 +23678,16 @@ export class TradingBot {
       edgeToThreshold: num(decisionTruth.thresholdBuffer ?? decision.edgeToThreshold ?? ((decision.probability || 0) - (decision.threshold || 0)), 4),
       opportunityScore: num(decision.opportunityScore || 0, 4),
       expectedNetEdge,
+      tradingQualitySummary,
       decisionSupportDiagnostics,
       indicatorRegistry,
       topPositiveFeatures: indicatorRegistry.topPositiveFeatures,
       topNegativeFeatures: indicatorRegistry.topNegativeFeatures,
       missingIndicatorFeatures: indicatorRegistry.missingIndicatorFeatures,
       indicatorPackUsed: indicatorRegistry.indicatorPackUsed,
+      setupThesis: strategySetupThesis,
+      exitPlanHint,
+      portfolioCrowding,
       netEdgeGate: decision.netEdgeGate || decisionSupportDiagnostics.netEdgeGate || null,
       failedBreakoutDetector: decision.failedBreakoutDetector || decisionSupportDiagnostics.failedBreakoutDetector || null,
       leadershipContext: decision.leadershipContext || decisionSupportDiagnostics.leadershipContext || null,
@@ -25228,6 +25280,16 @@ export class TradingBot {
     const calendarOverview = topDecision.calendar || leadPosition?.entryRationale?.calendar || summarizeCalendarSummary(EMPTY_CALENDAR);
     const dashboardTopDecisions = fullTopDecisions.map((decision) => this.buildDashboardDecisionView(decision));
     const dashboardBlockedSetups = fullBlockedSetups.map((decision) => this.buildDashboardDecisionView(decision));
+    const tradingQualitySummary = dashboardTopDecisions[0]?.tradingQualitySummary ||
+      dashboardBlockedSetups[0]?.tradingQualitySummary ||
+      {
+        topSetupType: null,
+        regimeFit: { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] },
+        bestEvidence: null,
+        mainConflict: null,
+        portfolioCrowdingRisk: "unknown",
+        exitPlanHint: null
+      };
     const marketProvidersHealth = this.marketProviderHub?.buildRuntimeHealth
       ? this.marketProviderHub.buildRuntimeHealth({
       symbolSummaries: [...fullTopDecisions, ...fullBlockedSetups]
@@ -25590,6 +25652,7 @@ export class TradingBot {
       alerts: alertsSummary,
       exchangeSafety: exchangeSafetySummary,
       postReconcileProbation,
+      tradingQualitySummary,
       analysis: {
         lastError: this.runtime.lastAnalysisError || null
       },

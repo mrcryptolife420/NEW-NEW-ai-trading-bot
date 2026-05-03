@@ -76,6 +76,14 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     dataFreshnessSummary: objectOrFallback(source.dataFreshnessSummary || source.dataIntegrity?.dataFreshnessSummary, { status: "unknown", staleSources: [] }),
     datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
     replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
+    tradingQualitySummary: objectOrFallback(source.tradingQualitySummary || source.tradingQuality, {
+      topSetupType: null,
+      regimeFit: { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] },
+      bestEvidence: null,
+      mainConflict: null,
+      portfolioCrowdingRisk: "unknown",
+      exitPlanHint: null
+    }),
     panicPlanAvailable: Boolean(source.panicPlanAvailable)
   };
 }

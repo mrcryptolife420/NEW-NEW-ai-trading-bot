@@ -42,6 +42,12 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Secret redaction | Implemented | `src/utils/redactSecrets.js`, `src/utils/logger.js` | `test/safetyMaintenance.tests.js` |
 | OCO geometry regressions | Implemented | `src/execution/liveBroker.js` | `test/safetyMaintenance.tests.js` |
 | Execution intent ledger regressions | Implemented | `src/execution/executionIntentLedger.js` | `test/executionIntentLedger.tests.js`, `test/safetyMaintenance.tests.js` |
+| Trading feature inventory | Documentation | `docs/TRADING_FEATURE_INVENTORY.md` | n/a |
+| Advanced indicator helpers | Diagnostics only | `src/strategy/advancedIndicators.js` | `test/tradingQualityUpgrade.tests.js` |
+| Indicator regime scoring | Diagnostics only | `src/strategy/indicatorRegimeScoring.js` | `test/tradingQualityUpgrade.tests.js` |
+| Setup thesis and exit hints | Dashboard diagnostics | `src/strategy/setupThesis.js`, `src/strategy/exitPlanHints.js`, `src/runtime/tradingBot.js` | `test/tradingQualityUpgrade.tests.js` |
+| Portfolio crowding diagnostics | Risk diagnostic helper | `src/risk/portfolioCrowding.js` | `test/tradingQualityUpgrade.tests.js` |
+| Backtest quality metrics | Validation/analytics | `src/backtest/backtestMetrics.js` | `test/tradingQualityUpgrade.tests.js` |
 
 ## Safety Invariants
 
@@ -62,3 +68,5 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 - Post-reconcile probation reduces risk temporarily but does not impose a permanent single-position mode.
 - Storage, recorder and replay-manifest commands are read-only and do not rewrite persisted trading state.
 - Dataset quality gates are diagnostics for research/retrain trust; they do not change live execution.
+- Trading-quality indicators, thesis, exit hints and regime scoring are diagnostics-first and do not loosen live entry gates.
+- Portfolio crowding preserves multi-position support while blocking duplicate-symbol entries and reducing risk under crowding.

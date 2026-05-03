@@ -172,6 +172,7 @@ import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.test
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
 import { registerPostReconcileEntryLimitsTests } from "./postReconcileEntryLimits.tests.js";
+import { registerTradingQualityUpgradeTests } from "./tradingQualityUpgrade.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32469,6 +32470,11 @@ await registerAutoReconcileCoordinatorTests({
 });
 
 await registerPostReconcileEntryLimitsTests({
+  runCheck,
+  assert
+});
+
+await registerTradingQualityUpgradeTests({
   runCheck,
   assert
 });
