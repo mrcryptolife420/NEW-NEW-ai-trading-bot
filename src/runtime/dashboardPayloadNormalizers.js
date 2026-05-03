@@ -42,6 +42,11 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     vetoOutcomeSummary: objectOrFallback(source.vetoOutcomeSummary || source.learningAnalytics?.vetoOutcomeSummary, { status: "unavailable" }),
     promotionDossierSummary: objectOrFallback(source.promotionDossierSummary || source.learningAnalytics?.promotionDossierSummary, { status: "unavailable" }),
     rollbackWatchSummary: objectOrFallback(source.rollbackWatchSummary || source.learningAnalytics?.rollbackWatchSummary, { status: "unavailable" }),
-    regimeConfusionSummary: objectOrFallback(source.regimeConfusionSummary || source.learningAnalytics?.regimeConfusionSummary, { status: "unavailable" })
+    regimeConfusionSummary: objectOrFallback(source.regimeConfusionSummary || source.learningAnalytics?.regimeConfusionSummary, { status: "unavailable" }),
+    operatorModeSummary: objectOrFallback(source.operatorModeSummary, { mode: "active", canOpenNewEntries: true }),
+    liveReadinessAudit: objectOrFallback(source.liveReadinessAudit, { status: "not_ready", blockingReasons: [] }),
+    safetySnapshot: objectOrFallback(source.safetySnapshot, { overallStatus: "unknown", topRisks: [] }),
+    incidentSummary: objectOrFallback(source.incidentSummary, { status: "empty", count: 0, reports: [] }),
+    panicPlanAvailable: Boolean(source.panicPlanAvailable)
   };
 }

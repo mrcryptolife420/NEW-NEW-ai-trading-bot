@@ -12,7 +12,11 @@ export function validateConfig(config) {
   const errors = [];
   const warnings = [];
   const allowedPaperExecutionVenues = new Set(["internal", "binance_demo_spot"]);
+  const allowedOperatorModes = new Set(["active", "observe_only", "protect_only", "maintenance", "stopped"]);
 
+  if (!allowedOperatorModes.has(config.operatorMode || "active")) {
+    errors.push("OPERATOR_MODE must be one of active, observe_only, protect_only, maintenance, stopped.");
+  }
   if (!Array.isArray(config.watchlist) || config.watchlist.length === 0) {
     errors.push("WATCHLIST must contain at least one symbol.");
   }

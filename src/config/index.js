@@ -185,6 +185,7 @@ export async function loadConfig(projectRoot = process.cwd()) {
     historyDirSource: historyDirSetting.source,
     envPath,
     botMode,
+    operatorMode: (env.OPERATOR_MODE || DEFAULTS.operatorMode).trim().toLowerCase(),
     baseQuoteAsset: env.BASE_QUOTE_ASSET || DEFAULTS.baseQuoteAsset,
     startingCash: parseNumber(env.STARTING_CASH, DEFAULTS.startingCash),
     maxOpenPositions: parseNumber(env.MAX_OPEN_POSITIONS, DEFAULTS.maxOpenPositions),

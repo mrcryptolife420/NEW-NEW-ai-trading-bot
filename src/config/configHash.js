@@ -3,6 +3,7 @@ import { redactSecrets } from "../utils/redactSecrets.js";
 
 const DEFAULT_HASH_KEYS = [
   "botMode",
+  "operatorMode",
   "paperModeProfile",
   "paperExecutionVenue",
   "modelThreshold",

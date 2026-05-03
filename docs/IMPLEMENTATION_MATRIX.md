@@ -21,6 +21,12 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Rollback watch | Read-only diagnostics | `src/runtime/rollbackWatch.js` | `test/learningAnalyticsMaintenance.tests.js` |
 | Replay pack scoring | Read-only diagnostics | `src/runtime/replayPackScoring.js` | `test/learningAnalyticsMaintenance.tests.js` |
 | Learning analytics CLI | Read-only | `src/runtime/learningAnalytics.js`, `src/cli/runCli.js` | `test/learningAnalyticsMaintenance.tests.js` |
+| Operator mode | Diagnostics/readiness | `src/runtime/operatorMode.js`, `src/config/index.js` | `test/operatorSafetyTooling.tests.js` |
+| Live readiness audit | Diagnostics only | `src/runtime/liveReadinessAudit.js` | `test/operatorSafetyTooling.tests.js` |
+| Incident reports | Read-only/safe write to runtime incidents | `src/runtime/incidentReport.js`, `src/cli/runCli.js` | `test/operatorSafetyTooling.tests.js` |
+| Panic flatten plan | Dry-run only | `src/runtime/panicFlattenPlan.js`, `src/cli/runCli.js` | `test/operatorSafetyTooling.tests.js` |
+| Runtime safety snapshot | Dashboard diagnostics | `src/runtime/safetySnapshot.js`, `src/runtime/tradingBot.js` | `test/operatorSafetyTooling.tests.js` |
+| Alert severity normalization | Implemented | `src/runtime/alertSeverity.js` | `test/operatorSafetyTooling.tests.js` |
 | Reason registry metadata | Implemented | `src/risk/reasonRegistry.js` | `test/safetyMaintenance.tests.js` |
 | Secret redaction | Implemented | `src/utils/redactSecrets.js`, `src/utils/logger.js` | `test/safetyMaintenance.tests.js` |
 | OCO geometry regressions | Implemented | `src/execution/liveBroker.js` | `test/safetyMaintenance.tests.js` |
@@ -37,3 +43,6 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 - Reconcile evidence summaries do not change autofix behavior.
 - Learning analytics, promotion dossiers, rollback watch and replay-pack scoring are diagnostics only.
 - No automatic live promotion or live rollback is performed.
+- Operator modes can restrict entries, but do not loosen live safety.
+- Panic flatten tooling is dry-run planning only.
+- Incident commands are read-only except writing local incident JSON reports under the runtime directory.

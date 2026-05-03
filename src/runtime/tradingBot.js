@@ -134,6 +134,11 @@ import {
   buildLearningReplayPackSummary
 } from "./learningAnalytics.js";
 import { buildTradeThesis } from "./tradeThesis.js";
+import { resolveOperatorMode } from "./operatorMode.js";
+import { buildLiveReadinessAudit } from "./liveReadinessAudit.js";
+import { summarizeIncidentReports } from "./incidentReport.js";
+import { buildPanicFlattenPlan } from "./panicFlattenPlan.js";
+import { buildSafetySnapshot } from "./safetySnapshot.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -25344,6 +25349,43 @@ export class TradingBot {
     const learningFailureSummary = buildLearningFailureSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
     const learningPromotionSummary = buildLearningPromotionSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
     const learningReplayPackSummary = buildLearningReplayPackSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
+    const operatorRecorderSummary = this.dataRecorder?.getSummary
+      ? (this.dataRecorder.getSummary() || {})
+      : (this.runtime.dataRecorder || {});
+    const operatorModeSummary = resolveOperatorMode({
+      config: this.config,
+      runtimeState: this.runtime,
+      alerts: alertsSummary.items || alertsSummary.alerts || []
+    });
+    const liveReadinessAudit = buildLiveReadinessAudit({
+      config: this.config,
+      runtimeState: this.runtime,
+      riskSummary: { rootBlocker: rootBlockerSummary },
+      exchangeSummary: {
+        freezeEntries: exchangeTruthSummary.freezeEntries || exchangeSafetySummary.globalFreezeEntries,
+        reconcileRequired: exchangeTruthSummary.reconcileRequired || exchangeSafetySummary.reconcileRequired
+      },
+      promotionDossier: learningPromotionSummary.promotionDossierSummary,
+      rollbackWatch: learningPromotionSummary.rollbackWatchSummary
+    });
+    const safetySnapshot = buildSafetySnapshot({
+      config: this.config,
+      operatorMode: operatorModeSummary,
+      liveReadiness: liveReadinessAudit,
+      riskSummary: { rootBlocker: rootBlockerSummary },
+      alerts: alertsSummary.items || alertsSummary.alerts || [],
+      intents: listExecutionIntents(this.runtime, { unresolvedOnly: true }),
+      positions,
+      recorderSummary: operatorRecorderSummary,
+      dashboardFreshness: snapshotMeta.freshness || {}
+    });
+    const incidentSummary = await summarizeIncidentReports({ runtimeDir: this.config.runtimeDir }).catch((error) => ({
+      status: "unavailable",
+      error: error?.message || "incident_summary_unavailable",
+      count: 0,
+      reports: []
+    }));
+    const panicPlanPreview = buildPanicFlattenPlan({ config: this.config, positions });
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),
       generatedAt: referenceNow,
@@ -25549,6 +25591,11 @@ export class TradingBot {
       adaptiveLearning: adaptiveLearningSummary,
       badVetoLearning: rejectAdaptiveLearningSummary,
       tradingImprovementDiagnostics,
+      operatorModeSummary,
+      liveReadinessAudit,
+      safetySnapshot,
+      incidentSummary,
+      panicPlanAvailable: panicPlanPreview.positionsToClose.length > 0,
       failureLibrarySummary: learningFailureSummary.failureLibrarySummary,
       exitQualitySummary: learningFailureSummary.exitQualitySummary,
       vetoOutcomeSummary: learningReplayPackSummary.vetoOutcomeSummary || {},

@@ -168,6 +168,7 @@ import { registerFeatureFlagHygieneTests } from "./featureFlagHygiene.tests.js";
 import { registerSafetyMaintenanceTests } from "./safetyMaintenance.tests.js";
 import { registerConfigOperatorMaintenanceTests } from "./configOperatorMaintenance.tests.js";
 import { registerLearningAnalyticsMaintenanceTests } from "./learningAnalyticsMaintenance.tests.js";
+import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32435,6 +32436,16 @@ await registerLearningAnalyticsMaintenanceTests({
   assert,
   fs,
   os,
+  runCli
+});
+
+await registerOperatorSafetyToolingTests({
+  runCheck,
+  assert,
+  fs,
+  os,
+  loadConfig,
+  ConfigValidationError,
   runCli
 });
 

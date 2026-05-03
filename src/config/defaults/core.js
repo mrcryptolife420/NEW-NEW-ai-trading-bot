@@ -1,5 +1,6 @@
 export const coreDefaults = {
   "botMode": "paper",
+  "operatorMode": "active",
   "baseQuoteAsset": "USDT",
   "startingCash": 10000,
   "userRegion": "BE",

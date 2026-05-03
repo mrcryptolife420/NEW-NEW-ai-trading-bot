@@ -14,6 +14,8 @@ import {
   buildLearningPromotionSummary,
   buildLearningReplayPackSummary
 } from "../runtime/learningAnalytics.js";
+import { buildIncidentReport, summarizeIncidentReports, writeIncidentReport } from "../runtime/incidentReport.js";
+import { buildPanicFlattenPlan } from "../runtime/panicFlattenPlan.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -112,6 +114,20 @@ function parseReplayArgs(args = []) {
 
 function parseTraceValue(args = []) {
   return `${args?.[0] || ""}`.trim();
+}
+
+function parseNamedArg(args = [], name, fallback = null) {
+  const prefix = `--${name}=`;
+  const directIndex = args.indexOf(`--${name}`);
+  const direct = directIndex >= 0 ? args[directIndex + 1] : null;
+  const inline = args.find((arg) => `${arg}`.startsWith(prefix));
+  return inline ? `${inline}`.slice(prefix.length) : direct || fallback;
+}
+
+function listUnresolvedIntentObjects(runtime = {}) {
+  const ledger = runtime.orderLifecycle?.executionIntentLedger || {};
+  const unresolved = new Set(Array.isArray(ledger.unresolvedIntentIds) ? ledger.unresolvedIntentIds : []);
+  return Object.values(ledger.intents || {}).filter((intent) => unresolved.has(intent.id));
 }
 
 export default async function runCli({
@@ -222,6 +238,53 @@ export default async function runCli({
       : command === "learning:promotion"
         ? buildLearningPromotionSummary({ journal, runtime, config })
         : buildLearningReplayPackSummary({ journal, runtime, config });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "incidents:create" || command === "incidents:summary") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    if (command === "incidents:summary") {
+      const summary = await summarizeIncidentReports({ runtimeDir: config.runtimeDir });
+      console.log(JSON.stringify(summary, null, 2));
+      markCommandSuccess(processState);
+      return;
+    }
+    const report = buildIncidentReport({
+      type: parseNamedArg(args, "type", "manual_review"),
+      severity: parseNamedArg(args, "severity", "medium"),
+      configHash: config.configHash || null,
+      runtimeState: runtime,
+      alerts: runtime.alerts || runtime.ops?.alerts?.alerts || [],
+      positions: runtime.openPositions || [],
+      intents: listUnresolvedIntentObjects(runtime),
+      reconcileSummary: runtime.exchangeSafety?.autoReconcileSummary || runtime.exchangeTruth || null,
+      recentDecisions: runtime.latestDecisions || []
+    });
+    const written = await writeIncidentReport({ runtimeDir: config.runtimeDir, report });
+    console.log(JSON.stringify({ status: "ok", report, written }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "live:panic-plan") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const openOrders = [
+      ...Object.values(runtime.orderLifecycle?.activeActions || {}),
+      ...Object.values(runtime.orderLifecycle?.activeActionsPrevious || {})
+    ].filter(Boolean);
+    const result = buildPanicFlattenPlan({
+      config,
+      positions: runtime.openPositions || [],
+      marketSnapshots: runtime.marketSnapshots || runtime.latestMarketSnapshots || {},
+      symbolRules: runtime.symbolRules || {},
+      openOrders
+    });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;
