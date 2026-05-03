@@ -2,19 +2,21 @@
 
 Generated: 2026-05-03
 
+Last baseline refresh: 2026-05-03T15:22Z
+
 Scope: safety-first debug, stability and regression audit for the Binance Spot paper/live trading bot. This report records reproducible command results and code-backed findings. No live safety gate was relaxed and no force-unlock path was added.
 
 ## Baseline Commands
 
 | Command | Result | Notes |
 | --- | --- | --- |
-| `npm test` | Pass | Full test runner completed with `All checks passed`. Node emitted a non-fatal localstorage-file warning from the runtime environment. |
-| `node src/cli.js doctor` | Pass | Paper config valid. Broker can trade in paper/demo terms, but readiness/data quality is degraded by stream-local-book and REST pressure diagnostics. |
-| `node src/cli.js status` | Pass | Status payload returned. Readiness was `degraded` with `market_data_rest_pressure_guarded`. |
-| `node src/cli.js once` | Pass | Single cycle completed without live orders. Candidates remained blocked by data/model/meta/governance reasons. |
-| `node src/cli.js feature:audit` | Pass | Feature audit returned `review_required`: 69 flags, 12 audited features, no P0 runtime crash. Several live-risk-review items remain intentionally non-live-aggressive. |
-| `node src/cli.js rest:audit` | Pass | REST audit identifies public kline/book ticker/depth fallbacks and exchange-info cache paths. Hot runtime pressure still needs stream-first operation. |
-| `node src/cli.js readmodel:dashboard` | Pass | Read-model dashboard snapshot returned operator recommendations and fallback-safe sections. |
+| `npm test` | Pass | Full test runner completed with `All checks passed` in 188.4s. |
+| `node src/cli.js doctor` | Pass | Completed in 79.5s. Paper config remains usable for diagnostics; output still shows market/universe data collection and stream-local-book dependency. |
+| `node src/cli.js status` | Pass | Completed in 55.8s. Readiness was `blocked` with reasons `exchange_safety_blocked` and `market_data_rest_pressure_guarded`. |
+| `node src/cli.js once` | Pass | Completed in 66.5s. Single paper cycle completed without live orders; candidates remained rejected, dominated by `exchange_safety_blocked`, meta/model confidence, portfolio drawdown and range-grid quarantine reasons. |
+| `node src/cli.js readmodel:dashboard` | Pass | Completed in 0.5s. Read-model dashboard command returned without crashing. |
+| `node src/cli.js feature:audit` | Pass | Completed in 2.2s. Feature audit returned `review_required`; current summary showed 66 complete items and 5 documented config-only placeholders. |
+| `node src/cli.js rest:audit` | Pass | Completed in 0.6s. REST audit returned `stream_first`; hot callers include guarded local order book depth snapshot and open-order reconcile REST with user-stream replacement recommended. |
 
 ## Findings
 
@@ -26,6 +28,13 @@ Scope: safety-first debug, stability and regression audit for the Binance Spot p
 | Exchange-safety block explanations lacked a single pure diagnostic contract | Code had auto-reconcile plan/status, but no explicit `entryBlocked`, stale-blocker suspicion, required evidence and safe next action helper | Operator surfaces could show block state without enough structured evidence requirements for debugging stale blockers. | `src/execution/autoReconcileCoordinator.js` | Fixed with `explainExchangeSafetyBlock()` and regression tests. |
 | Repeated local `safeNumber` / ratio patterns existed without a shared testable utility | Audit found many local finite guards; central helper was absent | Future modules risk inconsistent fallback behavior for NaN/Infinity unless shared helpers are available. | `src/utils/safeMath.js` | Fixed with `safeNumber`, `safeRatio`, `clampFinite` and tests. |
 | `rg.exe` unavailable in this Windows session | Search failed with `Toegang geweigerd` | Local executable permission issue, not a repo code failure. | N/A | Worked around using PowerShell `Select-String`; documented. |
+
+## Current Known Issues
+
+- `exchange_safety_blocked` remains the dominant entry blocker. This is intentional while unresolved exchange-safety evidence or execution-intent concerns remain.
+- `market_data_rest_pressure_guarded` remains visible in status. REST audit confirms stream-first architecture, but hot REST callers still need operational attention.
+- `once` produced candidate rejections rather than trades. This is expected under current exchange-safety and model/meta blockers; no thresholds were changed to force trades.
+- `feature:audit` remains `review_required`, not failed. Several roadmap items are intentionally diagnostics/config-only or live-risk-review gated.
 
 ## Safety Invariants Checked
 

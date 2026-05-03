@@ -65,20 +65,22 @@ Doel: de bot moet duidelijk kunnen uitleggen waarom hij wel/niet kan traden, zon
 
 ## 1.1 Baseline commands
 
-- [ ] Run `npm test`.
-- [ ] Run `node src/cli.js doctor`.
-- [ ] Run `node src/cli.js status`.
-- [ ] Run `node src/cli.js once`.
-- [ ] Run `node src/cli.js readmodel:dashboard`.
-- [ ] Run `node src/cli.js feature:audit`.
-- [ ] Run `node src/cli.js rest:audit`.
-- [ ] Documenteer resultaten in `docs/DEBUG_AUDIT_REPORT.md`.
+- [x] Run `npm test`.
+- [x] Run `node src/cli.js doctor`.
+- [x] Run `node src/cli.js status`.
+- [x] Run `node src/cli.js once`.
+- [x] Run `node src/cli.js readmodel:dashboard`.
+- [x] Run `node src/cli.js feature:audit`.
+- [x] Run `node src/cli.js rest:audit`.
+- [x] Documenteer resultaten in `docs/DEBUG_AUDIT_REPORT.md`.
+
+Notitie 2026-05-03: alle baseline commands eindigden met exit code 0. `status` blijft terecht blocked door `exchange_safety_blocked` en `market_data_rest_pressure_guarded`; `once` forceerde geen trades en liet candidate rejections zichtbaar.
 
 Acceptatie:
 
-- [ ] Alle command failures zijn gedocumenteerd.
-- [ ] Bekende remaining issues staan onder `Known issues`.
-- [ ] Geen live behavior gewijzigd.
+- [x] Alle command failures zijn gedocumenteerd.
+- [x] Bekende remaining issues staan onder `Known issues`.
+- [x] Geen live behavior gewijzigd.
 
 ## 1.2 Trading path health
 
