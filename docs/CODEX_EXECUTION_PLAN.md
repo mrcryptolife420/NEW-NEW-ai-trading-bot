@@ -84,24 +84,26 @@ Acceptatie:
 
 ## 1.2 Trading path health
 
-- [ ] Maak of update `src/runtime/tradingPathHealth.js`.
-- [ ] Voeg CLI command toe: `node src/cli.js trading-path:debug`.
-- [ ] Toon `botRunning`.
-- [ ] Toon `cycleFresh`.
-- [ ] Toon `feedFresh`.
-- [ ] Toon `readmodelFresh`.
-- [ ] Toon `dashboardFresh`.
-- [ ] Toon `topDecisionsCount`.
-- [ ] Toon `marketSnapshotsCount`.
-- [ ] Toon `blockingReasons`.
-- [ ] Toon `nextAction`.
+- [x] Maak of update `src/runtime/tradingPathHealth.js`.
+- [x] Voeg CLI command toe: `node src/cli.js trading-path:debug`.
+- [x] Toon `botRunning`.
+- [x] Toon `cycleFresh`.
+- [x] Toon `feedFresh`.
+- [x] Toon `readmodelFresh`.
+- [x] Toon `dashboardFresh`.
+- [x] Toon `topDecisionsCount`.
+- [x] Toon `marketSnapshotsCount`.
+- [x] Toon `blockingReasons`.
+- [x] Toon `nextAction`.
+
+Notitie 2026-05-03: module, CLI en regressietests bestaan al. `trading-path:debug` is read-only en rapporteerde huidig `status=blocked` door `exchange_safety_blocked` plus `no_decision_snapshot_created`; feed/readmodel waren fresh en dashboard snapshot unavailable werd apart getoond.
 
 Acceptatie:
 
-- [ ] Stale/missing data blokkeert entries.
-- [ ] Fresh trading path blokkeert niet vanzelf.
-- [ ] Exchange safety blijft dominante blocker.
-- [ ] Tests toegevoegd voor fresh/stale/partial/missing data.
+- [x] Stale/missing data blokkeert entries.
+- [x] Fresh trading path blokkeert niet vanzelf.
+- [x] Exchange safety blijft dominante blocker.
+- [x] Tests toegevoegd voor fresh/stale/partial/missing data.
 
 ## 1.3 NaN/Infinity audit
 
