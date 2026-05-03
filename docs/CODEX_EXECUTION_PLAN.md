@@ -761,23 +761,25 @@ Notitie: `operatorActionQueue` toegevoegd als read-only actiequeue bovenop besta
 ## B4 — Exchange adapter contract tests
 
 Bron: nieuwe analyse / execution safety
-Status: proposed
+Status: completed
 
 Doel: paper, demo en live exchange adapters moeten hetzelfde contract volgen zonder echte exchange-mutaties in tests.
 
-- [ ] Maak of update `test/execution/exchangeAdapterContract.tests.js`.
-- [ ] Definieer contract voor place order, cancel order, fetch open orders, fetch balances, fetch recent trades en symbol filters.
-- [ ] Test paper/demo adapters met fake exchange responses.
-- [ ] Test error mapping voor rate limits, minNotional, precision errors, insufficient balance en unknown order.
-- [ ] Test dat live adapter in tests nooit echte orders verstuurt.
-- [ ] Voeg fixtures toe voor Binance-like responses.
-- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md` of `docs/EXECUTION_SAFETY.md`.
+- [x] Maak of update `test/execution/exchangeAdapterContract.tests.js`.
+- [x] Definieer contract voor place order, cancel order, fetch open orders, fetch balances, fetch recent trades en symbol filters.
+- [x] Test paper/demo adapters met fake exchange responses.
+- [x] Test error mapping voor rate limits, minNotional, precision errors, insufficient balance en unknown order.
+- [x] Test dat live adapter in tests nooit echte orders verstuurt.
+- [x] Voeg fixtures toe voor Binance-like responses.
+- [x] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md` of `docs/EXECUTION_SAFETY.md`.
 
 Acceptatie:
 
-- [ ] Adapter contract is testbaar zonder Binance secrets.
-- [ ] Paper/demo/live behavior divergeert niet stil.
-- [ ] `npm test` slaagt.
+- [x] Adapter contract is testbaar zonder Binance secrets.
+- [x] Paper/demo/live behavior divergeert niet stil.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/execution/exchangeAdapterContract.js` toegevoegd als pure contract/error-normalization helper. Contracttests gebruiken uitsluitend fake paper/demo/live adapters en fake Binance-like responses; live mutaties zijn in tests guard-fail en vereisen geen secrets.
 
 ## B5 — Model confidence calibration monitor
 

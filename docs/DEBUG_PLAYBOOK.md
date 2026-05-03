@@ -61,6 +61,14 @@ This playbook is for operator-safe diagnosis. It does not replace exchange-safet
 2. Inspect paper/live parity, fee attribution, execution drag and broker mode fields.
 3. Do not promote paper-only evidence to live without promotion dossier, live readiness and anti-overfit review.
 
+## Exchange Adapter Contract Drift
+
+1. Run `npm test` and check the `exchange adapter contract` tests.
+2. The contract covers place order, cancel order, open orders, balances, recent trades and symbol filters with fake Binance-like responses.
+3. Error mapping must classify rate limits, min-notional, precision, insufficient balance and unknown-order failures before execution code decides next action.
+4. Live-adapter tests use fake clients only; no test may send a real Binance order or require secrets.
+5. If a broker/client wrapper adds a new exchange operation, add it to `src/execution/exchangeAdapterContract.js` and update the contract tests before using it in runtime.
+
 ## Multi-Position Does Not Work
 
 1. Check `MAX_OPEN_POSITIONS`, `MAX_TOTAL_EXPOSURE_FRACTION`, `MAX_POSITION_FRACTION`, portfolio crowding and post-reconcile probation state.
