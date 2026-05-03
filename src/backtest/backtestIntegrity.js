@@ -23,6 +23,14 @@ export function validateBacktestResult({ result = {}, configHash = null, dataHas
     if (Number.isFinite(at) && Number.isFinite(nowMs) && at > nowMs + 60_000) {
       issues.push({ code: "future_trade_timestamp", severity: "degraded", tradeId: trade.id || trade.tradeId || null });
     }
+    if (!trade.featureTimestamp && !trade.decisionAt && !trade.signalAt) {
+      issues.push({ code: "missing_feature_timestamp_lookahead_warning", severity: "warning", tradeId: trade.id || trade.tradeId || null });
+    }
+    for (const key of ["pnlPct", "returnPct", "netPnlPct", "feeBps", "slippageBps"]) {
+      if (key in trade && !finiteNumber(trade[key])) {
+        issues.push({ code: "nan_trade_metric", field: key, severity: "degraded", tradeId: trade.id || trade.tradeId || null });
+      }
+    }
   }
   const severities = new Set(issues.map((item) => item.severity));
   return {

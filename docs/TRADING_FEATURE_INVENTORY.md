@@ -43,5 +43,6 @@ This inventory is code-grounded against `src/strategy/indicators.js`, `src/strat
 | OBV divergence | orderflow | reclaim/reversion | diagnostic/conflict | OBV can diverge for long periods | yes | diagnostics only |
 | Spread percentile | execution/risk | all | diagnostic/risk | Needs local spread history | yes | diagnostics only |
 | Order book imbalance stability | orderflow/execution | breakout/reclaim | diagnostic/risk | Requires fresh stream snapshots | yes | diagnostics only |
+| Slippage confidence score | execution/risk | all | diagnostic/risk | Needs realistic fill/slippage samples | yes | diagnostics only |
 
 Safety invariant: new positive diagnostics do not loosen live thresholds, exchange safety, reconcile gates, manual review gates, execution intent blockers, or sizing caps.

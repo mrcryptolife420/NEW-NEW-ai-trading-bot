@@ -48,6 +48,8 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Setup thesis and exit hints | Dashboard diagnostics | `src/strategy/setupThesis.js`, `src/strategy/exitPlanHints.js`, `src/runtime/tradingBot.js` | `test/tradingQualityUpgrade.tests.js` |
 | Portfolio crowding diagnostics | Risk diagnostic helper | `src/risk/portfolioCrowding.js` | `test/tradingQualityUpgrade.tests.js` |
 | Backtest quality metrics | Validation/analytics | `src/backtest/backtestMetrics.js` | `test/tradingQualityUpgrade.tests.js` |
+| Learning evidence pipeline | Analytics integration | `src/runtime/learningEvidencePipeline.js`, existing learning helpers | `test/tradingQualityUpgrade.tests.js` |
+| Anti-overfit governor | Governance diagnostics | `src/ai/antiOverfitGovernor.js` | `test/tradingQualityUpgrade.tests.js` |
 
 ## Safety Invariants
 

@@ -84,6 +84,12 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       portfolioCrowdingRisk: "unknown",
       exitPlanHint: null
     }),
+    tradingFeatureSummary: objectOrFallback(source.tradingFeatureSummary || source.tradingFeatures, { status: "unavailable", features: [] }),
+    indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
+    learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
+    portfolioCrowdingSummary: objectOrFallback(source.portfolioCrowdingSummary || source.tradingQualitySummary?.portfolioCrowding || source.tradingQualitySummary?.portfolioCrowdingSummary, { crowdingRisk: "unknown", reasons: [] }),
+    antiOverfitSummary: objectOrFallback(source.antiOverfitSummary || source.learningAnalytics?.antiOverfitSummary, { status: "unavailable", reasons: [] }),
+    backtestQualitySummary: objectOrFallback(source.backtestQualitySummary || source.backtest?.qualitySummary, { status: "unavailable", sampleSizeWarning: true }),
     panicPlanAvailable: Boolean(source.panicPlanAvailable)
   };
 }

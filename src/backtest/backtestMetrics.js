@@ -26,6 +26,11 @@ export function buildBacktestQualityMetrics(trades = []) {
     };
   }
   const returns = records.map((trade) => num(trade.returnPct ?? trade.pnlPct ?? trade.netPnlPct));
+  const exposureMinutes = records.reduce((total, trade) => {
+    const entry = new Date(trade.entryAt || trade.openedAt || trade.at || 0).getTime();
+    const exit = new Date(trade.exitAt || trade.closedAt || trade.updatedAt || 0).getTime();
+    return total + (Number.isFinite(entry) && Number.isFinite(exit) && exit > entry ? (exit - entry) / 60000 : 0);
+  }, 0);
   const wins = returns.filter((value) => value > 0);
   const losses = returns.filter((value) => value < 0);
   const grossWin = wins.reduce((total, value) => total + value, 0);
@@ -49,6 +54,8 @@ export function buildBacktestQualityMetrics(trades = []) {
     payoffRatio: avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? avgWin : 0,
     feeDrag: average(records.map((trade) => Math.abs(num(trade.feePct ?? trade.feeDragPct ?? trade.feeBps) / (trade.feeBps ? 10000 : 1))), 0),
     slippageDrag: average(records.map((trade) => Math.abs(num(trade.slippagePct ?? trade.slippageDragPct ?? trade.slippageBps) / (trade.slippageBps ? 10000 : 1))), 0),
+    exposureTime: exposureMinutes,
+    exposureTimeHours: exposureMinutes / 60,
     sampleSizeWarning: records.length < 30,
     tradeCount: records.length
   };

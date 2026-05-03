@@ -6,6 +6,7 @@ import {
   obvDivergence,
   orderBookImbalanceStability,
   relativeVolume,
+  slippageConfidenceScore,
   spreadPercentile,
   vwapZScore
 } from "../src/strategy/advancedIndicators.js";
@@ -15,6 +16,10 @@ import { buildExitPlanHint } from "../src/strategy/exitPlanHints.js";
 import { buildPortfolioCrowdingSummary } from "../src/risk/portfolioCrowding.js";
 import { applyPostReconcileEntryLimits } from "../src/risk/postReconcileEntryLimits.js";
 import { buildBacktestQualityMetrics } from "../src/backtest/backtestMetrics.js";
+import { validateBacktestResult } from "../src/backtest/backtestIntegrity.js";
+import { buildLearningEvidenceRecord, summarizeLearningEvidence } from "../src/runtime/learningEvidencePipeline.js";
+import { buildTradeThesis } from "../src/runtime/tradeThesis.js";
+import { evaluateAntiOverfitGovernor } from "../src/ai/antiOverfitGovernor.js";
 import { normalizeDashboardSnapshotPayload } from "../src/runtime/dashboardPayloadNormalizers.js";
 
 function candles(count = 120, { trend = 0.1, volume = 100 } = {}) {
@@ -68,13 +73,15 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
         { bidDepth: 98, askDepth: 76 },
         { bidDepth: 101, askDepth: 78 },
         { bidDepth: 103, askDepth: 79 }
-      ])
+      ]),
+      slippageConfidenceScore({ expectedSlippageBps: 5, realizedSlippageBps: 7, spreadPercentile: 0.4, depthConfidence: 0.7, fillCompletionRatio: 1 })
     ];
     for (const output of outputs) {
       assertFiniteTree(assert, output);
     }
     assert.equal(outputs[1].status, "ready");
     assert.equal(outputs[11].status, "ready");
+    assert.equal(outputs[12].status, "high");
   });
 
   await runCheck("regime scoring distinguishes trend range breakout and high volatility risks", async () => {
@@ -126,6 +133,27 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
       assert.equal(typeof thesis.thesis, "string");
       assert.equal(Array.isArray(thesis.invalidatesIf), true);
       assert.equal(Number.isFinite(thesis.entryQuality), true);
+    }
+  });
+
+  await runCheck("runtime trade thesis is setup-specific and remains secret-safe", async () => {
+    for (const [family, activeStrategy, expectedSetup] of [
+      ["trend_following", "trend_pullback_reclaim", "trend_continuation"],
+      ["breakout", "breakout_retest", "breakout_retest"],
+      ["mean_reversion", "vwap_reversion", "mean_reversion"],
+      ["market_structure", "liquidity_sweep", "liquidity_sweep_reclaim"],
+      ["range_grid", "range_grid_reversion", "range_grid"]
+    ]) {
+      const thesis = buildTradeThesis({
+        decision: { createdAt: "2026-01-01T00:00:00.000Z", apiSecret: "do-not-leak" },
+        strategySummary: { family, activeStrategy },
+        marketSnapshot: { market: { rsi14: 32, rangeBoundaryRespectScore: 0.8, breakoutRetestQuality: 0.7, liquiditySweepScore: 0.8 } }
+      });
+      assert.equal(thesis.setupType, expectedSetup);
+      assert.equal(Array.isArray(thesis.evidenceFor), true);
+      assert.equal(Array.isArray(thesis.requiredConfirmation), true);
+      assert.equal(Boolean(thesis.exitPlanHint?.hardInvalidation), true);
+      assert.equal(JSON.stringify(thesis).includes("do-not-leak"), false);
     }
   });
 
@@ -209,23 +237,101 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
   await runCheck("backtest quality metrics are finite and handle empty samples", async () => {
     const empty = buildBacktestQualityMetrics([]);
     const metrics = buildBacktestQualityMetrics([
-      { returnPct: 0.03, rMultiple: 1.5, feeBps: 10, slippageBps: 5 },
-      { returnPct: -0.01, rMultiple: -0.5, feeBps: 10, slippageBps: 8 },
-      { returnPct: 0.02, rMultiple: 1, feeBps: 10, slippageBps: 4 }
+      { returnPct: 0.03, rMultiple: 1.5, feeBps: 10, slippageBps: 5, entryAt: "2026-01-01T00:00:00.000Z", exitAt: "2026-01-01T01:00:00.000Z" },
+      { returnPct: -0.01, rMultiple: -0.5, feeBps: 10, slippageBps: 8, entryAt: "2026-01-01T02:00:00.000Z", exitAt: "2026-01-01T02:30:00.000Z" },
+      { returnPct: 0.02, rMultiple: 1, feeBps: 10, slippageBps: 4, entryAt: "2026-01-01T03:00:00.000Z", exitAt: "2026-01-01T03:45:00.000Z" }
     ]);
     assertFiniteTree(assert, empty);
     assertFiniteTree(assert, metrics);
     assert.equal(empty.sampleSizeWarning, true);
     assert.equal(metrics.winRate > 0.6, true);
     assert.equal(metrics.profitFactor > 1, true);
+    assert.equal(metrics.exposureTime, 135);
+  });
+
+  await runCheck("backtest integrity warns on missing feature timestamps and NaN trade metrics", async () => {
+    const result = validateBacktestResult({
+      result: {
+        configHash: "cfg",
+        dataHash: "data",
+        tradeCount: 1,
+        trades: [{ id: "t1", exitAt: "2026-01-01T00:00:00.000Z", pnlPct: Number.NaN }]
+      },
+      now: "2026-01-02T00:00:00.000Z"
+    });
+    assert.equal(result.status, "degraded");
+    assert.equal(result.issues.some((issue) => issue.code === "missing_feature_timestamp_lookahead_warning"), true);
+    assert.equal(result.issues.some((issue) => issue.code === "nan_trade_metric"), true);
+  });
+
+  await runCheck("learning evidence pipeline connects thesis exit veto failure and replay priority", async () => {
+    const win = buildLearningEvidenceRecord({
+      decision: { decisionId: "d1", symbol: "BTCUSDT", strategySummary: { family: "trend_following" }, regime: "trend_up" },
+      trade: { id: "t1", symbol: "BTCUSDT", pnlPct: 0.02, maximumFavorableExcursionPct: 0.025, exitEfficiencyPct: 0.8 },
+      marketPath: { closeReturnPct: 0.02, maxFavorableMovePct: 0.025, maxAdverseMovePct: -0.003 }
+    });
+    const loss = buildLearningEvidenceRecord({
+      decision: { decisionId: "d2", symbol: "ETHUSDT", reasons: ["late_entry"] },
+      trade: { id: "t2", symbol: "ETHUSDT", pnlPct: -0.01, maximumFavorableExcursionPct: 0.02 }
+    });
+    const badVeto = buildLearningEvidenceRecord({
+      decision: { decisionId: "d3", symbol: "SOLUSDT", reasons: ["model_confidence_too_low"] },
+      futureMarketPath: { maxFavorableMovePct: 0.03, maxAdverseMovePct: -0.002, closeReturnPct: 0.015, horizonMinutes: 60 }
+    });
+    const reconcile = buildLearningEvidenceRecord({
+      decision: { decisionId: "d4", symbol: "XRPUSDT", reasons: ["reconcile_required"] },
+      reconcileSummary: { manualReviewRequired: true }
+    });
+    const missing = buildLearningEvidenceRecord({});
+    const summary = summarizeLearningEvidence([win, loss, badVeto, reconcile, missing]);
+    assert.equal(win.exitQuality.label, "good_exit");
+    assert.equal(loss.failureMode.failureMode, "late_entry");
+    assert.equal(badVeto.vetoOutcome.label, "bad_veto");
+    assert.equal(reconcile.failureMode.failureMode, "reconcile_uncertainty");
+    assert.equal(summary.status, "ready");
+    assert.equal(summary.topReplayCandidates[0].packType, "reconcile_uncertainty");
+  });
+
+  await runCheck("anti-overfit governor blocks unsafe promotions and coupled risk increases", async () => {
+    const lowSample = evaluateAntiOverfitGovernor({
+      proposedChanges: [{ key: "model_threshold", delta: -0.02 }],
+      evidence: { sampleSize: 5 }
+    });
+    const recentPaperSize = evaluateAntiOverfitGovernor({
+      proposedChanges: [{ key: "size_multiplier", delta: 0.2 }],
+      evidence: { source: "paper", recentPaperWinsOnly: true, sampleSize: 50 }
+    });
+    const paperLive = evaluateAntiOverfitGovernor({
+      proposedChanges: [{ key: "strategy_profile", promoteTo: "live" }],
+      evidence: { source: "paper", sampleSize: 100 }
+    });
+    const coupled = evaluateAntiOverfitGovernor({
+      proposedChanges: [{ key: "model_threshold", delta: -0.01 }, { key: "position_size", delta: 0.1 }],
+      evidence: { sampleSize: 100, source: "shadow" }
+    });
+    const calibration = evaluateAntiOverfitGovernor({
+      proposedChanges: [{ key: "strategy_profile", promoteTo: "live" }],
+      evidence: { source: "shadow", sampleSize: 100, calibrationDelta: 0.04 }
+    });
+    assert.equal(lowSample.reasons.includes("threshold_relax_low_samples"), true);
+    assert.equal(recentPaperSize.reasons.includes("size_increase_recent_paper_wins_only"), true);
+    assert.equal(paperLive.reasons.includes("paper_only_evidence_promoted_to_live"), true);
+    assert.equal(coupled.reasons.includes("simultaneous_lower_threshold_and_bigger_size"), true);
+    assert.equal(calibration.reasons.includes("parameter_promotion_calibration_worsened"), true);
   });
 
   await runCheck("dashboard normalizer keeps trading quality summary optional", async () => {
     const normalized = normalizeDashboardSnapshotPayload({});
     assert.equal(normalized.tradingQualitySummary.portfolioCrowdingRisk, "unknown");
     const withSummary = normalizeDashboardSnapshotPayload({
-      tradingQualitySummary: { topSetupType: "breakout_retest", portfolioCrowdingRisk: "medium" }
+      tradingQualitySummary: { topSetupType: "breakout_retest", portfolioCrowdingRisk: "medium" },
+      learningEvidenceSummary: { status: "ready", count: 2 },
+      antiOverfitSummary: { status: "blocked", reasons: ["low_samples"] },
+      backtestQualitySummary: { tradeCount: 3, sampleSizeWarning: true }
     });
     assert.equal(withSummary.tradingQualitySummary.topSetupType, "breakout_retest");
+    assert.equal(withSummary.learningEvidenceSummary.status, "ready");
+    assert.equal(withSummary.antiOverfitSummary.status, "blocked");
+    assert.equal(withSummary.backtestQualitySummary.tradeCount, 3);
   });
 }

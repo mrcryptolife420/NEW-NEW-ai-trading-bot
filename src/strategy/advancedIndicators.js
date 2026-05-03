@@ -251,3 +251,40 @@ export function orderBookImbalanceStability(bookSnapshots = []) {
     samples: imbalances.length
   };
 }
+
+export function slippageConfidenceScore({
+  expectedSlippageBps = null,
+  realizedSlippageBps = null,
+  spreadPercentile: spreadPct = null,
+  depthConfidence = null,
+  fillCompletionRatio = null
+} = {}) {
+  const expected = Math.max(0, finite(expectedSlippageBps, 0));
+  const realized = Math.max(0, finite(realizedSlippageBps, expected));
+  const spread = clamp(finite(spreadPct, 0.5), 0, 1);
+  const depth = clamp(finite(depthConfidence, 0.5), 0, 1);
+  const completion = clamp(finite(fillCompletionRatio, 1), 0, 1);
+  const slippageError = Math.abs(realized - expected);
+  const slippagePenalty = clamp(slippageError / Math.max(expected + 8, 8), 0, 1);
+  const confidence = clamp(
+    0.45 +
+      depth * 0.25 +
+      completion * 0.2 -
+      spread * 0.18 -
+      slippagePenalty * 0.3,
+    0,
+    1
+  );
+  return {
+    score: confidence,
+    confidence,
+    slippageErrorBps: slippageError,
+    status: confidence >= 0.7 ? "high" : confidence >= 0.45 ? "medium" : "low",
+    warnings: [
+      spread >= 0.85 ? "spread_percentile_high" : null,
+      depth < 0.35 ? "depth_confidence_low" : null,
+      completion < 0.8 ? "fill_completion_weak" : null,
+      slippagePenalty > 0.5 ? "slippage_model_mismatch" : null
+    ].filter(Boolean)
+  };
+}

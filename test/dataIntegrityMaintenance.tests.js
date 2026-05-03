@@ -130,7 +130,7 @@ export async function registerDataIntegrityMaintenanceTests({
 
   await runCheck("backtest integrity detects missing hashes impossible metrics and future trades", async () => {
     const ok = validateBacktestResult({
-      result: { tradeCount: 1, trades: [{ id: "t1", exitAt: "2026-01-01T00:00:00.000Z" }], realizedPnl: 10 },
+      result: { tradeCount: 1, trades: [{ id: "t1", exitAt: "2026-01-01T00:00:00.000Z", featureTimestamp: "2026-01-01T00:00:00.000Z" }], realizedPnl: 10 },
       configHash: "cfg",
       dataHash: "data",
       now: "2026-01-02T00:00:00.000Z"
