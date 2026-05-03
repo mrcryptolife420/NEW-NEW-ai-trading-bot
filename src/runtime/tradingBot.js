@@ -162,6 +162,10 @@ import {
   buildTradingPathHealth,
   normalizeDashboardFreshness
 } from "./tradingPathHealth.js";
+import {
+  buildMarketSnapshotFlowDebug,
+  compactMarketSnapshotMap
+} from "./marketSnapshotFlowDebug.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -21071,6 +21075,23 @@ export class TradingBot {
       ...shallowSnapshotMap,
       ...Object.fromEntries(snapshotEntries.filter(([, snapshot]) => snapshot))
     };
+    if (!readOnly) {
+      const compactSnapshots = compactMarketSnapshotMap(snapshotMap, now.toISOString());
+      this.runtime.latestMarketSnapshots = compactSnapshots;
+      this.runtime.marketSnapshotsUpdatedAt = now.toISOString();
+      this.runtime.marketSnapshotFlowDebug = buildMarketSnapshotFlowDebug({
+        watchlist: prioritizedWatchlist,
+        symbolsRequested: symbols,
+        deepScanSymbols: scanPlan.deepScanSymbols || [],
+        localBookSymbols: scanPlan.localBookSymbols || [],
+        snapshotMap,
+        prefetchFailures: [...snapshotPrefetchFailures],
+        candidates: [],
+        marketCache: this.marketCache,
+        streamStatus: this.stream.getStatus?.() || {},
+        now: now.toISOString()
+      });
+    }
     const relativeStrengthMap = buildRelativeStrengthMap(snapshotMap, Object.keys(snapshotMap), this.config);
     const openPositionContexts = this.buildOpenPositionContexts(snapshotMap);
     const optimizerSnapshot = this.strategyOptimizer.buildSnapshot({ journal: this.journal, nowIso: now.toISOString() });
@@ -21329,6 +21350,20 @@ export class TradingBot {
     const scannerSummary = this.runtime.scanner?.latestSummary || this.journal?.scannerRuns?.at(-1) || null;
     const prioritizedCandidates = this.applyScannerShortlistPriority(candidates, scannerSummary);
     if (!readOnly) {
+      this.runtime.latestMarketSnapshots = compactMarketSnapshotMap(snapshotMap, now.toISOString());
+      this.runtime.marketSnapshotsUpdatedAt = now.toISOString();
+      this.runtime.marketSnapshotFlowDebug = buildMarketSnapshotFlowDebug({
+        watchlist: prioritizedWatchlist,
+        symbolsRequested: symbols,
+        deepScanSymbols: scanPlan.deepScanSymbols || [],
+        localBookSymbols: scanPlan.localBookSymbols || [],
+        snapshotMap,
+        prefetchFailures: [...snapshotPrefetchFailures],
+        candidates: prioritizedCandidates,
+        marketCache: this.marketCache,
+        streamStatus: this.stream.getStatus?.() || {},
+        now: now.toISOString()
+      });
       for (const candidate of prioritizedCandidates) {
         if (!candidate.decision.allow) {
           this.queueCounterfactualCandidate(candidate, now.toISOString());
@@ -25732,6 +25767,7 @@ export class TradingBot {
       stream: decoratedStreamStatus,
       streamFallbackHealth,
       feedSummary,
+      marketSnapshotFlowDebug: this.runtime.marketSnapshotFlowDebug || null,
       dashboardFreshness,
       tradingPathHealth,
       frontendPollingExpectedIntervalMs: Number(this.config.dashboardPollingIntervalMs || 10_000),
@@ -25794,6 +25830,7 @@ export class TradingBot {
           lastPortfolioUpdateAt: this.runtime.lastPortfolioUpdateAt || null
         },
         feedSummary,
+        marketSnapshotFlowDebug: this.runtime.marketSnapshotFlowDebug || null,
         tradingPathHealth,
         dashboardFreshness,
         exchangeConnectivity: {

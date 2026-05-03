@@ -5,6 +5,11 @@ import {
   normalizeDashboardFreshness,
   normalizeFrontendPollingHealth
 } from "../src/runtime/tradingPathHealth.js";
+import {
+  buildMarketSnapshotFlowDebug,
+  compactMarketSnapshotMap,
+  summarizeMarketSnapshotForRuntime
+} from "../src/runtime/marketSnapshotFlowDebug.js";
 import { StateStore } from "../src/storage/stateStore.js";
 
 export async function registerTradingPathHealthTests({ runCheck, assert, fs, os, runCli }) {
@@ -126,6 +131,61 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.ok(budget.staleSources.includes("rest_budget_exhausted"));
   });
 
+  await runCheck("market snapshot flow debug compacts runtime snapshots without candle bloat", async () => {
+    const compact = summarizeMarketSnapshotForRuntime({
+      symbol: "BTCUSDT",
+      candles: [{ close: 100 }, { close: 101 }],
+      cachedAt: "2026-05-03T11:59:30.000Z",
+      market: { close: 101, realizedVolPct: 0.02, volumeZ: 1.1 },
+      book: { bid: 100.9, ask: 101.1, mid: 101, spreadBps: 1.98, depthConfidence: 0.72 },
+      stream: { recentTradeCount: 12, latestBookTicker: { bid: 100.9, ask: 101.1 } }
+    }, now);
+    assert.equal(compact.symbol, "BTCUSDT");
+    assert.equal(compact.candlesCount, 2);
+    assert.equal(compact.hasBook, true);
+    assert.equal(compact.book.mid, 101);
+    assert.equal(compact.candles, undefined);
+
+    const map = compactMarketSnapshotMap({
+      BTCUSDT: {
+        candles: [{ close: 100 }],
+        cachedAt: "2026-05-03T11:59:30.000Z",
+        book: { mid: 100 },
+        market: { close: 100 }
+      }
+    }, now);
+    assert.equal(Object.keys(map).length, 1);
+    assert.equal(map.BTCUSDT.candlesCount, 1);
+    assert.equal(map.BTCUSDT.candles, undefined);
+  });
+
+  await runCheck("market snapshot flow debug explains ready missing and prefetch failure states", async () => {
+    const flow = buildMarketSnapshotFlowDebug({
+      now,
+      watchlist: ["BTCUSDT", "ETHUSDT"],
+      symbolsRequested: ["BTCUSDT", "ETHUSDT"],
+      deepScanSymbols: ["BTCUSDT"],
+      localBookSymbols: ["BTCUSDT", "ETHUSDT"],
+      snapshotMap: {
+        BTCUSDT: {
+          symbol: "BTCUSDT",
+          cachedAt: "2026-05-03T11:59:30.000Z",
+          book: { bid: 100, ask: 101, mid: 100.5 },
+          market: { close: 100.5 }
+        }
+      },
+      prefetchFailures: ["ETHUSDT"],
+      candidates: [{ symbol: "BTCUSDT", marketSnapshot: { book: { mid: 100.5 } } }],
+      marketCache: { BTCUSDT: { cachedAt: "2026-05-03T11:59:30.000Z" } }
+    });
+    assert.equal(flow.status, "degraded");
+    assert.equal(flow.snapshotsReady, 1);
+    assert.equal(flow.candidatesWithSnapshots, 1);
+    assert.ok(flow.missingSymbols.includes("ETHUSDT"));
+    assert.ok(flow.staleSources.includes("snapshot_prefetch_failures"));
+    assert.equal(flow.nextAction, "monitor_next_cycle");
+  });
+
   await runCheck("frontend polling error clears after a successful snapshot", async () => {
     const failed = normalizeFrontendPollingHealth({
       now,
@@ -155,6 +215,7 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     const runtime = await store.loadRuntime();
     runtime.lastCycleAt = "2026-05-03T11:58:00.000Z";
     runtime.latestMarketSnapshots = { BTCUSDT: { updatedAt: "2026-05-03T11:58:30.000Z" } };
+    runtime.marketSnapshotFlowDebug = { status: "ready", snapshotsReady: 1, snapshotsPersisted: 1 };
     runtime.latestDecisions = [{ symbol: "BTCUSDT" }];
     await store.saveRuntime(runtime);
     const lines = [];
@@ -174,6 +235,7 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     const output = JSON.parse(lines[0]);
     assert.equal(output.readOnly, true);
     assert.equal(output.safety, "diagnostic_only_no_entry_unlock");
+    assert.equal(output.marketSnapshotFlowDebug.snapshotsReady, 1);
     assert.equal(typeof output.health.status, "string");
   });
 }

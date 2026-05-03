@@ -34,11 +34,19 @@ This playbook is for operator-safe diagnosis. It does not replace exchange-safet
 
 1. Run `node src/cli.js trading-path:debug`.
 2. Check `health.status`, `blockingReasons`, `staleSources`, `feedFreshness`, `readmodelFreshness` and `dashboardFreshness`.
-3. If `feed_aggregation_stale` or `no_market_snapshots_ready` appears, run `node src/cli.js once` and inspect stream/local-book/REST budget health.
+3. If `feed_aggregation_stale` or `no_market_snapshots_ready` appears, run `node src/cli.js once` and inspect `marketSnapshotFlowDebug`.
 4. If `readmodel_snapshot_stale` appears, run `node src/cli.js readmodel:rebuild` and re-check `readmodel:dashboard`.
 5. If `dashboard_polling_error` or `dashboard_polling_stale` appears, check the dashboard server endpoint and frontend polling state.
 6. If `exchange_safety_blocked` appears, use `exchange-safety:status` and `reconcile:plan`; do not force unlock.
 7. A fresh trading path does not mean entries are allowed. Risk, exchange safety, manual review, unresolved intents and model confidence can still block correctly.
+
+## Market Snapshots Missing
+
+1. Run `node src/cli.js trading-path:debug`.
+2. Inspect `marketSnapshotFlowDebug.snapshotsPersisted`, `snapshotsReady`, `candidatesWithSnapshots`, `missingSymbols`, `degradedSymbols` and `prefetchFailures`.
+3. If `snapshotsPersisted` is `0` after `node src/cli.js once`, trace `scanCandidates` and `getMarketSnapshot`.
+4. If snapshots are persisted but degraded, inspect stream/local-book readiness and symbol-specific prefetch failures.
+5. Do not bypass stale-data entry blockers; fresh snapshots are evidence, not trade approval.
 
 ## Backtest Gives NaN Or Impossible Metrics
 

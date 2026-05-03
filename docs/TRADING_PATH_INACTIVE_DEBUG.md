@@ -59,6 +59,45 @@ The dashboard snapshot now carries:
 
 The inactivity operator card now prefers the specific health blocker/action before falling back to the older generic text.
 
+## P0 Market Snapshot Propagation Fix
+
+Confirmed root cause after the first debug pass:
+
+- candidate scans could build usable market snapshots for decisions
+- runtime status/debug read `runtime.latestMarketSnapshots`
+- `runtime.latestMarketSnapshots` was not updated with the scan snapshot map
+- the dashboard/debug layer therefore reported `no_market_snapshots_ready` even when candidates had market context
+
+The scan cycle now persists a compact snapshot map instead of full candle-heavy snapshots:
+
+- `runtime.latestMarketSnapshots`
+- `runtime.marketSnapshotsUpdatedAt`
+- `runtime.marketSnapshotFlowDebug`
+
+`marketSnapshotFlowDebug` shows:
+
+- requested symbols
+- deep scan symbols
+- local-book symbols
+- snapshots persisted
+- snapshots ready
+- candidate count
+- candidates with snapshots
+- missing/degraded symbols
+- prefetch failures
+- next safe action
+
+The persisted snapshot entries intentionally omit full candle arrays to avoid runtime-state bloat while preserving operator-critical fields such as mid price, spread, depth confidence, source, freshness and stream/local-book flags.
+
+Verified after `node src/cli.js once`:
+
+- `marketSnapshotsCount` moved from `0` to `100`
+- `marketSnapshotFlowDebug.snapshotsPersisted` reported `100`
+- `marketSnapshotFlowDebug.candidatesWithSnapshots` reported `24`
+- `no_market_snapshots_ready` disappeared from `entryBlockedReasons`
+
+Remaining stale sources after that verification were dashboard/read-model freshness related, not missing market snapshots.
+
 ## New CLI
 
 Run:

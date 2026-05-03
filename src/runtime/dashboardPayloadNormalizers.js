@@ -103,6 +103,14 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       missingSymbols: [],
       staleSources: []
     }),
+    marketSnapshotFlowDebug: objectOrFallback(source.marketSnapshotFlowDebug || source.ops?.marketSnapshotFlowDebug, {
+      status: "unknown",
+      symbolsRequested: 0,
+      snapshotsReady: 0,
+      snapshotsPersisted: 0,
+      missingSymbols: [],
+      staleSources: []
+    }),
     dashboardFreshness: objectOrFallback(source.dashboardFreshness || source.snapshotMeta?.freshness, {
       fresh: false,
       ageMs: null,

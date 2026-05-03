@@ -50,6 +50,7 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Backtest quality metrics | Validation/analytics | `src/backtest/backtestMetrics.js` | `test/tradingQualityUpgrade.tests.js` |
 | Learning evidence pipeline | Analytics integration | `src/runtime/learningEvidencePipeline.js`, existing learning helpers | `test/tradingQualityUpgrade.tests.js` |
 | Anti-overfit governor | Governance diagnostics | `src/ai/antiOverfitGovernor.js` | `test/tradingQualityUpgrade.tests.js` |
+| Market snapshot flow diagnostics | Implemented | `src/runtime/marketSnapshotFlowDebug.js`, `src/runtime/tradingBot.js`, `src/cli/runCli.js` | `test/tradingPathHealth.tests.js` |
 
 ## Safety Invariants
 
@@ -72,3 +73,4 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 - Dataset quality gates are diagnostics for research/retrain trust; they do not change live execution.
 - Trading-quality indicators, thesis, exit hints and regime scoring are diagnostics-first and do not loosen live entry gates.
 - Portfolio crowding preserves multi-position support while blocking duplicate-symbol entries and reducing risk under crowding.
+- Market snapshot flow diagnostics only persist compact snapshot summaries; they do not bypass stale-data, exchange-safety or risk blockers.

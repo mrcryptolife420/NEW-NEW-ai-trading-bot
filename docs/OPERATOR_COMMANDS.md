@@ -9,7 +9,7 @@ All commands below are intended to be safe in the default paper setup. Commands 
 | `npm run once` / `node src/cli.js once` | Run one bot cycle | Paper by default; live still requires live fail-fast checks and protections. |
 | `npm run dashboard` / `node src/cli.js dashboard` | Start local dashboard | Uses configured dashboard port. |
 | `npm run report` / `node src/cli.js report` | Build operator report | Read-only report generation. |
-| `node src/cli.js trading-path:debug` | Explain why the bot loop is running but the trading path is inactive/stale/blocked | Read-only. Separates cycle, feed, read-model, dashboard snapshot and frontend polling freshness. |
+| `node src/cli.js trading-path:debug` | Explain why the bot loop is running but the trading path is inactive/stale/blocked | Read-only. Separates cycle, feed, market snapshot flow, read-model, dashboard snapshot and frontend polling freshness. |
 | `node src/cli.js intents:list` | List unresolved execution intents | Read-only ledger view. Shows symbol, kind, age, status and last step. |
 | `node src/cli.js intents:summary` | Summarize execution intent ledger | Read-only counts by status/kind plus unresolved rows. |
 | `npm run readmodel:rebuild` / `node src/cli.js readmodel:rebuild` | Rebuild SQLite/read-model from source-of-truth data | Rebuildable diagnostic layer, not source of truth. |

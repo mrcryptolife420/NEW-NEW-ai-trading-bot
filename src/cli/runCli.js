@@ -275,6 +275,7 @@ export default async function runCli({
       botRunning: health.botRunning,
       lastCycleAt: health.lastCycleAt,
       feedFreshness: feedSummary,
+      marketSnapshotFlowDebug: runtime.marketSnapshotFlowDebug || null,
       readmodelFreshness: health.readmodelFreshness,
       dashboardFreshness: normalizeDashboardFreshness(dashboardSnapshot, now, config),
       topDecisionsCount: health.topDecisionsCount,
