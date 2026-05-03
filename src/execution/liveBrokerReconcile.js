@@ -25,6 +25,16 @@ function hasUnsellableDustResidual(evidence = {}) {
   return Boolean(evidence.unsellableDustResidual);
 }
 
+function optionalPositiveNumber(...values) {
+  for (const value of values) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return numeric;
+    }
+  }
+  return null;
+}
+
 function isMinorResolvableQuantityDrift({
   absQuantityDiff,
   quantityTolerance,
@@ -58,7 +68,6 @@ function isMinorResolvableQuantityDrift({
     safeNumber(absQuantityDiff, 0) > 0 &&
     safeNumber(absQuantityDiff, 0) <= maxQuantityDrift &&
     driftNotional <= maxDriftNotional &&
-    symbolOpenOrderCount === 0 &&
     unexpectedOrderCount === 0 &&
     protectiveListCount <= 1
   );
@@ -644,24 +653,23 @@ export function collectReconcileEvidence(broker, {
   const priceMismatchBps = recentAvgBuyPrice && safeNumber(position.entryPrice, 0) > 0
     ? Math.abs((recentAvgBuyPrice - safeNumber(position.entryPrice, 0)) / Math.max(safeNumber(position.entryPrice, 0), 1e-9)) * 10_000
     : null;
-  const marketMid = safeNumber(
+  const rawBid = optionalPositiveNumber(marketSnapshot?.book?.bid);
+  const rawAsk = optionalPositiveNumber(marketSnapshot?.book?.ask);
+  const spreadMid = rawBid != null && rawAsk != null ? (rawBid + rawAsk) / 2 : null;
+  const marketMid = optionalPositiveNumber(
     marketSnapshot?.book?.mid,
-    safeNumber(
-      ((safeNumber(marketSnapshot?.book?.bid, Number.NaN) + safeNumber(marketSnapshot?.book?.ask, Number.NaN)) / 2),
-      safeNumber(marketSnapshot?.market?.lastPrice, Number.NaN)
-    )
+    spreadMid,
+    marketSnapshot?.market?.lastPrice
   );
-  const marketBid = safeNumber(marketSnapshot?.book?.bid, null);
-  const marketAsk = safeNumber(marketSnapshot?.book?.ask, null);
-  const referenceExitPrice = safeNumber(
+  const marketBid = rawBid;
+  const marketAsk = rawAsk;
+  const localMarkPrice = optionalPositiveNumber(position.lastMarkedPrice, position.currentPrice);
+  const referenceExitPrice = optionalPositiveNumber(
     marketBid,
-    safeNumber(
-      marketMid,
-      safeNumber(
-        recentAvgBuyPrice,
-        safeNumber(position.entryPrice, Number.NaN)
-      )
-    )
+    marketMid,
+    localMarkPrice,
+    recentAvgBuyPrice,
+    position.entryPrice
   );
   const sellableQuantity = normalizeQuantity(managedComparisonQuantity, rules, "floor", true) || 0;
   const sellableNotional = Number.isFinite(referenceExitPrice) && referenceExitPrice > 0
@@ -675,7 +683,6 @@ export function collectReconcileEvidence(broker, {
     && symbolOpenOrders.length === 0
     && exchangeProtectiveLists.length === 0
     && unexpectedManagedOrders.length === 0;
-  const localMarkPrice = safeNumber(position.lastMarkedPrice, safeNumber(position.currentPrice, Number.NaN));
   const markPriceDriftBps = Number.isFinite(marketMid) && marketMid > 0 && Number.isFinite(localMarkPrice) && localMarkPrice > 0
     ? Math.abs((marketMid - localMarkPrice) / Math.max(localMarkPrice, 1e-9)) * 10_000
     : null;

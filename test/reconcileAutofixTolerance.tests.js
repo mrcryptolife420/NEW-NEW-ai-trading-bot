@@ -1,7 +1,8 @@
 import {
   AUTO_RECONCILE_DECISION,
   applySafeReconcileAutofix,
-  classifyReconcileDecision
+  classifyReconcileDecision,
+  collectReconcileEvidence
 } from "../src/execution/liveBrokerReconcile.js";
 
 const ltcRules = {
@@ -14,6 +15,20 @@ const ltcRules = {
   marketStepSize: 0.001,
   minNotional: 5,
   tickSize: 0.01
+};
+
+const xrpRules = {
+  symbol: "XRPUSDT",
+  baseAsset: "XRP",
+  quoteAsset: "USDT",
+  minQty: 0.1,
+  maxQty: 100000000,
+  stepSize: 0.1,
+  marketMinQty: 0.1,
+  marketMaxQty: 100000000,
+  marketStepSize: 0.1,
+  minNotional: 5,
+  tickSize: 0.0001
 };
 
 function makeBroker(config = {}) {
@@ -30,6 +45,9 @@ function makeBroker(config = {}) {
     async ensureProtectiveOrder(position) {
       position.protectiveOrderListId = 12345;
       position.protectiveOrders = [{ orderId: 1, orderListId: 12345, side: "SELL" }];
+    },
+    getOpenProtectiveOrderListsForSymbol(openOrderLists = [], symbol) {
+      return openOrderLists.filter((list) => list.symbol === symbol || (list.orders || []).some((order) => order.symbol === symbol));
     },
     attachProtectiveOrderState(position, list) {
       position.protectiveOrderListId = list?.orderListId || 12345;
@@ -101,6 +119,47 @@ export async function registerReconcileAutofixToleranceTests({ runCheck, assert 
 
     assert.equal(decision.decision, AUTO_RECONCILE_DECISION.NEEDS_MANUAL_REVIEW);
     assert.equal(decision.reason, "large_qty_mismatch");
+  });
+
+  await runCheck("reconcile treats protected one-step drift as minor even when bid ask are missing", async () => {
+    const broker = makeBroker({ qtyMismatchTolerance: 0 });
+    const position = {
+      id: "xrp-pos",
+      symbol: "XRPUSDT",
+      quantity: 286.713,
+      entryPrice: 1.392,
+      lastMarkedPrice: 1.39065,
+      notional: 399.13,
+      protectiveOrderListId: 2605248,
+      protectiveOrders: [
+        { orderId: 101, orderListId: 2605248, side: "SELL" },
+        { orderId: 102, orderListId: 2605248, side: "SELL" }
+      ]
+    };
+    const evidence = collectReconcileEvidence(broker, {
+      position,
+      rules: xrpRules,
+      assetMap: {
+        XRP: { total: 286.8, locked: 286.6, free: 0.1 }
+      },
+      trackedOpenOrders: [
+        { symbol: "XRPUSDT", orderId: 101, orderListId: 2605248, side: "SELL", status: "NEW" },
+        { symbol: "XRPUSDT", orderId: 102, orderListId: 2605248, side: "SELL", status: "NEW" }
+      ],
+      openOrderLists: [
+        { symbol: "XRPUSDT", orderListId: 2605248, orders: [{ symbol: "XRPUSDT" }] }
+      ],
+      recentTrades: [],
+      marketSnapshot: { book: { bid: 0, ask: 0, mid: null } }
+    });
+    const decision = classifyReconcileDecision(broker, position, evidence);
+
+    assert.equal(evidence.referenceExitPrice, 1.39065);
+    assert.equal(evidence.unexpectedOrderCount, 0);
+    assert.equal(evidence.protectiveListCount, 1);
+    assert.equal(evidence.minorResolvableQuantityDrift, true);
+    assert.equal(decision.decision, AUTO_RECONCILE_DECISION.SAFE_AUTOFIX);
+    assert.equal(decision.reason, "minor_qty_drift");
   });
 
   await runCheck("missing-protection autofix aligns minor drift before rebuilding protection", async () => {
