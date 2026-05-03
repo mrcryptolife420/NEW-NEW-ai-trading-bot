@@ -21,6 +21,9 @@ All commands below are intended to be safe in the default paper setup. Commands 
 | `node src/cli.js incidents:create --type manual_review` | Create a local incident report from runtime state | Safe local write under runtime incidents directory; no exchange calls. |
 | `node src/cli.js incidents:summary` | List local incident reports | Read-only. |
 | `node src/cli.js live:panic-plan` | Build panic flatten plan | Dry-run only; no orders or cancels. |
+| `node src/cli.js storage:audit` | Inspect runtime/journal/audit/feature-store file presence | Read-only. |
+| `node src/cli.js recorder:audit` | Audit recent recorder frames for schema, timestamp, duplicate id and quality issues | Read-only. |
+| `node src/cli.js replay:manifest --type operator_review` | Build a deterministic replay pack manifest from recent runtime decisions | Read-only; does not write unless a future explicit write flag is added. |
 
 ## Safety Notes
 
@@ -29,6 +32,7 @@ All commands below are intended to be safe in the default paper setup. Commands 
 - `learning:*` commands intentionally do not promote strategies, roll back live settings or change thresholds.
 - `incidents:*` commands do not place orders. `incidents:create` only writes a local JSON report.
 - `live:panic-plan` is a dry-run planner and never flattens automatically.
+- `storage:audit`, `recorder:audit` and `replay:manifest` do not mutate trading state or call Binance.
 - Paper profile values are `sim`, `learn`, `research` and `demo_spot`; hard-safety blockers remain hard in all profiles.
 
 ## Operator Mode

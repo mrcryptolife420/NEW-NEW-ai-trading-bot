@@ -47,6 +47,11 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     liveReadinessAudit: objectOrFallback(source.liveReadinessAudit, { status: "not_ready", blockingReasons: [] }),
     safetySnapshot: objectOrFallback(source.safetySnapshot, { overallStatus: "unknown", topRisks: [] }),
     incidentSummary: objectOrFallback(source.incidentSummary, { status: "empty", count: 0, reports: [] }),
+    storageAuditSummary: objectOrFallback(source.storageAuditSummary || source.dataIntegrity?.storageAuditSummary, { status: "unavailable" }),
+    recorderIntegritySummary: objectOrFallback(source.recorderIntegritySummary || source.dataIntegrity?.recorderIntegritySummary, { status: "unavailable", issues: [] }),
+    dataFreshnessSummary: objectOrFallback(source.dataFreshnessSummary || source.dataIntegrity?.dataFreshnessSummary, { status: "unknown", staleSources: [] }),
+    datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
+    replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
     panicPlanAvailable: Boolean(source.panicPlanAvailable)
   };
 }

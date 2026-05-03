@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { redactSecrets } from "../utils/redactSecrets.js";
+import { INCIDENT_REPORT_SCHEMA_VERSION } from "../storage/schemaVersion.js";
 import { normalizeAlertSeverity } from "./alertSeverity.js";
 
 function arr(value) {
@@ -40,6 +41,7 @@ export function buildIncidentReport({
     status: intent.status || "unknown"
   }));
   const report = {
+    schemaVersion: INCIDENT_REPORT_SCHEMA_VERSION,
     incidentId: `incident_${crypto.randomUUID()}`,
     createdAt: new Date().toISOString(),
     type,

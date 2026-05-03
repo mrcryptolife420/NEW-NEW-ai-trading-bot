@@ -27,6 +27,14 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Panic flatten plan | Dry-run only | `src/runtime/panicFlattenPlan.js`, `src/cli/runCli.js` | `test/operatorSafetyTooling.tests.js` |
 | Runtime safety snapshot | Dashboard diagnostics | `src/runtime/safetySnapshot.js`, `src/runtime/tradingBot.js` | `test/operatorSafetyTooling.tests.js` |
 | Alert severity normalization | Implemented | `src/runtime/alertSeverity.js` | `test/operatorSafetyTooling.tests.js` |
+| Schema version helpers | Implemented | `src/storage/schemaVersion.js` | `test/dataIntegrityMaintenance.tests.js` |
+| Storage migration framework | Safe no-op/fallback | `src/storage/migrations/index.js` | `test/dataIntegrityMaintenance.tests.js` |
+| Recorder integrity audit | Read-only diagnostics | `src/storage/recorderIntegrityAudit.js`, `src/storage/storageAudit.js` | `test/dataIntegrityMaintenance.tests.js` |
+| Replay determinism context | Read-only diagnostics | `src/runtime/replayDeterminism.js`, `src/utils/seeded.js` | `test/dataIntegrityMaintenance.tests.js` |
+| Data freshness and dataset quality | Research/retrain diagnostics only | `src/runtime/dataFreshnessScore.js`, `src/runtime/datasetQualityGate.js` | `test/dataIntegrityMaintenance.tests.js` |
+| Backtest result integrity | Validation only | `src/backtest/backtestIntegrity.js` | `test/dataIntegrityMaintenance.tests.js` |
+| Replay pack manifest | Read-only manifest builder | `src/runtime/replayPackManifest.js` | `test/dataIntegrityMaintenance.tests.js` |
+| Storage/data-integrity CLI | Read-only | `src/cli/runCli.js`, `src/storage/storageAudit.js` | `test/dataIntegrityMaintenance.tests.js` |
 | Reason registry metadata | Implemented | `src/risk/reasonRegistry.js` | `test/safetyMaintenance.tests.js` |
 | Secret redaction | Implemented | `src/utils/redactSecrets.js`, `src/utils/logger.js` | `test/safetyMaintenance.tests.js` |
 | OCO geometry regressions | Implemented | `src/execution/liveBroker.js` | `test/safetyMaintenance.tests.js` |
@@ -46,3 +54,5 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 - Operator modes can restrict entries, but do not loosen live safety.
 - Panic flatten tooling is dry-run planning only.
 - Incident commands are read-only except writing local incident JSON reports under the runtime directory.
+- Storage, recorder and replay-manifest commands are read-only and do not rewrite persisted trading state.
+- Dataset quality gates are diagnostics for research/retrain trust; they do not change live execution.

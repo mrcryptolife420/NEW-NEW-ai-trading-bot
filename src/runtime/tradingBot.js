@@ -139,6 +139,10 @@ import { buildLiveReadinessAudit } from "./liveReadinessAudit.js";
 import { summarizeIncidentReports } from "./incidentReport.js";
 import { buildPanicFlattenPlan } from "./panicFlattenPlan.js";
 import { buildSafetySnapshot } from "./safetySnapshot.js";
+import { scoreDataFreshness } from "./dataFreshnessScore.js";
+import { evaluateDatasetQuality } from "./datasetQualityGate.js";
+import { buildReplayContext, hashReplayInput } from "./replayDeterminism.js";
+import { buildRecorderAuditSummary, buildStorageAuditSummary } from "../storage/storageAudit.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -25386,6 +25390,49 @@ export class TradingBot {
       reports: []
     }));
     const panicPlanPreview = buildPanicFlattenPlan({ config: this.config, positions });
+    const dataFreshnessSummary = scoreDataFreshness({
+      now: referenceNow,
+      marketUpdatedAt: this.runtime.lastAnalysisAt || this.runtime.marketHistory?.lastUpdatedAt || null,
+      newsUpdatedAt: this.runtime.newsCache?.updatedAt || this.runtime.news?.updatedAt || null,
+      recorderUpdatedAt: operatorRecorderSummary.lastRecordAt || null,
+      streamUpdatedAt: decoratedStreamStatus.lastPublicMessageAt || decoratedStreamStatus.lastUserMessageAt || null
+    });
+    const storageAuditSummary = await buildStorageAuditSummary({ runtimeDir: this.config.runtimeDir }).catch((error) => ({
+      status: "unavailable",
+      error: error?.message || "storage_audit_unavailable",
+      readOnly: true
+    }));
+    const recorderIntegritySummary = await buildRecorderAuditSummary({ runtimeDir: this.config.runtimeDir, maxRecords: 120 }).catch((error) => ({
+      status: "unavailable",
+      error: error?.message || "recorder_audit_unavailable",
+      issues: []
+    }));
+    const datasetQualitySummary = evaluateDatasetQuality({
+      recorderAudit: recorderIntegritySummary,
+      freshness: dataFreshnessSummary,
+      sampleCounts: {
+        total: (operatorRecorderSummary.decisionFrames || 0) + (operatorRecorderSummary.tradeFrames || 0),
+        trades: operatorRecorderSummary.tradeFrames || 0,
+        decisions: operatorRecorderSummary.decisionFrames || 0
+      },
+      sourceCoverage: operatorRecorderSummary.sourceCoverage || {},
+      failureStats: learningFailureSummary.failureLibrarySummary || {}
+    });
+    const replayContext = buildReplayContext({
+      seed: "dashboard",
+      configHash: this.config.configHash || null,
+      decision: dashboardTopDecisions[0] || dashboardBlockedSetups[0] || null,
+      marketSnapshot: this.runtime.latestMarketSnapshots?.[dashboardTopDecisions[0]?.symbol || dashboardBlockedSetups[0]?.symbol] || null,
+      newsSnapshot: this.runtime.newsCache || null,
+      recorderFrame: operatorRecorderSummary.lastRecordAt ? { at: operatorRecorderSummary.lastRecordAt, schemaVersion: operatorRecorderSummary.schemaVersion || null } : null
+    });
+    const replayInputHash = hashReplayInput(replayContext);
+    const replayDeterminismSummary = {
+      status: replayContext.warnings.length ? "warning" : "ready",
+      inputHash: replayInputHash.hash,
+      warnings: replayContext.warnings,
+      deterministicInputAvailable: replayContext.warnings.length === 0
+    };
     return {
       contract: buildDashboardSnapshotContract(buildContract, 3),
       generatedAt: referenceNow,
@@ -25595,6 +25642,18 @@ export class TradingBot {
       liveReadinessAudit,
       safetySnapshot,
       incidentSummary,
+      storageAuditSummary,
+      recorderIntegritySummary,
+      dataFreshnessSummary,
+      datasetQualitySummary,
+      replayDeterminismSummary,
+      dataIntegrity: {
+        storageAuditSummary,
+        recorderIntegritySummary,
+        dataFreshnessSummary,
+        datasetQualitySummary,
+        replayDeterminismSummary
+      },
       panicPlanAvailable: panicPlanPreview.positionsToClose.length > 0,
       failureLibrarySummary: learningFailureSummary.failureLibrarySummary,
       exitQualitySummary: learningFailureSummary.exitQualitySummary,

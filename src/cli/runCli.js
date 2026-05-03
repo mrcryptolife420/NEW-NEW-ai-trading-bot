@@ -16,6 +16,8 @@ import {
 } from "../runtime/learningAnalytics.js";
 import { buildIncidentReport, summarizeIncidentReports, writeIncidentReport } from "../runtime/incidentReport.js";
 import { buildPanicFlattenPlan } from "../runtime/panicFlattenPlan.js";
+import { buildRecorderAuditSummary, buildStorageAuditSummary } from "../storage/storageAudit.js";
+import { buildReplayPackManifest } from "../runtime/replayPackManifest.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -284,6 +286,38 @@ export default async function runCli({
       marketSnapshots: runtime.marketSnapshots || runtime.latestMarketSnapshots || {},
       symbolRules: runtime.symbolRules || {},
       openOrders
+    });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "storage:audit" || command === "recorder:audit" || command === "replay:manifest") {
+    if (command === "storage:audit") {
+      const result = await buildStorageAuditSummary({ runtimeDir: config.runtimeDir });
+      console.log(JSON.stringify(result, null, 2));
+      markCommandSuccess(processState);
+      return;
+    }
+    if (command === "recorder:audit") {
+      const result = await buildRecorderAuditSummary({ runtimeDir: config.runtimeDir });
+      console.log(JSON.stringify(result, null, 2));
+      markCommandSuccess(processState);
+      return;
+    }
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const samples = [
+      ...(runtime.latestDecisions || []),
+      ...(runtime.latestBlockedSetups || [])
+    ].slice(0, 24);
+    const result = buildReplayPackManifest({
+      packType: parseNamedArg(args, "type", "operator_review"),
+      samples,
+      configHash: config.configHash || null,
+      dataHash: runtime.dataHash || runtime.marketHistory?.dataHash || null,
+      seed: parseNamedArg(args, "seed", "operator")
     });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
