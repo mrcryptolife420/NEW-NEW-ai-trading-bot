@@ -16,6 +16,28 @@ Deze roadmap is bedoeld als vaste leidraad voor Codex-runs in deze repo. Codex m
 - [ ] Elke bugfix of behavior-change krijgt regressietests.
 - [ ] `npm test` moet slagen voordat een taak als afgerond mag worden.
 
+## Permanente review-instructie voor nieuwe updates
+
+Wanneer de operator vraagt om nieuwe updates, features, aanbevelingen, analyses of Codex-prompts, moet Codex/de assistent altijd eerst:
+
+- [ ] Dit bestand `docs/CODEX_EXECUTION_PLAN.md` lezen.
+- [ ] De actuele codebase opnieuw scannen of relevante modules openen.
+- [ ] Controleren wat al bestaat voordat nieuwe features worden voorgesteld.
+- [ ] Nieuwe zinvolle aanbevelingen toevoegen aan deze MD als nieuwe checkbox/subtaak.
+- [ ] Dubbele of al bestaande taken vermijden.
+- [ ] Aangeven of een aanbeveling nieuw, bestaand, partial of al afgerond is.
+- [ ] Safety-regels bovenaan blijven respecteren.
+
+Nieuwe aanbevelingen mogen alleen worden toegevoegd als ze:
+
+- [ ] Niet al elders in deze roadmap staan.
+- [ ] Geen live safety versoepelen.
+- [ ] Testbaar zijn.
+- [ ] Een duidelijk bestand, module of document als landingsplek hebben.
+- [ ] Een duidelijke acceptatie-eis hebben.
+
+---
+
 ## Status legenda
 
 Gebruik deze notatie in checkboxes:
@@ -567,6 +589,29 @@ Acceptatie:
 - [ ] Bestaande scripts blijven werken.
 - [ ] Geen trading behavior gewijzigd.
 - [ ] CI workflow bestaat.
+
+---
+
+# Nieuwe aanbevelingen backlog
+
+Nieuwe aanbevelingen die ontstaan uit toekomstige analyses moeten hier worden toegevoegd nadat `docs/CODEX_EXECUTION_PLAN.md` en de actuele codebase opnieuw zijn gecontroleerd.
+
+## Backlog template
+
+```md
+## B# — Titel
+
+Bron: nieuwe analyse / operator feedback / bug / trading improvement
+Status: proposed / accepted / partial / completed / rejected
+
+- [ ] Concrete taak.
+- [ ] Tests toevoegen.
+- [ ] Docs bijwerken.
+
+Acceptatie:
+
+- [ ] ...
+```
 
 ---
 
