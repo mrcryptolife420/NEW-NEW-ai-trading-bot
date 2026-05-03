@@ -47,6 +47,20 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     liveReadinessAudit: objectOrFallback(source.liveReadinessAudit, { status: "not_ready", blockingReasons: [] }),
     safetySnapshot: objectOrFallback(source.safetySnapshot, { overallStatus: "unknown", topRisks: [] }),
     incidentSummary: objectOrFallback(source.incidentSummary, { status: "empty", count: 0, reports: [] }),
+    operatorActionQueueSummary: objectOrFallback(
+      source.operatorActionQueueSummary ||
+        source.operatorActionQueue ||
+        source.ops?.operatorActionQueueSummary ||
+        source.ops?.operatorActionQueue,
+      {
+        status: "clear",
+        activeCount: 0,
+        blockingCount: 0,
+        criticalBlockingCount: 0,
+        items: [],
+        nextAction: "monitor"
+      }
+    ),
     exchangeSafety: objectOrFallback(source.exchangeSafety || source.safety?.exchangeSafety, {
       status: "unknown",
       entryBlocked: false,

@@ -34,6 +34,7 @@ import {
   normalizeDashboardFreshness
 } from "../runtime/tradingPathHealth.js";
 import { buildCanaryReleaseGate, buildCanaryReleaseSummary } from "../runtime/canaryReleaseGate.js";
+import { buildOperatorActionQueue } from "../runtime/operatorActionQueue.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -253,6 +254,26 @@ export default async function runCli({
       gates
     };
     console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "actions:list") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const alerts = [
+      ...(Array.isArray(runtime.alerts) ? runtime.alerts : []),
+      ...(Array.isArray(runtime.operatorAlerts?.alerts) ? runtime.operatorAlerts.alerts : []),
+      ...(Array.isArray(runtime.ops?.operatorAlerts?.alerts) ? runtime.ops.operatorAlerts.alerts : [])
+    ];
+    const existing = Array.isArray(runtime.operatorActionQueue?.items)
+      ? runtime.operatorActionQueue.items
+      : Array.isArray(runtime.operatorActionQueueSummary?.items)
+        ? runtime.operatorActionQueueSummary.items
+        : [];
+    const queue = buildOperatorActionQueue({ alerts, existing, limit: config.operatorActionQueueMaxItems || 20 });
+    console.log(JSON.stringify({ readOnly: true, ...queue }, null, 2));
     markCommandSuccess(processState);
     return;
   }

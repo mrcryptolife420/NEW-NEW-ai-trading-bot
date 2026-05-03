@@ -180,6 +180,7 @@ import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
 import { registerDecisionInputLineageTests } from "./decisionInputLineage.tests.js";
 import { registerCanaryReleaseGateTests } from "./canaryReleaseGate.tests.js";
+import { registerOperatorActionQueueTests } from "./operatorActionQueue.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32510,6 +32511,14 @@ await registerDecisionInputLineageTests({
 });
 
 await registerCanaryReleaseGateTests({
+  runCheck,
+  assert,
+  fs,
+  os,
+  runCli
+});
+
+await registerOperatorActionQueueTests({
   runCheck,
   assert,
   fs,

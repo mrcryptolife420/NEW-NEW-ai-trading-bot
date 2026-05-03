@@ -735,25 +735,28 @@ Notitie: `canaryReleaseGate` toegevoegd als pure governance helper met read-only
 ## B3 — Alert escalation en operator action queue
 
 Bron: nieuwe analyse / operator improvement
-Status: proposed
+Status: completed
 
 Doel: alerts moeten niet alleen getoond worden, maar prioriteit, eigenaar en aanbevolen actie krijgen.
 
-- [ ] Maak of update `src/runtime/operatorActionQueue.js`.
-- [ ] Normaliseer alerts naar `info`, `low`, `medium`, `high`, `critical`.
-- [ ] Voeg `recommendedAction`, `urgency`, `blocking`, `createdAt`, `lastSeenAt` en `dedupeKey` toe.
-- [ ] Critical exchange/reconcile/protection alerts moeten entry readiness blokkeren.
-- [ ] Voeg dashboard summary toe: `operatorActionQueueSummary`.
-- [ ] Voeg CLI output toe: `node src/cli.js actions:list` indien passend.
-- [ ] Tests toevoegen voor dedupe, escalation, resolved alerts en critical blocking.
-- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md`.
+- [x] Maak of update `src/runtime/operatorActionQueue.js`.
+- [x] Normaliseer alerts naar `info`, `low`, `medium`, `high`, `critical`.
+- [x] Voeg `recommendedAction`, `urgency`, `blocking`, `createdAt`, `lastSeenAt` en `dedupeKey` toe.
+- [x] Critical exchange/reconcile/protection alerts moeten entry readiness blokkeren.
+- [x] Voeg dashboard summary toe: `operatorActionQueueSummary`.
+- [x] Voeg CLI output toe: `node src/cli.js actions:list` indien passend.
+- [x] Tests toevoegen voor dedupe, escalation, resolved alerts en critical blocking.
+- [x] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md`.
 
 Acceptatie:
 
-- [ ] Operator ziet concrete acties in plaats van alleen statuslabels.
-- [ ] Critical alerts blokkeren entries.
-- [ ] Geen force unlock of live safety versoepeling.
-- [ ] `npm test` slaagt.
+- [x] Operator ziet concrete acties in plaats van alleen statuslabels.
+- [x] Critical alerts blokkeren entries.
+- [x] Geen force unlock of live safety versoepeling.
+- [x] `npm test` slaagt.
+
+Status: completed
+Notitie: `operatorActionQueue` toegevoegd als read-only actiequeue bovenop bestaande alerts. `actions:list` toont concrete operatoracties; critical exchange/reconcile/protection/manual-review acties blokkeren readiness zonder force-unlock of execution-mutaties.
 
 ## B4 — Exchange adapter contract tests
 

@@ -13,9 +13,10 @@ This playbook is for operator-safe diagnosis. It does not replace exchange-safet
 
 1. Run `node src/cli.js exchange-safety:status`.
 2. Run `node src/cli.js reconcile:plan`.
-3. Confirm the plan shows fresh evidence: account snapshot, open orders or user-stream truth, recent trades and protection status.
-4. If the block is stale-suspected, only `reconcile:run` may clear safe auto-fix actions; there is no force unlock.
-5. If evidence conflicts, keep manual review.
+3. Run `node src/cli.js actions:list` to see the concrete operator action, urgency, dedupe key and whether the action is entry-blocking.
+4. Confirm the plan shows fresh evidence: account snapshot, open orders or user-stream truth, recent trades and protection status.
+5. If the block is stale-suspected, only `reconcile:run` may clear safe auto-fix actions; there is no force unlock.
+6. If evidence conflicts, keep manual review.
 
 ## Reconcile Required
 
@@ -73,6 +74,14 @@ This playbook is for operator-safe diagnosis. It does not replace exchange-safet
 2. Live mode must fail without acknowledgement, credentials and exchange protection.
 3. Paper mode should remain usable without live credentials.
 4. Do not make defaults more aggressive to bypass validation.
+
+## Operator Action Queue
+
+1. Run `node src/cli.js actions:list`.
+2. Inspect `status`, `criticalBlockingCount`, `items[].recommendedAction`, `items[].urgency` and `items[].blocking`.
+3. Critical exchange-safety, reconcile, protection, manual-review or unresolved-intent actions block readiness until resolved.
+4. Resolved actions should remain visible if present but must not count as active blockers.
+5. The command is read-only and does not resolve, delete, force-unlock or place orders.
 
 ## REST Budget Exceeded
 

@@ -1,4 +1,5 @@
 import { isCriticalAlert } from "./alertSeverity.js";
+import { hasBlockingOperatorActions } from "./operatorActionQueue.js";
 
 function arr(value) {
   return Array.isArray(value) ? value : [];
@@ -18,6 +19,7 @@ export function buildLiveReadinessAudit({
   rollbackWatch = {}
 } = {}) {
   const alerts = arr(runtimeState.alerts || doctor.alerts || riskSummary.alerts);
+  const operatorActionQueue = runtimeState.operatorActionQueueSummary || runtimeState.operatorActionQueue || {};
   const intents = arr(runtimeState.orderLifecycle?.executionIntentLedger?.unresolvedIntentIds || runtimeState.unresolvedIntents);
   const blockingReasons = [];
   const warnings = [];
@@ -25,6 +27,7 @@ export function buildLiveReadinessAudit({
   add(blockingReasons, "missing_live_credentials", !config.binanceApiKey || !config.binanceApiSecret);
   add(blockingReasons, "exchange_protection_disabled", !config.enableExchangeProtection);
   add(blockingReasons, "critical_alert_active", alerts.some(isCriticalAlert));
+  add(blockingReasons, "critical_operator_action_active", hasBlockingOperatorActions(operatorActionQueue));
   add(blockingReasons, "unresolved_execution_intents", intents.length > 0);
   add(blockingReasons, "reconcile_required", Boolean(exchangeSummary.reconcileRequired || riskSummary.reconcileRequired || runtimeState.exchangeTruth?.reconcileRequired));
   add(blockingReasons, "exchange_truth_freeze", Boolean(exchangeSummary.freezeEntries || runtimeState.exchangeTruth?.freezeEntries));
@@ -57,7 +60,8 @@ export function buildLiveReadinessAudit({
       promotionStatus: promotionDossier.status || "unknown",
       rollbackStatus: rollbackWatch.status || "unknown",
       unresolvedIntentCount: intents.length,
-      criticalAlertCount: alerts.filter(isCriticalAlert).length
+      criticalAlertCount: alerts.filter(isCriticalAlert).length,
+      criticalOperatorActionCount: Number(operatorActionQueue.criticalBlockingCount || 0)
     },
     autoLivePromotionAllowed: false
   };
