@@ -18,7 +18,8 @@ export function buildSafetySnapshot({
   intents = [],
   positions = [],
   recorderSummary = {},
-  dashboardFreshness = {}
+  dashboardFreshness = {},
+  portfolioScenarioStressSummary = {}
 } = {}) {
   const topRisks = [];
   const criticalAlerts = arr(alerts).filter((alert) => normalizeAlertSeverity(alert) === "critical");
@@ -26,6 +27,9 @@ export function buildSafetySnapshot({
   if (arr(intents).length) topRisks.push("unresolved_execution_intents");
   if (liveReadiness.status === "blocked") topRisks.push("live_readiness_blocked");
   if (riskSummary.rootBlocker?.primaryRootBlocker) topRisks.push(riskSummary.rootBlocker.primaryRootBlocker);
+  if (["stress", "blocked"].includes(portfolioScenarioStressSummary.status)) {
+    topRisks.push("portfolio_scenario_stress");
+  }
   const staleData = {
     dashboard: Boolean(dashboardFreshness.stale),
     recorder: recorderSummary.status === "stale" || Boolean(recorderSummary.stale)
@@ -57,6 +61,8 @@ export function buildSafetySnapshot({
       ? ["resolve_critical_alerts"]
       : liveReadiness.status === "blocked"
         ? liveReadiness.requiredActions || ["review_live_readiness"]
+        : topRisks.includes("portfolio_scenario_stress")
+          ? [portfolioScenarioStressSummary.recommendedAction || "review_portfolio_stress"]
         : ["monitor"]
   };
 }

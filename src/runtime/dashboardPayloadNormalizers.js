@@ -130,6 +130,12 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     portfolioCrowdingSummary: objectOrFallback(source.portfolioCrowdingSummary || source.tradingQualitySummary?.portfolioCrowding || source.tradingQualitySummary?.portfolioCrowdingSummary, { crowdingRisk: "unknown", reasons: [] }),
+    portfolioScenarioStressSummary: objectOrFallback(
+      source.portfolioScenarioStressSummary ||
+        source.risk?.portfolioScenarioStressSummary ||
+        source.safetySnapshot?.portfolioScenarioStressSummary,
+      { status: "unavailable", scenarioCount: 0, warnings: [] }
+    ),
     confidenceCalibrationSummary: objectOrFallback(
       source.confidenceCalibrationSummary ||
         source.learningAnalytics?.confidenceCalibrationSummary ||

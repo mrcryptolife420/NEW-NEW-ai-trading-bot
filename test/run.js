@@ -134,6 +134,7 @@ import { registerAuditLogTests } from "./auditLog.tests.js";
 import { registerAdaptiveGovernanceTests } from "./adaptiveGovernance.tests.js";
 import { registerDashboardHealthTests } from "./dashboardHealth.tests.js";
 import { registerPaperExchangeSafetyTests } from "./paperExchangeSafety.tests.js";
+import { registerPortfolioScenarioStressTests } from "./portfolioScenarioStress.tests.js";
 import { registerExecutionIntentLedgerTests } from "./executionIntentLedger.tests.js";
 import { registerRootBlockerOrchestratorTests } from "./rootBlockerOrchestrator.tests.js";
 import { registerIncidentReplayLabTests } from "./incidentReplayLab.tests.js";
@@ -32230,6 +32231,11 @@ await registerPaperExchangeSafetyTests({
   buildExchangeSafetyAudit,
   makeConfig,
   buildSymbolRules
+});
+
+await registerPortfolioScenarioStressTests({
+  runCheck,
+  assert
 });
 
 await registerExecutionIntentLedgerTests({

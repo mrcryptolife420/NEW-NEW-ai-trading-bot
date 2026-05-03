@@ -32,6 +32,10 @@ All commands below are intended to be safe in the default paper setup. Commands 
 | `node src/cli.js recorder:audit` | Audit recent recorder frames for schema, timestamp, duplicate id and quality issues | Read-only. |
 | `node src/cli.js replay:manifest --type operator_review` | Build a deterministic replay pack manifest from recent runtime decisions | Read-only; does not write unless a future explicit write flag is added. |
 
+## Diagnostics Summaries
+
+- `portfolioScenarioStressSummary` is a read-only dashboard/readmodel summary for BTC/ETH dump, liquidity drain, spread spike, volatility spike, stale data and fee/slippage stress. It estimates drawdown/protection health and recommends operator review actions only; it does not place orders or change live sizing.
+
 ## Safety Notes
 
 - Do not set `BOT_MODE=live` unless the live acknowledgement, credentials and exchange protection checks pass.

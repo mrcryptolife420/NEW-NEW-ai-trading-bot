@@ -808,23 +808,25 @@ Notitie 2026-05-04: `src/ai/confidenceCalibration.js` toegevoegd als pure diagno
 ## B6 — Scenario stress testing voor portfolio en open posities
 
 Bron: nieuwe analyse / risk improvement
-Status: proposed
+Status: completed
 
 Doel: simuleer portfolio-impact bij BTC dump, volatility spike, liquidity drain en exchange data degradation.
 
-- [ ] Maak of update `src/runtime/portfolioScenarioStress.js`.
-- [ ] Scenario's: `btc_dump`, `eth_dump`, `alt_liquidity_drain`, `spread_spike`, `volatility_spike`, `data_stale`, `fee_slippage_spike`.
-- [ ] Output bevat estimated drawdown, affected positions, protection health en recommendedAction.
-- [ ] Verbind met `portfolioCrowding` en `safetySnapshot` waar veilig.
-- [ ] Voeg dashboard summary toe: `portfolioScenarioStressSummary`.
-- [ ] Tests toevoegen voor empty portfolio, diversified portfolio, crowded portfolio en missing prices.
-- [ ] Docs bijwerken in `docs/RISK_MANAGEMENT.md` indien aanwezig, anders `docs/OPERATOR_COMMANDS.md`.
+- [x] Maak of update `src/runtime/portfolioScenarioStress.js`.
+- [x] Scenario's: `btc_dump`, `eth_dump`, `alt_liquidity_drain`, `spread_spike`, `volatility_spike`, `data_stale`, `fee_slippage_spike`.
+- [x] Output bevat estimated drawdown, affected positions, protection health en recommendedAction.
+- [x] Verbind met `portfolioCrowding` en `safetySnapshot` waar veilig.
+- [x] Voeg dashboard summary toe: `portfolioScenarioStressSummary`.
+- [x] Tests toevoegen voor empty portfolio, diversified portfolio, crowded portfolio en missing prices.
+- [x] Docs bijwerken in `docs/RISK_MANAGEMENT.md` indien aanwezig, anders `docs/OPERATOR_COMMANDS.md`.
 
 Acceptatie:
 
-- [ ] Stress test is read-only/diagnostics.
-- [ ] Geen live execution behavior gewijzigd.
-- [ ] `npm test` slaagt.
+- [x] Stress test is read-only/diagnostics.
+- [x] Geen live execution behavior gewijzigd.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/runtime/portfolioScenarioStress.js` toegevoegd als pure read-only helper met dashboard fallback. De helper schat drawdown/protection health en gebruikt portfolio-crowding summary; er is geen execution/risk gate aangesloten.
 
 ## B7 — Crypto derivatives context adapter
 
