@@ -107,18 +107,20 @@ Acceptatie:
 
 ## 1.3 NaN/Infinity audit
 
-- [ ] Controleer publieke indicator helpers.
-- [ ] Controleer risk scoring/sizing helpers.
-- [ ] Controleer exit level helpers.
-- [ ] Controleer fee/slippage helpers.
-- [ ] Controleer backtest metrics.
-- [ ] Controleer dashboard summaries.
-- [ ] Gebruik `src/utils/safeMath.js` waar passend.
+- [x] Controleer publieke indicator helpers.
+- [x] Controleer risk scoring/sizing helpers.
+- [x] Controleer exit level helpers.
+- [x] Controleer fee/slippage helpers.
+- [x] Controleer backtest metrics.
+- [x] Controleer dashboard summaries.
+- [x] Gebruik `src/utils/safeMath.js` waar passend.
+
+Notitie 2026-05-03: `src/utils/safeMath.js` bestaat met `safeNumber`, `safeRatio` en `clampFinite`. Bestaande tests dekken safe math, advanced indicators, dynamic exits, exit intelligence, fee accounting, dashboard normalizers en backtest quality metrics; `npm test` was groen in P1.1 baseline.
 
 Acceptatie:
 
-- [ ] Geen publieke helper geeft `NaN` of `Infinity` terug.
-- [ ] Tests voor lege input, korte input, zero volume, missing snapshot en extreme values.
+- [x] Geen publieke helper geeft `NaN` of `Infinity` terug.
+- [x] Tests voor lege input, korte input, zero volume, missing snapshot en extreme values.
 
 ---
 
