@@ -743,6 +743,131 @@ Acceptatie:
 - [ ] Geen live execution behavior gewijzigd.
 - [ ] `npm test` slaagt.
 
+## B7 — Crypto derivatives context adapter
+
+Bron: nieuwe analyse / crypto trading improvement
+Status: proposed
+
+Doel: futures/derivatives context zoals funding, open interest, basis en liquidations gebruiken als diagnostics en risk filter voor spot trading.
+
+- [ ] Maak of update `src/market/derivativesContext.js`.
+- [ ] Voeg provider-interface toe voor funding rate, open interest delta, spot/futures basis en liquidation proximity.
+- [ ] Output bevat `fundingPressure`, `openInterestTrend`, `basisState`, `liquidationRisk`, `warnings` en `confidence`.
+- [ ] Gebruik context eerst alleen als diagnostics/paper/shadow risk input.
+- [ ] Voeg fallback toe als provider/data ontbreekt.
+- [ ] Voeg dashboard summary toe: `derivativesContextSummary`.
+- [ ] Tests toevoegen voor missing provider, extreme funding, rising OI, negative basis en stale data.
+- [ ] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md`.
+
+Acceptatie:
+
+- [ ] Spot trading wordt niet automatisch agressiever.
+- [ ] Missing derivatives data blokkeert live niet tenzij expliciet safety-config dat vereist.
+- [ ] `npm test` slaagt.
+
+## B8 — Crypto market regime router v2
+
+Bron: nieuwe analyse / trading improvement
+Status: proposed
+
+Doel: setup selectie aanpassen aan bredere crypto-regimes zoals BTC-led trend, alt rotation, chop, crash risk en liquidity vacuum.
+
+- [ ] Maak of update `src/runtime/cryptoRegimeRouter.js`.
+- [ ] Regimes: `btc_led_trend`, `eth_led_trend`, `alt_rotation`, `range_chop`, `liquidity_vacuum`, `crash_risk`, `news_shock`.
+- [ ] Gebruik inputs uit marketState, trendState, leadershipContext, volatilityService, orderbookDelta en universeScorer waar beschikbaar.
+- [ ] Output bevat allowed setup families, blocked setup families, sizeMultiplier en confidencePenalty.
+- [ ] Verbind met indicatorRegimeScoring als diagnostics/shadow-first.
+- [ ] Tests toevoegen voor elk regime en missing/ambiguous data.
+- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Acceptatie:
+
+- [ ] Router is fallback-safe.
+- [ ] Router versoepelt geen hard safety blockers.
+- [ ] `npm test` slaagt.
+
+## B9 — Symbol lifecycle en listing-risk monitor
+
+Bron: nieuwe analyse / crypto trading improvement
+Status: proposed
+
+Doel: nieuwe, hype-, low-liquidity of delisting-risk symbols strenger behandelen.
+
+- [ ] Maak of update `src/runtime/symbolLifecycleRisk.js`.
+- [ ] Track symbol age, recent listing risk, abnormal volume spike, spread instability, depth weakness en trading halt/delisting warnings indien beschikbaar.
+- [ ] Output bevat `lifecycleRisk`, `warnings`, `sizeMultiplier`, `entryAllowedDiagnostic` en `requiredEvidence`.
+- [ ] Verbind met universeScorer en portfolioCrowding waar veilig.
+- [ ] Tests toevoegen voor new listing, mature liquid symbol, illiquid hype spike, stale profile en missing profile.
+- [ ] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md`.
+
+Acceptatie:
+
+- [ ] Nieuwe/illiquide symbols krijgen strengere diagnostics of size hints.
+- [ ] Geen automatische live aggressiveness increase.
+- [ ] `npm test` slaagt.
+
+## B10 — News/social shock circuit breaker
+
+Bron: nieuwe analyse / crypto trading improvement
+Status: proposed
+
+Doel: plotselinge news/social shocks detecteren en entry confidence verlagen of manual review adviseren.
+
+- [ ] Maak of update `src/news/shockCircuitBreaker.js`.
+- [ ] Gebruik bestaande news/eventClassifier/calendarService waar beschikbaar.
+- [ ] Detecteer exchange incident, regulatory news, token exploit/hack, delisting rumor, major listing announcement en abnormal headline velocity.
+- [ ] Output bevat `shockLevel`, `affectedSymbols`, `entryPenalty`, `manualReviewRecommended` en `expiryAt`.
+- [ ] Verbind met dashboard/readmodel summary: `newsShockSummary`.
+- [ ] Tests toevoegen voor hack headline, listing hype, stale news, irrelevant news en missing news provider.
+- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md` of `docs/TRADING_QUALITY.md`.
+
+Acceptatie:
+
+- [ ] Shock breaker is conservative en fallback-safe.
+- [ ] Critical shock kan entries blokkeren als safety policy dit vereist.
+- [ ] `npm test` slaagt.
+
+## B11 — Adaptive order style advisor
+
+Bron: nieuwe analyse / execution improvement
+Status: proposed
+
+Doel: per setup/liquidity/regime adviseren welk ordertype het veiligst is zonder automatisch unsafe live behavior te wijzigen.
+
+- [ ] Maak of update `src/execution/orderStyleAdvisor.js`.
+- [ ] Inputs: spread, depth, volatility, slippageConfidence, setupType, urgency, position size en maker/taker fee context.
+- [ ] Output: `recommendedStyle`, `makerSuitable`, `takerSuitable`, `stopLimitGapHint`, `warnings`, `manualReviewRecommended`.
+- [ ] Ondersteun styles: `maker_limit`, `limit_ioc`, `market_prohibited`, `stop_limit_wide`, `protective_rebuild_only`.
+- [ ] Verbind met stop-limit stuck detection en netEdgeGate waar veilig.
+- [ ] Tests toevoegen voor tight spread, wide spread, liquidity drain, urgent exit en missing orderbook.
+- [ ] Docs bijwerken in `docs/EXECUTION_SAFETY.md` indien aanwezig, anders `docs/OPERATOR_COMMANDS.md`.
+
+Acceptatie:
+
+- [ ] Advisor is diagnostics/governance-first.
+- [ ] Geen live ordertype wordt automatisch riskanter.
+- [ ] `npm test` slaagt.
+
+## B12 — Adaptive symbol universe decay en cooldowns
+
+Bron: nieuwe analyse / crypto trading improvement
+Status: proposed
+
+Doel: symbols die tijdelijk slecht presteren, slechte fills geven of vaak blocked worden automatisch lager ranken.
+
+- [ ] Maak of update `src/runtime/symbolQualityDecay.js`.
+- [ ] Track recent blocked reasons, bad fills, stop_limit_stuck events, poor slippage, low data quality, bad veto outcomes en exit quality.
+- [ ] Output bevat `qualityScore`, `cooldownUntil`, `rankPenalty`, `reasons` en `recoveryConditions`.
+- [ ] Verbind met universeScorer en scanPlanner waar veilig.
+- [ ] Tests toevoegen voor repeated bad fills, repeated blockers, recovery after clean cycles, missing data en no penalty for healthy symbols.
+- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Acceptatie:
+
+- [ ] Slechte symbols worden tijdelijk lager gerankt zonder permanente blacklist tenzij expliciet geconfigureerd.
+- [ ] Gezonde symbols herstellen na clean evidence.
+- [ ] `npm test` slaagt.
+
 ---
 
 # Codex werkprotocol
