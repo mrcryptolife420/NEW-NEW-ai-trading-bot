@@ -642,20 +642,23 @@ Verificatie: `npm run lint`, `npm run format:check` en `npm test` slagen.
 
 ## 10.2 CI
 
-- [ ] Voeg `.github/workflows/test.yml` toe.
-- [ ] Gebruik Node 22.
-- [ ] Run `npm ci`.
-- [ ] Run `npm test`.
-- [ ] Run lint indien haalbaar.
-- [ ] Run coverage indien haalbaar.
-- [ ] CI mag geen Binance secrets nodig hebben.
-- [ ] CI mag geen live exchange calls doen.
+- [x] Voeg `.github/workflows/test.yml` toe.
+- [x] Gebruik Node 22.
+- [x] Run `npm ci`.
+- [x] Run `npm test`.
+- [x] Run lint indien haalbaar.
+- [x] Run coverage indien haalbaar.
+- [x] CI mag geen Binance secrets nodig hebben.
+- [x] CI mag geen live exchange calls doen.
 
 Acceptatie:
 
-- [ ] Bestaande scripts blijven werken.
-- [ ] Geen trading behavior gewijzigd.
-- [ ] CI workflow bestaat.
+- [x] Bestaande scripts blijven werken.
+- [x] Geen trading behavior gewijzigd.
+- [x] CI workflow bestaat.
+
+Status: completed
+Notitie: bestaande `ci.yml` en `test.yml` gebruiken Node 22, `npm ci`, lint, format-check, `npm test` en coverage. Er zijn geen secrets of live exchange calls toegevoegd.
 
 ---
 
