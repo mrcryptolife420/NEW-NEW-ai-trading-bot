@@ -155,26 +155,28 @@ Notitie 2026-05-03: matrix uitgebreid met verplichte kolommen `Runtime impact`, 
 
 ## 2.2 Trading feature inventory
 
-- [ ] Maak of update `docs/TRADING_FEATURE_INVENTORY.md`.
-- [ ] Documenteer bestaande indicators uit `src/strategy/indicators.js`.
-- [ ] Documenteer advanced indicators indien aanwezig.
-- [ ] Documenteer market/orderbook features.
-- [ ] Documenteer setup thesis features.
+- [x] Maak of update `docs/TRADING_FEATURE_INVENTORY.md`.
+- [x] Documenteer bestaande indicators uit `src/strategy/indicators.js`.
+- [x] Documenteer advanced indicators indien aanwezig.
+- [x] Documenteer market/orderbook features.
+- [x] Documenteer setup thesis features.
 
 Per feature opnemen:
 
-- [ ] Type: trend / range / breakout / volume / volatility / orderflow / risk / diagnostic.
-- [ ] Beste regime.
-- [ ] Gebruik: entry / filter / exit / risk / diagnostic.
-- [ ] Valkuil.
-- [ ] Testdekking.
-- [ ] Advies: live / paper-only / shadow / diagnostics.
+- [x] Type: trend / range / breakout / volume / volatility / orderflow / risk / diagnostic.
+- [x] Beste regime.
+- [x] Gebruik: entry / filter / exit / risk / diagnostic.
+- [x] Valkuil.
+- [x] Testdekking.
+- [x] Advies: live / paper-only / shadow / diagnostics.
 
 Acceptatie:
 
-- [ ] Docs beschrijven bestaande code feitelijk.
-- [ ] Geen nieuwe trading behavior in deze taak.
-- [ ] `npm test` slaagt.
+- [x] Docs beschrijven bestaande code feitelijk.
+- [x] Geen nieuwe trading behavior in deze taak.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-03: inventory uitgebreid met expliciete `Advice` kolom voor live/paper/shadow/diagnostics gebruik. Geen runtime code gewijzigd; `npm test` was groen in P1.1 baseline.
 
 ---
 
