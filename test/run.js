@@ -175,6 +175,7 @@ import { registerPostReconcileEntryLimitsTests } from "./postReconcileEntryLimit
 import { registerTradingQualityUpgradeTests } from "./tradingQualityUpgrade.tests.js";
 import { registerTradingPathHealthTests } from "./tradingPathHealth.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
+import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32490,6 +32491,11 @@ await registerTradingPathHealthTests({
 });
 
 await registerFeatureActivationGovernorTests({
+  runCheck,
+  assert
+});
+
+await registerStopLimitStuckTests({
   runCheck,
   assert
 });

@@ -402,17 +402,19 @@ Doel: beschermorders en exits betrouwbaarder maken zonder unsafe live acties.
 
 ## 6.1 Stop-loss-limit stuck detection
 
-- [ ] Detecteer stop triggered maar limit order unfilled.
-- [ ] Detecteer actuele bid onder stopLimit.
-- [ ] Markeer `stop_limit_stuck`.
-- [ ] Voeg operator next action toe.
-- [ ] Live: geen blind market sell zonder expliciete bestaande safe policy.
+- [x] Detecteer stop triggered maar limit order unfilled.
+- [x] Detecteer actuele bid onder stopLimit.
+- [x] Markeer `stop_limit_stuck`.
+- [x] Voeg operator next action toe.
+- [x] Live: geen blind market sell zonder expliciete bestaande safe policy.
 
 Acceptatie:
 
-- [ ] Tests voor triggered/unfilled stop-limit.
-- [ ] Tests voor illiquide move door stopLimit.
-- [ ] Manual review bij ambigu bewijs.
+- [x] Tests voor triggered/unfilled stop-limit.
+- [x] Tests voor illiquide move door stopLimit.
+- [x] Manual review bij ambigu bewijs.
+
+Notitie 2026-05-03: `src/execution/stopLimitStuck.js` toegevoegd als pure execution-safety diagnostic. De helper detecteert triggered/unfilled STOP_LOSS_LIMIT orders, bid onder stopLimit, zet `status: stop_limit_stuck`, levert een manual-review `positionPatch`, operator next action en expliciet verboden blind market-sell advies. Geen live broker mutatie of orderplaatsing toegevoegd.
 
 ## 6.2 Liquidity-aware stop-limit gap
 
