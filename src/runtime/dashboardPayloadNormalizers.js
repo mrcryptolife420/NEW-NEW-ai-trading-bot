@@ -90,6 +90,28 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     portfolioCrowdingSummary: objectOrFallback(source.portfolioCrowdingSummary || source.tradingQualitySummary?.portfolioCrowding || source.tradingQualitySummary?.portfolioCrowdingSummary, { crowdingRisk: "unknown", reasons: [] }),
     antiOverfitSummary: objectOrFallback(source.antiOverfitSummary || source.learningAnalytics?.antiOverfitSummary, { status: "unavailable", reasons: [] }),
     backtestQualitySummary: objectOrFallback(source.backtestQualitySummary || source.backtest?.qualitySummary, { status: "unavailable", sampleSizeWarning: true }),
+    tradingPathHealth: objectOrFallback(source.tradingPathHealth || source.ops?.tradingPathHealth, {
+      status: "unknown",
+      blockingReasons: [],
+      staleSources: [],
+      nextAction: "inspect_runtime_status"
+    }),
+    feedSummary: objectOrFallback(source.feedSummary || source.ops?.feedSummary, {
+      status: "unknown",
+      symbolsRequested: 0,
+      symbolsReady: 0,
+      missingSymbols: [],
+      staleSources: []
+    }),
+    dashboardFreshness: objectOrFallback(source.dashboardFreshness || source.snapshotMeta?.freshness, {
+      fresh: false,
+      ageMs: null,
+      staleReason: "missing_snapshot_timestamp"
+    }),
+    frontendPollingExpectedIntervalMs: Number(source.frontendPollingExpectedIntervalMs || source.frontendPolling?.expectedIntervalMs || 10_000),
+    dashboardSnapshotAgeMs: source.dashboardSnapshotAgeMs ?? source.frontendPolling?.snapshotAgeMs ?? null,
+    lastSuccessfulSnapshotAt: source.lastSuccessfulSnapshotAt || source.frontendPolling?.lastSuccessfulSnapshotAt || null,
+    lastSnapshotError: source.lastSnapshotError || source.frontendPolling?.lastSnapshotError || null,
     panicPlanAvailable: Boolean(source.panicPlanAvailable)
   };
 }

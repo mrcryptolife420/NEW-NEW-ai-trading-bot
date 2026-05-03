@@ -28,6 +28,11 @@ import {
   buildPostReconcileProbationStatus,
   resolvePostReconcileProbationState
 } from "../risk/postReconcileEntryLimits.js";
+import {
+  buildFeedAggregationSummary,
+  buildTradingPathHealth,
+  normalizeDashboardFreshness
+} from "../runtime/tradingPathHealth.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -233,6 +238,51 @@ export default async function runCli({
             : "status"
     });
     console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "trading-path:debug") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const readmodel = await runReadModelCommand({ config, logger, action: "dashboard" }).catch((error) => ({
+      status: "unavailable",
+      error: error?.message || "readmodel_dashboard_unavailable"
+    }));
+    const dashboardSnapshot = runtime.dashboardSnapshot || runtime.lastDashboardSnapshot || runtime.dashboard || {};
+    const now = new Date().toISOString();
+    const feedSummary = buildFeedAggregationSummary({
+      runtimeState: runtime,
+      watchlist: runtime.watchlist || config.watchlist || [],
+      requestBudget: runtime.requestWeight || runtime.requestBudget || {},
+      streamStatus: runtime.stream || runtime.streamStatus || {},
+      now
+    });
+    const health = buildTradingPathHealth({
+      runtimeState: runtime,
+      dashboardSnapshot,
+      feedSummary,
+      readmodelSummary: readmodel.readModel || readmodel,
+      scanSummary: runtime.signalFlow?.lastCycle || runtime.scanner || {},
+      config,
+      now
+    });
+    console.log(JSON.stringify({
+      readOnly: true,
+      generatedAt: now,
+      health,
+      botRunning: health.botRunning,
+      lastCycleAt: health.lastCycleAt,
+      feedFreshness: feedSummary,
+      readmodelFreshness: health.readmodelFreshness,
+      dashboardFreshness: normalizeDashboardFreshness(dashboardSnapshot, now, config),
+      topDecisionsCount: health.topDecisionsCount,
+      entryBlockedReasons: health.blockingReasons,
+      staleSources: health.staleSources,
+      nextAction: health.nextAction,
+      safety: "diagnostic_only_no_entry_unlock"
+    }, null, 2));
     markCommandSuccess(processState);
     return;
   }

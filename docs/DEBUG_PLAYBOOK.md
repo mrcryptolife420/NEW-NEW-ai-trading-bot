@@ -27,7 +27,18 @@ This playbook is for operator-safe diagnosis. It does not replace exchange-safet
 
 1. Compare `node src/cli.js status` with `node src/cli.js readmodel:dashboard`.
 2. Check snapshot age, portfolio freshness and recorder/readmodel summaries.
-3. If CLI status is fresh but dashboard is stale, inspect dashboard server polling or read-model refresh hooks before changing trading logic.
+3. Run `node src/cli.js trading-path:debug` to separate feed freshness, read-model freshness, dashboard freshness and frontend polling.
+4. If CLI status is fresh but dashboard is stale, inspect dashboard server polling or read-model refresh hooks before changing trading logic.
+
+## Trading Path Functionally Inactive
+
+1. Run `node src/cli.js trading-path:debug`.
+2. Check `health.status`, `blockingReasons`, `staleSources`, `feedFreshness`, `readmodelFreshness` and `dashboardFreshness`.
+3. If `feed_aggregation_stale` or `no_market_snapshots_ready` appears, run `node src/cli.js once` and inspect stream/local-book/REST budget health.
+4. If `readmodel_snapshot_stale` appears, run `node src/cli.js readmodel:rebuild` and re-check `readmodel:dashboard`.
+5. If `dashboard_polling_error` or `dashboard_polling_stale` appears, check the dashboard server endpoint and frontend polling state.
+6. If `exchange_safety_blocked` appears, use `exchange-safety:status` and `reconcile:plan`; do not force unlock.
+7. A fresh trading path does not mean entries are allowed. Risk, exchange safety, manual review, unresolved intents and model confidence can still block correctly.
 
 ## Backtest Gives NaN Or Impossible Metrics
 

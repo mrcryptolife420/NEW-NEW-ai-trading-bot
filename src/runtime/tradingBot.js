@@ -157,6 +157,11 @@ import { scoreIndicatorRegimeFit } from "../strategy/indicatorRegimeScoring.js";
 import { buildSetupThesis as buildStrategySetupThesis } from "../strategy/setupThesis.js";
 import { buildExitPlanHint } from "../strategy/exitPlanHints.js";
 import { buildPortfolioCrowdingSummary } from "../risk/portfolioCrowding.js";
+import {
+  buildFeedAggregationSummary,
+  buildTradingPathHealth,
+  normalizeDashboardFreshness
+} from "./tradingPathHealth.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -6965,7 +6970,8 @@ export function buildDashboardOperatorDeck({
   capitalPolicy = {},
   opportunityRanking = {},
   missedTradeTuning = {},
-  manualReviewQueue = {}
+  manualReviewQueue = {},
+  tradingPathHealth = {}
 } = {}) {
   const tradableDecision = arr(topDecisions).find((item) => item.allow) || null;
   const topBlocked = arr(blockedSetups)[0] || null;
@@ -7156,9 +7162,10 @@ export function buildDashboardOperatorDeck({
           id: "inactivity_watchdog",
           title: "Functional inactivity",
           detail: compactJoin([
+            arr(tradingPathHealth.blockingReasons || [])[0] || arr(tradingPathHealth.staleSources || [])[0] || null,
             inactivityWatchdog.headline || null,
             inactivityWatchdog.detail || null,
-            inactivityWatchdog.recommendedAction || inactivityWatchdog.activeCases?.[0]?.action || null
+            tradingPathHealth.nextAction || inactivityWatchdog.recommendedAction || inactivityWatchdog.activeCases?.[0]?.action || null
           ]),
           tone: ["critical", "high"].includes(inactivityWatchdog.status) ? "negative" : "warning"
         }
@@ -25530,6 +25537,37 @@ export class TradingBot {
     const featureIntegrationAudit = await this.buildFeatureIntegrationAuditSummary();
     const decoratedStreamStatus = decorateStreamStatus(this.stream.getStatus(), this.runtime.service || {});
     const streamFallbackHealth = this.buildStreamFallbackHealth(decoratedStreamStatus, referenceNow);
+    const feedSummary = buildFeedAggregationSummary({
+      runtimeState: this.runtime,
+      watchlist: this.config.watchlist,
+      marketSnapshots: this.runtime.latestMarketSnapshots || this.runtime.marketSnapshots || {},
+      requestBudget: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
+      streamStatus: decoratedStreamStatus,
+      now: referenceNow
+    });
+    const dashboardFreshness = normalizeDashboardFreshness({
+      generatedAt: referenceNow,
+      snapshotMeta,
+      overview,
+      topDecisions: dashboardTopDecisions
+    }, referenceNow, this.config);
+    const tradingPathHealth = buildTradingPathHealth({
+      runtimeState: this.runtime,
+      dashboardSnapshot: {
+        generatedAt: referenceNow,
+        snapshotMeta,
+        overview,
+        running: Boolean(this.runtime.lifecycle?.activeRun),
+        topDecisions: dashboardTopDecisions,
+        exchangeSafety: exchangeSafetySummary,
+        ops: { riskLocks: {} }
+      },
+      feedSummary,
+      readmodelSummary: readModelSummary,
+      scanSummary: this.runtime.signalFlow?.lastCycle || {},
+      config: this.config,
+      now: referenceNow
+    });
     const tradingImprovementDiagnostics = buildTradingImprovementDiagnostics({
       topDecisions: dashboardTopDecisions,
       blockedSetups: dashboardBlockedSetups,
@@ -25677,7 +25715,8 @@ export class TradingBot {
         capitalPolicy: capitalPolicySummary,
         opportunityRanking: opportunityRankingDigest,
         missedTradeTuning: missedTradeTuningDigest,
-        manualReviewQueue
+        manualReviewQueue,
+        tradingPathHealth
       }),
       coreMetrics: buildCoreMetricsView({ report, overview }),
       sourceOfTruth: {
@@ -25692,6 +25731,13 @@ export class TradingBot {
       health: this.health.getStatus(this.runtime),
       stream: decoratedStreamStatus,
       streamFallbackHealth,
+      feedSummary,
+      dashboardFreshness,
+      tradingPathHealth,
+      frontendPollingExpectedIntervalMs: Number(this.config.dashboardPollingIntervalMs || 10_000),
+      dashboardSnapshotAgeMs: dashboardFreshness.ageMs,
+      lastSuccessfulSnapshotAt: referenceNow,
+      lastSnapshotError: null,
       ai: {
         calibration: this.model.getCalibrationSummary(),
         deployment: this.model.getDeploymentSummary(),
@@ -25747,6 +25793,9 @@ export class TradingBot {
           lastCycleAt: this.runtime.lastCycleAt || null,
           lastPortfolioUpdateAt: this.runtime.lastPortfolioUpdateAt || null
         },
+        feedSummary,
+        tradingPathHealth,
+        dashboardFreshness,
         exchangeConnectivity: {
           clockSync: this.client?.getClockSyncState ? this.client.getClockSyncState() : null,
           requestWeight: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
