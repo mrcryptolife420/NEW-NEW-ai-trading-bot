@@ -164,7 +164,15 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
   });
 
   await runCheck("setup thesis supports all requested setup types", async () => {
-    for (const setupType of ["trend_continuation", "breakout_retest", "mean_reversion", "liquidity_sweep_reclaim", "vwap_reclaim"]) {
+    for (const setupType of [
+      "trend_continuation",
+      "breakout_retest",
+      "mean_reversion",
+      "liquidity_sweep_reclaim",
+      "vwap_reclaim",
+      "range_grid",
+      "failed_breakout_avoidance"
+    ]) {
       const thesis = buildSetupThesis({
         setupType,
         regime: "range",
@@ -176,15 +184,48 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
           donchianBreakoutScore: 0.5,
           retestQuality: 0.6,
           liquiditySweepScore: 0.7,
-          reclaimScore: 0.65
+          reclaimScore: 0.65,
+          rangeBoundaryRespectScore: 0.8,
+          rangeMeanRevertScore: 0.7,
+          rangeStabilityScore: 0.75,
+          falseBreakoutRisk: 0.8,
+          breakoutFollowThroughScore: 0.2,
+          orderflowDivergence: 0.5
         },
         orderBook: { spreadBps: 8, bookPressure: 0.1 }
       });
       assert.equal(thesis.setupType, setupType);
+      if (setupType === "failed_breakout_avoidance") {
+        assert.equal(thesis.direction, "avoid_long");
+      }
       assert.equal(typeof thesis.thesis, "string");
+      assert.equal(Array.isArray(thesis.evidenceFor), true);
+      assert.equal(Array.isArray(thesis.evidenceAgainst), true);
+      assert.equal(Array.isArray(thesis.requiredConfirmation), true);
       assert.equal(Array.isArray(thesis.invalidatesIf), true);
+      assert.equal(Boolean(thesis.exitPlanHint?.hardInvalidation), true);
+      assert.equal(Array.isArray(thesis.failureModesToWatch), true);
+      assert.equal(Array.isArray(thesis.riskNotes), true);
       assert.equal(Number.isFinite(thesis.entryQuality), true);
     }
+  });
+
+  await runCheck("setup thesis handles missing unknown and secret-like input safely", async () => {
+    const thesis = buildSetupThesis({
+      setupType: "unknown_experimental_setup",
+      features: { apiSecret: "do-not-leak", privateToken: "also-do-not-leak" },
+      marketSnapshot: { webhookUrl: "https://example.invalid/secret" },
+      orderBook: {}
+    });
+
+    assert.equal(thesis.setupType, "trend_continuation");
+    assert.equal(thesis.riskNotes.includes("unknown_setup_fallback"), true);
+    assert.equal(Array.isArray(thesis.evidenceFor), true);
+    assert.equal(Array.isArray(thesis.requiredConfirmation), true);
+    assert.equal(Boolean(thesis.exitPlanHint?.hardInvalidation), true);
+    assert.equal(Number.isFinite(thesis.entryQuality), true);
+    assert.equal(JSON.stringify(thesis).includes("do-not-leak"), false);
+    assert.equal(JSON.stringify(thesis).includes("example.invalid"), false);
   });
 
   await runCheck("runtime trade thesis is setup-specific and remains secret-safe", async () => {

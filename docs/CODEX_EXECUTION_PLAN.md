@@ -255,34 +255,36 @@ Gebruik bestaande modules indien aanwezig:
 
 Ondersteun:
 
-- [ ] `trend_continuation`.
-- [ ] `breakout_retest`.
-- [ ] `mean_reversion`.
-- [ ] `liquidity_sweep_reclaim`.
-- [ ] `vwap_reclaim`.
-- [ ] `range_grid`.
-- [ ] `failed_breakout_avoidance`.
+- [x] `trend_continuation`.
+- [x] `breakout_retest`.
+- [x] `mean_reversion`.
+- [x] `liquidity_sweep_reclaim`.
+- [x] `vwap_reclaim`.
+- [x] `range_grid`.
+- [x] `failed_breakout_avoidance`.
 
 Output moet bevatten:
 
-- [ ] `setupType`.
-- [ ] `direction`.
-- [ ] `thesis`.
-- [ ] `evidenceFor`.
-- [ ] `evidenceAgainst`.
-- [ ] `requiredConfirmation`.
-- [ ] `invalidatesIf`.
-- [ ] `exitPlanHint`.
-- [ ] `failureModesToWatch`.
-- [ ] `riskNotes`.
+- [x] `setupType`.
+- [x] `direction`.
+- [x] `thesis`.
+- [x] `evidenceFor`.
+- [x] `evidenceAgainst`.
+- [x] `requiredConfirmation`.
+- [x] `invalidatesIf`.
+- [x] `exitPlanHint`.
+- [x] `failureModesToWatch`.
+- [x] `riskNotes`.
 
 Acceptatie:
 
-- [ ] Tests voor elk setup type.
-- [ ] Tests voor missing data.
-- [ ] Tests voor unknown setup.
-- [ ] Tests voor secret redaction.
-- [ ] Geen live order behavior gewijzigd.
+- [x] Tests voor elk setup type.
+- [x] Tests voor missing data.
+- [x] Tests voor unknown setup.
+- [x] Tests voor secret redaction.
+- [x] Geen live order behavior gewijzigd.
+
+Notitie 2026-05-03: `src/strategy/setupThesis.js` uitgebreid als pure diagnostic helper met `range_grid`, `failed_breakout_avoidance`, `requiredConfirmation`, `exitPlanHint` en `failureModesToWatch`. Tests dekken alle setup-types, missing/unknown input en secret-safe output. Geen live execution/risk behavior gewijzigd.
 
 ## 4.2 Exit plan hints versterken
 
