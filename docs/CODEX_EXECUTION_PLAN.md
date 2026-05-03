@@ -18,6 +18,31 @@ Nieuwe aanbevelingen moeten altijd in deze hoofd-MD zichtbaar zijn. Aanvullende 
 - [ ] Elke bugfix of behavior-change krijgt regressietests.
 - [ ] `npm test` moet slagen voordat een taak als afgerond mag worden.
 
+## Feature activation policy
+
+Nieuwe features worden niet automatisch direct aan paper mode of live mode gekoppeld. Elke nieuwe tradingfeature moet expliciet door activation stages gaan.
+
+Stages:
+
+- `diagnostics_only`: feature meet/rapporteert alleen en heeft geen trade-impact.
+- `shadow_only`: feature simuleert beslissingen naast de echte flow, zonder orders of portfolio-impact.
+- `paper_only`: feature mag paper decisions/trades beïnvloeden, maar nooit live.
+- `canary`: feature mag alleen zeer beperkt live meedraaien na expliciete safety/canary-governance.
+- `limited_live`: feature heeft beperkte live-impact met strengere caps.
+- `normal_live`: feature is volledig toegelaten binnen normale live risk limits.
+
+Regels:
+
+- [ ] Nieuwe features starten standaard als `diagnostics_only`.
+- [ ] Tradingfeatures mogen pas naar `shadow_only` of `paper_only` als ze fallback-safe zijn en tests hebben.
+- [ ] Paper-only features mogen hard safety nooit omzeilen.
+- [ ] Shadow mode mag beslissingen simuleren maar geen orders plaatsen.
+- [ ] Live-impact vereist aparte promotie via anti-overfit, canary gate en safety review.
+- [ ] Geen enkele feature mag automatisch van diagnostics naar live promoveren.
+- [ ] Elke roadmaptaak moet expliciet vermelden of de eerste integratie `diagnostics_only`, `shadow_only`, `paper_only`, `governance_only` of `live_candidate` is.
+- [ ] Automatische promotie naar `paper_only` mag alleen als `BOT_MODE=paper` en config dit expliciet toestaat.
+- [ ] Automatische promotie naar live is nooit toegestaan.
+
 ## Permanente review-instructie voor nieuwe updates
 
 Wanneer de operator vraagt om nieuwe updates, features, aanbevelingen, analyses of Codex-prompts, moet Codex/de assistent altijd eerst:
@@ -1096,6 +1121,36 @@ Acceptatie:
 - [ ] Afgewezen kansen zijn uitlegbaar.
 - [ ] Geen live behavior gewijzigd.
 - [ ] `npm test` slaagt.
+
+## B23 — Feature Activation Governor
+
+Bron: operator request / live-safety governance
+Status: completed
+Eerste integratie: governance_only
+
+Doel: nieuwe tradingfeatures mogen niet ongemerkt live-impact krijgen. De activation governor bepaalt of een feature hoogstens `diagnostics_only`, `shadow_only`, `paper_only`, `canary`, `limited_live` of `normal_live` mag draaien.
+
+- [x] Controleer bestaande modules: `featureActivationGovernor`, `canaryReleaseGate`, `antiOverfitGovernor`, `paperLiveParity`, `safetySnapshot`.
+- [x] Maak `src/runtime/featureActivationGovernor.js` omdat er nog geen bestaande module was.
+- [x] Default onbekende/nieuwe features naar `diagnostics_only`.
+- [x] Sta `shadow_only` pas toe als feature fallback-safe is en tests heeft.
+- [x] Sta `paper_only` alleen toe in `BOT_MODE=paper` en met expliciete config.
+- [x] Blokkeer paper-only hard-safety bypass.
+- [x] Blokkeer automatische live-promotie altijd.
+- [x] Vereis live config, anti-overfit pass, paper/live parity, safety review en canary review voor live-impact.
+- [x] Voeg summary helper toe voor activation stages.
+- [x] Voeg regressietests toe.
+- [x] Run `npm test`.
+
+Acceptatie:
+
+- [x] Geen automatische live promotie.
+- [x] Geen live safety versoepeld.
+- [x] Paper-only kan hard safety niet omzeilen.
+- [x] Governor is fallback-safe en geeft geen NaN/Infinity.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-03: `src/runtime/featureActivationGovernor.js` toegevoegd als pure governance helper. Geen runtime execution/risk path aangesloten; dus geen live behavior wijziging. Tests toegevoegd in `test/featureActivationGovernor.tests.js`.
 
 ---
 

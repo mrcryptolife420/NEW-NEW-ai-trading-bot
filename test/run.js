@@ -174,6 +174,7 @@ import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinato
 import { registerPostReconcileEntryLimitsTests } from "./postReconcileEntryLimits.tests.js";
 import { registerTradingQualityUpgradeTests } from "./tradingQualityUpgrade.tests.js";
 import { registerTradingPathHealthTests } from "./tradingPathHealth.tests.js";
+import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32486,6 +32487,11 @@ await registerTradingPathHealthTests({
   fs,
   os,
   runCli
+});
+
+await registerFeatureActivationGovernorTests({
+  runCheck,
+  assert
 });
 
 console.log("All checks passed.");
