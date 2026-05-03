@@ -534,33 +534,35 @@ Notitie 2026-05-03: P8.1 is afgerond. `src/backtest/backtestMetrics.js` geeft nu
 
 Maak of update:
 
-- [ ] `src/backtest/backtestIntegrity.js`.
+- [x] `src/backtest/backtestIntegrity.js`.
 
 Checks:
 
-- [ ] Geen NaN/Infinity.
-- [ ] Impossible timestamps warning.
-- [ ] Trade count mismatch warning.
-- [ ] Missing configHash/dataHash warning indien beschikbaar.
-- [ ] No-lookahead warning als feature timestamp ontbreekt.
-- [ ] Missing fees/slippage warning.
+- [x] Geen NaN/Infinity.
+- [x] Impossible timestamps warning.
+- [x] Trade count mismatch warning.
+- [x] Missing configHash/dataHash warning indien beschikbaar.
+- [x] No-lookahead warning als feature timestamp ontbreekt.
+- [x] Missing fees/slippage warning.
 
 Tests:
 
-- [ ] Empty trades.
-- [ ] Winning/losing mix.
-- [ ] All winners.
-- [ ] All losers.
-- [ ] Fee drag.
-- [ ] Slippage drag.
-- [ ] Impossible timestamp.
-- [ ] Missing hashes.
+- [x] Empty trades.
+- [x] Winning/losing mix.
+- [x] All winners.
+- [x] All losers.
+- [x] Fee drag.
+- [x] Slippage drag.
+- [x] Impossible timestamp.
+- [x] Missing hashes.
 
 Acceptatie:
 
-- [ ] Backtest metrics finite.
-- [ ] Geen live behavior gewijzigd.
-- [ ] `npm test` slaagt.
+- [x] Backtest metrics finite.
+- [x] Geen live behavior gewijzigd.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-03: P8.2 is afgerond. `src/backtest/backtestIntegrity.js` waarschuwt nu ook bij ontbrekende fee/slippage-evidence, naast bestaande hash, NaN/Infinity, trade-count, future timestamp en no-lookahead checks. Tests staan in `test/dataIntegrityMaintenance.tests.js` en `test/tradingQualityUpgrade.tests.js`; `npm test` geslaagd. Geen live behavior gewijzigd.
 
 ---
 

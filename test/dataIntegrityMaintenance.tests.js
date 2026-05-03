@@ -130,7 +130,17 @@ export async function registerDataIntegrityMaintenanceTests({
 
   await runCheck("backtest integrity detects missing hashes impossible metrics and future trades", async () => {
     const ok = validateBacktestResult({
-      result: { tradeCount: 1, trades: [{ id: "t1", exitAt: "2026-01-01T00:00:00.000Z", featureTimestamp: "2026-01-01T00:00:00.000Z" }], realizedPnl: 10 },
+      result: {
+        tradeCount: 1,
+        trades: [{
+          id: "t1",
+          exitAt: "2026-01-01T00:00:00.000Z",
+          featureTimestamp: "2026-01-01T00:00:00.000Z",
+          feeBps: 10,
+          slippageBps: 2
+        }],
+        realizedPnl: 10
+      },
       configHash: "cfg",
       dataHash: "data",
       now: "2026-01-02T00:00:00.000Z"
@@ -144,6 +154,26 @@ export async function registerDataIntegrityMaintenanceTests({
     assert.ok(bad.issues.some((issue) => issue.code === "trade_count_mismatch"));
     assert.ok(bad.issues.some((issue) => issue.code === "nan_metric"));
     assert.ok(bad.issues.some((issue) => issue.code === "future_trade_timestamp"));
+
+    const empty = validateBacktestResult({
+      result: { tradeCount: 0, trades: [] },
+      configHash: "cfg",
+      dataHash: "data"
+    });
+    assert.equal(empty.status, "ok");
+
+    const missingCostModel = validateBacktestResult({
+      result: {
+        configHash: "cfg",
+        dataHash: "data",
+        tradeCount: 1,
+        trades: [{ id: "no-cost", exitAt: "2026-01-01T00:00:00.000Z", featureTimestamp: "2026-01-01T00:00:00.000Z" }]
+      },
+      now: "2026-01-02T00:00:00.000Z"
+    });
+    assert.equal(missingCostModel.status, "warning");
+    assert.ok(missingCostModel.issues.some((issue) => issue.code === "missing_fee_metrics_warning"));
+    assert.ok(missingCostModel.issues.some((issue) => issue.code === "missing_slippage_metrics_warning"));
   });
 
   await runCheck("replay pack manifest is stable and warns on missing or duplicate samples", async () => {

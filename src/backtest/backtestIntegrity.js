@@ -6,6 +6,10 @@ function collectTrades(result = {}) {
   return Array.isArray(result.trades) ? result.trades : [];
 }
 
+function hasAnyMetric(source = {}, keys = []) {
+  return keys.some((key) => key in source && finiteNumber(source[key]));
+}
+
 export function validateBacktestResult({ result = {}, configHash = null, dataHash = null, now = new Date().toISOString() } = {}) {
   const issues = [];
   const trades = collectTrades(result);
@@ -15,6 +19,14 @@ export function validateBacktestResult({ result = {}, configHash = null, dataHas
   if (Number.isFinite(expectedTradeCount) && expectedTradeCount !== trades.length) issues.push({ code: "trade_count_mismatch", severity: "degraded" });
   for (const key of ["realizedPnl", "maxDrawdownPct", "profitFactor", "winRate", "sharpeLikeScore"]) {
     if (key in result && !finiteNumber(result[key])) issues.push({ code: "nan_metric", field: key, severity: "degraded" });
+  }
+  if (trades.length > 0) {
+    const hasFeeEvidence = hasAnyMetric(result, ["feeDrag", "feeDragPct", "feeBps", "totalFees"]) ||
+      trades.some((trade) => hasAnyMetric(trade, ["feeBps", "feePct", "feeDragPct", "entryFee", "exitFee", "feeQuote"]));
+    const hasSlippageEvidence = hasAnyMetric(result, ["slippageDrag", "slippageDragPct", "slippageBps"]) ||
+      trades.some((trade) => hasAnyMetric(trade, ["slippageBps", "slippagePct", "slippageDragPct", "entrySlippageBps", "exitSlippageBps"]));
+    if (!hasFeeEvidence) issues.push({ code: "missing_fee_metrics_warning", severity: "warning" });
+    if (!hasSlippageEvidence) issues.push({ code: "missing_slippage_metrics_warning", severity: "warning" });
   }
   if (Math.abs(Number(result.realizedPnl || 0)) > 1e9) issues.push({ code: "impossible_pnl_value", severity: "corrupt" });
   const nowMs = new Date(now).getTime();
