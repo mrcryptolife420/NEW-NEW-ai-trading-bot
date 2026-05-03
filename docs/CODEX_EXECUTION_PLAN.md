@@ -130,26 +130,28 @@ Doel: voorkom dubbel werk en maak duidelijk wat implemented/partial/planned is.
 
 ## 2.1 Implementation matrix
 
-- [ ] Maak of update `docs/IMPLEMENTATION_MATRIX.md`.
-- [ ] Documenteer config modules.
-- [ ] Documenteer strategy/indicator modules.
-- [ ] Documenteer risk modules.
-- [ ] Documenteer execution modules.
-- [ ] Documenteer runtime/learning modules.
-- [ ] Documenteer dashboard/readmodel modules.
-- [ ] Documenteer storage/migration modules.
-- [ ] Documenteer backtest/research modules.
-- [ ] Documenteer operator/safety modules.
+- [x] Maak of update `docs/IMPLEMENTATION_MATRIX.md`.
+- [x] Documenteer config modules.
+- [x] Documenteer strategy/indicator modules.
+- [x] Documenteer risk modules.
+- [x] Documenteer execution modules.
+- [x] Documenteer runtime/learning modules.
+- [x] Documenteer dashboard/readmodel modules.
+- [x] Documenteer storage/migration modules.
+- [x] Documenteer backtest/research modules.
+- [x] Documenteer operator/safety modules.
 
 Per feature opnemen:
 
-- [ ] Status: implemented / partial / planned / deprecated.
-- [ ] Files.
-- [ ] Tests.
-- [ ] Runtime impact.
-- [ ] Dashboard visible.
-- [ ] Live impact.
-- [ ] Notes / known gaps.
+- [x] Status: implemented / partial / planned / deprecated.
+- [x] Files.
+- [x] Tests.
+- [x] Runtime impact.
+- [x] Dashboard visible.
+- [x] Live impact.
+- [x] Notes / known gaps.
+
+Notitie 2026-05-03: matrix uitgebreid met verplichte kolommen `Runtime impact`, `Dashboard visible`, `Live impact` en `Notes`; geen runtime code gewijzigd.
 
 ## 2.2 Trading feature inventory
 
