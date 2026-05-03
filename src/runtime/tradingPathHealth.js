@@ -23,6 +23,25 @@ function countMarketSnapshots(value) {
   return 0;
 }
 
+function symbolsFromDecisionSnapshots(decisions = []) {
+  return arr(decisions)
+    .filter((decision) => {
+      if (!decision?.symbol) return false;
+      if (decision.marketData?.status === "missing" || decision.marketData?.status === "failed") return false;
+      if (decision.dataQualitySummary?.status === "missing") return false;
+      return Boolean(
+        decision.marketData?.status === "ready" ||
+        decision.orderBook ||
+        decision.marketCondition ||
+        decision.marketContext ||
+        decision.regime ||
+        decision.strategy
+      );
+    })
+    .map((decision) => `${decision.symbol}`.toUpperCase())
+    .filter(Boolean);
+}
+
 function latestTimestamp(...values) {
   const sorted = values
     .flat()
@@ -30,6 +49,24 @@ function latestTimestamp(...values) {
     .filter((item) => Number.isFinite(item.ms))
     .sort((a, b) => b.ms - a.ms);
   return sorted[0]?.value || null;
+}
+
+function lower(value) {
+  return `${value || ""}`.trim().toLowerCase();
+}
+
+function isStreamConnectivityAuthoritative(runtimeState = {}, streamStatus = {}) {
+  const runtime = objectOrFallback(runtimeState, {});
+  const streams = objectOrFallback(streamStatus, {});
+  if (streams.connectivityAuthoritative === false) return false;
+  if (streams.publicStreamAuthoritative === false) return false;
+  const service = objectOrFallback(runtime.service, {});
+  const lifecycle = objectOrFallback(runtime.lifecycle, {});
+  if (lower(service.initMode) === "read_only") return false;
+  if (lifecycle.activeRun === false && ["stopped", "idle"].includes(lower(service.watchdogStatus))) {
+    return false;
+  }
+  return true;
 }
 
 export function normalizeDashboardFreshness(snapshot = {}, now = new Date().toISOString(), config = {}) {
@@ -85,17 +122,21 @@ export function buildFeedAggregationSummary({
 } = {}) {
   const budget = objectOrFallback(requestBudget, {});
   const streams = objectOrFallback(streamStatus, {});
+  const streamConnectivityAuthoritative = isStreamConnectivityAuthoritative(runtimeState, streams);
   const requested = arr(watchlist).map((symbol) => `${symbol}`.toUpperCase()).filter(Boolean);
   const snapshotMap = objectOrFallback(marketSnapshots, {});
   const readySymbols = Object.entries(snapshotMap)
     .filter(([, snapshot]) => objectOrFallback(snapshot, null))
     .map(([symbol]) => `${symbol}`.toUpperCase());
+  const decisionReadySymbols = readySymbols.length ? [] : symbolsFromDecisionSnapshots(runtimeState.latestDecisions || []);
+  const effectiveReadySymbols = readySymbols.length ? readySymbols : decisionReadySymbols;
   const missingSymbols = requested.length
-    ? requested.filter((symbol) => !readySymbols.includes(symbol))
+    ? requested.filter((symbol) => !effectiveReadySymbols.includes(symbol))
     : [];
   const nowMs = timestampMs(now);
   const lastSuccessfulAggregationAt = latestTimestamp(
     runtimeState.lastAnalysisAt,
+    runtimeState.lastCycleAt,
     runtimeState.marketData?.lastUpdatedAt,
     runtimeState.marketSnapshotsUpdatedAt,
     runtimeState.latestMarketSnapshotsUpdatedAt,
@@ -103,12 +144,12 @@ export function buildFeedAggregationSummary({
   );
   const staleSources = [];
   if (!requested.length) staleSources.push("watchlist_empty");
-  if (!readySymbols.length) staleSources.push("no_market_snapshots_ready");
+  if (!effectiveReadySymbols.length) staleSources.push("no_market_snapshots_ready");
   const aggregationAgeMs = ageMs(lastSuccessfulAggregationAt, nowMs);
   if (aggregationAgeMs == null || aggregationAgeMs > staleMs) staleSources.push("feed_aggregation_stale");
   if (budget.banActive || budget.backoffActive || budget.status === "blocked") staleSources.push("rest_budget_exhausted");
-  if (streams.publicStreamConnected === false && streams.connectivityAuthoritative !== false) staleSources.push("public_stream_disconnected");
-  const partial = requested.length > 0 && readySymbols.length > 0 && missingSymbols.length > 0;
+  if (streams.publicStreamConnected === false && streamConnectivityAuthoritative) staleSources.push("public_stream_disconnected");
+  const partial = requested.length > 0 && effectiveReadySymbols.length > 0 && missingSymbols.length > 0;
   const status = staleSources.includes("watchlist_empty")
     ? "empty_watchlist"
     : staleSources.length && !readySymbols.length
@@ -119,11 +160,13 @@ export function buildFeedAggregationSummary({
   return {
     status,
     symbolsRequested: requested.length,
-    symbolsReady: readySymbols.length,
+    symbolsReady: effectiveReadySymbols.length,
     missingSymbols: missingSymbols.slice(0, 24),
     staleSources: [...new Set(staleSources)],
     lastSuccessfulAggregationAt,
-    ageMs: aggregationAgeMs
+    ageMs: aggregationAgeMs,
+    streamConnectivityAuthoritative,
+    snapshotSource: readySymbols.length ? "runtime_market_snapshots" : (decisionReadySymbols.length ? "decision_snapshot_fallback" : "none")
   };
 }
 
@@ -187,7 +230,7 @@ export function buildTradingPathHealth({
     now
   });
   const topDecisionsCount = arr(dashboard.topDecisions || runtime.latestDecisions || scanSummary?.topDecisions).length;
-  const marketSnapshotsCount = countMarketSnapshots(runtime.latestMarketSnapshots || runtime.marketSnapshots || dashboard.marketSnapshots);
+  const marketSnapshotsCount = countMarketSnapshots(runtime.latestMarketSnapshots || runtime.marketSnapshots || dashboard.marketSnapshots) || Number(feed.symbolsReady || 0);
   const blockingReasons = [];
   const staleSources = [];
   const exchangeSafety = dashboard.exchangeSafety || runtime.exchangeSafety || {};
@@ -210,13 +253,22 @@ export function buildTradingPathHealth({
   if (!topDecisionsCount) {
     blockingReasons.push("no_decision_snapshot_created");
   }
-  if (!feedSummary && feed.staleSources?.length) staleSources.push(...feed.staleSources);
+  if (feed.staleSources?.length) staleSources.push(...feed.staleSources);
   if (!dashboardFreshness.fresh) staleSources.push(dashboardFreshness.staleReason);
   if (!readmodelFresh && readmodel.status) staleSources.push("readmodel_snapshot_stale");
   if (!frontendPolling.healthy) staleSources.push(frontendPolling.lastSnapshotError ? "dashboard_polling_error" : "dashboard_polling_stale");
 
   const uniqueBlockers = [...new Set(blockingReasons.filter(Boolean))];
   const uniqueStale = [...new Set(staleSources.filter(Boolean))];
+  const displayOnlyStaleSources = new Set([
+    "missing_snapshot_timestamp",
+    "dashboard_snapshot_stale",
+    "dashboard_data_stale",
+    "dashboard_polling_error",
+    "dashboard_polling_stale",
+    "readmodel_snapshot_stale"
+  ]);
+  const pathStaleSources = uniqueStale.filter((source) => !displayOnlyStaleSources.has(source));
   const botRunning = Boolean(runtime.lifecycle?.activeRun || runtime.running || dashboard.running);
   const cycleFresh = cycleAgeMs != null && cycleAgeMs <= cycleMaxAgeMs;
   const feedFresh = feed.status === "ready";
@@ -225,10 +277,10 @@ export function buildTradingPathHealth({
   const hardBlocked = uniqueBlockers.includes("exchange_safety_blocked");
   const status = hardBlocked
     ? "blocked"
-    : uniqueStale.length
+    : pathStaleSources.length
       ? "stale"
-      : uniqueBlockers.length
-        ? "inactive"
+    : uniqueBlockers.length
+      ? "inactive"
         : !botRunning && !cycleFresh
           ? "inactive"
           : feedFresh && dashboardFresh && readmodelFresh && frontendPollingHealthy

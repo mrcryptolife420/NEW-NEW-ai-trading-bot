@@ -131,6 +131,100 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.ok(budget.staleSources.includes("rest_budget_exhausted"));
   });
 
+  await runCheck("feed aggregation treats stopped one-shot stream disconnect as non-authoritative", async () => {
+    const stopped = buildFeedAggregationSummary({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: false },
+        service: { watchdogStatus: "stopped", initMode: "full" },
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } }
+      },
+      watchlist: ["BTCUSDT"],
+      streamStatus: { publicStreamConnected: false }
+    });
+    const liveLoop = buildFeedAggregationSummary({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        service: { watchdogStatus: "running", initMode: "full" },
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } }
+      },
+      watchlist: ["BTCUSDT"],
+      streamStatus: { publicStreamConnected: false }
+    });
+    assert.equal(stopped.status, "ready");
+    assert.equal(stopped.streamConnectivityAuthoritative, false);
+    assert.equal(stopped.staleSources.includes("public_stream_disconnected"), false);
+    assert.equal(liveLoop.streamConnectivityAuthoritative, true);
+    assert.ok(liveLoop.staleSources.includes("public_stream_disconnected"));
+    assert.equal(liveLoop.status, "degraded");
+  });
+
+  await runCheck("feed aggregation falls back to fresh decision snapshots when compact map is missing", async () => {
+    const feed = buildFeedAggregationSummary({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestDecisions: [
+          { symbol: "BTCUSDT", marketData: { status: "ready" }, orderBook: { spreadBps: 1 } },
+          { symbol: "ETHUSDT", marketData: { status: "ready" }, strategy: { activeStrategy: "trend_following" } }
+        ]
+      },
+      watchlist: ["BTCUSDT", "ETHUSDT"],
+      marketSnapshots: {}
+    });
+    assert.equal(feed.status, "ready");
+    assert.equal(feed.symbolsReady, 2);
+    assert.equal(feed.snapshotSource, "decision_snapshot_fallback");
+    assert.equal(feed.staleSources.includes("no_market_snapshots_ready"), false);
+
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestDecisions: [
+          { symbol: "BTCUSDT", marketData: { status: "ready" }, orderBook: { spreadBps: 1 } },
+          { symbol: "ETHUSDT", marketData: { status: "ready" }, strategy: { activeStrategy: "trend_following" } }
+        ]
+      },
+      dashboardSnapshot: { generatedAt: "2026-05-03T11:59:50.000Z", topDecisions: [{ symbol: "BTCUSDT" }] },
+      feedSummary: feed,
+      readmodelSummary: { status: "ready", rebuiltAt: "2026-05-03T11:58:00.000Z" }
+    });
+    assert.equal(health.marketSnapshotsCount, 2);
+    assert.equal(health.blockingReasons.includes("no_market_snapshots_ready"), false);
+  });
+
+  await runCheck("dashboard-only staleness degrades observability without marking trading path stale", async () => {
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: false },
+        service: { watchdogStatus: "stopped" },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } },
+        latestDecisions: [{ symbol: "BTCUSDT" }]
+      },
+      dashboardSnapshot: {},
+      feedSummary: {
+        status: "ready",
+        symbolsRequested: 1,
+        symbolsReady: 1,
+        missingSymbols: [],
+        staleSources: [],
+        lastSuccessfulAggregationAt: "2026-05-03T11:59:30.000Z"
+      },
+      readmodelSummary: { status: "ready", rebuiltAt: "2026-05-03T11:00:00.000Z" }
+    });
+    assert.equal(health.status, "degraded");
+    assert.deepEqual(health.blockingReasons, []);
+    assert.ok(health.staleSources.includes("missing_snapshot_timestamp"));
+    assert.ok(health.staleSources.includes("readmodel_snapshot_stale"));
+    assert.equal(health.nextAction, "run_readmodel_rebuild");
+  });
+
   await runCheck("market snapshot flow debug compacts runtime snapshots without candle bloat", async () => {
     const compact = summarizeMarketSnapshotForRuntime({
       symbol: "BTCUSDT",
