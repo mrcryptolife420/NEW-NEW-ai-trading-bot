@@ -512,21 +512,23 @@ Doel: backtests minder misleidend maken.
 
 Maak of update:
 
-- [ ] `src/backtest/backtestMetrics.js`.
+- [x] `src/backtest/backtestMetrics.js`.
 
 Metrics:
 
-- [ ] `expectancy`.
-- [ ] `profitFactor`.
-- [ ] `maxDrawdown`.
-- [ ] `averageR`.
-- [ ] `winRate`.
-- [ ] `payoffRatio`.
-- [ ] `feeDrag`.
-- [ ] `slippageDrag`.
-- [ ] `exposureTime`.
-- [ ] `turnover`.
-- [ ] `sampleSizeWarning`.
+- [x] `expectancy`.
+- [x] `profitFactor`.
+- [x] `maxDrawdown`.
+- [x] `averageR`.
+- [x] `winRate`.
+- [x] `payoffRatio`.
+- [x] `feeDrag`.
+- [x] `slippageDrag`.
+- [x] `exposureTime`.
+- [x] `turnover`.
+- [x] `sampleSizeWarning`.
+
+Notitie 2026-05-03: P8.1 is afgerond. `src/backtest/backtestMetrics.js` geeft nu ook `turnover`/`turnoverNotional` terug en blijft finite op empty, mixed, all-winner en all-loser samples. Tests staan in `test/tradingQualityUpgrade.tests.js`; `npm test` geslaagd. Geen live behavior gewijzigd.
 
 ## 8.2 Backtest integrity
 

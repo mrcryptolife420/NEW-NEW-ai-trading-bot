@@ -367,16 +367,23 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
   await runCheck("backtest quality metrics are finite and handle empty samples", async () => {
     const empty = buildBacktestQualityMetrics([]);
     const metrics = buildBacktestQualityMetrics([
-      { returnPct: 0.03, rMultiple: 1.5, feeBps: 10, slippageBps: 5, entryAt: "2026-01-01T00:00:00.000Z", exitAt: "2026-01-01T01:00:00.000Z" },
-      { returnPct: -0.01, rMultiple: -0.5, feeBps: 10, slippageBps: 8, entryAt: "2026-01-01T02:00:00.000Z", exitAt: "2026-01-01T02:30:00.000Z" },
-      { returnPct: 0.02, rMultiple: 1, feeBps: 10, slippageBps: 4, entryAt: "2026-01-01T03:00:00.000Z", exitAt: "2026-01-01T03:45:00.000Z" }
+      { returnPct: 0.03, rMultiple: 1.5, feeBps: 10, slippageBps: 5, notional: 100, entryAt: "2026-01-01T00:00:00.000Z", exitAt: "2026-01-01T01:00:00.000Z" },
+      { returnPct: -0.01, rMultiple: -0.5, feeBps: 10, slippageBps: 8, quantity: 2, entryPrice: 100, entryAt: "2026-01-01T02:00:00.000Z", exitAt: "2026-01-01T02:30:00.000Z" },
+      { returnPct: 0.02, rMultiple: 1, feeBps: 10, slippageBps: 4, totalCost: 300, entryAt: "2026-01-01T03:00:00.000Z", exitAt: "2026-01-01T03:45:00.000Z" }
     ]);
+    const allWinners = buildBacktestQualityMetrics([{ returnPct: 0.01 }, { returnPct: 0.02 }]);
+    const allLosers = buildBacktestQualityMetrics([{ returnPct: -0.01 }, { returnPct: -0.02 }]);
     assertFiniteTree(assert, empty);
     assertFiniteTree(assert, metrics);
+    assertFiniteTree(assert, allWinners);
+    assertFiniteTree(assert, allLosers);
     assert.equal(empty.sampleSizeWarning, true);
     assert.equal(metrics.winRate > 0.6, true);
     assert.equal(metrics.profitFactor > 1, true);
     assert.equal(metrics.exposureTime, 135);
+    assert.equal(metrics.turnover, 600);
+    assert.equal(metrics.turnoverNotional, 600);
+    assert.equal(allLosers.profitFactor, 0);
   });
 
   await runCheck("backtest integrity warns on missing feature timestamps and NaN trade metrics", async () => {

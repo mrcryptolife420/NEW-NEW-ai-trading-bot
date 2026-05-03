@@ -21,11 +21,22 @@ export function buildBacktestQualityMetrics(trades = []) {
       payoffRatio: 0,
       feeDrag: 0,
       slippageDrag: 0,
+      exposureTime: 0,
+      exposureTimeHours: 0,
+      turnover: 0,
+      turnoverNotional: 0,
       sampleSizeWarning: true,
       tradeCount: 0
     };
   }
   const returns = records.map((trade) => num(trade.returnPct ?? trade.pnlPct ?? trade.netPnlPct));
+  const turnover = records.reduce((total, trade) => {
+    const explicit = num(trade.notional ?? trade.totalCost ?? trade.quoteAmount ?? trade.executedQuote, Number.NaN);
+    if (Number.isFinite(explicit)) return total + Math.abs(explicit);
+    const quantity = num(trade.quantity ?? trade.executedQuantity, Number.NaN);
+    const price = num(trade.entryPrice ?? trade.fillPrice ?? trade.price, Number.NaN);
+    return total + (Number.isFinite(quantity) && Number.isFinite(price) ? Math.abs(quantity * price) : 0);
+  }, 0);
   const exposureMinutes = records.reduce((total, trade) => {
     const entry = new Date(trade.entryAt || trade.openedAt || trade.at || 0).getTime();
     const exit = new Date(trade.exitAt || trade.closedAt || trade.updatedAt || 0).getTime();
@@ -56,6 +67,8 @@ export function buildBacktestQualityMetrics(trades = []) {
     slippageDrag: average(records.map((trade) => Math.abs(num(trade.slippagePct ?? trade.slippageDragPct ?? trade.slippageBps) / (trade.slippageBps ? 10000 : 1))), 0),
     exposureTime: exposureMinutes,
     exposureTimeHours: exposureMinutes / 60,
+    turnover,
+    turnoverNotional: turnover,
     sampleSizeWarning: records.length < 30,
     tradeCount: records.length
   };
