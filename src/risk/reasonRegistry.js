@@ -32,6 +32,10 @@ const DEFINITIONS = {
   capital_governor_recovery: { category: "governance", plane: "permissioning", severity: "medium", paperSoftEligible: true, probeEligible: true, rootPriority: 150, operatorAction: "review_recovery_budget" },
   capital_governor_cluster_budget: { category: "governance", plane: "permissioning", severity: "medium", paperSoftEligible: true, probeEligible: true, rootPriority: 145, operatorAction: "review_cluster_budget" },
   capital_governor_family_budget: { category: "governance", plane: "permissioning", severity: "medium", paperSoftEligible: true, probeEligible: true, rootPriority: 146, operatorAction: "review_family_budget" },
+  post_reconcile_unresolved_safety_state: { category: "safety", plane: "hard_safety", severity: "high", hardSafety: true, rootPriority: 42, operatorAction: "complete_post_reconcile_review" },
+  post_reconcile_max_positions_reached: { category: "governance", plane: "permissioning", severity: "medium", rootPriority: 151, operatorAction: "wait_for_post_reconcile_capacity" },
+  post_reconcile_cycle_entry_limit: { category: "governance", plane: "permissioning", severity: "low", rootPriority: 152, operatorAction: "wait_next_cycle" },
+  post_reconcile_live_high_risk_strategy: { category: "governance", plane: "permissioning", severity: "high", rootPriority: 153, operatorAction: "review_live_post_reconcile_strategy" },
 
   trade_size_below_minimum: { category: "sizing", plane: "sizing", severity: "medium", rootPriority: 310, operatorAction: "review_size_floor" },
   trade_size_invalid: { category: "sizing", plane: "sizing", severity: "critical", rootPriority: 115, operatorAction: "review_sizing_bug" },

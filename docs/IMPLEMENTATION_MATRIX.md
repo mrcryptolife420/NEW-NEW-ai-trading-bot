@@ -29,6 +29,7 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Alert severity normalization | Implemented | `src/runtime/alertSeverity.js` | `test/operatorSafetyTooling.tests.js` |
 | Auto-reconcile coordinator | Evidence-first controlled recovery | `src/execution/autoReconcileCoordinator.js`, `src/cli/runCli.js`, `src/runtime/tradingBot.js` | `test/autoReconcileCoordinator.tests.js` |
 | Exchange safety CLI visibility | Read-only/controlled | `src/cli/runCli.js`, `docs/EXCHANGE_SAFETY.md` | `test/autoReconcileCoordinator.tests.js` |
+| Post-reconcile probation limits | Implemented | `src/risk/postReconcileEntryLimits.js`, `src/risk/riskManager.js`, `src/runtime/tradingBot.js`, `src/cli/runCli.js` | `test/postReconcileEntryLimits.tests.js` |
 | Schema version helpers | Implemented | `src/storage/schemaVersion.js` | `test/dataIntegrityMaintenance.tests.js` |
 | Storage migration framework | Safe no-op/fallback | `src/storage/migrations/index.js` | `test/dataIntegrityMaintenance.tests.js` |
 | Recorder integrity audit | Read-only diagnostics | `src/storage/recorderIntegrityAudit.js`, `src/storage/storageAudit.js` | `test/dataIntegrityMaintenance.tests.js` |
@@ -58,5 +59,6 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 - Incident commands are read-only except writing local incident JSON reports under the runtime directory.
 - Auto-reconcile never disables exchange safety and never force-unlocks entries without evidence-backed unlock evaluation.
 - Protective rebuild remains gated by exchange protection, symbol rules, market snapshot and OCO geometry validation.
+- Post-reconcile probation reduces risk temporarily but does not impose a permanent single-position mode.
 - Storage, recorder and replay-manifest commands are read-only and do not rewrite persisted trading state.
 - Dataset quality gates are diagnostics for research/retrain trust; they do not change live execution.

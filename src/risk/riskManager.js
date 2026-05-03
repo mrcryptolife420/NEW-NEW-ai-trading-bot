@@ -18,6 +18,7 @@ import { resolvePolicyProfile } from "./policyProfiles.js";
 import { buildExitIntelligenceV2 } from "./exitIntelligenceV2.js";
 import { buildDynamicExitLevels } from "./dynamicExitLevels.js";
 import { resolveRangeGridLifecycleFromTrades } from "../strategy/strategyLifecycleGovernance.js";
+import { applyPostReconcileEntryLimits, resolvePostReconcileProbationState } from "./postReconcileEntryLimits.js";
 
 function safeValue(value, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
@@ -4069,6 +4070,21 @@ export class RiskManager {
     if (positionGuard.reasons.length) {
       reasons.push(...positionGuard.reasons);
     }
+    const postReconcileEntryLimit = applyPostReconcileEntryLimits({
+      config: this.config,
+      probationState: resolvePostReconcileProbationState(runtime),
+      proposedEntry: {
+        symbol,
+        botMode: this.config.botMode,
+        strategyFamily: strategySummary.family || null,
+        highRiskStrategy: Boolean(strategySummary.highRisk || strategySummary.riskSensitive || ["breakout", "range_grid"].includes(strategySummary.family || ""))
+      },
+      openPositions: openPositionsInMode,
+      entriesThisCycle: runtime?.postReconcileProbation?.entriesThisCycle || runtime?.cycleEntryCount || 0
+    });
+    if (!postReconcileEntryLimit.allowed && postReconcileEntryLimit.blockedReason) {
+      reasons.push(postReconcileEntryLimit.blockedReason);
+    }
     if ((sessionSummary.blockerReasons || []).length) {
       reasons.push(...sessionSummary.blockerReasons);
     }
@@ -4687,7 +4703,13 @@ export class RiskManager {
     const quoteFree = balance.quoteFree || 0;
     const maxByPosition = quoteFree * this.config.maxPositionFraction;
     const maxByRisk = effectiveStopLossPct > 0 ? (quoteFree * this.config.riskPerTrade) / effectiveStopLossPct : maxByPosition;
-    const remainingExposureBudget = Math.max(0, totalEquityProxy * this.config.maxTotalExposureFraction - currentExposure);
+    const remainingExposureBudget = Math.max(
+      0,
+      totalEquityProxy *
+        this.config.maxTotalExposureFraction *
+        safeValue(postReconcileEntryLimit.maxTotalExposureMultiplier, 1) -
+        currentExposure
+    );
     const confidenceFactor = clamp(0.65 + Math.max(0, score.probability - threshold) * 3.5, 0.6, 1.25);
     const calibrationFactor = clamp(0.75 + (score.calibrationConfidence || 0) * 0.4, 0.75, 1.15);
     const transformerFactor = clamp(0.88 + (score.transformer?.probability || 0.5) * 0.3 + (score.transformer?.confidence || 0) * 0.1, 0.78, 1.16);
@@ -4799,7 +4821,8 @@ export class RiskManager {
       { id: "trend_state", value: trendStateTuning.sizeMultiplier },
       { id: "offline_learning", value: offlineLearningGuidanceApplied.sizeMultiplier },
       { id: "spot_downtrend", value: spotDowntrendPenalty },
-      { id: "grid_family", value: gridFamilySizeMultiplier }
+      { id: "grid_family", value: gridFamilySizeMultiplier },
+      { id: "post_reconcile", value: postReconcileEntryLimit.sizeMultiplier }
     ];
     const topSizeCompressionContributors = sizeCompressionContributors
       .filter((item) => safeValue(item.value, 1) < 1)
@@ -4861,8 +4884,8 @@ export class RiskManager {
             { id: "model_confidence", value: modelConfidenceFactor },
             { id: "rl", value: rlFactor },
             { id: "relative_strength", value: relativeStrengthFactor },
-            { id: "pattern", value: patternFactor }
-            ,{ id: "policy_profile_size", value: safeValue(policyProfile.profile?.sizeBias, 1) }
+            { id: "pattern", value: patternFactor },
+            { id: "policy_profile_size", value: safeValue(policyProfile.profile?.sizeBias, 1) }
           ]
         },
         execution_pressure: {
@@ -4913,7 +4936,8 @@ export class RiskManager {
             { id: "streak_penalty", value: streakPenalty },
             { id: "session", value: sessionSizeMultiplier },
             { id: "capital_governor", value: capitalGovernorSizeMultiplier },
-            { id: "capital_ladder", value: capitalLadderSizeMultiplier }
+            { id: "capital_ladder", value: capitalLadderSizeMultiplier },
+            { id: "post_reconcile", value: postReconcileEntryLimit.sizeMultiplier }
           ]
         },
         governance_pressure: {
@@ -4953,7 +4977,8 @@ export class RiskManager {
             { id: "missed_trade", value: safeValue(missedTradeTuningApplied.sizeMultiplier, 1) },
             { id: "execution_bias", value: parameterGovernorAdjustment.executionAggressivenessBias },
             { id: "downside_vol", value: downsideVolFactor },
-            { id: "policy_profile_size", value: safeValue(policyProfile.profile?.sizeBias, 1) }
+            { id: "policy_profile_size", value: safeValue(policyProfile.profile?.sizeBias, 1) },
+            { id: "post_reconcile", value: postReconcileEntryLimit.sizeMultiplier }
           ]
         },
         paper_bootstrap_floor: {
@@ -6338,6 +6363,8 @@ export class RiskManager {
         edge: edgeScoreSummary,
         permissioning: permissioningScoreSummary
       },
+      postReconcileEntryLimit,
+      entryTags: postReconcileEntryLimit.tags || [],
       permissioningSummary,
       entryDiagnostics,
       suppressedReasons,
@@ -6464,6 +6491,7 @@ export class RiskManager {
         maxByPosition: Number.isFinite(maxByPosition) ? num(maxByPosition, 2) : null,
         maxByRisk: Number.isFinite(maxByRisk) ? num(maxByRisk, 2) : null,
         remainingExposureBudget: Number.isFinite(remainingExposureBudget) ? num(remainingExposureBudget, 2) : null,
+        postReconcileEntryLimit,
         minTradeUsdt: num(this.config.minTradeUsdt || 0, 2),
         invalidQuoteAmount,
         entryReferencePrice: Number.isFinite(entryReferencePrice) ? num(entryReferencePrice, 8) : null,

@@ -26,6 +26,12 @@ export function validateConfig(config) {
   assertRange("MAX_OPEN_POSITIONS", config.maxOpenPositions, 1, 20, errors);
   assertRange("MAX_POSITION_FRACTION", config.maxPositionFraction, 0.001, 1, errors);
   assertRange("MAX_TOTAL_EXPOSURE_FRACTION", config.maxTotalExposureFraction, 0.01, 1, errors);
+  assertRange("POST_RECONCILE_MAX_OPEN_POSITIONS", config.postReconcileMaxOpenPositions, 1, 20, errors);
+  assertRange("POST_RECONCILE_PAPER_MAX_OPEN_POSITIONS", config.postReconcilePaperMaxOpenPositions, 1, 20, errors);
+  assertRange("POST_RECONCILE_MAX_NEW_ENTRIES_PER_CYCLE", config.postReconcileMaxNewEntriesPerCycle, 1, 20, errors);
+  assertRange("POST_RECONCILE_MAX_TOTAL_EXPOSURE_MULTIPLIER", config.postReconcileMaxTotalExposureMultiplier, 0.05, 1, errors);
+  assertRange("POST_RECONCILE_LIVE_SIZE_MULTIPLIER", config.postReconcileLiveSizeMultiplier, 0.01, 1, errors);
+  assertRange("POST_RECONCILE_PAPER_SIZE_MULTIPLIER", config.postReconcilePaperSizeMultiplier, 0.01, 1, errors);
   assertRange("RISK_PER_TRADE", config.riskPerTrade, 0.0001, 0.2, errors);
   assertRange("MAX_DAILY_DRAWDOWN", config.maxDailyDrawdown, 0.001, 0.5, errors);
   assertRange("MODEL_THRESHOLD", config.modelThreshold, 0.5, 0.99, errors);

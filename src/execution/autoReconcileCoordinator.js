@@ -596,6 +596,16 @@ export async function runAutoReconcilePlan({ broker = null, runtime = {}, plan =
           globalFreezeReason: null,
           lastAutoReconcileUnlockAt: timestamp
         };
+        runtime.postReconcileProbation = {
+          ...(runtime.postReconcileProbation || {}),
+          active: true,
+          status: "active",
+          startedAt: runtime.postReconcileProbation?.startedAt || timestamp,
+          reason: action.reason || "auto_reconcile_unlock",
+          entriesThisCycle: 0,
+          lastUnlockAt: timestamp
+        };
+        runtime.exchangeSafety.postReconcileProbation = runtime.postReconcileProbation;
         result = "applied";
       } else if (action.type === "manual_review") {
         result = "manual_review_required";

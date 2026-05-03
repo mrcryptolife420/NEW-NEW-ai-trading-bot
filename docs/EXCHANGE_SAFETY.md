@@ -42,3 +42,15 @@ Entries can resume only when:
 - Open positions are protected or explicitly in a safe managed state.
 
 Live mode remains stricter than paper. Lower confidence thresholds are not accepted for live safety recovery.
+
+## Post-Reconcile Probation
+
+After an evidence-backed exchange-safety unlock, the bot enters a temporary post-reconcile probation window. Probation limits new risk without disabling multi-position support:
+
+- Normal healthy state still uses `MAX_OPEN_POSITIONS`, `MAX_TOTAL_EXPOSURE_FRACTION`, `MAX_POSITION_FRACTION` and existing portfolio/sector/family/regime limits.
+- Probation uses `POST_RECONCILE_MAX_OPEN_POSITIONS` instead of a hardcoded single-position cap. The default is 2 live positions, with `POST_RECONCILE_PAPER_MAX_OPEN_POSITIONS` available for paper diagnostics.
+- Probation limits new entries per cycle via `POST_RECONCILE_MAX_NEW_ENTRIES_PER_CYCLE`.
+- Probation temporarily lowers total exposure and size via `POST_RECONCILE_MAX_TOTAL_EXPOSURE_MULTIPLIER`, `POST_RECONCILE_LIVE_SIZE_MULTIPLIER` and `POST_RECONCILE_PAPER_SIZE_MULTIPLIER`.
+- Safety blockers remain dominant: exchange-safety red state, unresolved intents, reconcile-required positions and manual review still block all new entries.
+
+Use `node src/cli.js post-reconcile:status` to inspect remaining probation slots and the exact reason an additional entry is allowed or blocked.

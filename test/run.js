@@ -171,6 +171,7 @@ import { registerLearningAnalyticsMaintenanceTests } from "./learningAnalyticsMa
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
+import { registerPostReconcileEntryLimitsTests } from "./postReconcileEntryLimits.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32465,6 +32466,11 @@ await registerAutoReconcileCoordinatorTests({
   fs,
   os,
   runCli
+});
+
+await registerPostReconcileEntryLimitsTests({
+  runCheck,
+  assert
 });
 
 console.log("All checks passed.");

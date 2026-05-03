@@ -55,6 +55,22 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       nextAction: null,
       entryUnlockEligible: false
     }),
+    postReconcileProbation: objectOrFallback(
+      source.postReconcileProbation ||
+        source.exchangeSafety?.postReconcileProbation ||
+        source.safety?.exchangeSafety?.postReconcileProbation ||
+        ops.exchangeConnectivity?.postReconcileProbation,
+      {
+        status: "inactive",
+        normalMaxOpenPositions: null,
+        postReconcileMaxOpenPositions: null,
+        currentOpenPositions: 0,
+        remainingProbationSlots: null,
+        entriesThisCycle: 0,
+        blockedReason: null,
+        warnings: []
+      }
+    ),
     storageAuditSummary: objectOrFallback(source.storageAuditSummary || source.dataIntegrity?.storageAuditSummary, { status: "unavailable" }),
     recorderIntegritySummary: objectOrFallback(source.recorderIntegritySummary || source.dataIntegrity?.recorderIntegritySummary, { status: "unavailable", issues: [] }),
     dataFreshnessSummary: objectOrFallback(source.dataFreshnessSummary || source.dataIntegrity?.dataFreshnessSummary, { status: "unknown", staleSources: [] }),

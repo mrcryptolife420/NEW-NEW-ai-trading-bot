@@ -24,6 +24,10 @@ import {
   evaluateExchangeSafetyUnlock,
   runAutoReconcilePlan
 } from "../execution/autoReconcileCoordinator.js";
+import {
+  buildPostReconcileProbationStatus,
+  resolvePostReconcileProbationState
+} from "../risk/postReconcileEntryLimits.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -310,6 +314,28 @@ export default async function runCli({
       openOrders
     });
     console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "post-reconcile:status") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const status = buildPostReconcileProbationStatus({
+      config,
+      runtime,
+      probationState: resolvePostReconcileProbationState(runtime),
+      openPositions: runtime.openPositions || [],
+      entriesThisCycle: runtime.postReconcileProbation?.entriesThisCycle || 0
+    });
+    console.log(JSON.stringify({
+      readOnly: true,
+      status,
+      note: status.status === "active"
+        ? "Post-reconcile probation limits new entries without forcing single-position mode."
+        : "Post-reconcile probation is inactive; normal maxOpenPositions applies."
+    }, null, 2));
     markCommandSuccess(processState);
     return;
   }

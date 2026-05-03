@@ -149,6 +149,10 @@ import {
   evaluateExchangeSafetyUnlock,
   runAutoReconcilePlan
 } from "../execution/autoReconcileCoordinator.js";
+import {
+  buildPostReconcileProbationStatus,
+  resolvePostReconcileProbationState
+} from "../risk/postReconcileEntryLimits.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -22217,6 +22221,10 @@ export class TradingBot {
         position.exitPolicyApplied = position.exitPolicyApplied || entryRationale.exitPolicy || null;
         position.adaptivePolicyAtEntry = position.adaptivePolicyAtEntry || entryRationale.adaptivePolicy || null;
         position.adaptiveContext = position.adaptiveContext || entryRationale.adaptiveContext || null;
+        if (arr(candidate.decision?.entryTags).includes("post_reconcile_probe")) {
+          position.tags = [...new Set([...arr(position.tags), "post_reconcile_probe"])];
+          position.postReconcileProbe = true;
+        }
         this.noteEntryExecuted({ candidate, position });
         if (botMode === "paper") {
           this.notePaperTradeExecuted({ candidate, position });
@@ -22238,6 +22246,11 @@ export class TradingBot {
         attempt.status = "opened";
         attempt.selectedSymbol = candidate.symbol;
         attempt.openedPosition = position;
+        if (this.runtime.postReconcileProbation?.active) {
+          this.runtime.postReconcileProbation.entriesThisCycle = (this.runtime.postReconcileProbation.entriesThisCycle || 0) + 1;
+          this.runtime.postReconcileProbation.lastEntryAt = nowIso();
+          this.runtime.postReconcileProbation.lastEntrySymbol = candidate.symbol;
+        }
         attempt.rankingSummary = {
           ...attempt.rankingSummary,
           selectedRankPosition: Math.max(1, Number(candidate?.decision?.executionRanking?.rankPosition || 1)),
@@ -22880,6 +22893,10 @@ export class TradingBot {
   async runCycleCore() {
     const cycleAt = nowIso();
     this.logger.info("Starting cycle", { mode: this.config.botMode, watchlist: this.config.watchlist.length });
+    if (this.runtime.postReconcileProbation?.active) {
+      this.runtime.postReconcileProbation.entriesThisCycle = 0;
+      this.runtime.postReconcileProbation.lastCycleAt = cycleAt;
+    }
     this.updateSafetyState({ now: new Date(cycleAt), candidateSummaries: arr(this.runtime.latestDecisions) });
     try {
       await this.client.syncServerTime();
@@ -25271,6 +25288,14 @@ export class TradingBot {
         reasons: action.reasons || []
       }))
     };
+    const postReconcileProbation = buildPostReconcileProbationStatus({
+      config: this.config,
+      runtime: this.runtime,
+      probationState: resolvePostReconcileProbationState(this.runtime),
+      openPositions: this.runtime.openPositions || sourceTruth.sourceScopedPositions || [],
+      entriesThisCycle: this.runtime.postReconcileProbation?.entriesThisCycle || 0
+    });
+    exchangeSafetySummary.postReconcileProbation = postReconcileProbation;
     const paperLearningSummary = summarizePaperLearning(this.runtime.ops?.paperLearning || this.runtime.paperLearning || {});
     const adaptationSummary = summarizeAdaptationHealth(this.runtime.adaptation || this.buildAdaptationHealthSnapshot(referenceNow));
     const offlineTrainerSummary = summarizeOfflineTrainer(this.runtime.offlineTrainer || {});
@@ -25563,6 +25588,8 @@ export class TradingBot {
       },
       lifecycle: summarizeOrderLifecycle(this.runtime.orderLifecycle || {}),
       alerts: alertsSummary,
+      exchangeSafety: exchangeSafetySummary,
+      postReconcileProbation,
       analysis: {
         lastError: this.runtime.lastAnalysisError || null
       },
@@ -25623,7 +25650,7 @@ export class TradingBot {
         selfHeal: summarizeSelfHeal(currentSafety.selfHealState),
         venueConfirmation: summarizeVenueConfirmation(this.runtime.venueConfirmation || {}),
         exchangeTruth: summarizeExchangeTruth(this.runtime.exchangeTruth || {}),
-        exchangeSafety: summarizeExchangeSafety(this.runtime.exchangeSafety || {}),
+        exchangeSafety: exchangeSafetySummary,
         orderLifecycle: summarizeOrderLifecycle(this.runtime.orderLifecycle || {}),
         executionIntents: summarizeExecutionIntentLedger(this.runtime.orderLifecycle?.executionIntentLedger || {}),
         lifecycleInvariants: summarizeLifecycleInvariants({
@@ -25669,6 +25696,7 @@ export class TradingBot {
           rootBlockedSymbols: rootBlockerSummary.blockedSymbols,
           canTradeOtherSymbols: exchangeSafetySummary.canTradeOtherSymbols !== false,
           autoReconcileSummary: exchangeSafetySummary.autoReconcileSummary || null,
+          postReconcileProbation,
           rootBlockerPriority: exchangeSafetySummary.rootBlockerPriority || null,
           reconcileTimeline
         },
