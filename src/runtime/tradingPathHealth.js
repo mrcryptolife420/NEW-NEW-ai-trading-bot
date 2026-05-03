@@ -71,6 +71,7 @@ function isStreamConnectivityAuthoritative(runtimeState = {}, streamStatus = {})
 
 export function normalizeDashboardFreshness(snapshot = {}, now = new Date().toISOString(), config = {}) {
   const source = objectOrFallback(snapshot, {});
+  const hasSnapshotPayload = Object.keys(source).length > 0;
   const nowMs = timestampMs(now);
   const maxAgeMs = Math.max(30_000, Number(config.dashboardSnapshotStaleMs || config.dashboardFreshnessStaleMs || 180_000));
   const lastUpdatedAt = latestTimestamp(
@@ -95,7 +96,7 @@ export function normalizeDashboardFreshness(snapshot = {}, now = new Date().toIS
   const staleSnapshot = snapshotAgeMs != null && snapshotAgeMs > maxAgeMs;
   const staleData = dataAgeMs != null && dataAgeMs > maxAgeMs * 2;
   const staleReason = missingTimestamp
-    ? "missing_snapshot_timestamp"
+    ? (hasSnapshotPayload ? "missing_snapshot_timestamp" : "dashboard_snapshot_unavailable")
     : staleSnapshot
       ? "dashboard_snapshot_stale"
       : staleData
@@ -268,6 +269,7 @@ export function buildTradingPathHealth({
   const uniqueBlockers = [...new Set(blockingReasons.filter(Boolean))];
   const uniqueStale = [...new Set(staleSources.filter(Boolean))];
   const displayOnlyStaleSources = new Set([
+    "dashboard_snapshot_unavailable",
     "missing_snapshot_timestamp",
     "dashboard_snapshot_stale",
     "dashboard_data_stale",
@@ -301,6 +303,8 @@ export function buildTradingPathHealth({
         ? "inspect_scan_cycle_and_candidate_generation"
         : uniqueStale.includes("readmodel_snapshot_stale")
           ? "run_readmodel_rebuild"
+          : uniqueStale.includes("dashboard_snapshot_unavailable")
+            ? "start_dashboard_or_fetch_snapshot"
           : uniqueStale.includes("dashboard_polling_error") || uniqueStale.includes("dashboard_polling_stale")
             ? "restart_dashboard_or_check_frontend_polling"
             : "monitor_next_cycle";

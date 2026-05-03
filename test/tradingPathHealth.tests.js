@@ -102,7 +102,7 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     }, now, {});
     assert.equal(fresh.fresh, true);
     assert.equal(stale.staleReason, "dashboard_snapshot_stale");
-    assert.equal(missing.staleReason, "missing_snapshot_timestamp");
+    assert.equal(missing.staleReason, "dashboard_snapshot_unavailable");
     assert.equal(rebuilt.fresh, true);
   });
 
@@ -220,9 +220,35 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     });
     assert.equal(health.status, "degraded");
     assert.deepEqual(health.blockingReasons, []);
-    assert.ok(health.staleSources.includes("missing_snapshot_timestamp"));
+    assert.ok(health.staleSources.includes("dashboard_snapshot_unavailable"));
     assert.ok(health.staleSources.includes("readmodel_snapshot_stale"));
     assert.equal(health.nextAction, "run_readmodel_rebuild");
+  });
+
+  await runCheck("missing dashboard snapshot reports explicit operator action", async () => {
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } },
+        latestDecisions: [{ symbol: "BTCUSDT", marketData: { status: "ready" } }]
+      },
+      dashboardSnapshot: {},
+      feedSummary: {
+        status: "ready",
+        symbolsRequested: 1,
+        symbolsReady: 1,
+        missingSymbols: [],
+        staleSources: [],
+        lastSuccessfulAggregationAt: "2026-05-03T11:59:30.000Z"
+      },
+      readmodelSummary: { status: "ready", journalRefreshedAt: "2026-05-03T11:59:20.000Z" }
+    });
+    assert.equal(health.status, "degraded");
+    assert.deepEqual(health.blockingReasons, []);
+    assert.ok(health.staleSources.includes("dashboard_snapshot_unavailable"));
+    assert.equal(health.nextAction, "start_dashboard_or_fetch_snapshot");
   });
 
   await runCheck("readmodel freshness uses latest journal refresh over older rebuild timestamp", async () => {
