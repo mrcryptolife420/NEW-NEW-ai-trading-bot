@@ -250,11 +250,29 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
   });
 
   await runCheck("exit plan hints match setup-specific invalidation logic", async () => {
-    assert.equal(buildExitPlanHint({ setupType: "trend_continuation" }).trailActivationHint, "activate_only_after_favorable_move");
-    assert.equal(buildExitPlanHint({ setupType: "mean_reversion" }).partialTakeProfitHint, "take_partial_near_vwap_or_range_mid");
-    assert.equal(buildExitPlanHint({ setupType: "breakout_retest" }).hardInvalidation, "retest_low_lost");
-    assert.equal(buildExitPlanHint({ setupType: "liquidity_sweep_reclaim" }).hardInvalidation, "sweep_low_lost");
-    assert.equal(buildExitPlanHint({ setupType: "vwap_reclaim" }).hardInvalidation, "vwap_reclaim_lost");
+    const trend = buildExitPlanHint({ setupType: "trend_continuation", features: { atrPct: 0.012 } });
+    const meanReversion = buildExitPlanHint({ setupType: "mean_reversion" });
+    const breakout = buildExitPlanHint({ setupType: "breakout_retest" });
+    const sweep = buildExitPlanHint({ setupType: "liquidity_sweep_reclaim" });
+    const vwap = buildExitPlanHint({ setupType: "vwap_reclaim" });
+    const thesisFallback = buildExitPlanHint({ thesis: { setupType: "breakout_retest" } });
+    const missing = buildExitPlanHint({ setupType: undefined, features: { atrPct: Number.NaN }, config: { defaultTimeStopMinutes: Number.NaN } });
+
+    assert.equal(trend.trailActivationHint, "activate_only_after_favorable_move");
+    assert.equal(trend.initialStopType, "structure_low_or_atr_trailing_buffer");
+    assert.equal(trend.structureStopHint, "below_structure_low_or_atr_buffer");
+    assert.equal(trend.stopBuffer, "120bps_atr_buffer");
+    assert.equal(meanReversion.partialTakeProfitHint, "take_partial_near_vwap_or_range_mid");
+    assert.equal(meanReversion.targetHint, "vwap_or_range_mid");
+    assert.equal(breakout.hardInvalidation, "retest_low_lost_or_back_inside_range");
+    assert.equal(breakout.structureStopHint, "below_retest_low_or_back_inside_prior_range");
+    assert.equal(sweep.hardInvalidation, "sweep_low_lost");
+    assert.equal(sweep.structureStopHint, "below_sweep_low");
+    assert.equal(vwap.hardInvalidation, "vwap_reclaim_lost");
+    assert.equal(vwap.structureStopHint, "below_vwap_or_reclaim_level");
+    assert.equal(thesisFallback.hardInvalidation, "retest_low_lost_or_back_inside_range");
+    assertFiniteTree(assert, missing);
+    assert.equal(missing.diagnosticOnly, true);
   });
 
   await runCheck("portfolio crowding supports multiple positions while blocking duplicate symbol", async () => {

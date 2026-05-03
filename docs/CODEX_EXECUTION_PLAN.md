@@ -294,18 +294,20 @@ Gebruik bestaande module indien aanwezig:
 
 Regels:
 
-- [ ] Trend continuation: trailing na favorable move.
-- [ ] Trend continuation: stop onder structure low / ATR.
-- [ ] Breakout retest: invalidation onder retest low of terug in range.
-- [ ] Mean reversion: TP rond VWAP/range mid.
-- [ ] Liquidity sweep: invalidation onder sweep low.
-- [ ] VWAP reclaim: invalidation onder VWAP/reclaim level.
+- [x] Trend continuation: trailing na favorable move.
+- [x] Trend continuation: stop onder structure low / ATR.
+- [x] Breakout retest: invalidation onder retest low of terug in range.
+- [x] Mean reversion: TP rond VWAP/range mid.
+- [x] Liquidity sweep: invalidation onder sweep low.
+- [x] VWAP reclaim: invalidation onder VWAP/reclaim level.
 
 Acceptatie:
 
-- [ ] Tests toegevoegd.
-- [ ] Output fallback-safe.
-- [ ] Geen live execution behavior gewijzigd.
+- [x] Tests toegevoegd.
+- [x] Output fallback-safe.
+- [x] Geen live execution behavior gewijzigd.
+
+Notitie 2026-05-03: `src/strategy/exitPlanHints.js` versterkt met expliciete `structureStopHint`, `atrStopHint` en `targetHint` per setup-type. Tests dekken trend, breakout retest, mean reversion, liquidity sweep, VWAP reclaim, thesis fallback en missing/NaN input. Diagnostic-only; geen live execution behavior gewijzigd.
 
 ---
 
