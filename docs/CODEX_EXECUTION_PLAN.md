@@ -455,50 +455,52 @@ Doel: bestaande learningmodules verbinden zodat de bot beter leert van trades, v
 
 Maak of update:
 
-- [ ] `src/runtime/learningEvidencePipeline.js`.
+- [x] `src/runtime/learningEvidencePipeline.js`.
 
 Verbind indien beschikbaar:
 
-- [ ] setupThesis / tradeThesis.
-- [ ] exitQuality.
-- [ ] vetoOutcome.
-- [ ] failureLibrary.
-- [ ] regimeConfusion.
-- [ ] tradeAutopsy.
-- [ ] tradeAttribution.
-- [ ] paperLiveParity.
+- [x] setupThesis / tradeThesis.
+- [x] exitQuality.
+- [x] vetoOutcome.
+- [x] failureLibrary.
+- [x] regimeConfusion.
+- [x] tradeAutopsy.
+- [x] tradeAttribution.
+- [x] paperLiveParity.
 
 Output:
 
-- [ ] `decisionId`.
-- [ ] `tradeId`.
-- [ ] `symbol`.
-- [ ] `setupType`.
-- [ ] `thesis`.
-- [ ] `exitQuality`.
-- [ ] `vetoOutcome`.
-- [ ] `failureMode`.
-- [ ] `regimeOutcome`.
-- [ ] `paperLiveParity`.
-- [ ] `replayPriority`.
-- [ ] `recommendedAction`.
-- [ ] `confidence`.
+- [x] `decisionId`.
+- [x] `tradeId`.
+- [x] `symbol`.
+- [x] `setupType`.
+- [x] `thesis`.
+- [x] `exitQuality`.
+- [x] `vetoOutcome`.
+- [x] `failureMode`.
+- [x] `regimeOutcome`.
+- [x] `paperLiveParity`.
+- [x] `replayPriority`.
+- [x] `recommendedAction`.
+- [x] `confidence`.
 
 Tests:
 
-- [ ] Winning trade.
-- [ ] Losing trade.
-- [ ] Bad veto.
-- [ ] Reconcile uncertainty.
-- [ ] Early exit.
-- [ ] Execution drag.
-- [ ] Missing data fallback.
+- [x] Winning trade.
+- [x] Losing trade.
+- [x] Bad veto.
+- [x] Reconcile uncertainty.
+- [x] Early exit.
+- [x] Execution drag.
+- [x] Missing data fallback.
 
 Acceptatie:
 
-- [ ] Diagnostics/learning-only.
-- [ ] Geen automatische live promotie.
-- [ ] `npm test` slaagt.
+- [x] Diagnostics/learning-only.
+- [x] Geen automatische live promotie.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-03: P7.1 is afgerond door `src/runtime/learningEvidencePipeline.js` uit te breiden met `symbol`, `tradeAttribution`, `paperLiveParity` en bounded `confidence`. Bestaande analyticsmodules blijven read-only gekoppeld; geen live execution/risk behavior gewijzigd. `test/tradingQualityUpgrade.tests.js` dekt win/loss/bad-veto/reconcile/early-exit/execution-drag/missing-data; `npm test` geslaagd.
 
 ---
 

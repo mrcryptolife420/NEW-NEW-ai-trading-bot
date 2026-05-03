@@ -398,11 +398,21 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
     const win = buildLearningEvidenceRecord({
       decision: { decisionId: "d1", symbol: "BTCUSDT", strategySummary: { family: "trend_following" }, regime: "trend_up" },
       trade: { id: "t1", symbol: "BTCUSDT", pnlPct: 0.02, maximumFavorableExcursionPct: 0.025, exitEfficiencyPct: 0.8 },
-      marketPath: { closeReturnPct: 0.02, maxFavorableMovePct: 0.025, maxAdverseMovePct: -0.003 }
+      marketPath: { closeReturnPct: 0.02, maxFavorableMovePct: 0.025, maxAdverseMovePct: -0.003 },
+      tradeAttribution: { strategy: "ema_trend" },
+      paperLiveParity: { status: "diagnostic_only", parityScore: 0.9 }
     });
     const loss = buildLearningEvidenceRecord({
       decision: { decisionId: "d2", symbol: "ETHUSDT", reasons: ["late_entry"] },
       trade: { id: "t2", symbol: "ETHUSDT", pnlPct: -0.01, maximumFavorableExcursionPct: 0.02 }
+    });
+    const earlyExit = buildLearningEvidenceRecord({
+      decision: { decisionId: "d2b", symbol: "BNBUSDT" },
+      trade: { id: "t2b", symbol: "BNBUSDT", pnlPct: 0.01, maximumFavorableExcursionPct: 0.04, exitEfficiencyPct: 0.2 }
+    });
+    const executionDrag = buildLearningEvidenceRecord({
+      decision: { decisionId: "d2c", symbol: "ADAUSDT" },
+      trade: { id: "t2c", symbol: "ADAUSDT", pnlPct: -0.001, executionDragBps: 35 }
     });
     const badVeto = buildLearningEvidenceRecord({
       decision: { decisionId: "d3", symbol: "SOLUSDT", reasons: ["model_confidence_too_low"] },
@@ -413,11 +423,21 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
       reconcileSummary: { manualReviewRequired: true }
     });
     const missing = buildLearningEvidenceRecord({});
-    const summary = summarizeLearningEvidence([win, loss, badVeto, reconcile, missing]);
+    const summary = summarizeLearningEvidence([win, loss, earlyExit, executionDrag, badVeto, reconcile, missing]);
+    assert.equal(win.symbol, "BTCUSDT");
     assert.equal(win.exitQuality.label, "good_exit");
+    assert.equal(win.tradeAttribution.strategy, "ema_trend");
+    assert.equal(win.paperLiveParity.status, "diagnostic_only");
+    assert.ok(win.confidence > 0 && win.confidence <= 1);
     assert.equal(loss.failureMode.failureMode, "late_entry");
+    assert.equal(earlyExit.exitQuality.label, "early_exit");
+    assert.equal(earlyExit.recommendedAction, "review_exit_quality_and_trade_path");
+    assert.equal(executionDrag.failureMode.failureMode, "execution_drag");
     assert.equal(badVeto.vetoOutcome.label, "bad_veto");
     assert.equal(reconcile.failureMode.failureMode, "reconcile_uncertainty");
+    assert.equal(reconcile.recommendedAction, "resolve_reconcile_uncertainty_before_policy_changes");
+    assert.equal(missing.symbol, null);
+    assert.equal(missing.confidence > 0, true);
     assert.equal(summary.status, "ready");
     assert.equal(summary.topReplayCandidates[0].packType, "reconcile_uncertainty");
   });
