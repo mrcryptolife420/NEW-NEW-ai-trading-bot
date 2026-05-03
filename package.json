@@ -31,9 +31,17 @@
     "dashboard": "node src/cli.js dashboard",
     "service:windows": ".\\Start-BotService.cmd",
     "install:windows": ".\\Install-Windows11.cmd",
-    "test": "node test/run.js"
+    "test": "node test/run.js",
+    "lint": "eslint src test scripts --max-warnings=0",
+    "format:check": "prettier --check package.json package-lock.json eslint.config.js .prettierrc.json",
+    "coverage": "c8 node test/run.js"
   },
   "dependencies": {
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "c8": "^11.0.0",
+    "eslint": "^10.3.0",
+    "prettier": "^3.8.3"
   }
 }

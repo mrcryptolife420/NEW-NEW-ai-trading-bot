@@ -626,15 +626,19 @@ Doel: codekwaliteit en CI verbeteren zonder trading behavior te wijzigen.
 
 Voeg toe indien ontbrekend:
 
-- [ ] `eslint`.
-- [ ] `prettier`.
-- [ ] `c8`.
+- [x] `eslint`.
+- [x] `prettier`.
+- [x] `c8`.
 
 Scripts:
 
-- [ ] `lint`.
-- [ ] `format:check`.
-- [ ] `coverage`.
+- [x] `lint`.
+- [x] `format:check`.
+- [x] `coverage`.
+
+Status: completed
+Notitie: lightweight ESLint/Prettier/c8 tooling toegevoegd zonder runtime trading behavior te wijzigen.
+Verificatie: `npm run lint`, `npm run format:check` en `npm test` slagen.
 
 ## 10.2 CI
 
