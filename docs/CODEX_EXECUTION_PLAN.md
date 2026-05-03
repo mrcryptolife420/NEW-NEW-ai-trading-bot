@@ -613,6 +613,136 @@ Acceptatie:
 - [ ] ...
 ```
 
+## B1 — Feature provenance en decision input lineage
+
+Bron: nieuwe analyse / trading improvement
+Status: proposed
+
+Doel: elke decision moet kunnen aantonen welke data, features, config en timestamps zijn gebruikt.
+
+- [ ] Maak of update `src/runtime/decisionInputLineage.js`.
+- [ ] Voeg per decision `featureSetId`, `configHash`, `dataHash`, `marketSnapshotAt`, `featureComputedAt` en `sourceFreshness` toe.
+- [ ] Voeg warnings toe bij missing/stale feature timestamps.
+- [ ] Verbind met backtest/replay integrity waar veilig.
+- [ ] Voeg dashboard/readmodel summary toe: `decisionInputLineageSummary`.
+- [ ] Tests toevoegen voor fresh input, stale input, missing timestamp, changed configHash en replay hash mismatch.
+- [ ] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md` of `docs/DATA_INTEGRITY.md`.
+
+Acceptatie:
+
+- [ ] Decisions zijn traceerbaar naar input data en config.
+- [ ] Missing/stale provenance versoepelt live entries niet.
+- [ ] `npm test` slaagt.
+
+## B2 — Canary release gates voor strategie- en parameterwijzigingen
+
+Bron: nieuwe analyse / safety improvement
+Status: proposed
+
+Doel: nieuwe strategy parameters of model changes mogen niet direct normale live exposure krijgen.
+
+- [ ] Maak of update `src/runtime/canaryReleaseGate.js`.
+- [ ] Definieer release states: `shadow`, `paper`, `canary`, `limited_live`, `normal`, `rollback_recommended`.
+- [ ] Vereis minimum samples, paper/live parity en anti-overfit pass voordat promotie mogelijk is.
+- [ ] Verbind met `antiOverfitGovernor` en `paperLiveParity` waar veilig.
+- [ ] Voeg read-only CLI output toe: `node src/cli.js canary:status` indien passend.
+- [ ] Tests toevoegen voor low samples, paper-only evidence, failed parity, passed canary en rollback recommendation.
+- [ ] Docs bijwerken in `docs/OPERATOR_COMMANDS.md`.
+
+Acceptatie:
+
+- [ ] Geen automatische live promotie.
+- [ ] Canary gate is diagnostics/governance-first.
+- [ ] Live safety blijft gelijk of strenger.
+- [ ] `npm test` slaagt.
+
+## B3 — Alert escalation en operator action queue
+
+Bron: nieuwe analyse / operator improvement
+Status: proposed
+
+Doel: alerts moeten niet alleen getoond worden, maar prioriteit, eigenaar en aanbevolen actie krijgen.
+
+- [ ] Maak of update `src/runtime/operatorActionQueue.js`.
+- [ ] Normaliseer alerts naar `info`, `low`, `medium`, `high`, `critical`.
+- [ ] Voeg `recommendedAction`, `urgency`, `blocking`, `createdAt`, `lastSeenAt` en `dedupeKey` toe.
+- [ ] Critical exchange/reconcile/protection alerts moeten entry readiness blokkeren.
+- [ ] Voeg dashboard summary toe: `operatorActionQueueSummary`.
+- [ ] Voeg CLI output toe: `node src/cli.js actions:list` indien passend.
+- [ ] Tests toevoegen voor dedupe, escalation, resolved alerts en critical blocking.
+- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md`.
+
+Acceptatie:
+
+- [ ] Operator ziet concrete acties in plaats van alleen statuslabels.
+- [ ] Critical alerts blokkeren entries.
+- [ ] Geen force unlock of live safety versoepeling.
+- [ ] `npm test` slaagt.
+
+## B4 — Exchange adapter contract tests
+
+Bron: nieuwe analyse / execution safety
+Status: proposed
+
+Doel: paper, demo en live exchange adapters moeten hetzelfde contract volgen zonder echte exchange-mutaties in tests.
+
+- [ ] Maak of update `test/execution/exchangeAdapterContract.tests.js`.
+- [ ] Definieer contract voor place order, cancel order, fetch open orders, fetch balances, fetch recent trades en symbol filters.
+- [ ] Test paper/demo adapters met fake exchange responses.
+- [ ] Test error mapping voor rate limits, minNotional, precision errors, insufficient balance en unknown order.
+- [ ] Test dat live adapter in tests nooit echte orders verstuurt.
+- [ ] Voeg fixtures toe voor Binance-like responses.
+- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md` of `docs/EXECUTION_SAFETY.md`.
+
+Acceptatie:
+
+- [ ] Adapter contract is testbaar zonder Binance secrets.
+- [ ] Paper/demo/live behavior divergeert niet stil.
+- [ ] `npm test` slaagt.
+
+## B5 — Model confidence calibration monitor
+
+Bron: nieuwe analyse / AI quality improvement
+Status: proposed
+
+Doel: model confidence moet gekalibreerd worden; hoge confidence mag niet structureel slechte trades opleveren zonder waarschuwing.
+
+- [ ] Maak of update `src/ai/confidenceCalibration.js`.
+- [ ] Bereken calibration buckets voor confidence ranges.
+- [ ] Meet expected vs realized win/outcome per bucket.
+- [ ] Voeg warnings toe bij overconfidence en underconfidence.
+- [ ] Verbind met `antiOverfitGovernor` zodat slechte calibration promotie blokkeert.
+- [ ] Voeg dashboard summary toe: `confidenceCalibrationSummary`.
+- [ ] Tests toevoegen voor calibrated, overconfident, underconfident en low sample cases.
+- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Acceptatie:
+
+- [ ] Calibration is diagnostics/governance-first.
+- [ ] Slechte calibration kan promotie blokkeren maar forceert geen live trade wijzigingen.
+- [ ] `npm test` slaagt.
+
+## B6 — Scenario stress testing voor portfolio en open posities
+
+Bron: nieuwe analyse / risk improvement
+Status: proposed
+
+Doel: simuleer portfolio-impact bij BTC dump, volatility spike, liquidity drain en exchange data degradation.
+
+- [ ] Maak of update `src/runtime/portfolioScenarioStress.js`.
+- [ ] Scenario's: `btc_dump`, `eth_dump`, `alt_liquidity_drain`, `spread_spike`, `volatility_spike`, `data_stale`, `fee_slippage_spike`.
+- [ ] Output bevat estimated drawdown, affected positions, protection health en recommendedAction.
+- [ ] Verbind met `portfolioCrowding` en `safetySnapshot` waar veilig.
+- [ ] Voeg dashboard summary toe: `portfolioScenarioStressSummary`.
+- [ ] Tests toevoegen voor empty portfolio, diversified portfolio, crowded portfolio en missing prices.
+- [ ] Docs bijwerken in `docs/RISK_MANAGEMENT.md` indien aanwezig, anders `docs/OPERATOR_COMMANDS.md`.
+
+Acceptatie:
+
+- [ ] Stress test is read-only/diagnostics.
+- [ ] Geen live execution behavior gewijzigd.
+- [ ] `npm test` slaagt.
+
 ---
 
 # Codex werkprotocol
