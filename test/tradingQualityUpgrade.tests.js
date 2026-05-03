@@ -21,6 +21,7 @@ import { buildLearningEvidenceRecord, summarizeLearningEvidence } from "../src/r
 import { buildTradeThesis } from "../src/runtime/tradeThesis.js";
 import { evaluateAntiOverfitGovernor } from "../src/ai/antiOverfitGovernor.js";
 import { normalizeDashboardSnapshotPayload } from "../src/runtime/dashboardPayloadNormalizers.js";
+import { clampFinite, safeNumber, safeRatio } from "../src/utils/safeMath.js";
 
 function candles(count = 120, { trend = 0.1, volume = 100 } = {}) {
   let price = 100;
@@ -52,6 +53,28 @@ function assertFiniteTree(assert, value, path = "value") {
 }
 
 export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
+  await runCheck("safe math helpers keep missing zero and extreme values finite", async () => {
+    const values = [
+      safeNumber(Number.NaN, 4),
+      safeNumber(Infinity, 3),
+      safeNumber("12.5", 0),
+      safeRatio(1, 0, 7),
+      safeRatio(Number.POSITIVE_INFINITY, 2, 8),
+      safeRatio(6, 3, 0),
+      clampFinite(999, -2, 2, 0),
+      clampFinite(Number.NaN, -2, 2, 1),
+      clampFinite(0.5, Number.NaN, Number.POSITIVE_INFINITY, 0)
+    ];
+    for (const value of values) {
+      assert.equal(Number.isFinite(value), true);
+    }
+    assert.equal(values[0], 4);
+    assert.equal(values[3], 7);
+    assert.equal(values[5], 2);
+    assert.equal(values[6], 2);
+    assert.equal(values[7], 1);
+  });
+
   await runCheck("advanced indicators are fallback-safe for empty short normal and extreme input", async () => {
     const normal = candles();
     const extreme = candles(80, { trend: 8, volume: 1_000_000 });

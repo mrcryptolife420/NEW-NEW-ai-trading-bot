@@ -506,6 +506,88 @@ export function evaluateExchangeSafetyUnlock({
   };
 }
 
+export function explainExchangeSafetyBlock({
+  runtimeState = {},
+  positions = runtimeState.openPositions || [],
+  intents = listExecutionIntents(runtimeState, { unresolvedOnly: true }),
+  alerts = runtimeState.alerts || runtimeState.ops?.alerts?.items || [],
+  exchangeSummary = runtimeState.exchangeSafety || runtimeState.exchangeTruth || {}
+} = {}) {
+  const blockingReasons = [];
+  const requiredEvidence = [];
+  const criticalAlerts = arr(alerts).filter((alert) => `${alert?.severity || ""}`.toLowerCase() === "critical");
+  const unresolvedIntents = arr(intents).filter((intent) => UNRESOLVED_INTENT_KINDS.has(`${intent?.kind || ""}`.toLowerCase()));
+  const blockingPositions = arr(positions).filter((position) => positionHasBlockingState(position) || !isPositionProtected(position));
+  const exchangeBlocked = Boolean(
+    runtimeState.exchangeTruth?.freezeEntries ||
+    runtimeState.exchangeSafety?.freezeEntries ||
+    runtimeState.exchangeSafety?.globalFreezeEntries ||
+    runtimeState.exchangeSafety?.status === "blocked" ||
+    exchangeSummary.freezeEntries ||
+    exchangeSummary.globalFreezeEntries ||
+    exchangeSummary.status === "blocked"
+  );
+
+  if (exchangeBlocked) {
+    blockingReasons.push("exchange_safety_blocked");
+    requiredEvidence.push("fresh_account_snapshot", "fresh_open_orders_or_user_stream_truth", "recent_trade_consistency");
+  }
+  if (criticalAlerts.length) {
+    blockingReasons.push("critical_alert_active");
+    requiredEvidence.push("critical_alert_resolved");
+  }
+  if (unresolvedIntents.length) {
+    blockingReasons.push("unresolved_execution_intent");
+    requiredEvidence.push("execution_intent_resolved_or_expired");
+  }
+  for (const position of blockingPositions) {
+    const symbol = normalizeSymbol(position.symbol) || "position";
+    const reason = position.manualReviewRequired
+      ? "manual_review_required"
+      : position.reconcileRequired
+        ? "reconcile_required"
+        : "unprotected_position";
+    blockingReasons.push(`${symbol}:${reason}`);
+    if (reason === "unprotected_position") {
+      requiredEvidence.push(`${symbol}:protective_order_or_explicit_unmanaged_state`);
+    } else {
+      requiredEvidence.push(`${symbol}:reconcile_evidence`);
+    }
+  }
+
+  const uniqueReasons = [...new Set(blockingReasons)];
+  const uniqueEvidence = [...new Set(requiredEvidence)];
+  const staleBlockerSuspected = exchangeBlocked
+    && uniqueReasons.length === 1
+    && !blockingPositions.length
+    && !criticalAlerts.length
+    && !unresolvedIntents.length
+    && !arr(exchangeSummary.blockingReasons).length
+    && !exchangeSummary.manualReviewRequired
+    && !exchangeSummary.reconcileRequired;
+  const entryBlocked = uniqueReasons.length > 0;
+  const safeNextAction = !entryBlocked
+    ? "entries_can_resume_if_risk_allows"
+    : staleBlockerSuspected
+      ? "run_reconcile_plan_to_confirm_stale_blocker"
+      : unresolvedIntents.length
+        ? "resolve_or_wait_for_execution_intents"
+        : criticalAlerts.length
+          ? "resolve_critical_alerts"
+          : blockingPositions.some((position) => !isPositionProtected(position) && !position.reconcileRequired && !position.manualReviewRequired)
+            ? "rebuild_or_verify_protection"
+            : "run_reconcile_plan_or_manual_review";
+
+  return {
+    entryBlocked,
+    blockingReasons: uniqueReasons,
+    staleBlockerSuspected,
+    requiredEvidence: uniqueEvidence,
+    safeNextAction,
+    blockingPositions: summarizeBlockingPositions(blockingPositions)
+  };
+}
+
 function findPosition(runtime = {}, action = {}) {
   return arr(runtime.openPositions).find((position) =>
     (action.positionId && position.id === action.positionId) ||

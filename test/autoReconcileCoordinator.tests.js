@@ -3,6 +3,7 @@ import {
   buildAutoReconcilePlan,
   buildExchangeSafetyStatus,
   evaluateExchangeSafetyUnlock,
+  explainExchangeSafetyBlock,
   runAutoReconcilePlan
 } from "../src/execution/autoReconcileCoordinator.js";
 import { beginExecutionIntent } from "../src/execution/executionIntentLedger.js";
@@ -203,6 +204,45 @@ export async function registerAutoReconcileCoordinatorTests({
     assert.equal(status.entryBlocked, true);
     assert.equal(status.blockingPositions[0].symbol, "BTCUSDT");
     assert.equal(status.entryUnlockEligible, false);
+  });
+
+  await runCheck("exchange safety block explanation identifies stale blockers and required evidence", async () => {
+    const stale = explainExchangeSafetyBlock({
+      runtimeState: {
+        exchangeSafety: { status: "blocked", freezeEntries: true },
+        openPositions: []
+      },
+      alerts: [],
+      intents: []
+    });
+    assert.equal(stale.entryBlocked, true);
+    assert.equal(stale.staleBlockerSuspected, true);
+    assert.equal(stale.safeNextAction, "run_reconcile_plan_to_confirm_stale_blocker");
+    assert.ok(stale.requiredEvidence.includes("fresh_account_snapshot"));
+
+    const protectedPositionBlock = explainExchangeSafetyBlock({
+      runtimeState: {
+        openPositions: [{
+          id: "pos-explain",
+          symbol: "ETHUSDT",
+          quantity: 0.3,
+          reconcileRequired: true,
+          lifecycleState: "reconcile_required"
+        }]
+      },
+      alerts: [{ severity: "critical" }],
+      intents: [{ kind: "protection", status: "pending", symbol: "ETHUSDT" }]
+    });
+    assert.equal(protectedPositionBlock.entryBlocked, true);
+    assert.equal(protectedPositionBlock.staleBlockerSuspected, false);
+    assert.ok(protectedPositionBlock.blockingReasons.includes("critical_alert_active"));
+    assert.ok(protectedPositionBlock.blockingReasons.includes("unresolved_execution_intent"));
+    assert.ok(protectedPositionBlock.blockingReasons.includes("ETHUSDT:reconcile_required"));
+    assert.equal(protectedPositionBlock.safeNextAction, "resolve_or_wait_for_execution_intents");
+
+    const clear = explainExchangeSafetyBlock({ runtimeState: { openPositions: [] }, alerts: [], intents: [] });
+    assert.equal(clear.entryBlocked, false);
+    assert.equal(clear.safeNextAction, "entries_can_resume_if_risk_allows");
   });
 
   await runCheck("auto reconcile CLI commands are safe and expose plan status", async () => {
