@@ -188,23 +188,25 @@ Doel: tradingkwaliteit verbeteren zonder live agressiever te maken.
 
 Controleer eerst of helpers al bestaan. Voeg alleen ontbrekende helpers toe in bestaande passende module of `src/strategy/advancedIndicators.js`.
 
-- [ ] `anchoredVwap`.
-- [ ] `emaSlopeStack`.
-- [ ] `relativeVolume`.
-- [ ] `bollingerKeltnerSqueeze`.
-- [ ] `atrPercentile`.
-- [ ] `vwapZScore`.
-- [ ] `obvDivergence`.
-- [ ] `spreadPercentile`.
-- [ ] `orderBookImbalanceStability`.
-- [ ] `slippageConfidenceScore`.
+- [x] `anchoredVwap`.
+- [x] `emaSlopeStack`.
+- [x] `relativeVolume`.
+- [x] `bollingerKeltnerSqueeze`.
+- [x] `atrPercentile`.
+- [x] `vwapZScore`.
+- [x] `obvDivergence`.
+- [x] `spreadPercentile`.
+- [x] `orderBookImbalanceStability`.
+- [x] `slippageConfidenceScore`.
 
 Acceptatie:
 
-- [ ] Alle helpers zijn fallback-safe.
-- [ ] Geen helper geeft `NaN` of `Infinity` terug.
-- [ ] Tests voor lege, korte, normale en extreme input.
-- [ ] Nieuwe features zijn diagnostics/paper/shadow-first.
+- [x] Alle helpers zijn fallback-safe.
+- [x] Geen helper geeft `NaN` of `Infinity` terug.
+- [x] Tests voor lege, korte, normale en extreme input.
+- [x] Nieuwe features zijn diagnostics/paper/shadow-first.
+
+Notitie 2026-05-03: `src/strategy/advancedIndicators.js` bevat alle gevraagde helpers. `test/tradingQualityUpgrade.tests.js` dekt empty/short/normal/extreme fallback-safety; geen live behavior gewijzigd.
 
 ## 3.2 Regime-specific indicator scoring
 
