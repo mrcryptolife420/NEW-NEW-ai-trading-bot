@@ -55,6 +55,17 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       nextAction: null,
       entryUnlockEligible: false
     }),
+    exchangeSafetySummary: objectOrFallback(
+      source.exchangeSafetySummary ||
+        source.exchangeSafety ||
+        source.safety?.exchangeSafety,
+      {
+        status: "unknown",
+        entryBlocked: false,
+        blockingReasons: [],
+        nextAction: "inspect_exchange_safety_status"
+      }
+    ),
     postReconcileProbation: objectOrFallback(
       source.postReconcileProbation ||
         source.exchangeSafety?.postReconcileProbation ||
@@ -74,6 +85,17 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     storageAuditSummary: objectOrFallback(source.storageAuditSummary || source.dataIntegrity?.storageAuditSummary, { status: "unavailable" }),
     recorderIntegritySummary: objectOrFallback(source.recorderIntegritySummary || source.dataIntegrity?.recorderIntegritySummary, { status: "unavailable", issues: [] }),
     dataFreshnessSummary: objectOrFallback(source.dataFreshnessSummary || source.dataIntegrity?.dataFreshnessSummary, { status: "unknown", staleSources: [] }),
+    requestBudgetSummary: objectOrFallback(
+      source.requestBudgetSummary ||
+        source.requestBudget ||
+        source.ops?.requestBudgetSummary ||
+        source.ops?.requestBudget,
+      {
+        status: "unavailable",
+        topCallers: [],
+        warnings: []
+      }
+    ),
     datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
     replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
     tradingQualitySummary: objectOrFallback(source.tradingQualitySummary || source.tradingQuality, {

@@ -480,12 +480,38 @@ export async function registerTradingQualityUpgradeTests({ runCheck, assert }) {
   await runCheck("dashboard normalizer keeps trading quality summary optional", async () => {
     const normalized = normalizeDashboardSnapshotPayload({});
     assert.equal(normalized.tradingQualitySummary.portfolioCrowdingRisk, "unknown");
+    assert.equal(normalized.mode, "paper");
+    assert.equal(normalized.readiness.status, "unknown");
+    assert.equal(normalized.exchangeSafetySummary.status, "unknown");
+    assert.equal(normalized.requestBudgetSummary.status, "unavailable");
+    assert.equal(normalized.dashboardFreshness.fresh, false);
+    assert.equal(normalized.frontendPollingExpectedIntervalMs, 10000);
     const withSummary = normalizeDashboardSnapshotPayload({
+      status: "unexpected_future_status",
+      readiness: { status: "unexpected_future_status" },
+      positions: [{ symbol: "BTCUSDT" }],
+      tradingPathHealth: { status: "blocked", blockingReasons: ["exchange_safety_blocked"], nextAction: "run_reconcile_plan_or_exchange_safety_status" },
+      exchangeSafety: { status: "blocked", entryBlocked: true, nextAction: "reconcile:plan" },
+      postReconcileProbation: { status: "active", remainingProbationSlots: 1 },
+      requestBudgetSummary: { status: "guarded", topCallers: [{ caller: "depth" }] },
+      dashboardFreshness: { fresh: false, staleReason: "dashboard_snapshot_stale" },
+      lastSnapshotError: "fetch_failed",
       tradingQualitySummary: { topSetupType: "breakout_retest", portfolioCrowdingRisk: "medium" },
       learningEvidenceSummary: { status: "ready", count: 2 },
       antiOverfitSummary: { status: "blocked", reasons: ["low_samples"] },
       backtestQualitySummary: { tradeCount: 3, sampleSizeWarning: true }
     });
+    assert.equal(withSummary.status, "unexpected_future_status");
+    assert.equal(withSummary.readiness.status, "unknown");
+    assert.equal(withSummary.positions[0].symbol, "BTCUSDT");
+    assert.equal(withSummary.positions[0].markPrice, undefined);
+    assert.equal(withSummary.tradingPathHealth.blockingReasons[0], "exchange_safety_blocked");
+    assert.equal(withSummary.exchangeSafetySummary.entryBlocked, true);
+    assert.equal(withSummary.exchangeSafetySummary.nextAction, "reconcile:plan");
+    assert.equal(withSummary.postReconcileProbation.remainingProbationSlots, 1);
+    assert.equal(withSummary.requestBudgetSummary.status, "guarded");
+    assert.equal(withSummary.dashboardFreshness.staleReason, "dashboard_snapshot_stale");
+    assert.equal(withSummary.lastSnapshotError, "fetch_failed");
     assert.equal(withSummary.tradingQualitySummary.topSetupType, "breakout_retest");
     assert.equal(withSummary.learningEvidenceSummary.status, "ready");
     assert.equal(withSummary.antiOverfitSummary.status, "blocked");

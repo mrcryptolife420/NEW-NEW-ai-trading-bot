@@ -574,45 +574,47 @@ Doel: dashboard moet exact tonen waarom de bot wel/niet kan traden.
 
 Voeg fallback-safe summaries toe:
 
-- [ ] `tradingPathHealth`.
-- [ ] `exchangeSafetySummary`.
-- [ ] `portfolioCrowdingSummary`.
-- [ ] `indicatorRegimeSummary`.
-- [ ] `learningEvidenceSummary`.
-- [ ] `backtestQualitySummary`.
-- [ ] `antiOverfitSummary`.
-- [ ] `dataFreshnessSummary`.
-- [ ] `requestBudgetSummary`.
+- [x] `tradingPathHealth`.
+- [x] `exchangeSafetySummary`.
+- [x] `portfolioCrowdingSummary`.
+- [x] `indicatorRegimeSummary`.
+- [x] `learningEvidenceSummary`.
+- [x] `backtestQualitySummary`.
+- [x] `antiOverfitSummary`.
+- [x] `dataFreshnessSummary`.
+- [x] `requestBudgetSummary`.
 
 Dashboard moet tonen:
 
-- [ ] Can it trade now?
-- [ ] Why not?
-- [ ] Stale source.
-- [ ] Next action.
-- [ ] Top blocker.
-- [ ] Open position slots.
-- [ ] Portfolio crowding.
-- [ ] Exchange safety.
-- [ ] Post-reconcile status.
-- [ ] Data freshness.
+- [x] Can it trade now?
+- [x] Why not?
+- [x] Stale source.
+- [x] Next action.
+- [x] Top blocker.
+- [x] Open position slots.
+- [x] Portfolio crowding.
+- [x] Exchange safety.
+- [x] Post-reconcile status.
+- [x] Data freshness.
 
 Tests:
 
-- [ ] Empty runtime.
-- [ ] Partial runtime.
-- [ ] Stale runtime.
-- [ ] Blocked exchange safety.
-- [ ] No decisions.
-- [ ] Open positions missing price.
-- [ ] Unknown status.
-- [ ] Polling error fallback.
+- [x] Empty runtime.
+- [x] Partial runtime.
+- [x] Stale runtime.
+- [x] Blocked exchange safety.
+- [x] No decisions.
+- [x] Open positions missing price.
+- [x] Unknown status.
+- [x] Polling error fallback.
 
 Acceptatie:
 
-- [ ] Dashboard crasht niet bij partial data.
-- [ ] Dashboard claimt nooit ready als hard safety blockt.
-- [ ] Operator ziet concrete nextAction.
+- [x] Dashboard crasht niet bij partial data.
+- [x] Dashboard claimt nooit ready als hard safety blockt.
+- [x] Operator ziet concrete nextAction.
+
+Notitie 2026-05-03: P9.1 is afgerond als fallback-safe dashboard/readmodel contract. `src/runtime/dashboardPayloadNormalizers.js` bevat nu expliciete `exchangeSafetySummary` en `requestBudgetSummary` fallbacks naast bestaande trading path, data freshness, learning, quality en post-reconcile summaries. Bestaande `tradingPathHealth` tests dekken stale/no-decision/exchange-safety dominance/polling recovery; `test/tradingQualityUpgrade.tests.js` dekt empty/partial/unknown-status/missing-price summary fallbacks. Geen live behavior gewijzigd; `npm test` geslaagd.
 
 ---
 
