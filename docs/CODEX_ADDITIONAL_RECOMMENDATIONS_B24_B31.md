@@ -1,4 +1,4 @@
-# Codex Additional Recommendations B24-B31
+# Codex Additional Recommendations B24-B39
 
 Deze aanvullende MD hoort bij `docs/CODEX_EXECUTION_PLAN.md`.
 
@@ -216,11 +216,206 @@ Acceptatie:
 
 ---
 
+## B32 — Clock skew, timestamp drift en latency sanity monitor
+
+Bron: nieuwe analyse / runtime and exchange safety improvement  
+Status: proposed  
+Eerste integratie: `governance_only`
+
+Doel:
+De bot moet detecteren wanneer lokale klok, exchange timestamps, candle timestamps of order timestamps uit sync lopen. Crypto execution en Binance-signatures zijn gevoelig voor time drift.
+
+- [ ] Maak of update `src/runtime/clockSkewMonitor.js`.
+- [ ] Meet local clock vs exchange server time, candle timestamp drift, websocket event drift en order ack latency.
+- [ ] Output bevat `clockSkewMs`, `eventLagMs`, `orderAckLatencyMs`, `timestampHealth`, `blockingReasons`, `recommendedAction`.
+- [ ] Verbind met `tradingPathHealth`, `apiDegradationPlanner`, `requestBudget` en `safetySnapshot` waar veilig.
+- [ ] Tests toevoegen voor healthy clock, high skew, stale candle timestamp, delayed websocket events, missing server time en negative timestamp drift.
+- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md`.
+
+Acceptatie:
+
+- [ ] Grote clock skew kan entries blokkeren of manual review adviseren.
+- [ ] Geen force-unlock.
+- [ ] Geen echte Binance calls in tests.
+- [ ] `npm test` slaagt.
+
+---
+
+## B33 — Market data quality score en candle anomaly detector
+
+Bron: nieuwe analyse / market data integrity improvement  
+Status: proposed  
+Eerste integratie: `diagnostics_only`
+
+Doel:
+Candles, tickers en orderbook-data moeten een quality score krijgen zodat slechte data niet stil als betrouwbare input wordt gebruikt.
+
+- [ ] Maak of update `src/market/dataQualityScore.js`.
+- [ ] Detecteer missing candles, duplicate timestamps, zero-volume anomalies, impossible OHLC, extreme gaps, stale tickers en orderbook inconsistencies.
+- [ ] Output bevat `qualityScore`, `anomalies`, `affectedSymbols`, `staleSources`, `recommendedAction`.
+- [ ] Verbind met `decisionInputLineage`, `tradingPathHealth`, `backtestIntegrity` en dashboard summary waar veilig.
+- [ ] Tests toevoegen voor clean candles, missing candle gap, duplicate candle, zero-volume spike, impossible OHLC en stale ticker.
+- [ ] Docs bijwerken in `docs/DATA_INTEGRITY.md` of `docs/TRADING_FEATURE_INVENTORY.md`.
+
+Acceptatie:
+
+- [ ] Slechte data verlaagt confidence of blokkeert diagnostics volgens config.
+- [ ] Missing data versoepelt safety niet.
+- [ ] `npm test` slaagt.
+
+---
+
+## B34 — Feature drift en distribution shift monitor
+
+Bron: nieuwe analyse / AI and signal quality improvement  
+Status: proposed  
+Eerste integratie: `diagnostics_only`
+
+Doel:
+Detecteren wanneer live feature-distributies sterk afwijken van paper/backtest/shadow distributies, zodat model- en strategy-signalen niet blind vertrouwd worden.
+
+- [ ] Maak of update `src/ai/featureDriftMonitor.js`.
+- [ ] Vergelijk live/shadow feature ranges met baseline ranges per regime, setupType en symbol cluster.
+- [ ] Output bevat `driftScore`, `driftedFeatures`, `severity`, `recommendedAction`, `promotionBlocked`.
+- [ ] Verbind met `antiOverfitGovernor`, `confidenceCalibration`, `featureActivationGovernor` en dashboard summary waar veilig.
+- [ ] Tests toevoegen voor no drift, single feature drift, multi-feature drift, missing baseline, low sample en regime-specific drift.
+- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Acceptatie:
+
+- [ ] Hoge drift kan promotie blokkeren of shadow-only adviseren.
+- [ ] Geen automatische live wijziging.
+- [ ] `npm test` slaagt.
+
+---
+
+## B35 — Session, weekend en time-of-day liquidity profile
+
+Bron: nieuwe analyse / crypto market microstructure improvement  
+Status: proposed  
+Eerste integratie: `diagnostics_only`
+
+Doel:
+Crypto handelt 24/7, maar liquidity en spread veranderen sterk per sessie, weekend en rollover/funding windows. De bot moet dit expliciet meten.
+
+- [ ] Maak of update `src/market/sessionLiquidityProfile.js`.
+- [ ] Meet spread, depth, volume, slippage, volatility en fill quality per UTC hour, weekday/weekend en session bucket.
+- [ ] Output bevat `sessionRisk`, `liquidityScore`, `recommendedSizeMultiplier`, `warnings`, `bestExecutionWindowHint`.
+- [ ] Verbind met `liquidityCapacity`, `orderStyleAdvisor`, `entrySizing` en dashboard summary waar veilig.
+- [ ] Tests toevoegen voor weekday liquid session, weekend thin session, funding-window risk, missing history en low sample.
+- [ ] Docs bijwerken in `docs/RISK_MANAGEMENT.md` of `docs/TRADING_FEATURE_INVENTORY.md`.
+
+Acceptatie:
+
+- [ ] Thin sessions kunnen size verlagen of paper/shadow-only adviseren.
+- [ ] Geen automatische live size increase.
+- [ ] `npm test` slaagt.
+
+---
+
+## B36 — Exit ladder analytics en partial take-profit optimizer
+
+Bron: nieuwe analyse / exit quality improvement  
+Status: proposed  
+Eerste integratie: `shadow_only`
+
+Doel:
+Partial take-profit ladders en runner logic moeten geëvalueerd worden per setupType zonder live exits automatisch te wijzigen.
+
+- [ ] Maak of update `src/strategy/exitLadderAnalytics.js`.
+- [ ] Simuleer partial TP ladders, runner percentage, break-even move, trailing activation en time-stop alternatives.
+- [ ] Output bevat `recommendedLadder`, `expectedR`, `drawdownReduction`, `missedUpsideRisk`, `warnings`.
+- [ ] Verbind met `exitQuality`, `exitPlanHints`, `exitIntelligenceV2` en backtest/replay waar veilig.
+- [ ] Tests toevoegen voor trend winner, mean-reversion winner, early exit, late exit, high volatility en missing R data.
+- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Acceptatie:
+
+- [ ] Analytics is shadow/diagnostics-first.
+- [ ] Geen automatische live exit wijziging zonder aparte safety review.
+- [ ] `npm test` slaagt.
+
+---
+
+## B37 — Security, secret exposure en permission audit
+
+Bron: nieuwe analyse / operational security improvement  
+Status: proposed  
+Eerste integratie: `governance_only`
+
+Doel:
+Voorkomen dat secrets, API keys, Telegram tokens, signatures of unsafe permissions in logs, docs, config of tests terechtkomen.
+
+- [ ] Maak of update `src/runtime/securityAudit.js` of `scripts/security-audit.js`.
+- [ ] Controleer redaction coverage, dangerous env examples, logged headers, signatures, API keys, webhook URLs en excessive exchange permissions.
+- [ ] Output bevat `securityStatus`, `findings`, `blockingFindings`, `recommendedAction`.
+- [ ] Voeg CLI command toe: `node src/cli.js security:audit` indien passend.
+- [ ] Tests toevoegen voor redacted API key, redacted secret, redacted webhook, safe logs en unsafe sample detection.
+- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md` of `docs/SECURITY.md`.
+
+Acceptatie:
+
+- [ ] Secrets worden niet gelekt in logs/output/tests.
+- [ ] Unsafe live permissions geven warning/manual review.
+- [ ] Geen live behavior versoepeld.
+- [ ] `npm test` slaagt.
+
+---
+
+## B38 — Dependency, supply-chain en runtime version guard
+
+Bron: nieuwe analyse / engineering and security improvement  
+Status: proposed  
+Eerste integratie: `governance_only`
+
+Doel:
+De bot moet dependency drift, Node-version mismatch en supply-chain risico's zichtbaar maken voordat live/paper automation wordt vertrouwd.
+
+- [ ] Maak of update `scripts/dependency-audit.js` of `src/runtime/dependencyHealth.js`.
+- [ ] Controleer Node version, package-lock freshness, unexpected dependency changes, audit warnings en unsupported runtime.
+- [ ] Output bevat `dependencyHealth`, `nodeVersion`, `warnings`, `blockingReasons`, `recommendedAction`.
+- [ ] Voeg CLI command toe: `node src/cli.js deps:audit` indien passend.
+- [ ] Verbind met `doctor` output waar veilig.
+- [ ] Tests toevoegen voor supported Node, unsupported Node, missing lockfile, unexpected dependency en warning-only audit.
+- [ ] Docs bijwerken in `docs/ENGINEERING.md`.
+
+Acceptatie:
+
+- [ ] CI en operator kunnen dependency/runtime drift zien.
+- [ ] Geen trading behavior gewijzigd.
+- [ ] `npm test` slaagt.
+
+---
+
+## B39 — Decision replay diff en regression comparator
+
+Bron: nieuwe analyse / testing and research improvement  
+Status: proposed  
+Eerste integratie: `governance_only`
+
+Doel:
+Na strategy/risk/config wijzigingen moet Codex kunnen vergelijken of dezelfde historische snapshot andere decisions geeft, en waarom.
+
+- [ ] Maak of update `src/runtime/decisionReplayDiff.js`.
+- [ ] Vergelijk old vs new decision outputs op candidate score, blockers, size, setupType, thesis, risk reasons en exit hints.
+- [ ] Output bevat `changedDecisions`, `riskChanged`, `safetyChanged`, `diffSummary`, `requiresReview`.
+- [ ] Voeg CLI command toe: `node src/cli.js replay:diff` indien passend.
+- [ ] Tests toevoegen voor identical decision, score-only change, blocker change, safety change, missing old snapshot en missing new snapshot.
+- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md` of `docs/ENGINEERING.md`.
+
+Acceptatie:
+
+- [ ] Safety/risk decision changes worden expliciet zichtbaar.
+- [ ] Geen automatische live promotie.
+- [ ] `npm test` slaagt.
+
+---
+
 ## Codex sync-instructie
 
 Wanneer Codex later veilig `docs/CODEX_EXECUTION_PLAN.md` kan aanpassen:
 
-- [ ] Voeg B24-B31 ook toe aan de hoofdroadmap of indexeer dit bestand expliciet in de hoofdroadmap.
+- [ ] Voeg B24-B39 ook toe aan de hoofdroadmap of indexeer dit bestand expliciet in de hoofdroadmap.
 - [ ] Verwijder geen bestaande hoofdroadmap-inhoud.
 - [ ] Markeer niets als `[x]` zonder tests en verificatie.
 - [ ] Houd alle safety-regels uit de hoofdroadmap leidend.
