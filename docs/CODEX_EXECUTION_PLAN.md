@@ -784,24 +784,26 @@ Notitie 2026-05-04: `src/execution/exchangeAdapterContract.js` toegevoegd als pu
 ## B5 — Model confidence calibration monitor
 
 Bron: nieuwe analyse / AI quality improvement
-Status: proposed
+Status: completed
 
 Doel: model confidence moet gekalibreerd worden; hoge confidence mag niet structureel slechte trades opleveren zonder waarschuwing.
 
-- [ ] Maak of update `src/ai/confidenceCalibration.js`.
-- [ ] Bereken calibration buckets voor confidence ranges.
-- [ ] Meet expected vs realized win/outcome per bucket.
-- [ ] Voeg warnings toe bij overconfidence en underconfidence.
-- [ ] Verbind met `antiOverfitGovernor` zodat slechte calibration promotie blokkeert.
-- [ ] Voeg dashboard summary toe: `confidenceCalibrationSummary`.
-- [ ] Tests toevoegen voor calibrated, overconfident, underconfident en low sample cases.
-- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/ai/confidenceCalibration.js`.
+- [x] Bereken calibration buckets voor confidence ranges.
+- [x] Meet expected vs realized win/outcome per bucket.
+- [x] Voeg warnings toe bij overconfidence en underconfidence.
+- [x] Verbind met `antiOverfitGovernor` zodat slechte calibration promotie blokkeert.
+- [x] Voeg dashboard summary toe: `confidenceCalibrationSummary`.
+- [x] Tests toevoegen voor calibrated, overconfident, underconfident en low sample cases.
+- [x] Docs bijwerken in `docs/TRADING_QUALITY.md`.
 
 Acceptatie:
 
-- [ ] Calibration is diagnostics/governance-first.
-- [ ] Slechte calibration kan promotie blokkeren maar forceert geen live trade wijzigingen.
-- [ ] `npm test` slaagt.
+- [x] Calibration is diagnostics/governance-first.
+- [x] Slechte calibration kan promotie blokkeren maar forceert geen live trade wijzigingen.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/ai/confidenceCalibration.js` toegevoegd als pure diagnostics/governance helper. Slechte calibration voedt anti-overfit promotion review en dashboard fallback visibility, zonder runtime threshold/sizing/execution gedrag te wijzigen.
 
 ## B6 — Scenario stress testing voor portfolio en open posities
 

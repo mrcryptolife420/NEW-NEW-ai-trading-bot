@@ -145,6 +145,7 @@ import { registerScopedLearningAndUniverseTests } from "./scopedLearningAndUnive
 import { registerMarketProviderHubTests } from "./marketProviderHub.tests.js";
 import { registerRecoveryProbePolicyTests } from "./recoveryProbePolicy.tests.js";
 import { registerCandidateRankingTests } from "./candidateRanking.tests.js";
+import { registerConfidenceCalibrationTests } from "./confidenceCalibration.tests.js";
 import { registerExecutionFeedbackLearningTests } from "./executionFeedbackLearning.tests.js";
 import { registerExchangeAdapterContractTests } from "./execution/exchangeAdapterContract.tests.js";
 import { registerExecutionSafetyFilterTests } from "./executionSafetyFilters.tests.js";
@@ -32299,6 +32300,11 @@ await registerRecoveryProbePolicyTests({
 });
 
 await registerCandidateRankingTests({
+  runCheck,
+  assert
+});
+
+await registerConfidenceCalibrationTests({
   runCheck,
   assert
 });

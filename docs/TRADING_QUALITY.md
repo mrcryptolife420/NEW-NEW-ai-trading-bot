@@ -12,6 +12,7 @@ This patch adds a diagnostics-first trading-quality layer. It is designed to imp
 - `src/backtest/backtestMetrics.js` computes quality metrics such as expectancy, profit factor, drawdown, average R, fee drag, slippage drag, and sample-size warning.
 - `src/runtime/learningEvidencePipeline.js` connects trade thesis, exit quality, veto outcome, failure library, regime confusion, trade autopsy, and replay-pack priority into one fallback-safe evidence record.
 - `src/ai/antiOverfitGovernor.js` blocks unsafe research/paper proposals such as low-sample threshold relief, size increases based only on recent paper wins, paper-only evidence promoted to live, coupled threshold relief plus bigger size, and promotions when calibration worsens.
+- `src/ai/confidenceCalibration.js` builds diagnostics-first confidence buckets, compares average confidence with realized outcomes, flags overconfidence/underconfidence, and feeds calibration risk into anti-overfit promotion review.
 
 ## Runtime Visibility
 
@@ -24,6 +25,7 @@ Dashboard decision cards can now include `tradingQualitySummary` with:
 - `portfolioCrowdingRisk`
 - `exitPlanHint`
 - `learningEvidenceSummary`
+- `confidenceCalibrationSummary`
 - `antiOverfitSummary`
 - `backtestQualitySummary`
 
@@ -37,3 +39,4 @@ The dashboard normalizer treats the summary as optional, so older snapshots rema
 - Portfolio crowding reduces size or blocks duplicates/extreme crowding; it does not impose a hardcoded one-position mode.
 - Post-reconcile probation continues to use configurable multi-position limits instead of max-one assumptions.
 - Anti-overfit governance is advisory/blocking for proposed changes; it does not auto-promote or auto-apply live changes.
+- Confidence calibration can block model/parameter promotion through governance, but it does not force live threshold, sizing, or execution changes.
