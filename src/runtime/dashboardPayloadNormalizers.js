@@ -98,6 +98,12 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     ),
     datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
     replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
+    decisionInputLineageSummary: objectOrFallback(
+      source.decisionInputLineageSummary ||
+        source.dataIntegrity?.decisionInputLineageSummary ||
+        source.decisionDiagnostics?.inputLineageSummary,
+      { status: "unavailable", total: 0, counts: { fresh: 0, stale: 0, incomplete: 0, unknown: 0 }, warnings: [] }
+    ),
     tradingQualitySummary: objectOrFallback(source.tradingQualitySummary || source.tradingQuality, {
       topSetupType: null,
       regimeFit: { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] },

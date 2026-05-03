@@ -2,6 +2,7 @@ import {
   classifyReasonCategory,
   sortReasonsByRootPriority
 } from "../risk/reasonRegistry.js";
+import { buildDecisionInputLineage } from "./decisionInputLineage.js";
 
 function finiteOrNull(value) {
   const number = Number(value);
@@ -47,7 +48,7 @@ export function normalizeDecisionForAudit(input = {}) {
   const reasons = normalizeReasons(input);
   const sortedReasons = sortReasonsByRootPriority(reasons);
   const rootBlocker = stringOrNull(input.rootBlocker || input.primaryRootBlocker || input.primaryReason) || sortedReasons[0] || null;
-  return {
+  const normalized = {
     decisionId: stringOrNull(input.decisionId || input.id),
     cycleId: stringOrNull(input.cycleId),
     symbol: stringOrNull(input.symbol)?.toUpperCase() || null,
@@ -65,5 +66,21 @@ export function normalizeDecisionForAudit(input = {}) {
     sizing: normalizeObjectNumbers(input.sizing || input.sizingSummary || {}),
     createdAt: stringOrNull(input.createdAt || input.at),
     configHash: stringOrNull(input.configHash)
+  };
+  return {
+    ...normalized,
+    inputLineage: buildDecisionInputLineage({
+      decision: normalized,
+      features: input.features || input.featureVector || input.marketFeatures || {},
+      featureSetId: input.featureSetId,
+      configHash: normalized.configHash,
+      dataHash: input.dataHash,
+      marketSnapshot: input.marketSnapshot,
+      marketSnapshotAt: input.marketSnapshotAt,
+      featureComputedAt: input.featureComputedAt,
+      sourceFreshness: input.sourceFreshness,
+      now: input.now,
+      replayInputHash: input.replayInputHash
+    })
   };
 }

@@ -62,6 +62,22 @@ node src/cli.js storage:audit
 
 `src/utils/seeded.js` provides deterministic random/id helpers for replay and tests only. Do not use these helpers for live execution ids or order ids.
 
+## Decision Input Lineage
+
+`src/runtime/decisionInputLineage.js` records which feature set, config hash, data hash and timestamps were used for a decision.
+
+Tracked fields include:
+
+- `featureSetId`
+- `configHash`
+- `dataHash`
+- `marketSnapshotAt`
+- `featureComputedAt`
+- `sourceFreshness`
+- deterministic `replayInputHash`
+
+Missing or stale timestamps produce warnings such as `missing_feature_computed_timestamp` or `stale_market_snapshot`. These warnings are diagnostics only and must not loosen live entry safety. They are exposed through decision audit normalization and the dashboard fallback summary `decisionInputLineageSummary`.
+
 ## Data Freshness
 
 `src/runtime/dataFreshnessScore.js` scores market, news, recorder and stream timestamps as `fresh`, `stale`, `degraded` or `unknown`.

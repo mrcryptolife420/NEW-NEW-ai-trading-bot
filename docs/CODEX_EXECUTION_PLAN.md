@@ -686,23 +686,26 @@ Acceptatie:
 ## B1 — Feature provenance en decision input lineage
 
 Bron: nieuwe analyse / trading improvement
-Status: proposed
+Status: completed
 
 Doel: elke decision moet kunnen aantonen welke data, features, config en timestamps zijn gebruikt.
 
-- [ ] Maak of update `src/runtime/decisionInputLineage.js`.
-- [ ] Voeg per decision `featureSetId`, `configHash`, `dataHash`, `marketSnapshotAt`, `featureComputedAt` en `sourceFreshness` toe.
-- [ ] Voeg warnings toe bij missing/stale feature timestamps.
-- [ ] Verbind met backtest/replay integrity waar veilig.
-- [ ] Voeg dashboard/readmodel summary toe: `decisionInputLineageSummary`.
-- [ ] Tests toevoegen voor fresh input, stale input, missing timestamp, changed configHash en replay hash mismatch.
-- [ ] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md` of `docs/DATA_INTEGRITY.md`.
+- [x] Maak of update `src/runtime/decisionInputLineage.js`.
+- [x] Voeg per decision `featureSetId`, `configHash`, `dataHash`, `marketSnapshotAt`, `featureComputedAt` en `sourceFreshness` toe.
+- [x] Voeg warnings toe bij missing/stale feature timestamps.
+- [x] Verbind met backtest/replay integrity waar veilig.
+- [x] Voeg dashboard/readmodel summary toe: `decisionInputLineageSummary`.
+- [x] Tests toevoegen voor fresh input, stale input, missing timestamp, changed configHash en replay hash mismatch.
+- [x] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md` of `docs/DATA_INTEGRITY.md`.
 
 Acceptatie:
 
-- [ ] Decisions zijn traceerbaar naar input data en config.
-- [ ] Missing/stale provenance versoepelt live entries niet.
-- [ ] `npm test` slaagt.
+- [x] Decisions zijn traceerbaar naar input data en config.
+- [x] Missing/stale provenance versoepelt live entries niet.
+- [x] `npm test` slaagt.
+
+Status: completed
+Notitie: `decisionInputLineage` toegevoegd als pure diagnostics helper en gekoppeld aan `normalizeDecisionForAudit` plus dashboard fallback summary. Missing/stale provenance geeft alleen warnings en wijzigt geen live entry/risk/executiongedrag.
 
 ## B2 — Canary release gates voor strategie- en parameterwijzigingen
 
@@ -936,7 +939,7 @@ Acceptatie:
 
 - [ ] Slechte symbols worden tijdelijk lager gerankt zonder permanente blacklist tenzij expliciet geconfigureerd.
 - [ ] Gezonde symbols herstellen na clean evidence.
-- [ ] `npm test` slaagt.
+- [x] `npm test` slaagt.
 
 ## B13 — Stablecoin depeg en quote-asset risk monitor
 
@@ -957,7 +960,7 @@ Acceptatie:
 - [ ] Stablecoin stress kan entries conservatiever maken of manual review adviseren.
 - [ ] Geen automatische force-sell of force-unlock.
 - [ ] Missing stablecoin data versoepelt live safety niet.
-- [ ] `npm test` slaagt.
+- [x] `npm test` slaagt.
 
 ## B14 — Cross-exchange divergence en Binance-local price sanity
 
