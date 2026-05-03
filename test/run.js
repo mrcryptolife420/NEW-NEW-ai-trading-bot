@@ -176,6 +176,7 @@ import { registerTradingQualityUpgradeTests } from "./tradingQualityUpgrade.test
 import { registerTradingPathHealthTests } from "./tradingPathHealth.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
+import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32496,6 +32497,11 @@ await registerFeatureActivationGovernorTests({
 });
 
 await registerStopLimitStuckTests({
+  runCheck,
+  assert
+});
+
+await registerStopLimitGapTests({
   runCheck,
   assert
 });

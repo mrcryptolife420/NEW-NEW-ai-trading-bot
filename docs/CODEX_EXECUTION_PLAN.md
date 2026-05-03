@@ -418,18 +418,20 @@ Notitie 2026-05-03: `src/execution/stopLimitStuck.js` toegevoegd als pure execut
 
 ## 6.2 Liquidity-aware stop-limit gap
 
-- [ ] Gap gebaseerd op spread.
-- [ ] Gap gebaseerd op ATR/volatility.
-- [ ] Gap gebaseerd op orderbook depth.
-- [ ] Gap gebaseerd op slippage confidence.
-- [ ] Illiquide coins krijgen bredere stopLimit gap.
+- [x] Gap gebaseerd op spread.
+- [x] Gap gebaseerd op ATR/volatility.
+- [x] Gap gebaseerd op orderbook depth.
+- [x] Gap gebaseerd op slippage confidence.
+- [x] Illiquide coins krijgen bredere stopLimit gap.
 
 Acceptatie:
 
-- [ ] Tests voor liquid symbol.
-- [ ] Tests voor illiquid symbol.
-- [ ] Tests voor high volatility.
-- [ ] Geen live safety versoepeld.
+- [x] Tests voor liquid symbol.
+- [x] Tests voor illiquid symbol.
+- [x] Tests voor high volatility.
+- [x] Geen live safety versoepeld.
+
+Notitie 2026-05-03: `src/execution/stopLimitGap.js` toegevoegd als pure diagnostic helper. De gap gebruikt spread, ATR/volatility, orderbook depth en slippage confidence; illiquide/fragile inputs leveren bredere buffers binnen cap. Nog niet gekoppeld aan live protective order placement, dus geen live OCO-prijswijziging zonder aparte safety review.
 
 ## 6.3 OCO / symbol filter tests
 
