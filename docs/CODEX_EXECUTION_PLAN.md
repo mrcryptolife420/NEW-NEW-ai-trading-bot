@@ -353,19 +353,21 @@ Notitie 2026-05-03: `src/risk/portfolioCrowding.js` uitgebreid met `remainingSlo
 
 ## 5.2 Post-reconcile multi-position
 
-- [ ] Zoek hardcoded max 1 in post-reconcile/probation/risk modules.
-- [ ] Gebruik `POST_RECONCILE_MAX_OPEN_POSITIONS`.
-- [ ] Gebruik `POST_RECONCILE_MAX_NEW_ENTRIES_PER_CYCLE`.
-- [ ] Tweede positie toestaan als limiet 2 is.
-- [ ] Derde positie blokkeren als limiet 2 is.
-- [ ] Na completed probation terug naar `MAX_OPEN_POSITIONS`.
+- [x] Zoek hardcoded max 1 in post-reconcile/probation/risk modules.
+- [x] Gebruik `POST_RECONCILE_MAX_OPEN_POSITIONS`.
+- [x] Gebruik `POST_RECONCILE_MAX_NEW_ENTRIES_PER_CYCLE`.
+- [x] Tweede positie toestaan als limiet 2 is.
+- [x] Derde positie blokkeren als limiet 2 is.
+- [x] Na completed probation terug naar `MAX_OPEN_POSITIONS`.
 
 Acceptatie:
 
-- [ ] Multi-position werkt in gezonde state.
-- [ ] Exchange safety rood blokkeert alle entries.
-- [ ] Reconcile/manual_review/unresolved intent blokkeert alle entries.
-- [ ] `npm test` slaagt.
+- [x] Multi-position werkt in gezonde state.
+- [x] Exchange safety rood blokkeert alle entries.
+- [x] Reconcile/manual_review/unresolved intent blokkeert alle entries.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-03: bestaande `src/risk/postReconcileEntryLimits.js` en `test/postReconcileEntryLimits.tests.js` voldoen aan P5.2. Gerichte inspectie bevestigt config-gestuurde probation-limieten, paper/live size multipliers, post_reconcile_probe tag, exchange-safety/manual-review/unresolved-intent blockers en terugval naar `MAX_OPEN_POSITIONS` na completed probation. Geen codewijziging nodig.
 
 ---
 
