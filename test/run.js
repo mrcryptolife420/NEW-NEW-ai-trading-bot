@@ -197,6 +197,7 @@ import { registerSymbolLifecycleRiskTests } from "./symbolLifecycleRisk.tests.js
 import { registerNewsShockCircuitBreakerTests } from "./newsShockCircuitBreaker.tests.js";
 import { registerOrderStyleAdvisorTests } from "./orderStyleAdvisor.tests.js";
 import { registerSymbolQualityDecayTests } from "./symbolQualityDecay.tests.js";
+import { registerStablecoinRiskTests } from "./stablecoinRisk.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32618,6 +32619,11 @@ await registerOrderStyleAdvisorTests({
 });
 
 await registerSymbolQualityDecayTests({
+  runCheck,
+  assert
+});
+
+await registerStablecoinRiskTests({
   runCheck,
   assert
 });

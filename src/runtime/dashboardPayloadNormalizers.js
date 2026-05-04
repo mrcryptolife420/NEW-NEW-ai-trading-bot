@@ -154,6 +154,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.cryptoRegimeRouterSummary?.newsShockSummary,
       { shockLevel: "none", affectedSymbols: [], entryPenalty: 0, manualReviewRecommended: false, warnings: [] }
     ),
+    stablecoinRiskSummary: objectOrFallback(
+      source.stablecoinRiskSummary ||
+        source.stablecoinRisk ||
+        source.marketContext?.stablecoinRiskSummary ||
+        source.market?.stablecoinRiskSummary,
+      { status: "unavailable", stablecoinRisk: "unknown", affectedQuotes: [], depegBps: 0, warnings: [], entryPenalty: 0, manualReviewRecommended: false }
+    ),
     candidateExplainabilitySummary: objectOrFallback(
       source.candidateExplainabilitySummary ||
         source.explainability?.candidateExplainabilitySummary ||

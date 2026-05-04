@@ -993,22 +993,24 @@ Acceptatie:
 ## B13 — Stablecoin depeg en quote-asset risk monitor
 
 Bron: nieuwe analyse / crypto risk improvement
-Status: proposed
+Status: completed
 
 Doel: USDT/USDC/FDUSD of andere quote-asset risico's detecteren zodat de bot niet blind blijft traden bij stablecoin stress.
 
-- [ ] Maak of update `src/market/stablecoinRisk.js`.
-- [ ] Monitor quote-asset deviation, stablecoin spread, abnormal volume, redemption/depeg headline signals en cross-pair stress.
-- [ ] Output bevat `stablecoinRisk`, `affectedQuotes`, `depegBps`, `warnings`, `entryPenalty`, `manualReviewRecommended`.
-- [ ] Verbind met `safetySnapshot`, `cryptoRegimeRouter` en dashboard summary waar veilig.
-- [ ] Voeg tests toe voor normal peg, mild depeg, severe depeg, missing data en stale price source.
-- [ ] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md` of `docs/RISK_MANAGEMENT.md`.
+- [x] Maak of update `src/market/stablecoinRisk.js`.
+- [x] Monitor quote-asset deviation, stablecoin spread, abnormal volume, redemption/depeg headline signals en cross-pair stress.
+- [x] Output bevat `stablecoinRisk`, `affectedQuotes`, `depegBps`, `warnings`, `entryPenalty`, `manualReviewRecommended`.
+- [x] Verbind met `safetySnapshot`, `cryptoRegimeRouter` en dashboard summary waar veilig.
+- [x] Voeg tests toe voor normal peg, mild depeg, severe depeg, missing data en stale price source.
+- [x] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md` of `docs/RISK_MANAGEMENT.md`.
+
+Notitie 2026-05-04: `src/market/stablecoinRisk.js` toegevoegd als pure quote-asset stressmonitor. De helper detecteert peg-afwijking, spread/volume stress, stale/missing price sources en redemption/depeg headlines. Integratie is conservative diagnostics-only via `safetySnapshot`, `cryptoRegimeRouter` en dashboard-normalizer; geen force-sell, force-unlock of live threshold relief.
 
 Acceptatie:
 
-- [ ] Stablecoin stress kan entries conservatiever maken of manual review adviseren.
-- [ ] Geen automatische force-sell of force-unlock.
-- [ ] Missing stablecoin data versoepelt live safety niet.
+- [x] Stablecoin stress kan entries conservatiever maken of manual review adviseren.
+- [x] Geen automatische force-sell of force-unlock.
+- [x] Missing stablecoin data versoepelt live safety niet.
 - [x] `npm test` slaagt.
 
 ## B14 — Cross-exchange divergence en Binance-local price sanity

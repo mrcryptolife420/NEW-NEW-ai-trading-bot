@@ -20,7 +20,8 @@ export function buildSafetySnapshot({
   recorderSummary = {},
   dashboardFreshness = {},
   portfolioScenarioStressSummary = {},
-  apiDegradationSummary = {}
+  apiDegradationSummary = {},
+  stablecoinRiskSummary = {}
 } = {}) {
   const topRisks = [];
   const criticalAlerts = arr(alerts).filter((alert) => normalizeAlertSeverity(alert) === "critical");
@@ -34,6 +35,9 @@ export function buildSafetySnapshot({
   const apiBlocksEntries = Array.isArray(apiDegradationSummary.blockedActions) && apiDegradationSummary.blockedActions.includes("open_new_entries");
   if (apiBlocksEntries || ["rate_limited", "full_outage", "partial_outage"].includes(apiDegradationSummary.degradationLevel)) {
     topRisks.push("api_degradation");
+  }
+  if (stablecoinRiskSummary.manualReviewRecommended || ["severe", "elevated"].includes(stablecoinRiskSummary.stablecoinRisk)) {
+    topRisks.push("stablecoin_quote_asset_risk");
   }
   const staleData = {
     dashboard: Boolean(dashboardFreshness.stale),
@@ -67,7 +71,9 @@ export function buildSafetySnapshot({
       : liveReadiness.status === "blocked"
         ? liveReadiness.requiredActions || ["review_live_readiness"]
         : topRisks.includes("api_degradation")
-          ? [apiDegradationSummary.recommendedAction || "review_api_degradation"]
+        ? [apiDegradationSummary.recommendedAction || "review_api_degradation"]
+        : topRisks.includes("stablecoin_quote_asset_risk")
+          ? ["review_stablecoin_quote_asset_risk"]
           : topRisks.includes("portfolio_scenario_stress")
           ? [portfolioScenarioStressSummary.recommendedAction || "review_portfolio_stress"]
         : ["monitor"]

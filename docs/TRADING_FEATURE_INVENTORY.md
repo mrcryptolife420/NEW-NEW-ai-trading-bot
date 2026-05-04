@@ -45,6 +45,7 @@ This inventory is code-grounded against `src/strategy/indicators.js`, `src/strat
 | Spread percentile | execution/risk | all | diagnostic/risk | Needs local spread history | yes | diagnostics only | live execution caution only |
 | Order book imbalance stability | orderflow/execution | breakout/reclaim | diagnostic/risk | Requires fresh stream snapshots | yes | diagnostics only | live negative risk only |
 | Slippage confidence score | execution/risk | all | diagnostic/risk | Needs realistic fill/slippage samples | yes | diagnostics only | live execution caution only |
+| Stablecoin quote-asset risk | risk/market data | all | risk/diagnostic | Missing/stale quote data must not be treated as safe | yes | diagnostics/risk only | can only add penalty/manual-review; no force-sell or unlock |
 
 ## Derivatives Context Diagnostics
 
@@ -56,5 +57,11 @@ This inventory is code-grounded against `src/strategy/indicators.js`, `src/strat
 | Liquidation risk | derivatives/orderflow risk | squeeze, crash risk, liquidation magnet | exit/risk diagnostic | Liquidation proximity is noisy without fresh stream/context | yes | diagnostics/risk only | conservative risk only |
 
 `src/market/derivativesContext.js` normalizes existing derivatives provider and market-structure summaries into `derivativesContextSummary`. Missing derivatives data does not block live by default; live safety remains governed by exchange safety, reconcile, readiness and explicit risk policies.
+
+## Stablecoin Quote-Asset Risk
+
+`src/market/stablecoinRisk.js` monitors stablecoin peg deviation, cross-source/spread stress, abnormal volume and depeg/redemption headlines for quote assets such as USDT, USDC and FDUSD. It outputs `stablecoinRisk`, `affectedQuotes`, `depegBps`, `warnings`, `entryPenalty` and `manualReviewRecommended`.
+
+Safety invariant: stablecoin stress can only make diagnostics/risk posture more conservative. It cannot force-sell positions, force-unlock exchange safety, lower live thresholds, or claim missing quote data is safe.
 
 Safety invariant: new positive diagnostics do not loosen live thresholds, exchange safety, reconcile gates, manual review gates, execution intent blockers, or sizing caps.

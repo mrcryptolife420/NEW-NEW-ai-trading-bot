@@ -85,6 +85,7 @@ function deriveSignals({
   universeSummary = {},
   newsSummary = {},
   derivativesContext = {},
+  stablecoinRiskSummary = {},
   features = {}
 } = {}) {
   const leader = text(
@@ -109,6 +110,8 @@ function deriveSignals({
   const bookThinness = finite(orderbookDelta.thinBookScore ?? orderbookDelta.liquidityVacuumScore ?? marketState.liquidityVacuumScore, 0);
   const liquidationRisk = finite(derivativesContext.liquidationRisk?.score ?? derivativesContext.liquidationRisk ?? marketState.liquidationRiskScore, 0);
   const newsRisk = finite(newsSummary.shockLevel ?? newsSummary.newsShockScore ?? newsSummary.riskScore ?? marketState.newsRiskScore, 0);
+  const stablecoinEntryPenalty = finite(stablecoinRiskSummary.entryPenalty ?? marketState.stablecoinEntryPenalty, 0);
+  const stablecoinRisk = text(stablecoinRiskSummary.stablecoinRisk ?? marketState.stablecoinRisk);
 
   return {
     leader,
@@ -127,7 +130,10 @@ function deriveSignals({
     bookThinness,
     liquidationRisk,
     newsRisk,
+    stablecoinEntryPenalty,
+    stablecoinRisk,
     explicitNewsShock: bool(newsSummary.activeShock ?? newsSummary.manualReviewRecommended ?? marketState.newsShock),
+    explicitStablecoinStress: bool(stablecoinRiskSummary.manualReviewRecommended) || ["severe", "elevated"].includes(stablecoinRisk),
     explicitCrashRisk: bool(marketState.crashRiskActive ?? volatilitySummary.crashRiskActive),
     explicitLiquidityVacuum: bool(orderbookDelta.liquidityVacuum ?? marketState.liquidityVacuum)
   };
@@ -137,7 +143,7 @@ function selectRegime(signals) {
   if (signals.explicitNewsShock || signals.newsRisk >= 0.78) {
     return CRYPTO_MARKET_REGIMES.NEWS_SHOCK;
   }
-  if (signals.explicitCrashRisk || signals.crashRisk >= 0.72 || signals.riskOff >= 0.78 || (signals.volatilityStress >= 0.82 && signals.liquidationRisk >= 0.55)) {
+  if (signals.explicitStablecoinStress || signals.explicitCrashRisk || signals.crashRisk >= 0.72 || signals.riskOff >= 0.78 || (signals.volatilityStress >= 0.82 && signals.liquidationRisk >= 0.55)) {
     return CRYPTO_MARKET_REGIMES.CRASH_RISK;
   }
   if (
@@ -186,6 +192,9 @@ function buildWarnings(signals, input) {
   if (signals.choppiness >= 65) {
     warnings.push("choppiness_high");
   }
+  if (signals.explicitStablecoinStress) {
+    warnings.push("stablecoin_quote_asset_stress");
+  }
   return [...new Set(warnings)];
 }
 
@@ -233,7 +242,9 @@ export function routeCryptoMarketRegime(input = {}) {
       depthConfidence: signals.depthConfidence,
       bookThinness: signals.bookThinness,
       liquidationRisk: signals.liquidationRisk,
-      newsRisk: signals.newsRisk
+      newsRisk: signals.newsRisk,
+      stablecoinRisk: signals.stablecoinRisk || "unknown",
+      stablecoinEntryPenalty: signals.stablecoinEntryPenalty
     }
   };
 }
