@@ -925,23 +925,25 @@ Acceptatie:
 ## B10 — News/social shock circuit breaker
 
 Bron: nieuwe analyse / crypto trading improvement
-Status: proposed
+Status: completed
 
 Doel: plotselinge news/social shocks detecteren en entry confidence verlagen of manual review adviseren.
 
-- [ ] Maak of update `src/news/shockCircuitBreaker.js`.
-- [ ] Gebruik bestaande news/eventClassifier/calendarService waar beschikbaar.
-- [ ] Detecteer exchange incident, regulatory news, token exploit/hack, delisting rumor, major listing announcement en abnormal headline velocity.
-- [ ] Output bevat `shockLevel`, `affectedSymbols`, `entryPenalty`, `manualReviewRecommended` en `expiryAt`.
-- [ ] Verbind met dashboard/readmodel summary: `newsShockSummary`.
-- [ ] Tests toevoegen voor hack headline, listing hype, stale news, irrelevant news en missing news provider.
-- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md` of `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/news/shockCircuitBreaker.js`.
+- [x] Gebruik bestaande news/eventClassifier/calendarService waar beschikbaar.
+- [x] Detecteer exchange incident, regulatory news, token exploit/hack, delisting rumor, major listing announcement en abnormal headline velocity.
+- [x] Output bevat `shockLevel`, `affectedSymbols`, `entryPenalty`, `manualReviewRecommended` en `expiryAt`.
+- [x] Verbind met dashboard/readmodel summary: `newsShockSummary`.
+- [x] Tests toevoegen voor hack headline, listing hype, stale news, irrelevant news en missing news provider.
+- [x] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md` of `docs/TRADING_QUALITY.md`.
+
+Notitie 2026-05-04: `src/news/shockCircuitBreaker.js` toegevoegd bovenop bestaande `eventClassifier`. De output is fallback-safe en diagnostics-first; critical shocks kunnen alleen caution/manual-review of expliciete strengere policy ondersteunen, geen live threshold relief.
 
 Acceptatie:
 
-- [ ] Shock breaker is conservative en fallback-safe.
-- [ ] Critical shock kan entries blokkeren als safety policy dit vereist.
-- [ ] `npm test` slaagt.
+- [x] Shock breaker is conservative en fallback-safe.
+- [x] Critical shock kan entries blokkeren als safety policy dit vereist.
+- [x] `npm test` slaagt.
 
 ## B11 — Adaptive order style advisor
 

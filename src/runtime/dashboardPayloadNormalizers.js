@@ -140,6 +140,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.universe?.symbolLifecycleRiskSummary,
       { status: "unavailable", symbols: [], warnings: [] }
     ),
+    newsShockSummary: objectOrFallback(
+      source.newsShockSummary ||
+        source.news?.newsShockSummary ||
+        source.marketContext?.newsShockSummary ||
+        source.cryptoRegimeRouterSummary?.newsShockSummary,
+      { shockLevel: "none", affectedSymbols: [], entryPenalty: 0, manualReviewRecommended: false, warnings: [] }
+    ),
     candidateExplainabilitySummary: objectOrFallback(
       source.candidateExplainabilitySummary ||
         source.explainability?.candidateExplainabilitySummary ||
