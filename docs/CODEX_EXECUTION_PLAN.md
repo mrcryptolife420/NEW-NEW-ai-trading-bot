@@ -971,21 +971,23 @@ Acceptatie:
 ## B12 — Adaptive symbol universe decay en cooldowns
 
 Bron: nieuwe analyse / crypto trading improvement
-Status: proposed
+Status: completed
 
 Doel: symbols die tijdelijk slecht presteren, slechte fills geven of vaak blocked worden automatisch lager ranken.
 
-- [ ] Maak of update `src/runtime/symbolQualityDecay.js`.
-- [ ] Track recent blocked reasons, bad fills, stop_limit_stuck events, poor slippage, low data quality, bad veto outcomes en exit quality.
-- [ ] Output bevat `qualityScore`, `cooldownUntil`, `rankPenalty`, `reasons` en `recoveryConditions`.
-- [ ] Verbind met universeScorer en scanPlanner waar veilig.
-- [ ] Tests toevoegen voor repeated bad fills, repeated blockers, recovery after clean cycles, missing data en no penalty for healthy symbols.
-- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/runtime/symbolQualityDecay.js`.
+- [x] Track recent blocked reasons, bad fills, stop_limit_stuck events, poor slippage, low data quality, bad veto outcomes en exit quality.
+- [x] Output bevat `qualityScore`, `cooldownUntil`, `rankPenalty`, `reasons` en `recoveryConditions`.
+- [x] Verbind met universeScorer en scanPlanner waar veilig.
+- [x] Tests toevoegen voor repeated bad fills, repeated blockers, recovery after clean cycles, missing data en no penalty for healthy symbols.
+- [x] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Notitie 2026-05-04: `src/runtime/symbolQualityDecay.js` toegevoegd als fallback-safe diagnostics-laag. De helper levert `qualityScore`, `rankPenalty`, `cooldownUntil`, redenen, recovery-voorwaarden en expliciete `universeScorerHint`/`scanPlannerHint` zonder live gates, ranking, sizing of exchange-safety te wijzigen. Dashboard-normalizer accepteert optioneel `symbolQualityDecaySummary`.
 
 Acceptatie:
 
-- [ ] Slechte symbols worden tijdelijk lager gerankt zonder permanente blacklist tenzij expliciet geconfigureerd.
-- [ ] Gezonde symbols herstellen na clean evidence.
+- [x] Slechte symbols worden tijdelijk lager gerankt zonder permanente blacklist tenzij expliciet geconfigureerd.
+- [x] Gezonde symbols herstellen na clean evidence.
 - [x] `npm test` slaagt.
 
 ## B13 — Stablecoin depeg en quote-asset risk monitor

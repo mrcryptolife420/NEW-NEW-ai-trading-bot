@@ -140,6 +140,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.universe?.symbolLifecycleRiskSummary,
       { status: "unavailable", symbols: [], warnings: [] }
     ),
+    symbolQualityDecaySummary: objectOrFallback(
+      source.symbolQualityDecaySummary ||
+        source.symbolQualityDecay ||
+        source.marketContext?.symbolQualityDecaySummary ||
+        source.universe?.symbolQualityDecaySummary,
+      { status: "unavailable", trackedSymbols: 0, penalizedCount: 0, coolingDownCount: 0, symbols: [], warnings: [] }
+    ),
     newsShockSummary: objectOrFallback(
       source.newsShockSummary ||
         source.news?.newsShockSummary ||

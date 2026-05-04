@@ -18,6 +18,7 @@ This patch adds a diagnostics-first trading-quality layer. It is designed to imp
 - `src/runtime/strategyRetirementEngine.js` now exposes `buildStrategyLifecycle`, with the compatibility entrypoint `src/runtime/strategyLifecycle.js`. It classifies strategies as `active`, `watch`, `quarantine`, `retired`, `shadow_only`, or `retest_required` from drawdown, bad exits, bad vetoes, calibration, paper/live parity, execution drag, anti-overfit review, and retest evidence. The output is diagnostics-first and does not auto-promote live behavior.
 - `src/runtime/opportunityCostAnalyzer.js` measures time-in-market, stagnant positions, idle capital, missed higher-quality candidates, capital efficiency, and opportunity-cost score. It provides review hints only; it never performs forced exits.
 - `src/news/shockCircuitBreaker.js` adds a conservative news/social shock layer on top of existing event classification. It detects hacks/exploits, delisting or halt risk, regulatory shocks, listing hype, stale news providers, and abnormal headline velocity. Positive news does not loosen live thresholds; critical shocks can only add caution/manual-review or stricter policy behavior when explicitly enabled.
+- `src/runtime/symbolQualityDecay.js` adds adaptive symbol quality decay. It tracks repeated blockers, bad fills, stop-limit-stuck events, poor slippage, low data quality, bad veto outcomes, bad exit quality, and clean recovery evidence. It outputs `qualityScore`, `cooldownUntil`, `rankPenalty`, reasons, recovery conditions, and universe/scan hints. The helper is diagnostics-first and never auto-increases ranking.
 
 ## Runtime Visibility
 
@@ -37,6 +38,7 @@ Dashboard decision cards can now include `tradingQualitySummary` with:
 - `strategyLifecycleSummary`
 - `opportunityCostSummary`
 - `newsShockSummary`
+- `symbolQualityDecaySummary`
 
 The dashboard normalizer treats the summary as optional, so older snapshots remain valid.
 
@@ -54,3 +56,4 @@ The dashboard normalizer treats the summary as optional, so older snapshots rema
 - Strategy lifecycle diagnostics can recommend watch/quarantine/retire/retest states, but they do not automatically promote a strategy to live or bypass exchange safety, reconcile, manual review, unresolved intents, or risk limits.
 - Opportunity-cost diagnostics can recommend exit/trim review under existing exit policy, but they do not force exits, cancel orders, bypass protection, or change live execution behavior.
 - News shock diagnostics can add entry penalty/manual-review recommendations. They do not clear blockers, force entries, or increase live aggressiveness.
+- Symbol quality decay can lower ranking/exposure diagnostics or suggest cooldown review for temporarily weak symbols. It does not blacklist permanently, auto-promote recovered symbols, clear hard safety blockers, or place orders.
