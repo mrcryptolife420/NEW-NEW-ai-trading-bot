@@ -831,24 +831,26 @@ Notitie 2026-05-04: `src/runtime/portfolioScenarioStress.js` toegevoegd als pure
 ## B7 — Crypto derivatives context adapter
 
 Bron: nieuwe analyse / crypto trading improvement
-Status: proposed
+Status: completed
 
 Doel: futures/derivatives context zoals funding, open interest, basis en liquidations gebruiken als diagnostics en risk filter voor spot trading.
 
-- [ ] Maak of update `src/market/derivativesContext.js`.
-- [ ] Voeg provider-interface toe voor funding rate, open interest delta, spot/futures basis en liquidation proximity.
-- [ ] Output bevat `fundingPressure`, `openInterestTrend`, `basisState`, `liquidationRisk`, `warnings` en `confidence`.
-- [ ] Gebruik context eerst alleen als diagnostics/paper/shadow risk input.
-- [ ] Voeg fallback toe als provider/data ontbreekt.
-- [ ] Voeg dashboard summary toe: `derivativesContextSummary`.
-- [ ] Tests toevoegen voor missing provider, extreme funding, rising OI, negative basis en stale data.
-- [ ] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md`.
+- [x] Maak of update `src/market/derivativesContext.js`.
+- [x] Voeg provider-interface toe voor funding rate, open interest delta, spot/futures basis en liquidation proximity.
+- [x] Output bevat `fundingPressure`, `openInterestTrend`, `basisState`, `liquidationRisk`, `warnings` en `confidence`.
+- [x] Gebruik context eerst alleen als diagnostics/paper/shadow risk input.
+- [x] Voeg fallback toe als provider/data ontbreekt.
+- [x] Voeg dashboard summary toe: `derivativesContextSummary`.
+- [x] Tests toevoegen voor missing provider, extreme funding, rising OI, negative basis en stale data.
+- [x] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md`.
 
 Acceptatie:
 
-- [ ] Spot trading wordt niet automatisch agressiever.
-- [ ] Missing derivatives data blokkeert live niet tenzij expliciet safety-config dat vereist.
-- [ ] `npm test` slaagt.
+- [x] Spot trading wordt niet automatisch agressiever.
+- [x] Missing derivatives data blokkeert live niet tenzij expliciet safety-config dat vereist.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: bestaande `derivativesContextProvider` hergebruikt via `src/market/derivativesContext.js`, een pure normalizer voor dashboard/risk diagnostics. Missing data blijft `missingDataBlocksLive=false`; geen execution/risk gate gekoppeld.
 
 ## B8 — Crypto market regime router v2
 

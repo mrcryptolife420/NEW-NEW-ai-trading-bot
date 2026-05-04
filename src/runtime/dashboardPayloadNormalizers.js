@@ -142,6 +142,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.ai?.confidenceCalibrationSummary,
       { status: "unavailable", sampleCount: 0, warnings: [] }
     ),
+    derivativesContextSummary: objectOrFallback(
+      source.derivativesContextSummary ||
+        source.marketContext?.derivativesContextSummary ||
+        source.marketContext?.derivativesContext ||
+        source.market?.derivativesContextSummary,
+      { status: "unavailable", confidence: 0, warnings: [] }
+    ),
     antiOverfitSummary: objectOrFallback(source.antiOverfitSummary || source.learningAnalytics?.antiOverfitSummary, { status: "unavailable", reasons: [] }),
     backtestQualitySummary: objectOrFallback(source.backtestQualitySummary || source.backtest?.qualitySummary, { status: "unavailable", sampleSizeWarning: true }),
     tradingPathHealth: objectOrFallback(source.tradingPathHealth || source.ops?.tradingPathHealth, {

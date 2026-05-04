@@ -45,4 +45,15 @@ This inventory is code-grounded against `src/strategy/indicators.js`, `src/strat
 | Order book imbalance stability | orderflow/execution | breakout/reclaim | diagnostic/risk | Requires fresh stream snapshots | yes | diagnostics only | live negative risk only |
 | Slippage confidence score | execution/risk | all | diagnostic/risk | Needs realistic fill/slippage samples | yes | diagnostics only | live execution caution only |
 
+## Derivatives Context Diagnostics
+
+| Feature | Type | Best Regime | Use | Known Pitfall | Test Coverage | Live Impact | Advice |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Funding pressure | derivatives/risk | trend continuation, squeeze risk | filter/diagnostic | Positive funding can mark crowded longs and should not be treated as automatic bullish evidence | yes | diagnostics/risk only | conservative risk only |
+| Open-interest trend | derivatives/confirmation | breakout, trend, unwind | diagnostic/risk | Rising OI can confirm momentum or increase liquidation risk depending on price/orderflow context | yes | diagnostics only | shadow first |
+| Spot/futures basis state | derivatives/market structure | trend, stress, backwardation | diagnostic/risk | Negative basis can signal panic/hedging and should not force entries | yes | diagnostics only | diagnostics unless future safety config blocks |
+| Liquidation risk | derivatives/orderflow risk | squeeze, crash risk, liquidation magnet | exit/risk diagnostic | Liquidation proximity is noisy without fresh stream/context | yes | diagnostics/risk only | conservative risk only |
+
+`src/market/derivativesContext.js` normalizes existing derivatives provider and market-structure summaries into `derivativesContextSummary`. Missing derivatives data does not block live by default; live safety remains governed by exchange safety, reconcile, readiness and explicit risk policies.
+
 Safety invariant: new positive diagnostics do not loosen live thresholds, exchange safety, reconcile gates, manual review gates, execution intent blockers, or sizing caps.
