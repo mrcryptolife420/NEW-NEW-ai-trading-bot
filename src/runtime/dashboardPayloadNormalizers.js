@@ -110,6 +110,12 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         warnings: []
       }
     ),
+    apiDegradationSummary: objectOrFallback(
+      source.apiDegradationSummary ||
+        source.runtimeReliability?.apiDegradationSummary ||
+        source.ops?.apiDegradationSummary,
+      { degradationLevel: "normal", allowedModes: ["active", "observe_only", "protect_only"], blockedActions: [], warnings: [] }
+    ),
     datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
     replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
     decisionInputLineageSummary: objectOrFallback(

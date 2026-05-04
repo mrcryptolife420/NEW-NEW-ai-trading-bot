@@ -19,7 +19,8 @@ export function buildSafetySnapshot({
   positions = [],
   recorderSummary = {},
   dashboardFreshness = {},
-  portfolioScenarioStressSummary = {}
+  portfolioScenarioStressSummary = {},
+  apiDegradationSummary = {}
 } = {}) {
   const topRisks = [];
   const criticalAlerts = arr(alerts).filter((alert) => normalizeAlertSeverity(alert) === "critical");
@@ -30,6 +31,10 @@ export function buildSafetySnapshot({
   if (["stress", "blocked"].includes(portfolioScenarioStressSummary.status)) {
     topRisks.push("portfolio_scenario_stress");
   }
+  const apiBlocksEntries = Array.isArray(apiDegradationSummary.blockedActions) && apiDegradationSummary.blockedActions.includes("open_new_entries");
+  if (apiBlocksEntries || ["rate_limited", "full_outage", "partial_outage"].includes(apiDegradationSummary.degradationLevel)) {
+    topRisks.push("api_degradation");
+  }
   const staleData = {
     dashboard: Boolean(dashboardFreshness.stale),
     recorder: recorderSummary.status === "stale" || Boolean(recorderSummary.stale)
@@ -37,7 +42,7 @@ export function buildSafetySnapshot({
   if (staleData.dashboard) topRisks.push("stale_dashboard");
   if (staleData.recorder) topRisks.push("stale_recorder");
   const mode = operatorMode.mode || config.operatorMode || "active";
-  const entryAllowed = canOpenNewEntries(mode) && liveReadiness.status !== "blocked";
+  const entryAllowed = canOpenNewEntries(mode) && liveReadiness.status !== "blocked" && !apiBlocksEntries;
   const managementAllowed = canManageExistingPositions(mode);
   const reconcileAllowed = canRunReconcile(mode);
   return {
@@ -61,7 +66,9 @@ export function buildSafetySnapshot({
       ? ["resolve_critical_alerts"]
       : liveReadiness.status === "blocked"
         ? liveReadiness.requiredActions || ["review_live_readiness"]
-        : topRisks.includes("portfolio_scenario_stress")
+        : topRisks.includes("api_degradation")
+          ? [apiDegradationSummary.recommendedAction || "review_api_degradation"]
+          : topRisks.includes("portfolio_scenario_stress")
           ? [portfolioScenarioStressSummary.recommendedAction || "review_portfolio_stress"]
         : ["monitor"]
   };

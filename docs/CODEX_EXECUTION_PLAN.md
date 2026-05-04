@@ -1151,22 +1151,24 @@ Acceptatie:
 ## B21 — API degradation en fallback-mode planner
 
 Bron: nieuwe analyse / runtime reliability improvement
-Status: proposed
+Status: completed
 
 Doel: als Binance/API/data providers degraderen, moet de bot automatisch uitleggen welke veilige fallback-mode geldt.
 
-- [ ] Maak of update `src/runtime/apiDegradationPlanner.js`.
-- [ ] Detecteer REST budget pressure, repeated 429/5xx, stale websocket/user stream, partial data provider outage en latency spikes.
-- [ ] Output bevat `degradationLevel`, `allowedModes`, `blockedActions`, `recommendedAction`, `retryAfterMs`.
-- [ ] Verbind met tradingPathHealth, requestBudget en safetySnapshot waar veilig.
-- [ ] Tests toevoegen voor normal, rate limited, stale stream, partial outage en full outage.
-- [ ] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md`.
+- [x] Maak of update `src/runtime/apiDegradationPlanner.js`.
+- [x] Detecteer REST budget pressure, repeated 429/5xx, stale websocket/user stream, partial data provider outage en latency spikes.
+- [x] Output bevat `degradationLevel`, `allowedModes`, `blockedActions`, `recommendedAction`, `retryAfterMs`.
+- [x] Verbind met tradingPathHealth, requestBudget en safetySnapshot waar veilig.
+- [x] Tests toevoegen voor normal, rate limited, stale stream, partial outage en full outage.
+- [x] Docs bijwerken in `docs/DEBUG_PLAYBOOK.md`.
 
 Acceptatie:
 
-- [ ] Degradatie kan entries blokkeren of observe/protect-only adviseren.
-- [ ] Geen force unlock.
-- [ ] `npm test` slaagt.
+- [x] Degradatie kan entries blokkeren of observe/protect-only adviseren.
+- [x] Geen force unlock.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/runtime/apiDegradationPlanner.js` toegevoegd als pure diagnostics/safety-posture helper. De planner classificeert normal/degraded/partial_outage/rate_limited/full_outage, geeft allowed modes en blocked actions terug, en is optioneel zichtbaar in trading path health, safety snapshot en dashboard normalizer. Geen live execution, force-unlock of exchange-safety bypass toegevoegd.
 
 ## B22 — Strategy explainability snapshot voor elke candidate
 

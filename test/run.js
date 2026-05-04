@@ -185,6 +185,7 @@ import { registerDecisionInputLineageTests } from "./decisionInputLineage.tests.
 import { registerCanaryReleaseGateTests } from "./canaryReleaseGate.tests.js";
 import { registerOperatorActionQueueTests } from "./operatorActionQueue.tests.js";
 import { registerCryptoRegimeRouterTests } from "./cryptoRegimeRouter.tests.js";
+import { registerApiDegradationPlannerTests } from "./apiDegradationPlanner.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32546,6 +32547,11 @@ await registerOperatorActionQueueTests({
 });
 
 await registerCryptoRegimeRouterTests({
+  runCheck,
+  assert
+});
+
+await registerApiDegradationPlannerTests({
   runCheck,
   assert
 });

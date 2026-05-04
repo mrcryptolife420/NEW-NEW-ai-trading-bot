@@ -201,6 +201,7 @@ export function buildTradingPathHealth({
   dashboardSnapshot = {},
   feedSummary = null,
   readmodelSummary = null,
+  apiDegradationSummary = null,
   scanSummary = null,
   now = new Date().toISOString(),
   config = {}
@@ -220,6 +221,10 @@ export function buildTradingPathHealth({
   });
   const dashboardFreshness = normalizeDashboardFreshness(dashboard, now, config);
   const readmodel = objectOrFallback(readmodelSummary || dashboard.readModel || runtime.readModelRefresh, {});
+  const apiDegradation = objectOrFallback(
+    apiDegradationSummary || dashboard.apiDegradationSummary || runtime.apiDegradationSummary || runtime.ops?.apiDegradationSummary,
+    { degradationLevel: "normal", blockedActions: [], reasons: [] }
+  );
   const readmodelAt = latestTimestamp(
     readmodel.rebuiltAt,
     readmodel.journalRefreshedAt,
@@ -262,6 +267,12 @@ export function buildTradingPathHealth({
     blockingReasons.push("no_decision_snapshot_created");
   }
   if (feed.staleSources?.length) staleSources.push(...feed.staleSources);
+  if (apiDegradation.degradationLevel && apiDegradation.degradationLevel !== "normal") {
+    staleSources.push(`api_degradation_${apiDegradation.degradationLevel}`);
+  }
+  if (arr(apiDegradation.blockedActions).includes("open_new_entries")) {
+    blockingReasons.push("api_degradation_blocks_entries");
+  }
   if (!dashboardFreshness.fresh) staleSources.push(dashboardFreshness.staleReason);
   if (!readmodelFresh && readmodel.status) staleSources.push("readmodel_snapshot_stale");
   if (!frontendPolling.healthy) staleSources.push(frontendPolling.lastSnapshotError ? "dashboard_polling_error" : "dashboard_polling_stale");
@@ -325,6 +336,7 @@ export function buildTradingPathHealth({
     lastCycleAt: cycleAt,
     cycleAgeMs,
     feedSummary: feed,
+    apiDegradationSummary: apiDegradation,
     dashboardFreshness,
     readmodelFreshness: {
       fresh: readmodelFresh,

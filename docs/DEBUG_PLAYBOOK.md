@@ -97,6 +97,17 @@ This playbook is for operator-safe diagnosis. It does not replace exchange-safet
 2. Public market data should prefer streams/local book; depth REST is startup/fallback only.
 3. Private order/trade REST should be startup/reconcile/sanity only; user-data stream should be the live truth source.
 4. If Binance returns `429` or `418`, honor backoff/ban state and do not retry hot loops.
+5. API degradation diagnostics classify `normal`, `degraded`, `partial_outage`, `rate_limited` and `full_outage`.
+6. Under `partial_outage`, `rate_limited` or `full_outage`, new entries should remain blocked or observe/protect-only until fresh stream/provider/request-budget evidence returns.
+7. `apiDegradationSummary` is diagnostics/safety posture only; it must not force-unlock exchange safety or place orders.
+
+## API / Provider Degradation
+
+1. Check `apiDegradationSummary.degradationLevel` in dashboard/readmodel output when present.
+2. If `rest_rate_limited` appears, stop low-priority REST fallbacks and wait for `retryAfterMs`.
+3. If `stale_public_stream` or `stale_user_stream` appears, keep entries blocked or observe/protect-only until fresh stream messages arrive.
+4. If provider outage is partial, continue only with modes listed in `allowedModes`.
+5. If full outage is reported, stop new entries and require operator review before trusting exchange truth or rebuilding protection.
 
 ## Local Search Tool Fails
 
