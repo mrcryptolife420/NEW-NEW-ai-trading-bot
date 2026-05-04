@@ -1074,23 +1074,25 @@ Acceptatie:
 ## B17 — Risk-of-ruin en drawdown forecast monitor
 
 Bron: nieuwe analyse / portfolio risk improvement
-Status: proposed
+Status: completed
 
 Doel: naast actuele drawdown ook verwachte drawdown en risk-of-ruin op basis van trade distribution tonen.
 
-- [ ] Maak of update `src/risk/riskOfRuin.js`.
-- [ ] Gebruik historical trade outcomes, avg R, win rate, payoff ratio, streaks en current exposure.
-- [ ] Output bevat `riskOfRuinScore`, `expectedDrawdown`, `lossStreakRisk`, `recommendedSizeMultiplier`, `warnings`.
-- [ ] Verbind met portfolio risk dashboard en `portfolioScenarioStress` waar veilig.
-- [ ] Tests toevoegen voor empty history, positive expectancy, negative expectancy, high variance en high exposure.
-- [ ] Docs bijwerken in `docs/RISK_MANAGEMENT.md`.
+- [x] Maak of update `src/risk/riskOfRuin.js`.
+- [x] Gebruik historical trade outcomes, avg R, win rate, payoff ratio, streaks en current exposure.
+- [x] Output bevat `riskOfRuinScore`, `expectedDrawdown`, `lossStreakRisk`, `recommendedSizeMultiplier`, `warnings`.
+- [x] Verbind met portfolio risk dashboard en `portfolioScenarioStress` waar veilig.
+- [x] Tests toevoegen voor empty history, positive expectancy, negative expectancy, high variance en high exposure.
+- [x] Docs bijwerken in `docs/RISK_MANAGEMENT.md`.
+
+Notitie 2026-05-04: `src/risk/riskOfRuin.js` toegevoegd als portfolio-facing monitor die de bestaande `riskOfRuinSimulator` hergebruikt. De output is diagnostics/governance-first, gebruikt optioneel `portfolioScenarioStress`, adviseert alleen sizeverlaging of opt-in entry blocking en verhoogt nooit live risk.
 
 Acceptatie:
 
-- [ ] Monitor is diagnostics/governance-first.
-- [ ] Geen automatische live size increase.
-- [ ] Hoge risk-of-ruin mag size verlagen of entries blokkeren volgens config, nooit safety versoepelen.
-- [ ] `npm test` slaagt.
+- [x] Monitor is diagnostics/governance-first.
+- [x] Geen automatische live size increase.
+- [x] Hoge risk-of-ruin mag size verlagen of entries blokkeren volgens config, nooit safety versoepelen.
+- [x] `npm test` slaagt.
 
 ## B18 — Time-in-market en opportunity cost analyzer
 

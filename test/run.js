@@ -190,6 +190,7 @@ import { registerCandidateExplainabilityTests } from "./candidateExplainability.
 import { registerMicrostructureFillSimulatorTests } from "./microstructureFillSimulator.tests.js";
 import { registerWalkForwardDeploymentReportTests } from "./walkForwardDeploymentReport.tests.js";
 import { registerStrategyLifecycleTests } from "./strategyLifecycle.tests.js";
+import { registerRiskOfRuinMonitorTests } from "./riskOfRuinMonitor.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32576,6 +32577,11 @@ await registerWalkForwardDeploymentReportTests({
 });
 
 await registerStrategyLifecycleTests({
+  runCheck,
+  assert
+});
+
+await registerRiskOfRuinMonitorTests({
   runCheck,
   assert
 });

@@ -148,6 +148,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.safetySnapshot?.portfolioScenarioStressSummary,
       { status: "unavailable", scenarioCount: 0, warnings: [] }
     ),
+    riskOfRuinSummary: objectOrFallback(
+      source.riskOfRuinSummary ||
+        source.risk?.riskOfRuinSummary ||
+        source.risk?.riskOfRuin ||
+        source.portfolioRisk?.riskOfRuinSummary,
+      { status: "unavailable", riskOfRuinScore: 0, expectedDrawdown: 0, lossStreakRisk: 0, warnings: [] }
+    ),
     confidenceCalibrationSummary: objectOrFallback(
       source.confidenceCalibrationSummary ||
         source.learningAnalytics?.confidenceCalibrationSummary ||
