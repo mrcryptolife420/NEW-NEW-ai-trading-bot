@@ -1133,22 +1133,24 @@ Acceptatie:
 ## B20 — Walk-forward deployment report voor strategy changes
 
 Bron: nieuwe analyse / research-to-production improvement
-Status: proposed
+Status: completed
 
 Doel: voor elke strategy/config wijziging een compact rapport maken met walk-forward, regime split en safety summary voordat het naar paper/canary gaat.
 
-- [ ] Maak of update `src/research/walkForwardDeploymentReport.js`.
-- [ ] Combineer backtest metrics, regime split, sample size, failure modes, calibration, anti-overfit verdict en canary gate status.
-- [ ] Output bevat `deploymentStatus`, `blockingReasons`, `warnings`, `recommendedNextStep`.
-- [ ] Voeg CLI command toe: `node src/cli.js research:deployment-report` indien passend.
-- [ ] Tests toevoegen voor not enough samples, weak regime, strong report, failed anti-overfit en missing backtest data.
-- [ ] Docs bijwerken in `docs/BACKTEST_QUALITY.md` of `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/research/walkForwardDeploymentReport.js`.
+- [x] Combineer backtest metrics, regime split, sample size, failure modes, calibration, anti-overfit verdict en canary gate status.
+- [x] Output bevat `deploymentStatus`, `blockingReasons`, `warnings`, `recommendedNextStep`.
+- [x] Voeg CLI command toe: `node src/cli.js research:deployment-report` indien passend.
+- [x] Tests toevoegen voor not enough samples, weak regime, strong report, failed anti-overfit en missing backtest data.
+- [x] Docs bijwerken in `docs/BACKTEST_QUALITY.md` of `docs/TRADING_QUALITY.md`.
 
 Acceptatie:
 
-- [ ] Rapport is read-only/governance-first.
-- [ ] Geen automatische live promotie.
-- [ ] `npm test` slaagt.
+- [x] Rapport is read-only/governance-first.
+- [x] Geen automatische live promotie.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/research/walkForwardDeploymentReport.js` en read-only CLI `node src/cli.js research:deployment-report` toegevoegd. Rapport combineert backtest metrics, regime split, failure/calibration, anti-overfit en canary gate; sterke evidence levert hoogstens `paper_candidate`, nooit automatische live promotie.
 
 ## B21 — API degradation en fallback-mode planner
 

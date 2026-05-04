@@ -188,6 +188,7 @@ import { registerCryptoRegimeRouterTests } from "./cryptoRegimeRouter.tests.js";
 import { registerApiDegradationPlannerTests } from "./apiDegradationPlanner.tests.js";
 import { registerCandidateExplainabilityTests } from "./candidateExplainability.tests.js";
 import { registerMicrostructureFillSimulatorTests } from "./microstructureFillSimulator.tests.js";
+import { registerWalkForwardDeploymentReportTests } from "./walkForwardDeploymentReport.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32564,6 +32565,11 @@ await registerCandidateExplainabilityTests({
 });
 
 await registerMicrostructureFillSimulatorTests({
+  runCheck,
+  assert
+});
+
+await registerWalkForwardDeploymentReportTests({
   runCheck,
   assert
 });

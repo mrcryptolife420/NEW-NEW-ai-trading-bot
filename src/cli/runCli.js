@@ -35,6 +35,7 @@ import {
 } from "../runtime/tradingPathHealth.js";
 import { buildCanaryReleaseGate, buildCanaryReleaseSummary } from "../runtime/canaryReleaseGate.js";
 import { buildOperatorActionQueue } from "../runtime/operatorActionQueue.js";
+import { buildWalkForwardDeploymentReport } from "../research/walkForwardDeploymentReport.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -254,6 +255,26 @@ export default async function runCli({
       gates
     };
     console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "research:deployment-report") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const journal = await store.loadJournal();
+    const result = buildWalkForwardDeploymentReport({
+      scope: parseNamedArg(args, "scope", "global"),
+      trades: (journal.trades || []).filter((trade) => (trade.brokerMode || "paper") === "paper"),
+      walkForward: runtime.walkForward || runtime.researchLab?.walkForward || {},
+      regimeBreakdown: runtime.walkForward?.regimeBreakdown || runtime.researchLab?.latestSummary?.regimeBreakdown || {},
+      failureStats: runtime.learningAnalytics?.failureLibrarySummary || {},
+      calibration: runtime.aiTelemetry?.calibration || runtime.calibration || {},
+      proposedChanges: runtime.research?.proposedChanges || [],
+      config
+    });
+    console.log(JSON.stringify({ readOnly: true, ...result }, null, 2));
     markCommandSuccess(processState);
     return;
   }

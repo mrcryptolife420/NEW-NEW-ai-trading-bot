@@ -33,3 +33,31 @@ Safety rules:
 - It is diagnostics/config-gated first and does not change live order routing.
 - Thin books, high volatility, wide spreads and maker queue risk produce warnings instead of optimistic fills.
 - Live execution behavior must not be changed without a separate canary/safety review.
+
+## Walk-Forward Deployment Report
+
+`src/research/walkForwardDeploymentReport.js` combines backtest metrics, regime breakdown, calibration, failure severity, anti-overfit review and canary gate status into a read-only deployment report.
+
+CLI:
+
+```bash
+node src/cli.js research:deployment-report
+```
+
+Output:
+
+- `deploymentStatus`: `not_ready`, `blocked`, `watch` or `paper_candidate`
+- `blockingReasons`
+- `warnings`
+- `recommendedNextStep`
+- `metrics`
+- `regimeBreakdown`
+- `antiOverfit`
+- `canaryGate`
+
+Safety rules:
+
+- The report never promotes a strategy/config to live automatically.
+- Strong evidence can only produce a paper/shadow recommendation.
+- Low samples, weak regime splits, bad calibration, severe failure modes or anti-overfit blocks prevent promotion.
+- Live rollout still requires separate safety/canary review.
