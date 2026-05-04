@@ -14,6 +14,7 @@ This patch adds a diagnostics-first trading-quality layer. It is designed to imp
 - `src/ai/antiOverfitGovernor.js` blocks unsafe research/paper proposals such as low-sample threshold relief, size increases based only on recent paper wins, paper-only evidence promoted to live, coupled threshold relief plus bigger size, and promotions when calibration worsens.
 - `src/ai/confidenceCalibration.js` builds diagnostics-first confidence buckets, compares average confidence with realized outcomes, flags overconfidence/underconfidence, and feeds calibration risk into anti-overfit promotion review.
 - `src/runtime/cryptoRegimeRouter.js` maps broader crypto context into diagnostics/shadow-first regimes: BTC-led trend, ETH-led trend, alt rotation, range chop, liquidity vacuum, crash risk, and news shock. It outputs allowed/blocked setup-family guidance, size hints, confidence penalty, warnings, and indicator-regime fit without changing entry permission or live execution.
+- `src/runtime/candidateExplainability.js` builds compact diagnostics for approved and rejected candidates. It surfaces setup type, top evidence, conflicts, blocker, score components, regime fit, execution fit, and risk fit without changing ranking, sizing, or execution.
 
 ## Runtime Visibility
 
@@ -29,6 +30,7 @@ Dashboard decision cards can now include `tradingQualitySummary` with:
 - `confidenceCalibrationSummary`
 - `antiOverfitSummary`
 - `backtestQualitySummary`
+- `candidateExplainabilitySummary`
 
 The dashboard normalizer treats the summary as optional, so older snapshots remain valid.
 
@@ -42,3 +44,4 @@ The dashboard normalizer treats the summary as optional, so older snapshots rema
 - Anti-overfit governance is advisory/blocking for proposed changes; it does not auto-promote or auto-apply live changes.
 - Confidence calibration can block model/parameter promotion through governance, but it does not force live threshold, sizing, or execution changes.
 - Crypto regime routing is diagnostics/shadow-first. It does not clear exchange safety, lower thresholds, increase live size, or bypass hard blockers.
+- Candidate explainability is read-only diagnostics. It explains candidates and rejected setups but does not approve entries, clear blockers, or change order behavior.

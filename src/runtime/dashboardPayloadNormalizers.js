@@ -133,6 +133,12 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       exitPlanHint: null
     }),
     tradingFeatureSummary: objectOrFallback(source.tradingFeatureSummary || source.tradingFeatures, { status: "unavailable", features: [] }),
+    candidateExplainabilitySummary: objectOrFallback(
+      source.candidateExplainabilitySummary ||
+        source.explainability?.candidateExplainabilitySummary ||
+        source.explainability?.candidates,
+      { status: "unavailable", count: 0, items: [] }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     portfolioCrowdingSummary: objectOrFallback(source.portfolioCrowdingSummary || source.tradingQualitySummary?.portfolioCrowding || source.tradingQualitySummary?.portfolioCrowdingSummary, { crowdingRisk: "unknown", reasons: [] }),

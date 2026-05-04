@@ -1173,21 +1173,23 @@ Notitie 2026-05-04: `src/runtime/apiDegradationPlanner.js` toegevoegd als pure d
 ## B22 — Strategy explainability snapshot voor elke candidate
 
 Bron: nieuwe analyse / explainability improvement
-Status: proposed
+Status: completed
 
 Doel: niet alleen uitgevoerde trades, maar ook afgewezen candidates moeten compact uitlegbaar zijn.
 
-- [ ] Maak of update `src/runtime/candidateExplainability.js`.
-- [ ] Per candidate output: setupType, top evidence, top conflicts, blocker, score components, regime fit, execution fit, risk fit.
-- [ ] Verbind met dashboard top decisions en replay/debug waar veilig.
-- [ ] Tests toevoegen voor approved candidate, blocked candidate, missing features, unknown regime en execution conflict.
-- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/runtime/candidateExplainability.js`.
+- [x] Per candidate output: setupType, top evidence, top conflicts, blocker, score components, regime fit, execution fit, risk fit.
+- [x] Verbind met dashboard top decisions en replay/debug waar veilig.
+- [x] Tests toevoegen voor approved candidate, blocked candidate, missing features, unknown regime en execution conflict.
+- [x] Docs bijwerken in `docs/TRADING_QUALITY.md`.
 
 Acceptatie:
 
-- [ ] Afgewezen kansen zijn uitlegbaar.
-- [ ] Geen live behavior gewijzigd.
-- [ ] `npm test` slaagt.
+- [x] Afgewezen kansen zijn uitlegbaar.
+- [x] Geen live behavior gewijzigd.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/runtime/candidateExplainability.js` toegevoegd als pure read-only helper met per-candidate score components, evidence/conflicts, blocker, regime/execution/risk fit en fallback-safe summary. Dashboard normalizer accepteert optionele `candidateExplainabilitySummary`; geen ranking, sizing, entry gate of execution behavior gewijzigd.
 
 ## B23 — Feature Activation Governor
 
