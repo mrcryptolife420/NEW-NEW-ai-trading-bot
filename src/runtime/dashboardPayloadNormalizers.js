@@ -183,6 +183,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.accounting?.performanceLedgerSummary,
       { status: "unavailable", tradeCount: 0, realizedPnlQuote: 0, feesQuote: 0, reconciliation: { status: "unknown", issues: [] } }
     ),
+    orderStyleAdviceSummary: objectOrFallback(
+      source.orderStyleAdviceSummary ||
+        source.execution?.orderStyleAdviceSummary ||
+        source.execution?.orderStyleAdvice ||
+        source.tradingQualitySummary?.orderStyleAdviceSummary,
+      { status: "unavailable", recommendedStyle: null, warnings: [] }
+    ),
     confidenceCalibrationSummary: objectOrFallback(
       source.confidenceCalibrationSummary ||
         source.learningAnalytics?.confidenceCalibrationSummary ||

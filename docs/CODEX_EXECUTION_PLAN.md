@@ -948,23 +948,25 @@ Acceptatie:
 ## B11 — Adaptive order style advisor
 
 Bron: nieuwe analyse / execution improvement
-Status: proposed
+Status: completed
 
 Doel: per setup/liquidity/regime adviseren welk ordertype het veiligst is zonder automatisch unsafe live behavior te wijzigen.
 
-- [ ] Maak of update `src/execution/orderStyleAdvisor.js`.
-- [ ] Inputs: spread, depth, volatility, slippageConfidence, setupType, urgency, position size en maker/taker fee context.
-- [ ] Output: `recommendedStyle`, `makerSuitable`, `takerSuitable`, `stopLimitGapHint`, `warnings`, `manualReviewRecommended`.
-- [ ] Ondersteun styles: `maker_limit`, `limit_ioc`, `market_prohibited`, `stop_limit_wide`, `protective_rebuild_only`.
-- [ ] Verbind met stop-limit stuck detection en netEdgeGate waar veilig.
-- [ ] Tests toevoegen voor tight spread, wide spread, liquidity drain, urgent exit en missing orderbook.
-- [ ] Docs bijwerken in `docs/EXECUTION_SAFETY.md` indien aanwezig, anders `docs/OPERATOR_COMMANDS.md`.
+- [x] Maak of update `src/execution/orderStyleAdvisor.js`.
+- [x] Inputs: spread, depth, volatility, slippageConfidence, setupType, urgency, position size en maker/taker fee context.
+- [x] Output: `recommendedStyle`, `makerSuitable`, `takerSuitable`, `stopLimitGapHint`, `warnings`, `manualReviewRecommended`.
+- [x] Ondersteun styles: `maker_limit`, `limit_ioc`, `market_prohibited`, `stop_limit_wide`, `protective_rebuild_only`.
+- [x] Verbind met stop-limit stuck detection en netEdgeGate waar veilig.
+- [x] Tests toevoegen voor tight spread, wide spread, liquidity drain, urgent exit en missing orderbook.
+- [x] Docs bijwerken in `docs/EXECUTION_SAFETY.md` indien aanwezig, anders `docs/OPERATOR_COMMANDS.md`.
+
+Notitie 2026-05-04: `src/execution/orderStyleAdvisor.js` toegevoegd als pure diagnostics/governance helper. De advisor gebruikt bestaande liquidity-aware stop-limit gap logic, geeft orderstijl-hints en dashboard fallback, maar wijzigt geen execution plan of live ordertype automatisch.
 
 Acceptatie:
 
-- [ ] Advisor is diagnostics/governance-first.
-- [ ] Geen live ordertype wordt automatisch riskanter.
-- [ ] `npm test` slaagt.
+- [x] Advisor is diagnostics/governance-first.
+- [x] Geen live ordertype wordt automatisch riskanter.
+- [x] `npm test` slaagt.
 
 ## B12 — Adaptive symbol universe decay en cooldowns
 
