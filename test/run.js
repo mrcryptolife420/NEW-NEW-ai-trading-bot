@@ -192,6 +192,7 @@ import { registerWalkForwardDeploymentReportTests } from "./walkForwardDeploymen
 import { registerStrategyLifecycleTests } from "./strategyLifecycle.tests.js";
 import { registerRiskOfRuinMonitorTests } from "./riskOfRuinMonitor.tests.js";
 import { registerOpportunityCostAnalyzerTests } from "./opportunityCostAnalyzer.tests.js";
+import { registerPerformanceLedgerTests } from "./performanceLedger.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32588,6 +32589,11 @@ await registerRiskOfRuinMonitorTests({
 });
 
 await registerOpportunityCostAnalyzerTests({
+  runCheck,
+  assert
+});
+
+await registerPerformanceLedgerTests({
   runCheck,
   assert
 });

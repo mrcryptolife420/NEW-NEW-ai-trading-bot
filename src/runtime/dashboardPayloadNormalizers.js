@@ -162,6 +162,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.exitIntelligence?.opportunityCostSummary,
       { status: "unavailable", opportunityCostScore: 0, capitalEfficiency: 0, positions: [] }
     ),
+    performanceLedgerSummary: objectOrFallback(
+      source.performanceLedgerSummary ||
+        source.performanceLedger ||
+        source.performance?.ledgerSummary ||
+        source.accounting?.performanceLedgerSummary,
+      { status: "unavailable", tradeCount: 0, realizedPnlQuote: 0, feesQuote: 0, reconciliation: { status: "unknown", issues: [] } }
+    ),
     confidenceCalibrationSummary: objectOrFallback(
       source.confidenceCalibrationSummary ||
         source.learningAnalytics?.confidenceCalibrationSummary ||

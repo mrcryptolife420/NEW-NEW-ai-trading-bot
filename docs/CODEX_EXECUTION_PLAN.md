@@ -1119,22 +1119,24 @@ Acceptatie:
 ## B19 — Tax/performance ledger en realized PnL audit
 
 Bron: nieuwe analyse / accounting and audit improvement
-Status: proposed
+Status: completed
 
 Doel: realized PnL, fees, fills, cost basis en trade attribution auditable maken voor performance review.
 
-- [ ] Maak of update `src/runtime/performanceLedger.js`.
-- [ ] Track realized PnL, fees, cost basis, average entry, partial exits, dust, quote/base conversions en trade attribution.
-- [ ] Output bevat per trade en per day summary.
-- [ ] Voeg reconciliation checks toe tussen local ledger, fills en account deltas.
-- [ ] Tests toevoegen voor partial fills, partial exits, fees in quote/base, dust, break-even en negative PnL.
-- [ ] Docs bijwerken in `docs/OPERATOR_COMMANDS.md` of `docs/PERFORMANCE_LEDGER.md`.
+- [x] Maak of update `src/runtime/performanceLedger.js`.
+- [x] Track realized PnL, fees, cost basis, average entry, partial exits, dust, quote/base conversions en trade attribution.
+- [x] Output bevat per trade en per day summary.
+- [x] Voeg reconciliation checks toe tussen local ledger, fills en account deltas.
+- [x] Tests toevoegen voor partial fills, partial exits, fees in quote/base, dust, break-even en negative PnL.
+- [x] Docs bijwerken in `docs/OPERATOR_COMMANDS.md` of `docs/PERFORMANCE_LEDGER.md`.
+
+Notitie 2026-05-04: `src/runtime/performanceLedger.js` toegevoegd als read-only audit helper. De ledger normaliseert trade/fill/account-delta records, geeft per-trade en per-day summaries, detecteert dust/account/fill mismatches en wijzigt geen live executiongedrag.
 
 Acceptatie:
 
-- [ ] Ledger is audit/read-only first.
-- [ ] Geen live execution behavior gewijzigd.
-- [ ] `npm test` slaagt.
+- [x] Ledger is audit/read-only first.
+- [x] Geen live execution behavior gewijzigd.
+- [x] `npm test` slaagt.
 
 ## B20 — Walk-forward deployment report voor strategy changes
 
