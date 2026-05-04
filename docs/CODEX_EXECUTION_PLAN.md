@@ -65,6 +65,31 @@ Nieuwe aanbevelingen mogen alleen worden toegevoegd als ze:
 
 ---
 
+## Codex prioriteitskeuze 2026-05-04
+
+Als ik vrij mag kiezen wat als eerste de meeste waarde geeft, kies ik nu **B8 - Crypto market regime router v2**.
+
+Reden: B8 gebruikt bestaande diagnostics uit derivatives context, portfolio stress, confidence calibration, feature activation en trading-quality helpers om setup-selectie beter uitlegbaar te maken zonder live execution te versoepelen. De eerste integratie moet `diagnostics_only` / `shadow_only` blijven.
+
+Prioriteit ten opzichte van de rest:
+
+1. P0 blijft altijd: runtime/test/CI/safety regressies, exchange-safety lockups, secrets of dashboard-crashes.
+2. P1: B8 - Crypto market regime router v2.
+3. P2: B21 - API degradation en fallback-mode planner.
+4. P3: B22 - Strategy explainability snapshot voor elke candidate.
+5. P4: B15 - Microstructure fill simulator voor paper/backtest.
+6. P5: B20 - Walk-forward deployment report voor strategy changes.
+7. P6: B16 - Strategy retirement en quarantine lifecycle.
+8. P7: B17 - Risk-of-ruin en drawdown forecast monitor.
+9. P8: B18 - Time-in-market en opportunity cost analyzer.
+10. P9: B19 - Tax/performance ledger en realized PnL audit.
+11. P10: B9 - Symbol lifecycle en listing-risk monitor.
+12. P11: B10-B14 en B24-B39 blijven waardevolle backlog, maar worden na bovenstaande gekozen tenzij een ervan een P0-safety issue oplost.
+
+Safety-notitie: deze prioriteitskeuze verandert geen tradinggedrag. Nieuwe tradingfeatures starten diagnostics/shadow-first en mogen live safety niet versoepelen.
+
+---
+
 ## Status legenda
 
 Gebruik deze notatie in checkboxes:
