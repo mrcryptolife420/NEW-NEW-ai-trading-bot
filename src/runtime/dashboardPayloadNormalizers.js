@@ -149,6 +149,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.market?.derivativesContextSummary,
       { status: "unavailable", confidence: 0, warnings: [] }
     ),
+    cryptoRegimeRouterSummary: objectOrFallback(
+      source.cryptoRegimeRouterSummary ||
+        source.marketContext?.cryptoRegimeRouterSummary ||
+        source.marketContext?.cryptoRegimeRouter ||
+        source.market?.cryptoRegimeRouterSummary,
+      { status: "unavailable", regime: null, allowedSetupFamilies: [], blockedSetupFamilies: [], warnings: [] }
+    ),
     antiOverfitSummary: objectOrFallback(source.antiOverfitSummary || source.learningAnalytics?.antiOverfitSummary, { status: "unavailable", reasons: [] }),
     backtestQualitySummary: objectOrFallback(source.backtestQualitySummary || source.backtest?.qualitySummary, { status: "unavailable", sampleSizeWarning: true }),
     tradingPathHealth: objectOrFallback(source.tradingPathHealth || source.ops?.tradingPathHealth, {

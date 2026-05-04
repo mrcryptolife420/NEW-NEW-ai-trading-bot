@@ -880,23 +880,25 @@ Notitie 2026-05-04: bestaande `derivativesContextProvider` hergebruikt via `src/
 ## B8 — Crypto market regime router v2
 
 Bron: nieuwe analyse / trading improvement
-Status: proposed
+Status: completed
 
 Doel: setup selectie aanpassen aan bredere crypto-regimes zoals BTC-led trend, alt rotation, chop, crash risk en liquidity vacuum.
 
-- [ ] Maak of update `src/runtime/cryptoRegimeRouter.js`.
-- [ ] Regimes: `btc_led_trend`, `eth_led_trend`, `alt_rotation`, `range_chop`, `liquidity_vacuum`, `crash_risk`, `news_shock`.
-- [ ] Gebruik inputs uit marketState, trendState, leadershipContext, volatilityService, orderbookDelta en universeScorer waar beschikbaar.
-- [ ] Output bevat allowed setup families, blocked setup families, sizeMultiplier en confidencePenalty.
-- [ ] Verbind met indicatorRegimeScoring als diagnostics/shadow-first.
-- [ ] Tests toevoegen voor elk regime en missing/ambiguous data.
-- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/runtime/cryptoRegimeRouter.js`.
+- [x] Regimes: `btc_led_trend`, `eth_led_trend`, `alt_rotation`, `range_chop`, `liquidity_vacuum`, `crash_risk`, `news_shock`.
+- [x] Gebruik inputs uit marketState, trendState, leadershipContext, volatilityService, orderbookDelta en universeScorer waar beschikbaar.
+- [x] Output bevat allowed setup families, blocked setup families, sizeMultiplier en confidencePenalty.
+- [x] Verbind met indicatorRegimeScoring als diagnostics/shadow-first.
+- [x] Tests toevoegen voor elk regime en missing/ambiguous data.
+- [x] Docs bijwerken in `docs/TRADING_QUALITY.md`.
 
 Acceptatie:
 
-- [ ] Router is fallback-safe.
-- [ ] Router versoepelt geen hard safety blockers.
-- [ ] `npm test` slaagt.
+- [x] Router is fallback-safe.
+- [x] Router versoepelt geen hard safety blockers.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/runtime/cryptoRegimeRouter.js` toegevoegd als pure diagnostics/shadow-first router. Output bevat regime, allowed/blocked setup families, bounded size/confidence hints, warnings, indicator-regime fit en expliciete `entryPermissionChanged=false`/`hardSafetyUnchanged=true`. Dashboard normalizer accepteert optionele `cryptoRegimeRouterSummary`; geen risk/execution gate gekoppeld.
 
 ## B9 — Symbol lifecycle en listing-risk monitor
 
