@@ -193,6 +193,7 @@ import { registerStrategyLifecycleTests } from "./strategyLifecycle.tests.js";
 import { registerRiskOfRuinMonitorTests } from "./riskOfRuinMonitor.tests.js";
 import { registerOpportunityCostAnalyzerTests } from "./opportunityCostAnalyzer.tests.js";
 import { registerPerformanceLedgerTests } from "./performanceLedger.tests.js";
+import { registerSymbolLifecycleRiskTests } from "./symbolLifecycleRisk.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32594,6 +32595,11 @@ await registerOpportunityCostAnalyzerTests({
 });
 
 await registerPerformanceLedgerTests({
+  runCheck,
+  assert
+});
+
+await registerSymbolLifecycleRiskTests({
   runCheck,
   assert
 });

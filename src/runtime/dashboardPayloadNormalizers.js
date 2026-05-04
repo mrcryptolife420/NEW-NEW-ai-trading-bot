@@ -133,6 +133,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       exitPlanHint: null
     }),
     tradingFeatureSummary: objectOrFallback(source.tradingFeatureSummary || source.tradingFeatures, { status: "unavailable", features: [] }),
+    symbolLifecycleRiskSummary: objectOrFallback(
+      source.symbolLifecycleRiskSummary ||
+        source.symbolLifecycleRisk ||
+        source.marketContext?.symbolLifecycleRiskSummary ||
+        source.universe?.symbolLifecycleRiskSummary,
+      { status: "unavailable", symbols: [], warnings: [] }
+    ),
     candidateExplainabilitySummary: objectOrFallback(
       source.candidateExplainabilitySummary ||
         source.explainability?.candidateExplainabilitySummary ||

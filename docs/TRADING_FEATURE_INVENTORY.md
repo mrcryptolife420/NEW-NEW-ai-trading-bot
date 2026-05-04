@@ -30,6 +30,7 @@ This inventory is code-grounded against `src/strategy/indicators.js`, `src/strat
 | Range stability / range grid diagnostics | range/risk | range | filter/risk | Dangerous in expansion regimes | yes | paper/risk | paper containment; live strict |
 | Indicator feature registry pack | mixed | strategy-specific | paper scoring/diagnostic | Missing/warmup features must not be fake zeros | yes | paper/diagnostic | paper/shadow first |
 | Multi-horizon orderflow/CVD v1/v2 | orderflow | breakout/reclaim | diagnostic/risk | Stream gaps can stale signals | yes | risk/diagnostic | live negative risk only |
+| Symbol lifecycle risk | risk/liquidity | all | diagnostic/risk/universe review | New listings and hype spikes can look attractive before depth/spread evidence is stable | yes | diagnostics only | use as conservative size/risk evidence only |
 
 ## New Diagnostics In This Patch
 

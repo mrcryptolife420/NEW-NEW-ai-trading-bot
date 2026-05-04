@@ -903,22 +903,24 @@ Notitie 2026-05-04: `src/runtime/cryptoRegimeRouter.js` toegevoegd als pure diag
 ## B9 — Symbol lifecycle en listing-risk monitor
 
 Bron: nieuwe analyse / crypto trading improvement
-Status: proposed
+Status: completed
 
 Doel: nieuwe, hype-, low-liquidity of delisting-risk symbols strenger behandelen.
 
-- [ ] Maak of update `src/runtime/symbolLifecycleRisk.js`.
-- [ ] Track symbol age, recent listing risk, abnormal volume spike, spread instability, depth weakness en trading halt/delisting warnings indien beschikbaar.
-- [ ] Output bevat `lifecycleRisk`, `warnings`, `sizeMultiplier`, `entryAllowedDiagnostic` en `requiredEvidence`.
-- [ ] Verbind met universeScorer en portfolioCrowding waar veilig.
-- [ ] Tests toevoegen voor new listing, mature liquid symbol, illiquid hype spike, stale profile en missing profile.
-- [ ] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md`.
+- [x] Maak of update `src/runtime/symbolLifecycleRisk.js`.
+- [x] Track symbol age, recent listing risk, abnormal volume spike, spread instability, depth weakness en trading halt/delisting warnings indien beschikbaar.
+- [x] Output bevat `lifecycleRisk`, `warnings`, `sizeMultiplier`, `entryAllowedDiagnostic` en `requiredEvidence`.
+- [x] Verbind met universeScorer en portfolioCrowding waar veilig.
+- [x] Tests toevoegen voor new listing, mature liquid symbol, illiquid hype spike, stale profile en missing profile.
+- [x] Docs bijwerken in `docs/TRADING_FEATURE_INVENTORY.md`.
+
+Notitie 2026-05-04: `src/runtime/symbolLifecycleRisk.js` toegevoegd als diagnostics-only lifecycle monitor. De helper geeft universe/risk hints (`universePenalty`, `sizeMultiplier`) en dashboard fallback, maar verandert geen universe ranking, entry permissioning of live execution.
 
 Acceptatie:
 
-- [ ] Nieuwe/illiquide symbols krijgen strengere diagnostics of size hints.
-- [ ] Geen automatische live aggressiveness increase.
-- [ ] `npm test` slaagt.
+- [x] Nieuwe/illiquide symbols krijgen strengere diagnostics of size hints.
+- [x] Geen automatische live aggressiveness increase.
+- [x] `npm test` slaagt.
 
 ## B10 — News/social shock circuit breaker
 
