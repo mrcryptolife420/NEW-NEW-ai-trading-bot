@@ -187,6 +187,7 @@ import { registerOperatorActionQueueTests } from "./operatorActionQueue.tests.js
 import { registerCryptoRegimeRouterTests } from "./cryptoRegimeRouter.tests.js";
 import { registerApiDegradationPlannerTests } from "./apiDegradationPlanner.tests.js";
 import { registerCandidateExplainabilityTests } from "./candidateExplainability.tests.js";
+import { registerMicrostructureFillSimulatorTests } from "./microstructureFillSimulator.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32558,6 +32559,11 @@ await registerApiDegradationPlannerTests({
 });
 
 await registerCandidateExplainabilityTests({
+  runCheck,
+  assert
+});
+
+await registerMicrostructureFillSimulatorTests({
   runCheck,
   assert
 });

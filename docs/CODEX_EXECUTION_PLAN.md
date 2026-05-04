@@ -1028,23 +1028,25 @@ Acceptatie:
 ## B15 — Microstructure fill simulator voor paper/backtest
 
 Bron: nieuwe analyse / execution realism improvement
-Status: proposed
+Status: completed
 
 Doel: paper en backtest realistischer maken door fills te simuleren op basis van spread, depth, volume, urgency en order type.
 
-- [ ] Maak of update `src/execution/microstructureFillSimulator.js`.
-- [ ] Simuleer maker fill probability, taker slippage, partial fill, queue risk en timeout.
-- [ ] Inputs: order type, quantity, notional, spread, book depth, candle volume, volatility, latency.
-- [ ] Output bevat `fillProbability`, `expectedSlippageBps`, `partialFillRatio`, `timeoutRisk`, `warnings`.
-- [ ] Verbind met paper broker/backtest alleen waar veilig en config-gated.
-- [ ] Tests toevoegen voor tight spread, wide spread, thin book, high volatility, maker timeout en partial fill.
-- [ ] Docs bijwerken in `docs/BACKTEST_QUALITY.md` of `docs/EXECUTION_SAFETY.md`.
+- [x] Maak of update `src/execution/microstructureFillSimulator.js`.
+- [x] Simuleer maker fill probability, taker slippage, partial fill, queue risk en timeout.
+- [x] Inputs: order type, quantity, notional, spread, book depth, candle volume, volatility, latency.
+- [x] Output bevat `fillProbability`, `expectedSlippageBps`, `partialFillRatio`, `timeoutRisk`, `warnings`.
+- [x] Verbind met paper broker/backtest alleen waar veilig en config-gated.
+- [x] Tests toevoegen voor tight spread, wide spread, thin book, high volatility, maker timeout en partial fill.
+- [x] Docs bijwerken in `docs/BACKTEST_QUALITY.md` of `docs/EXECUTION_SAFETY.md`.
 
 Acceptatie:
 
-- [ ] Paper/backtest worden realistischer, niet optimistischer zonder warning.
-- [ ] Geen live execution behavior gewijzigd.
-- [ ] `npm test` slaagt.
+- [x] Paper/backtest worden realistischer, niet optimistischer zonder warning.
+- [x] Geen live execution behavior gewijzigd.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-04: `src/execution/microstructureFillSimulator.js` toegevoegd als pure fallback-safe simulator voor diagnostics/config-gated paper/backtest realism. De bestaande paper execution defaults zijn niet gewijzigd; de helper maakt thin-book, wide-spread, high-volatility, partial-fill en timeout-risk expliciet en finite.
 
 ## B16 — Strategy retirement en quarantine lifecycle
 
