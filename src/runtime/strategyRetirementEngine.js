@@ -1,4 +1,14 @@
+import { evaluateAntiOverfitGovernor } from "../ai/antiOverfitGovernor.js";
 import { clamp } from "../utils/math.js";
+
+export const STRATEGY_LIFECYCLE_STATES = Object.freeze([
+  "active",
+  "watch",
+  "quarantine",
+  "retired",
+  "shadow_only",
+  "retest_required"
+]);
 
 function safeNumber(value, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
@@ -14,6 +24,215 @@ function arr(value) {
 
 function average(values = [], fallback = 0) {
   return values.length ? values.reduce((total, value) => total + value, 0) / values.length : fallback;
+}
+
+function ratio(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.abs(parsed) > 1 ? parsed / 100 : parsed;
+}
+
+function hasStatus(value, status) {
+  return `${value || ""}`.toLowerCase() === status;
+}
+
+function addReason(reasons, code, detail = {}) {
+  reasons.push({ code, ...detail });
+}
+
+function buildLifecycleRetestRequirements({ state, previousState, config = {} } = {}) {
+  if (!["quarantine", "retired", "shadow_only", "retest_required"].includes(state)) {
+    return [];
+  }
+  const minSamples = Math.max(1, Math.round(safeNumber(config.strategyLifecycleRetestMinTrades, 12)));
+  const maxDrawdown = ratio(config.strategyLifecycleRetestMaxDrawdownPct, 0.05);
+  return [
+    `collect_${minSamples}_paper_or_shadow_trades`,
+    `max_drawdown_at_or_below_${num(maxDrawdown * 100, 1)}pct`,
+    "no_hard_safety_or_reconcile_conflicts",
+    "paper_live_parity_not_degraded",
+    previousState === "retired" ? "operator_review_required_before_any_live_candidate" : "operator_review_before_live_impact"
+  ];
+}
+
+export function buildStrategyLifecycle({
+  strategyId = "unknown",
+  stats = {},
+  failureStats = {},
+  paperLiveParity = {},
+  calibration = {},
+  antiOverfit = null,
+  proposedChanges = [],
+  retest = {},
+  previousState = null,
+  config = {}
+} = {}) {
+  const id = strategyId || stats.strategyId || stats.id || "unknown";
+  const minTrades = Math.max(1, Math.round(safeNumber(config.strategyLifecycleMinTrades, 8)));
+  const tradeCount = Math.max(0, Math.round(safeNumber(stats.tradeCount ?? stats.trades ?? stats.sampleSize, 0)));
+  const maxDrawdown = ratio(stats.maxDrawdownPct ?? stats.maxDrawdown ?? stats.drawdownPct, 0);
+  const expectancy = safeNumber(stats.expectancy ?? stats.avgNetPnl ?? stats.avgPnlPct, 0);
+  const badExitRate = ratio(failureStats.badExitRate ?? failureStats.bad_exit_rate ?? stats.badExitRate, 0);
+  const badVetoRatio = ratio(failureStats.badVetoRatio ?? failureStats.bad_veto_ratio ?? stats.badVetoRatio, 0);
+  const executionDragCount = Math.max(0, Math.round(safeNumber(
+    failureStats.executionDragCount ?? failureStats.execution_drag_count ?? stats.executionDragCount,
+    0
+  )));
+  const executionDragBps = safeNumber(
+    failureStats.executionDragBps ?? stats.executionDragBps ?? stats.avgExecutionDragBps,
+    0
+  );
+  const calibrationError = ratio(
+    calibration.error ?? calibration.calibrationError ?? calibration.brierDelta ?? calibration.delta,
+    0
+  );
+  const parityScore = safeNumber(paperLiveParity.score ?? paperLiveParity.parityScore, 1);
+  const parityMismatch = ratio(
+    paperLiveParity.mismatchRate ?? paperLiveParity.driftPct ?? paperLiveParity.driftRatio,
+    0
+  );
+  const watchDrawdown = ratio(config.strategyLifecycleWatchDrawdownPct, 0.05);
+  const quarantineDrawdown = ratio(config.strategyLifecycleQuarantineDrawdownPct, 0.1);
+  const retireDrawdown = ratio(config.strategyLifecycleRetireDrawdownPct, 0.18);
+  const badExitWatch = ratio(config.strategyLifecycleBadExitWatchRate, 0.35);
+  const badExitQuarantine = ratio(config.strategyLifecycleBadExitQuarantineRate, 0.55);
+  const badVetoWatch = ratio(config.strategyLifecycleBadVetoWatchRate, 0.25);
+  const badVetoQuarantine = ratio(config.strategyLifecycleBadVetoQuarantineRate, 0.45);
+  const calibrationWatch = ratio(config.strategyLifecycleCalibrationWatchError, 0.08);
+  const calibrationQuarantine = ratio(config.strategyLifecycleCalibrationQuarantineError, 0.16);
+  const parityQuarantineScore = safeNumber(config.strategyLifecycleParityQuarantineScore, 0.62);
+  const parityMismatchWatch = ratio(config.strategyLifecycleParityMismatchWatchRate, 0.08);
+  const parityMismatchQuarantine = ratio(config.strategyLifecycleParityMismatchQuarantineRate, 0.16);
+  const executionDragWatchCount = Math.max(1, Math.round(safeNumber(config.strategyLifecycleExecutionDragWatchCount, 2)));
+  const executionDragQuarantineCount = Math.max(1, Math.round(safeNumber(config.strategyLifecycleExecutionDragQuarantineCount, 4)));
+  const executionDragQuarantineBps = safeNumber(config.strategyLifecycleExecutionDragQuarantineBps, 22);
+  const reasons = [];
+  const warnings = [];
+
+  if (tradeCount < minTrades) {
+    addReason(reasons, "insufficient_lifecycle_samples", { tradeCount, minTrades });
+  }
+  if (maxDrawdown >= watchDrawdown) {
+    addReason(reasons, maxDrawdown >= quarantineDrawdown ? "drawdown_severe" : "drawdown_watch", { maxDrawdown: num(maxDrawdown) });
+  }
+  if (badExitRate >= badExitWatch) {
+    addReason(reasons, badExitRate >= badExitQuarantine ? "bad_exit_quality_severe" : "bad_exit_quality_watch", { badExitRate: num(badExitRate) });
+  }
+  if (badVetoRatio >= badVetoWatch) {
+    addReason(reasons, badVetoRatio >= badVetoQuarantine ? "bad_veto_ratio_severe" : "bad_veto_ratio_watch", { badVetoRatio: num(badVetoRatio) });
+  }
+  if (calibrationError >= calibrationWatch || hasStatus(calibration.status, "degraded") || hasStatus(calibration.status, "blocked")) {
+    addReason(reasons, calibrationError >= calibrationQuarantine || hasStatus(calibration.status, "blocked")
+      ? "poor_calibration_severe"
+      : "poor_calibration_watch", { calibrationError: num(calibrationError) });
+  }
+  if (parityScore < 1 && parityScore <= parityQuarantineScore) {
+    addReason(reasons, "paper_live_parity_degraded", { parityScore: num(parityScore) });
+  } else if (parityMismatch >= parityMismatchWatch) {
+    addReason(reasons, parityMismatch >= parityMismatchQuarantine
+      ? "paper_live_parity_mismatch_severe"
+      : "paper_live_parity_mismatch_watch", { parityMismatch: num(parityMismatch) });
+  }
+  if (executionDragCount >= executionDragWatchCount || executionDragBps >= executionDragQuarantineBps) {
+    addReason(reasons, executionDragCount >= executionDragQuarantineCount || executionDragBps >= executionDragQuarantineBps
+      ? "repeated_execution_drag_severe"
+      : "repeated_execution_drag_watch", { executionDragCount, executionDragBps: num(executionDragBps, 2) });
+  }
+
+  const antiOverfitReview = antiOverfit || evaluateAntiOverfitGovernor({
+    proposedChanges,
+    evidence: {
+      sampleSize: tradeCount,
+      calibrationDelta: calibrationError,
+      source: stats.evidenceSource || "paper"
+    },
+    config
+  });
+  if (antiOverfitReview.status === "blocked") {
+    addReason(reasons, "anti_overfit_blocked", { blockedChanges: antiOverfitReview.blockedChanges?.length || 0 });
+  }
+
+  const severeCodes = new Set([
+    "drawdown_severe",
+    "bad_exit_quality_severe",
+    "bad_veto_ratio_severe",
+    "poor_calibration_severe",
+    "paper_live_parity_degraded",
+    "paper_live_parity_mismatch_severe",
+    "repeated_execution_drag_severe"
+  ]);
+  const severeCount = reasons.filter((reason) => severeCodes.has(reason.code)).length;
+  const hasParityIssue = reasons.some((reason) => reason.code.startsWith("paper_live_parity"));
+  const hasMissingSamplesOnly = reasons.length === 1 && reasons[0].code === "insufficient_lifecycle_samples";
+  const retestPassed = Boolean(retest.passed || retest.status === "passed");
+  const retestCompleted = Boolean(retest.completed || retest.status === "passed" || retest.status === "failed");
+
+  let state = "active";
+  if (stats.retireRecommended || maxDrawdown >= retireDrawdown || (previousState === "quarantine" && severeCount >= 2 && tradeCount >= minTrades)) {
+    state = "retired";
+  } else if (["quarantine", "retired"].includes(previousState) && !retestPassed) {
+    state = "retest_required";
+  } else if (hasMissingSamplesOnly) {
+    state = "retest_required";
+  } else if (severeCount >= 2 || (severeCount >= 1 && tradeCount >= minTrades && expectancy < 0)) {
+    state = "quarantine";
+  } else if (hasParityIssue || hasStatus(paperLiveParity.status, "degraded")) {
+    state = "shadow_only";
+  } else if (reasons.length || antiOverfitReview.status === "blocked") {
+    state = "watch";
+  }
+
+  if (retestPassed && ["quarantine", "retired", "retest_required"].includes(previousState || "") && severeCount === 0 && !hasMissingSamplesOnly) {
+    state = "active";
+    addReason(reasons, "retest_passed", { retestTrades: retest.tradeCount ?? retest.sampleSize ?? null });
+  } else if (retestCompleted && !retestPassed && ["quarantine", "retired", "retest_required"].includes(previousState || "")) {
+    state = "retest_required";
+    addReason(reasons, "retest_failed", {});
+  }
+
+  if (state === "retired") {
+    warnings.push("retired_strategy_requires_operator_review_before_reactivation");
+  }
+  if (state === "quarantine") {
+    warnings.push("quarantined_strategy_should_remain_shadow_or_paper_until_retest_passes");
+  }
+
+  const recommendedAction = {
+    active: "keep_strategy_available_under_existing_risk_limits",
+    watch: "keep_diagnostics_active_and_reduce_confidence_until_evidence_improves",
+    quarantine: "route_strategy_to_shadow_or_paper_retest_only",
+    retired: "block_new_allocations_and_require_operator_review",
+    shadow_only: "keep_strategy_shadow_only_until_paper_live_parity_recovers",
+    retest_required: "collect_retest_samples_before_new_allocation"
+  }[state];
+
+  return {
+    strategyId: id,
+    state,
+    reasons,
+    retestRequirements: buildLifecycleRetestRequirements({ state, previousState, config }),
+    recommendedAction,
+    warnings,
+    evidence: {
+      tradeCount,
+      minTrades,
+      maxDrawdown: num(maxDrawdown),
+      expectancy: num(expectancy),
+      badExitRate: num(badExitRate),
+      badVetoRatio: num(badVetoRatio),
+      executionDragCount,
+      executionDragBps: num(executionDragBps, 2),
+      calibrationError: num(calibrationError),
+      parityScore: num(parityScore),
+      parityMismatch: num(parityMismatch),
+      antiOverfitStatus: antiOverfitReview.status
+    },
+    diagnosticsOnly: true,
+    autoPromotesLive: false,
+    liveBehaviorChanged: false
+  };
 }
 
 function buildStatusTriggers({

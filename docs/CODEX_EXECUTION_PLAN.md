@@ -1051,23 +1051,25 @@ Notitie 2026-05-04: `src/execution/microstructureFillSimulator.js` toegevoegd al
 ## B16 — Strategy retirement en quarantine lifecycle
 
 Bron: nieuwe analyse / strategy governance improvement
-Status: proposed
+Status: completed
 
 Doel: strategieën die structureel slecht presteren automatisch naar watch/quarantine/retired diagnostics verplaatsen.
 
-- [ ] Maak of update `src/runtime/strategyLifecycle.js`.
-- [ ] States: `active`, `watch`, `quarantine`, `retired`, `shadow_only`, `retest_required`.
-- [ ] Criteria: drawdown, bad exit quality, bad veto ratio, poor calibration, poor paper/live parity, repeated execution drag.
-- [ ] Output bevat `strategyId`, `state`, `reasons`, `retestRequirements`, `recommendedAction`.
-- [ ] Verbind met `antiOverfitGovernor`, `failureLibrary`, `paperLiveParity` en dashboard summary waar veilig.
-- [ ] Tests toevoegen voor healthy strategy, watch, quarantine, retired, recovery after retest en missing stats.
-- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/runtime/strategyLifecycle.js`.
+- [x] States: `active`, `watch`, `quarantine`, `retired`, `shadow_only`, `retest_required`.
+- [x] Criteria: drawdown, bad exit quality, bad veto ratio, poor calibration, poor paper/live parity, repeated execution drag.
+- [x] Output bevat `strategyId`, `state`, `reasons`, `retestRequirements`, `recommendedAction`.
+- [x] Verbind met `antiOverfitGovernor`, `failureLibrary`, `paperLiveParity` en dashboard summary waar veilig.
+- [x] Tests toevoegen voor healthy strategy, watch, quarantine, retired, recovery after retest en missing stats.
+- [x] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Notitie 2026-05-04: `src/runtime/strategyRetirementEngine.js` is hergebruikt als bronmodule en `src/runtime/strategyLifecycle.js` is een dunne compatibility-export. De lifecycle-helper is diagnostics-only, auto-promoot live niet en dashboard-normalisatie is fallback-safe.
 
 Acceptatie:
 
 - [x] Geen automatische live promotie.
-- [ ] Slechte strategieën kunnen diagnostisch worden gedegradeerd of live-blocked volgens bestaande safety policy.
-- [ ] `npm test` slaagt.
+- [x] Slechte strategieën kunnen diagnostisch worden gedegradeerd of live-blocked volgens bestaande safety policy.
+- [x] `npm test` slaagt.
 
 ## B17 — Risk-of-ruin en drawdown forecast monitor
 

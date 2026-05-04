@@ -168,6 +168,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.market?.cryptoRegimeRouterSummary,
       { status: "unavailable", regime: null, allowedSetupFamilies: [], blockedSetupFamilies: [], warnings: [] }
     ),
+    strategyLifecycleSummary: objectOrFallback(
+      source.strategyLifecycleSummary ||
+        source.strategyLifecycle ||
+        source.strategyRetirement?.lifecycleSummary ||
+        source.runtimeGovernance?.strategyLifecycleSummary,
+      { status: "unavailable", states: {}, policies: [], warnings: [] }
+    ),
     antiOverfitSummary: objectOrFallback(source.antiOverfitSummary || source.learningAnalytics?.antiOverfitSummary, { status: "unavailable", reasons: [] }),
     backtestQualitySummary: objectOrFallback(source.backtestQualitySummary || source.backtest?.qualitySummary, { status: "unavailable", sampleSizeWarning: true }),
     tradingPathHealth: objectOrFallback(source.tradingPathHealth || source.ops?.tradingPathHealth, {
