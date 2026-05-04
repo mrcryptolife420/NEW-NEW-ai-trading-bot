@@ -16,6 +16,7 @@ This patch adds a diagnostics-first trading-quality layer. It is designed to imp
 - `src/runtime/cryptoRegimeRouter.js` maps broader crypto context into diagnostics/shadow-first regimes: BTC-led trend, ETH-led trend, alt rotation, range chop, liquidity vacuum, crash risk, and news shock. It outputs allowed/blocked setup-family guidance, size hints, confidence penalty, warnings, and indicator-regime fit without changing entry permission or live execution.
 - `src/runtime/candidateExplainability.js` builds compact diagnostics for approved and rejected candidates. It surfaces setup type, top evidence, conflicts, blocker, score components, regime fit, execution fit, and risk fit without changing ranking, sizing, or execution.
 - `src/runtime/strategyRetirementEngine.js` now exposes `buildStrategyLifecycle`, with the compatibility entrypoint `src/runtime/strategyLifecycle.js`. It classifies strategies as `active`, `watch`, `quarantine`, `retired`, `shadow_only`, or `retest_required` from drawdown, bad exits, bad vetoes, calibration, paper/live parity, execution drag, anti-overfit review, and retest evidence. The output is diagnostics-first and does not auto-promote live behavior.
+- `src/runtime/opportunityCostAnalyzer.js` measures time-in-market, stagnant positions, idle capital, missed higher-quality candidates, capital efficiency, and opportunity-cost score. It provides review hints only; it never performs forced exits.
 
 ## Runtime Visibility
 
@@ -33,6 +34,7 @@ Dashboard decision cards can now include `tradingQualitySummary` with:
 - `backtestQualitySummary`
 - `candidateExplainabilitySummary`
 - `strategyLifecycleSummary`
+- `opportunityCostSummary`
 
 The dashboard normalizer treats the summary as optional, so older snapshots remain valid.
 
@@ -48,3 +50,4 @@ The dashboard normalizer treats the summary as optional, so older snapshots rema
 - Crypto regime routing is diagnostics/shadow-first. It does not clear exchange safety, lower thresholds, increase live size, or bypass hard blockers.
 - Candidate explainability is read-only diagnostics. It explains candidates and rejected setups but does not approve entries, clear blockers, or change order behavior.
 - Strategy lifecycle diagnostics can recommend watch/quarantine/retire/retest states, but they do not automatically promote a strategy to live or bypass exchange safety, reconcile, manual review, unresolved intents, or risk limits.
+- Opportunity-cost diagnostics can recommend exit/trim review under existing exit policy, but they do not force exits, cancel orders, bypass protection, or change live execution behavior.

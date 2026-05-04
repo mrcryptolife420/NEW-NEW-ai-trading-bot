@@ -191,6 +191,7 @@ import { registerMicrostructureFillSimulatorTests } from "./microstructureFillSi
 import { registerWalkForwardDeploymentReportTests } from "./walkForwardDeploymentReport.tests.js";
 import { registerStrategyLifecycleTests } from "./strategyLifecycle.tests.js";
 import { registerRiskOfRuinMonitorTests } from "./riskOfRuinMonitor.tests.js";
+import { registerOpportunityCostAnalyzerTests } from "./opportunityCostAnalyzer.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32582,6 +32583,11 @@ await registerStrategyLifecycleTests({
 });
 
 await registerRiskOfRuinMonitorTests({
+  runCheck,
+  assert
+});
+
+await registerOpportunityCostAnalyzerTests({
   runCheck,
   assert
 });

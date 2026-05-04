@@ -155,6 +155,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.portfolioRisk?.riskOfRuinSummary,
       { status: "unavailable", riskOfRuinScore: 0, expectedDrawdown: 0, lossStreakRisk: 0, warnings: [] }
     ),
+    opportunityCostSummary: objectOrFallback(
+      source.opportunityCostSummary ||
+        source.performance?.opportunityCostSummary ||
+        source.portfolioRisk?.opportunityCostSummary ||
+        source.exitIntelligence?.opportunityCostSummary,
+      { status: "unavailable", opportunityCostScore: 0, capitalEfficiency: 0, positions: [] }
+    ),
     confidenceCalibrationSummary: objectOrFallback(
       source.confidenceCalibrationSummary ||
         source.learningAnalytics?.confidenceCalibrationSummary ||

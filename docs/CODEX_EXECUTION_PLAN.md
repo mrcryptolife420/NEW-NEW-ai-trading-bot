@@ -1097,22 +1097,24 @@ Acceptatie:
 ## B18 — Time-in-market en opportunity cost analyzer
 
 Bron: nieuwe analyse / performance analytics improvement
-Status: proposed
+Status: completed
 
 Doel: meten of de bot te lang in zwakke trades blijft of kapitaal blokkeert dat beter elders gebruikt had kunnen worden.
 
-- [ ] Maak of update `src/runtime/opportunityCostAnalyzer.js`.
-- [ ] Meet time in market, idle capital, position stagnation, missed higher-quality candidates en capital lock.
-- [ ] Output bevat `timeInMarket`, `stagnationRisk`, `opportunityCostScore`, `capitalEfficiency`, `recommendedAction`.
-- [ ] Verbind met exit intelligence en dashboard summary waar veilig.
-- [ ] Tests toevoegen voor fast winner, slow loser, flat stagnant trade, idle capital en missing candidate data.
-- [ ] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+- [x] Maak of update `src/runtime/opportunityCostAnalyzer.js`.
+- [x] Meet time in market, idle capital, position stagnation, missed higher-quality candidates en capital lock.
+- [x] Output bevat `timeInMarket`, `stagnationRisk`, `opportunityCostScore`, `capitalEfficiency`, `recommendedAction`.
+- [x] Verbind met exit intelligence en dashboard summary waar veilig.
+- [x] Tests toevoegen voor fast winner, slow loser, flat stagnant trade, idle capital en missing candidate data.
+- [x] Docs bijwerken in `docs/TRADING_QUALITY.md`.
+
+Notitie 2026-05-04: `src/runtime/opportunityCostAnalyzer.js` toegevoegd als pure diagnostics analyzer. De dashboard normalizer accepteert optioneel `opportunityCostSummary`; aanbevelingen blijven review-only en veroorzaken geen forced exits of live behavior changes.
 
 Acceptatie:
 
-- [ ] Analyzer is diagnostics-first.
-- [ ] Geen automatische forced exits zonder bestaande safe exit policy.
-- [ ] `npm test` slaagt.
+- [x] Analyzer is diagnostics-first.
+- [x] Geen automatische forced exits zonder bestaande safe exit policy.
+- [x] `npm test` slaagt.
 
 ## B19 — Tax/performance ledger en realized PnL audit
 
