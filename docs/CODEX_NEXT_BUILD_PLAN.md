@@ -176,7 +176,7 @@ Notitie 2026-05-05: N2 is afgerond met `src/runtime/candidateOutcomeTracker.js` 
 
 ### N3 - Paper Exit Policy Lab
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `shadow_only` / `paper_only`
 
@@ -198,24 +198,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] For paper positions, record challenger exit decisions: hold, trim, trail, exit.
-- [ ] Compare actual paper exit to challenger exit using MFE, MAE, exit efficiency and gave-back percent.
-- [ ] Add `paperExitPolicyLabSummary` to report/dashboard.
-- [ ] Keep live mode as diagnostics-only unless a later explicit safety review approves stricter behavior.
+- [x] For paper positions, record challenger exit decisions: hold, trim, trail, exit.
+- [x] Compare actual paper exit to challenger exit using MFE, MAE, exit efficiency and gave-back percent.
+- [x] Add `paperExitPolicyLabSummary` to report/dashboard.
+- [x] Keep live mode as diagnostics-only unless a later explicit safety review approves stricter behavior.
 
 Tests:
 
-- [ ] Trend winner suggests trail, not full exit.
-- [ ] Failed breakout suggests exit.
-- [ ] Time decay suggests trim/exit.
-- [ ] Missing candles return safe unknown recommendation.
-- [ ] Live recommendation never increases position or loosens protection.
+- [x] Trend winner suggests trail, not full exit.
+- [x] Failed breakout suggests exit.
+- [x] Time decay suggests trim/exit.
+- [x] Missing candles return safe unknown recommendation.
+- [x] Live recommendation never increases position or loosens protection.
 
 Acceptance:
 
-- [ ] Paper exits produce measurable challenger evidence.
-- [ ] No live exit behavior is changed.
-- [ ] `npm test` passes.
+- [x] Paper exits produce measurable challenger evidence.
+- [x] No live exit behavior is changed.
+- [x] `npm test` passes.
+
+Notitie 2026-05-05: N3 is afgerond met `src/runtime/paperExitPolicyLab.js` en `test/paperExitPolicyLab.tests.js`. Het lab gebruikt bestaande `exitIntelligenceV2` en `tradeQualityAnalytics`, vergelijkt challenger-acties met werkelijke paper exits, exposeert `paperExitPolicyLabSummary` via report/dashboard normalizers en markeert live altijd als diagnostics-only zonder position increase of protection loosening.
 
 ### N4 - Paper Portfolio Allocator Simulation
 

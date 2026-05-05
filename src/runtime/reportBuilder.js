@@ -2,6 +2,7 @@ import { getConfiguredTradingSource, matchesBrokerMode, matchesTradingSource } f
 import { buildPaperLiveParitySummary } from "./paperLiveParity.js";
 import { buildExitRegretReview, buildOpenPositionExitReview, summarizeTradeAutopsies } from "./tradeAutopsy.js";
 import { buildTradePathQualitySummary, buildTradeQualityAnalytics } from "./tradeQualityAnalytics.js";
+import { buildPaperExitPolicyLabSummary } from "./paperExitPolicyLab.js";
 
 function safeDivide(numerator, denominator, fallback = 0) {
   return denominator ? numerator / denominator : fallback;
@@ -1827,6 +1828,14 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
   const sourceScopedLookbackScaleOuts = buildRecentScaleOuts(sourceScopedScaleOuts, sourceScopedLookbackTrades, config.reportLookbackTrades || 0);
   const sourceScopedLookbackScaleOutPnl = sourceScopedLookbackScaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
   const tradeQualityReview = buildTradeQualitySummary(primaryTrades, journal.counterfactuals || []);
+  const paperExitPolicyLabSummary = buildPaperExitPolicyLabSummary({
+    positions: openPositions,
+    trades: primaryLookbackTrades,
+    marketSnapshotsBySymbol: runtime.marketSnapshots || runtime.marketSnapshotsBySymbol || {},
+    config,
+    mode: botMode,
+    nowIso: referenceNow.toISOString()
+  });
   const rangeGridDamageReview = buildRangeGridDamageReview(primaryTrades);
   const blockedSetupLifecycle = buildBlockedSetupLifecycleSummary(blockedSetups, journal.counterfactuals || []);
   const executionCostSummary = buildExecutionCostSummary(primaryLookbackTrades, config, referenceNow.toISOString());
@@ -1908,6 +1917,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
     performanceDiagnosis,
     attribution: buildAttributionSummary(primaryTrades),
     tradeQualityReview,
+    paperExitPolicyLabSummary,
     rangeGridDamageReview,
     recentReviews: primaryLookbackTrades.slice(-20).reverse().map((trade) => ({
       id: trade.id,

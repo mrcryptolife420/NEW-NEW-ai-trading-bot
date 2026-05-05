@@ -16,7 +16,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 
 - [ ] N1 - Paper Candidate Lab.
 - [x] N2 - Candidate Outcome Tracker.
-- [ ] N3 - Paper Exit Policy Lab.
+- [x] N3 - Paper Exit Policy Lab.
 - [ ] N4 - Paper Portfolio Allocator Simulation.
 - [ ] N5 - Data Quality Score V2.
 - [ ] N6 - Stream Health Monitor And Failover Evidence.

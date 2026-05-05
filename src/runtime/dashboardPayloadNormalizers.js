@@ -197,6 +197,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.learningAnalytics?.candidateOutcomeSummary?.badVetoSummary,
       { count: 0, byBlocker: [] }
     ),
+    paperExitPolicyLabSummary: objectOrFallback(
+      source.paperExitPolicyLabSummary ||
+        source.report?.paperExitPolicyLabSummary ||
+        source.learningAnalytics?.paperExitPolicyLabSummary ||
+        source.tradingQualitySummary?.paperExitPolicyLabSummary,
+      { status: "empty", count: 0, openDecisionCount: 0, diagnosticsOnly: true, liveBehaviorChanged: false }
+    ),
     portfolioCrowdingSummary: objectOrFallback(source.portfolioCrowdingSummary || source.tradingQualitySummary?.portfolioCrowding || source.tradingQualitySummary?.portfolioCrowdingSummary, { crowdingRisk: "unknown", reasons: [] }),
     portfolioScenarioStressSummary: objectOrFallback(
       source.portfolioScenarioStressSummary ||
