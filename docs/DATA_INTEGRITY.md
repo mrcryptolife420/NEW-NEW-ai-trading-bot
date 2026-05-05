@@ -108,6 +108,12 @@ This gate is for research/retrain trust only. It must not auto-promote strategie
 
 It does not change strategy behavior.
 
+## Cross-Exchange Price Sanity
+
+`src/market/crossExchangeDivergence.js` compares Binance-local mid/last prices with optional external reference prices without requiring any provider in tests or runtime. It reports `priceSanityStatus`, `divergenceBps`, `referenceCount`, `confidence`, `warnings` and `staleSources`.
+
+Missing references, stale references or severe divergence can only degrade diagnostics or recommend conservative review. It cannot force-unlock exchange safety, lower live thresholds, increase size or place orders.
+
 ## Replay Pack Manifest
 
 `src/runtime/replayPackManifest.js` builds deterministic replay pack manifests with input hashes and warnings for missing/duplicate samples.

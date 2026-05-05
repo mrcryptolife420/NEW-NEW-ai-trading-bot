@@ -202,6 +202,7 @@ export function buildTradingPathHealth({
   feedSummary = null,
   readmodelSummary = null,
   apiDegradationSummary = null,
+  priceSanitySummary = null,
   scanSummary = null,
   now = new Date().toISOString(),
   config = {}
@@ -224,6 +225,10 @@ export function buildTradingPathHealth({
   const apiDegradation = objectOrFallback(
     apiDegradationSummary || dashboard.apiDegradationSummary || runtime.apiDegradationSummary || runtime.ops?.apiDegradationSummary,
     { degradationLevel: "normal", blockedActions: [], reasons: [] }
+  );
+  const priceSanity = objectOrFallback(
+    priceSanitySummary || dashboard.priceSanitySummary || dashboard.marketContext?.priceSanitySummary || runtime.priceSanitySummary || runtime.crossExchangeDivergenceSummary,
+    { priceSanityStatus: "unknown", warnings: [], staleSources: [] }
   );
   const readmodelAt = latestTimestamp(
     readmodel.rebuiltAt,
@@ -272,6 +277,12 @@ export function buildTradingPathHealth({
   }
   if (arr(apiDegradation.blockedActions).includes("open_new_entries")) {
     blockingReasons.push("api_degradation_blocks_entries");
+  }
+  if (["diverged", "stale"].includes(priceSanity.priceSanityStatus) || arr(priceSanity.warnings).includes("severe_cross_exchange_divergence")) {
+    staleSources.push(`price_sanity_${priceSanity.priceSanityStatus || "degraded"}`);
+    if (priceSanity.priceSanityStatus === "diverged") {
+      blockingReasons.push("price_sanity_diverged");
+    }
   }
   if (!dashboardFreshness.fresh) staleSources.push(dashboardFreshness.staleReason);
   if (!readmodelFresh && readmodel.status) staleSources.push("readmodel_snapshot_stale");
@@ -337,6 +348,7 @@ export function buildTradingPathHealth({
     cycleAgeMs,
     feedSummary: feed,
     apiDegradationSummary: apiDegradation,
+    priceSanitySummary: priceSanity,
     dashboardFreshness,
     readmodelFreshness: {
       fresh: readmodelFresh,

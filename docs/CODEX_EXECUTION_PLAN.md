@@ -1016,24 +1016,26 @@ Acceptatie:
 ## B14 — Cross-exchange divergence en Binance-local price sanity
 
 Bron: nieuwe analyse / market data quality improvement
-Status: proposed
+Status: completed
 
 Doel: detecteren wanneer Binance-prijs afwijkt van bredere markt of wanneer lokale feed corrupt/stale lijkt.
 
-- [ ] Maak of update `src/market/crossExchangeDivergence.js`.
-- [ ] Provider-interface voor externe reference prices zonder hard dependency.
-- [ ] Vergelijk Binance mid/last met reference mid/last.
-- [ ] Output bevat `divergenceBps`, `referenceCount`, `confidence`, `warnings`, `staleSources`.
-- [ ] Voeg `priceSanityStatus` toe aan data freshness/trading path health indien veilig.
-- [ ] Tests toevoegen voor normal divergence, severe divergence, stale reference, missing references en outlier reference.
-- [ ] Docs bijwerken in `docs/DATA_INTEGRITY.md` of `docs/TRADING_FEATURE_INVENTORY.md`.
+- [x] Maak of update `src/market/crossExchangeDivergence.js`.
+- [x] Provider-interface voor externe reference prices zonder hard dependency.
+- [x] Vergelijk Binance mid/last met reference mid/last.
+- [x] Output bevat `divergenceBps`, `referenceCount`, `confidence`, `warnings`, `staleSources`.
+- [x] Voeg `priceSanityStatus` toe aan data freshness/trading path health indien veilig.
+- [x] Tests toevoegen voor normal divergence, severe divergence, stale reference, missing references en outlier reference.
+- [x] Docs bijwerken in `docs/DATA_INTEGRITY.md` of `docs/TRADING_FEATURE_INVENTORY.md`.
+
+Notitie 2026-05-05: `src/market/crossExchangeDivergence.js` toegevoegd als pure provider-onafhankelijke price-sanity helper bovenop bestaande reference-venue tooling. De helper filtert outlier references, markeert stale/missing references en exposeert optioneel `priceSanitySummary` naar dashboard/trading-path diagnostics. Geen externe provider is vereist voor tests; geen live threshold relief of force-unlock toegevoegd.
 
 Acceptatie:
 
-- [ ] Severe divergence verlaagt confidence of blokkeert diagnostics volgens config.
-- [ ] Geen externe provider vereist om tests te draaien.
-- [ ] Geen live behavior agressiever.
-- [ ] `npm test` slaagt.
+- [x] Severe divergence verlaagt confidence of blokkeert diagnostics volgens config.
+- [x] Geen externe provider vereist om tests te draaien.
+- [x] Geen live behavior agressiever.
+- [x] `npm test` slaagt.
 
 ## B15 — Microstructure fill simulator voor paper/backtest
 

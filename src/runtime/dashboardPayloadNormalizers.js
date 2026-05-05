@@ -161,6 +161,14 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.market?.stablecoinRiskSummary,
       { status: "unavailable", stablecoinRisk: "unknown", affectedQuotes: [], depegBps: 0, warnings: [], entryPenalty: 0, manualReviewRecommended: false }
     ),
+    priceSanitySummary: objectOrFallback(
+      source.priceSanitySummary ||
+        source.crossExchangeDivergenceSummary ||
+        source.marketContext?.priceSanitySummary ||
+        source.marketContext?.crossExchangeDivergenceSummary ||
+        source.market?.priceSanitySummary,
+      { status: "unavailable", priceSanityStatus: "unknown", divergenceBps: null, referenceCount: 0, confidence: 0, warnings: [], staleSources: [] }
+    ),
     candidateExplainabilitySummary: objectOrFallback(
       source.candidateExplainabilitySummary ||
         source.explainability?.candidateExplainabilitySummary ||
