@@ -221,7 +221,7 @@ Notitie 2026-05-05: N3 is afgerond met `src/runtime/paperExitPolicyLab.js` en `t
 
 ### N4 - Paper Portfolio Allocator Simulation
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `paper_only`
 
@@ -243,24 +243,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Simulate alternative candidate portfolios per cycle.
-- [ ] Respect `MAX_OPEN_POSITIONS`, exposure caps, sector/family/regime limits and post-reconcile limits.
-- [ ] Tag suggested paper allocations as `paper_allocator_simulated`.
-- [ ] Expose `paperAllocatorSimulationSummary` in dashboard/readmodel.
+- [x] Simulate alternative candidate portfolios per cycle.
+- [x] Respect `MAX_OPEN_POSITIONS`, exposure caps, sector/family/regime limits and post-reconcile limits.
+- [x] Tag suggested paper allocations as `paper_allocator_simulated`.
+- [x] Expose `paperAllocatorSimulationSummary` in dashboard/readmodel.
 
 Tests:
 
-- [ ] Multiple positions remain allowed when within limits.
-- [ ] Same-symbol duplicate remains blocked.
-- [ ] Crowded family/regime lowers simulated size.
-- [ ] Exposure cap blocks simulated entry.
-- [ ] Live mode outputs diagnostics only.
+- [x] Multiple positions remain allowed when within limits.
+- [x] Same-symbol duplicate remains blocked.
+- [x] Crowded family/regime lowers simulated size.
+- [x] Exposure cap blocks simulated entry.
+- [x] Live mode outputs diagnostics only.
 
 Acceptance:
 
-- [ ] Paper allocation learning improves without changing live sizing.
-- [ ] Multi-position support is preserved.
-- [ ] `npm test` passes.
+- [x] Paper allocation learning improves without changing live sizing.
+- [x] Multi-position support is preserved.
+- [x] `npm test` passes.
+
+Notitie 2026-05-05: N4 is afgerond met `src/runtime/paperPortfolioAllocatorSimulation.js` en `test/paperPortfolioAllocatorSimulation.tests.js`. De simulatie gebruikt bestaande portfolio crowding en scenario stress, respecteert max open positions/exposure/family/regime/post-reconcile limieten, tagt voorstellen als `paper_allocator_simulated`, exposeert `paperAllocatorSimulationSummary` via dashboard normalizers en houdt live mode diagnostics-only.
 
 ### N5 - Data Quality Score V2
 

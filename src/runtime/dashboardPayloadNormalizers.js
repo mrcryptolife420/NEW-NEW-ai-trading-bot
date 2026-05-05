@@ -204,6 +204,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.tradingQualitySummary?.paperExitPolicyLabSummary,
       { status: "empty", count: 0, openDecisionCount: 0, diagnosticsOnly: true, liveBehaviorChanged: false }
     ),
+    paperAllocatorSimulationSummary: objectOrFallback(
+      source.paperAllocatorSimulationSummary ||
+        source.report?.paperAllocatorSimulationSummary ||
+        source.learningAnalytics?.paperAllocatorSimulationSummary ||
+        source.tradingQualitySummary?.paperAllocatorSimulationSummary,
+      { status: "empty", selectedCount: 0, rejectedCount: 0, diagnosticsOnly: true, liveBehaviorChanged: false, multiPositionSupported: true }
+    ),
     portfolioCrowdingSummary: objectOrFallback(source.portfolioCrowdingSummary || source.tradingQualitySummary?.portfolioCrowding || source.tradingQualitySummary?.portfolioCrowdingSummary, { crowdingRisk: "unknown", reasons: [] }),
     portfolioScenarioStressSummary: objectOrFallback(
       source.portfolioScenarioStressSummary ||
