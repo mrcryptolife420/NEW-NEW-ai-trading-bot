@@ -4,6 +4,10 @@ Deze roadmap is bedoeld als vaste leidraad voor Codex-runs in deze repo. Codex m
 
 Nieuwe aanbevelingen moeten altijd in deze hoofd-MD zichtbaar zijn. Aanvullende bestanden mogen detailinformatie bevatten, maar vervangen deze hoofdroadmap niet.
 
+## Roadmap completion status
+
+Status 2026-05-05: alle concrete uitvoerbare roadmapitems B1 t/m B23 staan op `completed` en zijn met regressietests afgerond. De overgebleven lege checkboxes in dit document zijn permanente safety-/reviewregels en templates; die blijven bewust open als doorlopende werkinstructies voor toekomstige Codex-runs.
+
 ## Globale regels
 
 - [ ] Live safety mag nooit versoepeld worden.
@@ -1297,9 +1301,11 @@ Remaining issues:
 
 Een fase is pas klaar als:
 
-- [ ] `npm test` slaagt.
-- [ ] Geen live safety versoepeld is.
-- [ ] Geen echte Binance orders in tests zitten.
-- [ ] Geen duplicate modules zijn gebouwd als bestaande modules konden worden uitgebreid.
-- [ ] Docs zijn bijgewerkt.
-- [ ] Deze roadmap is afgevinkt voor de afgeronde taak.
+- [x] `npm test` slaagt.
+- [x] Geen live safety versoepeld is.
+- [x] Geen echte Binance orders in tests zitten.
+- [x] Geen duplicate modules zijn gebouwd als bestaande modules konden worden uitgebreid.
+- [x] Docs zijn bijgewerkt.
+- [x] Deze roadmap is afgevinkt voor de afgeronde taak.
+
+Notitie 2026-05-05: B1 t/m B23 zijn afgerond. Laatste verificatie voor de laatste codewijziging: `npm test`, `npm run lint` en `npm run format:check` groen. Deze afsluitende wijziging is documentatie-only en markeert de hoofdroadmap als concreet afgewerkt.
