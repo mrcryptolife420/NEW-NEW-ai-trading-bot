@@ -1,0 +1,633 @@
+# Codex Next Build Plan
+
+Generated: 2026-05-05
+
+Purpose: code-grounded, non-duplicate roadmap for the next useful build work. This plan is intentionally paper-mode-first. It does not implement new trading behavior by itself.
+
+## Safety Rules
+
+- [ ] Live safety remains unchanged or stricter.
+- [ ] No real Binance orders in tests.
+- [ ] No force-unlock of exchange safety.
+- [ ] Exchange safety, reconcile, manual review and unresolved execution intents remain hard blockers.
+- [ ] Paper mode can learn, but hard-safety blockers cannot be relaxed.
+- [ ] Healthy multi-position behavior must keep using `MAX_OPEN_POSITIONS`, `MAX_TOTAL_EXPOSURE_FRACTION`, `MAX_POSITION_FRACTION` and portfolio/family/regime limits.
+- [ ] No hardcoded max-one-position behavior.
+- [ ] New trading features start as `diagnostics_only`, `shadow_only` or `paper_only`.
+- [ ] Paper-mode wiring must be explicit for every build item.
+- [ ] Do not build duplicate modules when an existing module can be extended.
+
+## Scan Basis
+
+This plan is based on the current codebase scan of:
+
+- `package.json`
+- `docs/CODEX_EXECUTION_PLAN.md`
+- `docs/IMPLEMENTATION_MATRIX.md`
+- `docs/TRADING_FEATURE_INVENTORY.md`
+- `docs/TRADING_QUALITY.md`
+- `docs/CODEX_ADDITIONAL_RECOMMENDATIONS_B24_B31.md`
+- `docs/DEBUG_AUDIT_REPORT.md`
+- `docs/TRADING_PATH_INACTIVE_DEBUG.md`
+- `src/ai`
+- `src/backtest`
+- `src/binance`
+- `src/cli`
+- `src/config`
+- `src/dashboard`
+- `src/events`
+- `src/execution`
+- `src/market`
+- `src/news`
+- `src/research`
+- `src/risk`
+- `src/runtime`
+- `src/storage`
+- `src/strategy`
+- `src/utils`
+- `test`
+
+Current feature audit summary at scan time:
+
+- 69 feature flags.
+- 12 audited feature groups.
+- 66 complete flag classifications.
+- 10 live-risk-review-needed classifications.
+- 5 documented config-only placeholders.
+- `feature:audit` status: `review_required`, not failed.
+
+Current runtime/status evidence at scan time:
+
+- Paper mode is active.
+- Readiness is degraded by `market_data_rest_pressure_guarded`.
+- Candidate generation exists, but candidates were rejected by model/meta/data-quality reasons such as `model_confidence_too_low`, `meta_followthrough_caution`, `quality_quorum_degraded` and relative weakness.
+- Market provider optional contexts are often disabled by config, so new work should first improve paper diagnostics and evidence capture rather than loosen entry gates.
+
+## Existing Capabilities To Reuse, Not Rebuild
+
+- Feature activation and promotion governance: `src/runtime/featureActivationGovernor.js`, `src/runtime/canaryReleaseGate.js`, `src/ai/antiOverfitGovernor.js`, `src/runtime/paperLiveParity.js`.
+- Exchange safety and reconcile recovery: `src/execution/autoReconcileCoordinator.js`, `src/execution/reconcileEvidenceSummary.js`, `src/runtime/liveReadinessAudit.js`, `src/runtime/safetySnapshot.js`.
+- Trading path diagnostics: `src/runtime/tradingPathHealth.js`, `src/runtime/marketSnapshotFlowDebug.js`, `src/runtime/apiDegradationPlanner.js`, `src/runtime/restBudgetGovernor.js`.
+- Candidate and decision explainability: `src/runtime/candidateExplainability.js`, `src/runtime/decisionInputLineage.js`, `src/runtime/decisionSupportDiagnostics.js`, `src/runtime/decisionContract.js`.
+- Strategy and indicator layers: `src/strategy/indicators.js`, `src/strategy/advancedIndicators.js`, `src/strategy/indicatorFeatureRegistry.js`, `src/strategy/indicatorRegimeScoring.js`, `src/strategy/setupThesis.js`, `src/strategy/exitPlanHints.js`, `src/strategy/failedBreakoutDetector.js`, `src/strategy/strategyRouter.js`.
+- Market context modules: `src/market/derivativesContext.js`, `src/market/derivativesMatrix.js`, `src/market/leadershipContext.js`, `src/market/crossExchangeDivergence.js`, `src/market/stablecoinRisk.js`, `src/runtime/cryptoRegimeRouter.js`, `src/runtime/symbolLifecycleRisk.js`, `src/runtime/symbolQualityDecay.js`.
+- Risk and portfolio modules: `src/risk/portfolioCrowding.js`, `src/risk/postReconcileEntryLimits.js`, `src/risk/dynamicExitLevels.js`, `src/risk/exitIntelligenceV2.js`, `src/risk/riskOfRuin.js`, `src/runtime/portfolioScenarioStress.js`, `src/runtime/opportunityCostAnalyzer.js`.
+- Execution realism and safety: `src/execution/microstructureFillSimulator.js`, `src/execution/orderStyleAdvisor.js`, `src/execution/stopLimitGap.js`, `src/execution/stopLimitStuck.js`, `src/execution/feeAccounting.js`, `src/execution/executionIntentLedger.js`.
+- Learning analytics: `src/runtime/tradeThesis.js`, `src/runtime/exitQuality.js`, `src/runtime/vetoOutcome.js`, `src/runtime/failureLibrary.js`, `src/runtime/regimeConfusion.js`, `src/runtime/learningEvidencePipeline.js`, `src/runtime/promotionDossier.js`, `src/runtime/rollbackWatch.js`, `src/runtime/replayPackScoring.js`.
+- Data integrity and replay: `src/storage/schemaVersion.js`, `src/storage/migrations/index.js`, `src/storage/recorderIntegrityAudit.js`, `src/runtime/replayDeterminism.js`, `src/runtime/replayPackManifest.js`, `src/backtest/backtestMetrics.js`, `src/backtest/backtestIntegrity.js`, `src/runtime/walkForwardBacktest.js`.
+
+## Priority Order
+
+1. P0: Paper evidence capture and data-quality truth. The bot already has many diagnostics, but not all are stitched into one paper-learning loop.
+2. P1: Paper-mode decision lifecycle and candidate outcome tracking. This helps explain why no paper trades happen without loosening blockers.
+3. P2: Paper execution realism and exit challenger analysis. This improves learning quality before any live review.
+4. P3: Operator/dashboard evidence drilldowns. This reduces silent failure and stale status confusion.
+5. P4: Governance/CI gates that keep new features from becoming config-only or accidentally live-impacting.
+
+## Next Build Backlog
+
+### N1 - Paper Candidate Lab
+
+Status: proposed
+Priority: P0
+Initial activation: `paper_only` plus `diagnostics_only` in live
+
+Goal: connect existing candidate diagnostics into one paper-only evaluation layer so every generated candidate gets a paper learning record, even when it is blocked.
+
+Reuse:
+
+- `src/runtime/candidateExplainability.js`
+- `src/runtime/decisionSupportDiagnostics.js`
+- `src/runtime/learningEvidencePipeline.js`
+- `src/runtime/featureActivationGovernor.js`
+- `src/runtime/tradingBot.js`
+- `src/storage/readModelStore.js`
+
+Do not duplicate:
+
+- Do not build another candidate explainability module.
+- Do not build another feature activation governor.
+
+Paper-mode connection:
+
+- [ ] Add a paper-only candidate lab record for each candidate: generated, blocked, approved, skipped, shadow-approved.
+- [ ] Store `candidateId`, `decisionId`, `setupType`, top evidence, top conflicts, blocker family, feature activation stage and paper eligibility.
+- [ ] Make live mode emit diagnostics only with `runtimeApplied=false`.
+- [ ] Add dashboard/readmodel summary: `paperCandidateLabSummary`.
+
+Tests:
+
+- [ ] Blocked candidate is recorded without executing.
+- [ ] Approved paper candidate is recorded with paper eligibility.
+- [ ] Live mode produces diagnostics only and cannot change execution permission.
+- [ ] Hard-safety blocker remains hard in paper.
+- [ ] Missing candidate fields are fallback-safe.
+
+Acceptance:
+
+- [ ] Paper mode has an auditable candidate trail.
+- [ ] No live threshold, ranking, sizing or execution behavior changes.
+- [ ] `npm test` passes.
+
+### N2 - Candidate Outcome Tracker
+
+Status: proposed
+Priority: P0
+Initial activation: `paper_only`
+
+Goal: evaluate what happened after blocked or skipped paper candidates over fixed horizons without forcing trades.
+
+Reuse:
+
+- `src/runtime/vetoOutcome.js`
+- `src/runtime/badVetoLearningService.js`
+- `src/runtime/learningEvidencePipeline.js`
+- `src/runtime/replayPackScoring.js`
+- `src/runtime/marketHistory.js`
+
+Do not duplicate:
+
+- Do not build a second veto labeler.
+- Do not build a separate failure library.
+
+Paper-mode connection:
+
+- [ ] Queue candidate outcome observations for 15m, 1h and 4h horizons.
+- [ ] Label outcomes as `good_veto`, `bad_veto`, `neutral_veto` or `unknown_veto`.
+- [ ] Attach blocker family, strategy family, regime and feature quality to each outcome.
+- [ ] Expose `missedWinnerSummary` and `badVetoSummary` in dashboard/readmodel.
+
+Tests:
+
+- [ ] Avoided loser becomes `good_veto`.
+- [ ] Missed winner becomes `bad_veto`.
+- [ ] Flat/noisy path becomes `neutral_veto`.
+- [ ] Missing future candles becomes `unknown_veto`.
+- [ ] Exchange-safety blocked candidate cannot be used to relax hard safety.
+
+Acceptance:
+
+- [ ] Paper blocked decisions become measurable learning evidence.
+- [ ] Hard blockers are not softened by bad-veto evidence.
+- [ ] `npm test` passes.
+
+### N3 - Paper Exit Policy Lab
+
+Status: proposed
+Priority: P1
+Initial activation: `shadow_only` / `paper_only`
+
+Goal: compare existing paper exits against alternative exit plans without changing live exits.
+
+Reuse:
+
+- `src/risk/exitIntelligenceV2.js`
+- `src/risk/dynamicExitLevels.js`
+- `src/strategy/exitPlanHints.js`
+- `src/runtime/exitQuality.js`
+- `src/runtime/tradeQualityAnalytics.js`
+- `src/runtime/opportunityCostAnalyzer.js`
+
+Do not duplicate:
+
+- Do not replace fixed stop-loss/take-profit.
+- Do not create another exit intelligence module.
+
+Paper-mode connection:
+
+- [ ] For paper positions, record challenger exit decisions: hold, trim, trail, exit.
+- [ ] Compare actual paper exit to challenger exit using MFE, MAE, exit efficiency and gave-back percent.
+- [ ] Add `paperExitPolicyLabSummary` to report/dashboard.
+- [ ] Keep live mode as diagnostics-only unless a later explicit safety review approves stricter behavior.
+
+Tests:
+
+- [ ] Trend winner suggests trail, not full exit.
+- [ ] Failed breakout suggests exit.
+- [ ] Time decay suggests trim/exit.
+- [ ] Missing candles return safe unknown recommendation.
+- [ ] Live recommendation never increases position or loosens protection.
+
+Acceptance:
+
+- [ ] Paper exits produce measurable challenger evidence.
+- [ ] No live exit behavior is changed.
+- [ ] `npm test` passes.
+
+### N4 - Paper Portfolio Allocator Simulation
+
+Status: proposed
+Priority: P1
+Initial activation: `paper_only`
+
+Goal: simulate portfolio allocation choices in paper mode using existing risk and crowding diagnostics before changing real sizing.
+
+Reuse:
+
+- `src/risk/portfolioCrowding.js`
+- `src/runtime/portfolioScenarioStress.js`
+- `src/risk/riskOfRuin.js`
+- `src/runtime/opportunityCostAnalyzer.js`
+- `src/runtime/capitalGovernor.js`
+- `src/runtime/candidateRanking.js`
+
+Do not duplicate:
+
+- Do not build a second capital governor.
+- Do not impose max-one-position behavior.
+
+Paper-mode connection:
+
+- [ ] Simulate alternative candidate portfolios per cycle.
+- [ ] Respect `MAX_OPEN_POSITIONS`, exposure caps, sector/family/regime limits and post-reconcile limits.
+- [ ] Tag suggested paper allocations as `paper_allocator_simulated`.
+- [ ] Expose `paperAllocatorSimulationSummary` in dashboard/readmodel.
+
+Tests:
+
+- [ ] Multiple positions remain allowed when within limits.
+- [ ] Same-symbol duplicate remains blocked.
+- [ ] Crowded family/regime lowers simulated size.
+- [ ] Exposure cap blocks simulated entry.
+- [ ] Live mode outputs diagnostics only.
+
+Acceptance:
+
+- [ ] Paper allocation learning improves without changing live sizing.
+- [ ] Multi-position support is preserved.
+- [ ] `npm test` passes.
+
+### N5 - Data Quality Score V2
+
+Status: proposed
+Priority: P1
+Initial activation: `diagnostics_only`
+
+Goal: unify candle/ticker/orderbook/source quality into one symbol-level score consumed by paper diagnostics.
+
+Reuse:
+
+- `src/runtime/dataFreshnessScore.js`
+- `src/runtime/tradingPathHealth.js`
+- `src/runtime/decisionInputLineage.js`
+- `src/market/crossExchangeDivergence.js`
+- `src/market/stablecoinRisk.js`
+- `src/storage/recorderIntegrityAudit.js`
+
+Do not duplicate:
+
+- Do not rebuild existing freshness scoring.
+- Do not rebuild cross-exchange sanity checks.
+
+Paper-mode connection:
+
+- [ ] Add `dataQualityScore` per symbol/candidate in paper decision records.
+- [ ] Add explicit missing/stale/anomaly reasons.
+- [ ] Let paper learning filter unreliable evidence from scorecards.
+- [ ] Live may only use negative quality as caution/blocking after review.
+
+Tests:
+
+- [ ] Clean candles/orderbook produce high quality.
+- [ ] Missing candle gap lowers quality.
+- [ ] Impossible OHLC lowers quality.
+- [ ] Stale ticker lowers quality.
+- [ ] Missing optional provider does not mark data as safe.
+
+Acceptance:
+
+- [ ] Bad data cannot silently become trusted paper evidence.
+- [ ] Missing data does not loosen live safety.
+- [ ] `npm test` passes.
+
+### N6 - Stream Health Monitor And Failover Evidence
+
+Status: proposed
+Priority: P1
+Initial activation: `diagnostics_only`
+
+Goal: make public/user stream health explicit, especially around local order book readiness and REST fallback pressure.
+
+Reuse:
+
+- `src/runtime/streamCoordinator.js`
+- `src/runtime/apiDegradationPlanner.js`
+- `src/runtime/tradingPathHealth.js`
+- `src/runtime/restBudgetGovernor.js`
+- `src/market/localOrderBook.js`
+
+Do not duplicate:
+
+- Do not build a second REST budget governor.
+- Do not force REST fallback when streams are unhealthy.
+
+Paper-mode connection:
+
+- [ ] Add stream health to paper candidate evidence.
+- [ ] Mark paper learning records that relied on REST fallback.
+- [ ] Expose `streamHealthSummary` and stream replacement availability in dashboard/readmodel.
+
+Tests:
+
+- [ ] Healthy streams produce `ready`.
+- [ ] Stale user stream blocks live readiness diagnostics.
+- [ ] Local book stream not ready explains guarded depth fallback.
+- [ ] Reconnect storm marks degraded.
+- [ ] Missing stream metadata is fallback-safe.
+
+Acceptance:
+
+- [ ] Operator can see whether paper decisions used stream or fallback data.
+- [ ] No force-unlock or live safety relief.
+- [ ] `npm test` passes.
+
+### N7 - Order Lifecycle And Orphan Order Auditor
+
+Status: proposed
+Priority: P1
+Initial activation: `governance_only`
+
+Goal: make every order lifecycle state auditable and block ambiguous exchange truth.
+
+Reuse:
+
+- `src/execution/executionIntentLedger.js`
+- `src/execution/autoReconcileCoordinator.js`
+- `src/execution/liveBrokerReconcile.js`
+- `src/execution/reconcileEvidenceSummary.js`
+- `src/runtime/liveReadinessAudit.js`
+
+Do not duplicate:
+
+- Do not replace auto-reconcile.
+- Do not add automatic cancels unless a later safe policy explicitly allows it.
+
+Paper-mode connection:
+
+- [ ] Mirror paper order lifecycle states for learning/debug consistency.
+- [ ] Mark paper-only orphan simulations separately from live exchange truth.
+- [ ] Add `orderLifecycleAuditSummary` to dashboard/readmodel.
+
+Tests:
+
+- [ ] Clean lifecycle passes.
+- [ ] Exchange-only order becomes `orphaned`.
+- [ ] Local-only stale order becomes degraded.
+- [ ] Unknown protective order blocks entries.
+- [ ] Tests use fake exchange data only.
+
+Acceptance:
+
+- [ ] Ambiguous order state is visible and conservative.
+- [ ] No live mutation is added.
+- [ ] `npm test` passes.
+
+### N8 - Paper Replay Coverage Autopilot
+
+Status: proposed
+Priority: P2
+Initial activation: `paper_only`
+
+Goal: turn replay coverage gaps into explicit paper/research tasks so learning is not trusted on empty history.
+
+Reuse:
+
+- `src/runtime/marketReplayEngine.js`
+- `src/runtime/replayDeterminism.js`
+- `src/runtime/replayPackManifest.js`
+- `src/runtime/replayPackScoring.js`
+- `src/market/historicalDataLoader.js`
+- `src/storage/marketHistoryStore.js`
+
+Do not duplicate:
+
+- Do not build another replay engine.
+- Do not perform unbounded backfills automatically.
+
+Paper-mode connection:
+
+- [ ] Detect missing candles per symbol/timeframe needed by paper learning.
+- [ ] Build a dry-run backfill plan with request-budget estimate.
+- [ ] Mark strategies as `replay_coverage_weak` when coverage is poor.
+- [ ] Expose `paperReplayCoverageSummary` in dashboard/readmodel.
+
+Tests:
+
+- [ ] Empty history produces blocked/weak coverage.
+- [ ] Partial history produces targeted backfill plan.
+- [ ] Full history produces usable coverage.
+- [ ] Request-budget cap prevents unsafe backfill plan.
+- [ ] No live runtime behavior changes.
+
+Acceptance:
+
+- [ ] Paper learning knows when replay evidence is too weak.
+- [ ] Backfills remain controlled and observable.
+- [ ] `npm test` passes.
+
+### N9 - Golden Replay Regression Pack Generator
+
+Status: proposed
+Priority: P2
+Initial activation: `governance_only`
+
+Goal: convert important incidents and paper learning samples into deterministic replay fixtures for regression protection.
+
+Reuse:
+
+- `src/runtime/replayPackManifest.js`
+- `src/runtime/replayDeterminism.js`
+- `src/runtime/replayPackScoring.js`
+- `src/runtime/incidentReplayLab.js`
+- `src/utils/seeded.js`
+
+Do not duplicate:
+
+- Do not build a separate deterministic hashing system.
+
+Paper-mode connection:
+
+- [ ] Generate fixture candidates from bad vetoes, missed winners, reconcile uncertainty and execution drag.
+- [ ] Add replay pack metadata with config/data hash and seed.
+- [ ] Add CI-safe golden replay test runner for selected packs.
+
+Tests:
+
+- [ ] Same replay pack gives stable hash.
+- [ ] Changed decision output produces diff.
+- [ ] Missing sample is warning, not crash.
+- [ ] Bad veto/reconcile uncertainty receive high priority.
+
+Acceptance:
+
+- [ ] Regression packs protect paper learning and safety behavior.
+- [ ] No automatic live promotion.
+- [ ] `npm test` passes.
+
+### N10 - Paper Net-Edge Calibration Workbench
+
+Status: proposed
+Priority: P2
+Initial activation: `paper_only`
+
+Goal: make fees, slippage, spread and fill realism measurable per symbol/session/order style before enabling stricter net-edge gates.
+
+Reuse:
+
+- `src/runtime/netEdgeGate.js`
+- `src/execution/feeAccounting.js`
+- `src/execution/microstructureFillSimulator.js`
+- `src/execution/orderStyleAdvisor.js`
+- `src/runtime/paperLiveParity.js`
+- `src/runtime/performanceLedger.js`
+
+Do not duplicate:
+
+- Do not create another fee/slippage accounting path.
+
+Paper-mode connection:
+
+- [ ] Calculate realized vs simulated paper execution drag.
+- [ ] Report per symbol/session/order style net-edge error.
+- [ ] Generate paper-only calibration recommendations.
+- [ ] Keep live gate disabled unless separate live risk review enables stricter blocking.
+
+Tests:
+
+- [ ] High fees lower net edge.
+- [ ] Slippage model mismatch creates calibration warning.
+- [ ] Thin book lowers fill confidence.
+- [ ] Live mode cannot lower thresholds from positive net-edge diagnostics.
+
+Acceptance:
+
+- [ ] Paper fills become more realistic and auditable.
+- [ ] No live safety relief.
+- [ ] `npm test` passes.
+
+### N11 - Dashboard Evidence Drilldown
+
+Status: proposed
+Priority: P3
+Initial activation: `diagnostics_only`
+
+Goal: make the dashboard show one compact evidence chain for why the bot did or did not paper-trade.
+
+Reuse:
+
+- `src/runtime/dashboardPayloadNormalizers.js`
+- `src/runtime/dashboardSnapshotBuilder.js`
+- `src/runtime/viewMappers.js`
+- `src/dashboard/public/app.js`
+- `src/runtime/rootBlockerOrchestrator.js`
+- `src/runtime/candidateExplainability.js`
+- `src/runtime/tradingPathHealth.js`
+
+Do not duplicate:
+
+- Do not create a parallel dashboard payload contract.
+
+Paper-mode connection:
+
+- [ ] Add `paperDecisionEvidenceDrilldown` to decision cards.
+- [ ] Show root blocker, feature quality, setup thesis, net edge, portfolio crowding and exchange-safety dominance.
+- [ ] Clear stale frontend polling errors after successful snapshot fetch.
+- [ ] Keep old snapshot fallback compatibility.
+
+Tests:
+
+- [ ] Empty runtime dashboard does not crash.
+- [ ] Blocked exchange safety remains dominant.
+- [ ] Fresh paper candidate shows evidence chain.
+- [ ] Stale dashboard does not falsely claim trading allowed.
+- [ ] Frontend polling error clears after success.
+
+Acceptance:
+
+- [ ] Operator can distinguish no-alpha, bad-data, safety-blocked and dashboard-stale states.
+- [ ] No entry permission changes.
+- [ ] `npm test` passes.
+
+### N12 - Feature Wiring Completion Gate
+
+Status: proposed
+Priority: P3
+Initial activation: `governance_only`
+
+Goal: prevent future config-only or half-wired feature flags from silently accumulating.
+
+Reuse:
+
+- `src/runtime/featureAudit.js`
+- `src/runtime/featureActivationGovernor.js`
+- `src/config/schema.js`
+- `src/config/defaults`
+- `test/featureAudit.tests.js`
+- GitHub Actions test workflow
+
+Do not duplicate:
+
+- Do not replace `feature:audit`.
+
+Paper-mode connection:
+
+- [ ] Require each new trading flag to declare activation stage and paper-mode integration status.
+- [ ] Fail or warn when `paper_only` feature lacks tests or dashboard/readmodel visibility.
+- [ ] Add waiver list for intentionally documented config placeholders.
+- [ ] Add CI-safe command: `node src/cli.js feature:completion-gate`.
+
+Tests:
+
+- [ ] Complete feature passes gate.
+- [ ] Config-only feature without waiver fails/warns as configured.
+- [ ] Paper-only feature without tests is rejected.
+- [ ] Live-impact feature without safety review is rejected.
+
+Acceptance:
+
+- [ ] Future work stays connected and testable.
+- [ ] No trading behavior changes.
+- [ ] `npm test` passes.
+
+## Duplicate Or Rejected Suggestions
+
+Do not propose these as new modules because the codebase already has them:
+
+- Feature activation governor.
+- Canary release gate.
+- Anti-overfit governor.
+- Paper/live parity diagnostics.
+- Stablecoin depeg monitor.
+- Cross-exchange divergence checker.
+- Crypto derivatives context.
+- Leadership context.
+- Advanced indicator helper pack.
+- Indicator feature registry.
+- Dynamic exit levels.
+- Exit intelligence v2.
+- Trade quality analytics.
+- Failure library.
+- Veto outcome labeler.
+- Promotion dossier.
+- Rollback watch.
+- Auto-reconcile coordinator.
+- Panic flatten dry-run planner.
+- Schema versioning and migration framework.
+- Replay determinism and replay pack manifest.
+- Backtest metrics and backtest integrity helpers.
+
+## Implementation Template For Each Item
+
+Before implementing any item:
+
+- [ ] Re-read `docs/CODEX_EXECUTION_PLAN.md`.
+- [ ] Re-read this file.
+- [ ] Verify the listed reuse modules still exist.
+- [ ] Search for duplicate module names and similar helpers.
+- [ ] Implement only one item at a time.
+- [ ] Add regression tests.
+- [ ] Wire paper mode explicitly.
+- [ ] Keep live mode diagnostics-only unless the item is governance/safety-blocking.
+- [ ] Run `npm test`.
+- [ ] Update this file and `docs/CODEX_EXECUTION_PLAN.md`.
+

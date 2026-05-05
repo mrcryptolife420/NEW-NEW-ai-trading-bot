@@ -8,6 +8,25 @@ Nieuwe aanbevelingen moeten altijd in deze hoofd-MD zichtbaar zijn. Aanvullende 
 
 Status 2026-05-05: alle concrete uitvoerbare roadmapitems B1 t/m B23 staan op `completed` en zijn met regressietests afgerond. De overgebleven lege checkboxes in dit document zijn permanente safety-/reviewregels en templates; die blijven bewust open als doorlopende werkinstructies voor toekomstige Codex-runs.
 
+## Next build plan 2026-05-05
+
+Detailplan: `docs/CODEX_NEXT_BUILD_PLAN.md`
+
+Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn bewust niet-dubbel met bestaande modules. Elk item moet paper-mode-first worden aangesloten en mag live safety niet versoepelen.
+
+- [ ] N1 - Paper Candidate Lab.
+- [ ] N2 - Candidate Outcome Tracker.
+- [ ] N3 - Paper Exit Policy Lab.
+- [ ] N4 - Paper Portfolio Allocator Simulation.
+- [ ] N5 - Data Quality Score V2.
+- [ ] N6 - Stream Health Monitor And Failover Evidence.
+- [ ] N7 - Order Lifecycle And Orphan Order Auditor.
+- [ ] N8 - Paper Replay Coverage Autopilot.
+- [ ] N9 - Golden Replay Regression Pack Generator.
+- [ ] N10 - Paper Net-Edge Calibration Workbench.
+- [ ] N11 - Dashboard Evidence Drilldown.
+- [ ] N12 - Feature Wiring Completion Gate.
+
 ## Globale regels
 
 - [ ] Live safety mag nooit versoepeld worden.
