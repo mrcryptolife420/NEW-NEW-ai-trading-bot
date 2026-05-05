@@ -177,6 +177,26 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
+    candidateOutcomeSummary: objectOrFallback(
+      source.candidateOutcomeSummary ||
+        source.learningAnalytics?.candidateOutcomeSummary ||
+        source.paperLearning?.candidateOutcomeSummary,
+      { status: "empty", count: 0, queuedCount: 0, hardSafetyRelaxationAllowed: false }
+    ),
+    missedWinnerSummary: objectOrFallback(
+      source.missedWinnerSummary ||
+        source.learningAnalytics?.missedWinnerSummary ||
+        source.candidateOutcomeSummary?.missedWinnerSummary ||
+        source.learningAnalytics?.candidateOutcomeSummary?.missedWinnerSummary,
+      { count: 0, top: [] }
+    ),
+    badVetoSummary: objectOrFallback(
+      source.badVetoSummary ||
+        source.learningAnalytics?.badVetoSummary ||
+        source.candidateOutcomeSummary?.badVetoSummary ||
+        source.learningAnalytics?.candidateOutcomeSummary?.badVetoSummary,
+      { count: 0, byBlocker: [] }
+    ),
     portfolioCrowdingSummary: objectOrFallback(source.portfolioCrowdingSummary || source.tradingQualitySummary?.portfolioCrowding || source.tradingQualitySummary?.portfolioCrowdingSummary, { crowdingRisk: "unknown", reasons: [] }),
     portfolioScenarioStressSummary: objectOrFallback(
       source.portfolioScenarioStressSummary ||

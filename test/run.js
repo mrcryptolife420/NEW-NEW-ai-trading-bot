@@ -172,6 +172,7 @@ import { registerFeatureFlagHygieneTests } from "./featureFlagHygiene.tests.js";
 import { registerSafetyMaintenanceTests } from "./safetyMaintenance.tests.js";
 import { registerConfigOperatorMaintenanceTests } from "./configOperatorMaintenance.tests.js";
 import { registerLearningAnalyticsMaintenanceTests } from "./learningAnalyticsMaintenance.tests.js";
+import { registerCandidateOutcomeTrackerTests } from "./candidateOutcomeTracker.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32488,6 +32489,11 @@ await registerLearningAnalyticsMaintenanceTests({
   fs,
   os,
   runCli
+});
+
+await registerCandidateOutcomeTrackerTests({
+  runCheck,
+  assert
 });
 
 await registerOperatorSafetyToolingTests({

@@ -132,7 +132,7 @@ Acceptance:
 
 ### N2 - Candidate Outcome Tracker
 
-Status: proposed
+Status: completed
 Priority: P0
 Initial activation: `paper_only`
 
@@ -153,24 +153,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Queue candidate outcome observations for 15m, 1h and 4h horizons.
-- [ ] Label outcomes as `good_veto`, `bad_veto`, `neutral_veto` or `unknown_veto`.
-- [ ] Attach blocker family, strategy family, regime and feature quality to each outcome.
-- [ ] Expose `missedWinnerSummary` and `badVetoSummary` in dashboard/readmodel.
+- [x] Queue candidate outcome observations for 15m, 1h and 4h horizons.
+- [x] Label outcomes as `good_veto`, `bad_veto`, `neutral_veto` or `unknown_veto`.
+- [x] Attach blocker family, strategy family, regime and feature quality to each outcome.
+- [x] Expose `missedWinnerSummary` and `badVetoSummary` in dashboard/readmodel.
 
 Tests:
 
-- [ ] Avoided loser becomes `good_veto`.
-- [ ] Missed winner becomes `bad_veto`.
-- [ ] Flat/noisy path becomes `neutral_veto`.
-- [ ] Missing future candles becomes `unknown_veto`.
-- [ ] Exchange-safety blocked candidate cannot be used to relax hard safety.
+- [x] Avoided loser becomes `good_veto`.
+- [x] Missed winner becomes `bad_veto`.
+- [x] Flat/noisy path becomes `neutral_veto`.
+- [x] Missing future candles becomes `unknown_veto`.
+- [x] Exchange-safety blocked candidate cannot be used to relax hard safety.
 
 Acceptance:
 
-- [ ] Paper blocked decisions become measurable learning evidence.
-- [ ] Hard blockers are not softened by bad-veto evidence.
-- [ ] `npm test` passes.
+- [x] Paper blocked decisions become measurable learning evidence.
+- [x] Hard blockers are not softened by bad-veto evidence.
+- [x] `npm test` passes.
+
+Notitie 2026-05-05: N2 is afgerond met `src/runtime/candidateOutcomeTracker.js` en `test/candidateOutcomeTracker.tests.js`. De tracker gebruikt bestaande veto-labeling, queue't 15m/1h/4h observaties, bewaart blocker/strategy/regime/feature-quality context, exposeert `missedWinnerSummary`/`badVetoSummary` via dashboard normalizers en markeert hard-safety outcomes altijd als niet-relaxable.
 
 ### N3 - Paper Exit Policy Lab
 
