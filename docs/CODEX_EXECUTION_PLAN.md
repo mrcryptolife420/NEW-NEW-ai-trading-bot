@@ -31,7 +31,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [ ] N15 - Shadow Strategy Challenger Tournament.
 - [ ] N16 - Operator Review Label Workbench.
 - [ ] N17 - Watchlist Coverage Balancer.
-- [ ] N18 - Paper Trade Lifecycle Contract Harness.
+- [x] N18 - Paper Trade Lifecycle Contract Harness.
 - [ ] N19 - Readmodel Analytics Query Pack.
 - [ ] N20 - Root Blocker Staleness Verifier.
 

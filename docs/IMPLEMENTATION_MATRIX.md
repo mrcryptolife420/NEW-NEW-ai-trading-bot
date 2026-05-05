@@ -51,6 +51,7 @@ Safety-first implementation status for the current maintenance pass. Source-of-t
 | Learning evidence pipeline | Analytics integration | `src/runtime/learningEvidencePipeline.js`, existing learning helpers | `test/tradingQualityUpgrade.tests.js` | Learning summaries | Partial | No live promotion | Pure/fallback-safe. |
 | Anti-overfit governor | Governance diagnostics | `src/ai/antiOverfitGovernor.js` | `test/tradingQualityUpgrade.tests.js` | Change governance | Partial | Blocks unsafe promotion | No threshold relief. |
 | Market snapshot flow diagnostics | Implemented | `src/runtime/marketSnapshotFlowDebug.js`, `src/runtime/tradingBot.js`, `src/cli/runCli.js` | `test/tradingPathHealth.tests.js` | Runtime diagnostics | CLI/dashboard summary | No safety bypass | Compact summaries only. |
+| Paper trade lifecycle contract harness | Test/governance harness | `src/runtime/paperTradeLifecycleContract.js`, `src/execution/paperBroker.js` | `test/paperTradeLifecycleContract.tests.js` | Test-only lifecycle validation | No | No live impact | Proves paper entry/block/close contract without Binance calls or live broker usage. |
 
 ## Safety Invariants
 

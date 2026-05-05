@@ -89,7 +89,7 @@ Current runtime/status evidence at scan time:
 
 ### N1 - Paper Candidate Lab
 
-Status: proposed
+Status: completed
 Priority: P0
 Initial activation: `paper_only` plus `diagnostics_only` in live
 
@@ -808,7 +808,7 @@ Acceptance:
 
 ### N18 - Paper Trade Lifecycle Contract Harness
 
-Status: proposed
+Status: completed
 Priority: P0
 Initial activation: `governance_only`
 
@@ -831,23 +831,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Build synthetic fixture scenarios for approved paper entry, blocked hard-safety setup, blocked model-confidence setup and closed paper trade.
-- [ ] Assert journal/readmodel/dashboard fields line up.
-- [ ] Add a read-only CLI smoke command only if useful after tests exist.
+- [x] Build synthetic fixture scenarios for approved paper entry, blocked hard-safety setup, blocked model-confidence setup and closed paper trade.
+- [x] Assert journal/readmodel/dashboard fields line up.
+- [x] Add a read-only CLI smoke command only if useful after tests exist.
+  - Notitie: geen extra CLI smoke command toegevoegd; de contract-harness draait direct in `npm test` en gebruikt geen live broker of Binance calls.
 
 Tests:
 
-- [ ] Approved paper fixture creates a paper trade record.
-- [ ] Hard-safety fixture blocks before broker.
-- [ ] Model-confidence fixture reports blocker without execution.
-- [ ] Closed paper fixture updates trade quality/readmodel summary.
-- [ ] No live broker is instantiated.
+- [x] Approved paper fixture creates a paper trade record.
+- [x] Hard-safety fixture blocks before broker.
+- [x] Model-confidence fixture reports blocker without execution.
+- [x] Closed paper fixture updates trade quality/readmodel summary.
+- [x] No live broker is instantiated.
 
 Acceptance:
 
-- [ ] Paper path has end-to-end regression coverage.
-- [ ] No safety gate is loosened.
-- [ ] `npm test` passes.
+- [x] Paper path has end-to-end regression coverage.
+- [x] No safety gate is loosened.
+- [x] `npm test` passes.
+
+Notitie 2026-05-05: N18 is afgerond met `src/runtime/paperTradeLifecycleContract.js` en `test/paperTradeLifecycleContract.tests.js`. De harness bewijst approved paper entry/close, hard-safety block-before-broker, model-confidence block-before-execution, readmodel/dashboard linkage, trade-quality aanwezigheid en afwezigheid van live broker gebruik.
 
 ### N19 - Readmodel Analytics Query Pack
 

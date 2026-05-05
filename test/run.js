@@ -199,6 +199,7 @@ import { registerOrderStyleAdvisorTests } from "./orderStyleAdvisor.tests.js";
 import { registerSymbolQualityDecayTests } from "./symbolQualityDecay.tests.js";
 import { registerStablecoinRiskTests } from "./stablecoinRisk.tests.js";
 import { registerCrossExchangeDivergenceTests } from "./crossExchangeDivergence.tests.js";
+import { registerPaperTradeLifecycleContractTests } from "./paperTradeLifecycleContract.tests.js";
 import http from "node:http";
 
 async function runCheck(name, fn) {
@@ -32632,6 +32633,13 @@ await registerStablecoinRiskTests({
 await registerCrossExchangeDivergenceTests({
   runCheck,
   assert
+});
+
+await registerPaperTradeLifecycleContractTests({
+  runCheck,
+  assert,
+  PaperBroker,
+  makeConfig
 });
 
 await registerStopLimitStuckTests({
