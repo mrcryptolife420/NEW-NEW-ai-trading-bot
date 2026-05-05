@@ -266,7 +266,7 @@ Notitie 2026-05-05: N4 is afgerond met `src/runtime/paperPortfolioAllocatorSimul
 
 ### N5 - Data Quality Score V2
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `diagnostics_only`
 
@@ -288,24 +288,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add `dataQualityScore` per symbol/candidate in paper decision records.
-- [ ] Add explicit missing/stale/anomaly reasons.
-- [ ] Let paper learning filter unreliable evidence from scorecards.
-- [ ] Live may only use negative quality as caution/blocking after review.
+- [x] Add `dataQualityScore` per symbol/candidate in paper decision records.
+- [x] Add explicit missing/stale/anomaly reasons.
+- [x] Let paper learning filter unreliable evidence from scorecards.
+- [x] Live may only use negative quality as caution/blocking after review.
 
 Tests:
 
-- [ ] Clean candles/orderbook produce high quality.
-- [ ] Missing candle gap lowers quality.
-- [ ] Impossible OHLC lowers quality.
-- [ ] Stale ticker lowers quality.
-- [ ] Missing optional provider does not mark data as safe.
+- [x] Clean candles/orderbook produce high quality.
+- [x] Missing candle gap lowers quality.
+- [x] Impossible OHLC lowers quality.
+- [x] Stale ticker lowers quality.
+- [x] Missing optional provider does not mark data as safe.
 
 Acceptance:
 
-- [ ] Bad data cannot silently become trusted paper evidence.
-- [ ] Missing data does not loosen live safety.
-- [ ] `npm test` passes.
+- [x] Bad data cannot silently become trusted paper evidence.
+- [x] Missing data does not loosen live safety.
+- [x] `npm test` passes.
+
+Notitie 2026-05-05: N5 is afgerond met `src/runtime/dataQualityScoreV2.js` en `test/dataQualityScoreV2.tests.js`. De score combineert candle-validatie, ticker freshness, orderbook kwaliteit, bestaande data freshness en decision input lineage; verrijkt candidates met `dataQualityScore`, expliciete redenen en `learningEvidenceEligible`; exposeert `dataQualityScoreSummary`; live-impact blijft `negative_only`/diagnostics.
 
 ### N6 - Stream Health Monitor And Failover Evidence
 

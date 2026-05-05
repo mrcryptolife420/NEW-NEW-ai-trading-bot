@@ -175,6 +175,7 @@ import { registerLearningAnalyticsMaintenanceTests } from "./learningAnalyticsMa
 import { registerCandidateOutcomeTrackerTests } from "./candidateOutcomeTracker.tests.js";
 import { registerPaperExitPolicyLabTests } from "./paperExitPolicyLab.tests.js";
 import { registerPaperPortfolioAllocatorSimulationTests } from "./paperPortfolioAllocatorSimulation.tests.js";
+import { registerDataQualityScoreV2Tests } from "./dataQualityScoreV2.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32504,6 +32505,11 @@ await registerPaperExitPolicyLabTests({
 });
 
 await registerPaperPortfolioAllocatorSimulationTests({
+  runCheck,
+  assert
+});
+
+await registerDataQualityScoreV2Tests({
   runCheck,
   assert
 });

@@ -99,6 +99,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     storageAuditSummary: objectOrFallback(source.storageAuditSummary || source.dataIntegrity?.storageAuditSummary, { status: "unavailable" }),
     recorderIntegritySummary: objectOrFallback(source.recorderIntegritySummary || source.dataIntegrity?.recorderIntegritySummary, { status: "unavailable", issues: [] }),
     dataFreshnessSummary: objectOrFallback(source.dataFreshnessSummary || source.dataIntegrity?.dataFreshnessSummary, { status: "unknown", staleSources: [] }),
+    dataQualityScoreSummary: objectOrFallback(
+      source.dataQualityScoreSummary ||
+        source.dataQualitySummary ||
+        source.dataIntegrity?.dataQualityScoreSummary ||
+        source.decisionDiagnostics?.dataQualityScoreSummary,
+      { status: "empty", count: 0, diagnosticsOnly: true, liveSafetyImpact: "negative_only" }
+    ),
     requestBudgetSummary: objectOrFallback(
       source.requestBudgetSummary ||
         source.requestBudget ||
