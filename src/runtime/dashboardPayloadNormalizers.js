@@ -390,6 +390,26 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveBehaviorChanged: false
       }
     ),
+    paperAnalyticsReadmodelSummary: objectOrFallback(
+      source.paperAnalyticsReadmodelSummary ||
+        source.readModel?.paperAnalyticsReadmodelSummary ||
+        source.readModel?.paperAnalytics ||
+        source.learningAnalytics?.paperAnalyticsReadmodelSummary,
+      {
+        status: "unavailable",
+        queryStatus: "unavailable",
+        source: "sqlite_read_model",
+        sourceOfTruth: "json_ndjson",
+        sourceOfTruthMigrated: false,
+        paperCandidates: [],
+        blockerTimelines: [],
+        vetoOutcomes: {},
+        paperTrades: [],
+        exitQuality: {},
+        cohortScorecards: [],
+        warnings: ["readmodel_analytics_unavailable"]
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

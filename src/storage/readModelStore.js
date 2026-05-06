@@ -7,6 +7,7 @@ import { buildStrategyEvidenceScorecards } from "../runtime/strategyEvidenceScor
 import { buildOperatorRunbookForReason, buildStrategyLifecycleDiagnostics } from "../runtime/operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "../runtime/tradingImprovementDiagnostics.js";
 import { ensureDir } from "../utils/fs.js";
+import { buildPaperAnalyticsReadModelSummary } from "./readModelAnalyticsQueries.js";
 
 const READ_MODEL_SCHEMA_VERSION = 1;
 
@@ -623,7 +624,7 @@ export class ReadModelStore {
     this.ensureSchema();
     const metaRows = db.prepare("SELECT key, value FROM meta").all();
     const meta = Object.fromEntries(metaRows.map((row) => [row.key, row.value]));
-    return {
+    const baseStatus = {
       status: "ready",
       dbPath: this.dbPath,
       schemaVersion: Number(meta.schemaVersion || READ_MODEL_SCHEMA_VERSION),
@@ -640,6 +641,14 @@ export class ReadModelStore {
         feeAttribution: tableCount(db, "fee_attribution"),
         replayTraces: tableCount(db, "replay_traces")
       }
+    };
+    return {
+      ...baseStatus,
+      paperAnalyticsReadmodelSummary: buildPaperAnalyticsReadModelSummary({
+        db,
+        status: baseStatus,
+        limit: 20
+      })
     };
   }
 
@@ -689,6 +698,11 @@ export class ReadModelStore {
       latestReplay,
       replayCoverageGate,
       requestBudget,
+      paperAnalyticsReadmodelSummary: buildPaperAnalyticsReadModelSummary({
+        db,
+        status,
+        limit
+      }),
       operatorRunbooks,
       strategyLifecycleDiagnostics,
       tradingImprovementDiagnostics

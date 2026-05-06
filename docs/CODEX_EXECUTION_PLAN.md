@@ -32,7 +32,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N16 - Operator Review Label Workbench.
 - [x] N17 - Watchlist Coverage Balancer.
 - [x] N18 - Paper Trade Lifecycle Contract Harness.
-- [ ] N19 - Readmodel Analytics Query Pack.
+- [x] N19 - Readmodel Analytics Query Pack.
 - [x] N20 - Root Blocker Staleness Verifier.
 
 ## Globale regels

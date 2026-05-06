@@ -886,7 +886,7 @@ Notitie 2026-05-05: N18 is afgerond met `src/runtime/paperTradeLifecycleContract
 
 ### N19 - Readmodel Analytics Query Pack
 
-Status: proposed
+Status: completed
 Priority: P3
 Initial activation: `diagnostics_only`
 
@@ -906,24 +906,25 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add query helpers for paper candidates, blocker timelines, veto outcomes, paper trades, exit quality and cohort scorecards.
-- [ ] Make queries fallback-safe when readmodel is missing or stale.
-- [ ] Expose query status in `readmodel:status`.
-- [ ] Add `paperAnalyticsReadmodelSummary` to dashboard/report.
+- [x] Add query helpers for paper candidates, blocker timelines, veto outcomes, paper trades, exit quality and cohort scorecards.
+- [x] Make queries fallback-safe when readmodel is missing or stale.
+- [x] Expose query status in `readmodel:status`.
+- [x] Add `paperAnalyticsReadmodelSummary` to dashboard/report.
+  - Notitie 2026-05-06: N19 is afgerond met `src/storage/readModelAnalyticsQueries.js`, readmodel status/dashboard integratie en `paperAnalyticsReadmodelSummary` fallback. JSON/NDJSON blijft source-of-truth; SQLite blijft rebuildable read-model.
 
 Tests:
 
-- [ ] Empty readmodel returns empty safe result.
-- [ ] Missing table returns degraded summary, not crash.
-- [ ] Corrupt SQLite can be rebuilt.
-- [ ] Query output remains JSON-serializable.
-- [ ] Source-of-truth remains JSON/NDJSON.
+- [x] Empty readmodel returns empty safe result.
+- [x] Missing table returns degraded summary, not crash.
+- [x] Corrupt SQLite can be rebuilt.
+- [x] Query output remains JSON-serializable.
+- [x] Source-of-truth remains JSON/NDJSON.
 
 Acceptance:
 
-- [ ] Paper analytics become queryable and dashboard-safe.
-- [ ] No persistence source-of-truth migration.
-- [ ] `npm test` passes.
+- [x] Paper analytics become queryable and dashboard-safe.
+- [x] No persistence source-of-truth migration.
+- [x] `npm test` passes.
 
 ### N20 - Root Blocker Staleness Verifier
 
