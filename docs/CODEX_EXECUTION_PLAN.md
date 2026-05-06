@@ -26,7 +26,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [ ] N10 - Paper Net-Edge Calibration Workbench.
 - [ ] N11 - Dashboard Evidence Drilldown.
 - [ ] N12 - Feature Wiring Completion Gate.
-- [ ] N13 - Model Confidence Root-Cause Analyzer.
+- [x] N13 - Model Confidence Root-Cause Analyzer.
 - [ ] N14 - Paper Strategy Cohort Scorecard Builder.
 - [ ] N15 - Shadow Strategy Challenger Tournament.
 - [ ] N16 - Operator Review Label Workbench.

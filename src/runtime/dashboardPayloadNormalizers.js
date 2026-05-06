@@ -213,6 +213,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.explainability?.candidates,
       { status: "unavailable", count: 0, items: [] }
     ),
+    modelConfidenceRootCauseSummary: objectOrFallback(
+      source.modelConfidenceRootCauseSummary ||
+        source.decisionDiagnostics?.modelConfidenceRootCauseSummary ||
+        source.learningAnalytics?.modelConfidenceRootCauseSummary ||
+        source.paperLearning?.modelConfidenceRootCauseSummary,
+      { status: "empty", count: 0, byDriver: {}, diagnosticsOnly: true, liveBehaviorChanged: false }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

@@ -397,7 +397,7 @@ Notitie 2026-05-06: N7 is afgerond met `src/execution/orderLifecycleAuditor.js` 
 
 ### N8 - Paper Replay Coverage Autopilot
 
-Status: proposed
+Status: completed
 Priority: P2
 Initial activation: `paper_only`
 
@@ -626,24 +626,27 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add per-candidate confidence driver breakdown: feature gaps, calibration bucket, meta gate, followthrough evidence, stale data and execution friction.
-- [ ] Add `modelConfidenceRootCause` to paper candidate lab records.
-- [ ] Add dashboard/readmodel summary: `modelConfidenceRootCauseSummary`.
-- [ ] Live mode remains diagnostics-only and cannot lower thresholds.
+- [x] Add per-candidate confidence driver breakdown: feature gaps, calibration bucket, meta gate, followthrough evidence, stale data and execution friction.
+- [x] Add `modelConfidenceRootCause` to paper candidate lab records.
+  - Notitie: toegevoegd als pure candidate/decision enrichment helper; runtime persistence blijft diagnostics-only en kan door paper candidate lab/readmodel consumer worden gebruikt zonder execution-impact.
+- [x] Add dashboard/readmodel summary: `modelConfidenceRootCauseSummary`.
+- [x] Live mode remains diagnostics-only and cannot lower thresholds.
 
 Tests:
 
-- [ ] Low confidence from missing/stale features is explained.
-- [ ] Low confidence from calibration risk is explained.
-- [ ] Meta followthrough caution is separated from model probability.
-- [ ] Unknown reason falls back to safe `other`.
-- [ ] Positive confidence evidence does not relax live gates.
+- [x] Low confidence from missing/stale features is explained.
+- [x] Low confidence from calibration risk is explained.
+- [x] Meta followthrough caution is separated from model probability.
+- [x] Unknown reason falls back to safe `other`.
+- [x] Positive confidence evidence does not relax live gates.
 
 Acceptance:
 
-- [ ] Operator can see why confidence is low.
-- [ ] No threshold, ranking, sizing or execution behavior changes.
-- [ ] `npm test` passes.
+- [x] Operator can see why confidence is low.
+- [x] No threshold, ranking, sizing or execution behavior changes.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N13 is afgerond met `src/runtime/modelConfidenceRootCause.js` en `test/modelConfidenceRootCause.tests.js`. De helper verklaart lage confidence via feature gaps, stale data, calibration risk, meta followthrough/neural caution, execution friction en model-score/threshold gap. Dashboard/readmodel krijgt `modelConfidenceRootCauseSummary`; live blijft diagnostics-only met `liveThresholdReliefAllowed=false`.
 
 ### N14 - Paper Strategy Cohort Scorecard Builder
 
