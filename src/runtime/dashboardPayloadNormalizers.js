@@ -140,6 +140,20 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveSafetyUnchanged: true
       }
     ),
+    orderLifecycleAuditSummary: objectOrFallback(
+      source.orderLifecycleAuditSummary ||
+        source.orderLifecycle?.auditSummary ||
+        source.execution?.orderLifecycleAuditSummary ||
+        source.ops?.orderLifecycleAuditSummary,
+      {
+        status: "unavailable",
+        entryBlocked: false,
+        issues: [],
+        counts: {},
+        diagnosticsOnly: true,
+        liveMutationAdded: false
+      }
+    ),
     datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
     replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
     decisionInputLineageSummary: objectOrFallback(

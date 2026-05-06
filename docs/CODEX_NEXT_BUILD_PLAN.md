@@ -354,7 +354,7 @@ Notitie 2026-05-06: N6 is afgerond met `src/runtime/streamHealthEvidence.js` en 
 
 ### N7 - Order Lifecycle And Orphan Order Auditor
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `governance_only`
 
@@ -375,23 +375,25 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Mirror paper order lifecycle states for learning/debug consistency.
-- [ ] Mark paper-only orphan simulations separately from live exchange truth.
-- [ ] Add `orderLifecycleAuditSummary` to dashboard/readmodel.
+- [x] Mirror paper order lifecycle states for learning/debug consistency.
+- [x] Mark paper-only orphan simulations separately from live exchange truth.
+- [x] Add `orderLifecycleAuditSummary` to dashboard/readmodel.
 
 Tests:
 
-- [ ] Clean lifecycle passes.
-- [ ] Exchange-only order becomes `orphaned`.
-- [ ] Local-only stale order becomes degraded.
-- [ ] Unknown protective order blocks entries.
-- [ ] Tests use fake exchange data only.
+- [x] Clean lifecycle passes.
+- [x] Exchange-only order becomes `orphaned`.
+- [x] Local-only stale order becomes degraded.
+- [x] Unknown protective order blocks entries.
+- [x] Tests use fake exchange data only.
 
 Acceptance:
 
-- [ ] Ambiguous order state is visible and conservative.
-- [ ] No live mutation is added.
-- [ ] `npm test` passes.
+- [x] Ambiguous order state is visible and conservative.
+- [x] No live mutation is added.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N7 is afgerond met `src/execution/orderLifecycleAuditor.js` en `test/orderLifecycleAuditor.tests.js`. De auditor vergelijkt lokale orders, exchange open orders/order lists, posities en unresolved intents read-only; exchange-only orders, stale local-only orders en onbekende protective orders worden zichtbaar en conservatief entry-blocking gemarkeerd. Paper orders worden apart als mirror/debug state behandeld. Er zijn geen live cancel/resolve-mutaties toegevoegd.
 
 ### N8 - Paper Replay Coverage Autopilot
 
