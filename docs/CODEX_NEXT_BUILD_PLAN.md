@@ -571,7 +571,7 @@ Acceptance:
 
 ### N12 - Feature Wiring Completion Gate
 
-Status: proposed
+Status: completed
 Priority: P3
 Initial activation: `governance_only`
 
@@ -592,23 +592,24 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Require each new trading flag to declare activation stage and paper-mode integration status.
-- [ ] Fail or warn when `paper_only` feature lacks tests or dashboard/readmodel visibility.
-- [ ] Add waiver list for intentionally documented config placeholders.
-- [ ] Add CI-safe command: `node src/cli.js feature:completion-gate`.
+- [x] Require each new trading flag to declare activation stage and paper-mode integration status.
+- [x] Fail or warn when `paper_only` feature lacks tests or dashboard/readmodel visibility.
+- [x] Add waiver list for intentionally documented config placeholders.
+- [x] Add CI-safe command: `node src/cli.js feature:completion-gate`.
+  - Notitie 2026-05-06: N12 is afgerond met `src/runtime/featureWiringCompletionGate.js`, CLI-command `feature:completion-gate` en dashboard fallback `featureWiringCompletionSummary`. De gate is governance-only en verandert geen trading behavior.
 
 Tests:
 
-- [ ] Complete feature passes gate.
-- [ ] Config-only feature without waiver fails/warns as configured.
-- [ ] Paper-only feature without tests is rejected.
-- [ ] Live-impact feature without safety review is rejected.
+- [x] Complete feature passes gate.
+- [x] Config-only feature without waiver fails/warns as configured.
+- [x] Paper-only feature without tests is rejected.
+- [x] Live-impact feature without safety review is rejected.
 
 Acceptance:
 
-- [ ] Future work stays connected and testable.
-- [ ] No trading behavior changes.
-- [ ] `npm test` passes.
+- [x] Future work stays connected and testable.
+- [x] No trading behavior changes.
+- [x] `npm test` passes.
 
 ### N13 - Model Confidence Root-Cause Analyzer
 

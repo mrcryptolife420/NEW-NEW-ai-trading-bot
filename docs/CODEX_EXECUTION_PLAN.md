@@ -25,7 +25,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N9 - Golden Replay Regression Pack Generator.
 - [x] N10 - Paper Net-Edge Calibration Workbench.
 - [x] N11 - Dashboard Evidence Drilldown.
-- [ ] N12 - Feature Wiring Completion Gate.
+- [x] N12 - Feature Wiring Completion Gate.
 - [x] N13 - Model Confidence Root-Cause Analyzer.
 - [x] N14 - Paper Strategy Cohort Scorecard Builder.
 - [x] N15 - Shadow Strategy Challenger Tournament.

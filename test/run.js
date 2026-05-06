@@ -189,6 +189,7 @@ import { registerWatchlistCoverageBalancerTests } from "./watchlistCoverageBalan
 import { registerPaperReplayCoverageAutopilotTests } from "./paperReplayCoverageAutopilot.tests.js";
 import { registerGoldenReplayPackGeneratorTests } from "./goldenReplayPackGenerator.tests.js";
 import { registerDashboardEvidenceDrilldownTests } from "./dashboardEvidenceDrilldown.tests.js";
+import { registerFeatureWiringCompletionGateTests } from "./featureWiringCompletionGate.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32588,6 +32589,11 @@ await registerGoldenReplayPackGeneratorTests({
 });
 
 await registerDashboardEvidenceDrilldownTests({
+  runCheck,
+  assert
+});
+
+await registerFeatureWiringCompletionGateTests({
   runCheck,
   assert
 });

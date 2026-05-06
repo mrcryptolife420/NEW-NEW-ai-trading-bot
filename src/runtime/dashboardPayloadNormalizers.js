@@ -373,6 +373,23 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveBehaviorChanged: false
       }
     ),
+    featureWiringCompletionSummary: objectOrFallback(
+      source.featureWiringCompletionSummary ||
+        source.featureCompletionGate ||
+        source.governance?.featureWiringCompletionSummary ||
+        source.ops?.featureWiringCompletionSummary,
+      {
+        status: "unavailable",
+        strictStatus: "unavailable",
+        featureCount: 0,
+        blockedCount: 0,
+        warningCount: 0,
+        passCount: 0,
+        items: [],
+        diagnosticsOnly: true,
+        liveBehaviorChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

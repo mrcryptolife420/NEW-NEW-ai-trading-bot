@@ -2,6 +2,7 @@
 import { runHistoryCommand } from "../runtime/marketHistory.js";
 import { parseBacktestWalkForwardArgs, runBacktestWalkForward } from "../runtime/walkForwardBacktest.js";
 import { buildFeatureAudit } from "../runtime/featureAudit.js";
+import { buildFeatureWiringCompletionGate } from "../runtime/featureWiringCompletionGate.js";
 import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayEngine.js";
 import { runReadModelCommand, runReadModelTraceCommand } from "../storage/readModelStore.js";
 import { StateStore } from "../storage/stateStore.js";
@@ -223,6 +224,14 @@ export default async function runCli({
 
   if (command === "feature:audit") {
     const result = await buildFeatureAudit({ config, projectRoot: config.projectRoot });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "feature:completion-gate") {
+    const audit = await buildFeatureAudit({ config, projectRoot: config.projectRoot });
+    const result = buildFeatureWiringCompletionGate({ audit });
     console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;
