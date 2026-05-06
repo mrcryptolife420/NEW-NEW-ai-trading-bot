@@ -35,6 +35,29 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N19 - Readmodel Analytics Query Pack.
 - [x] N20 - Root Blocker Staleness Verifier.
 
+## Next build plan V2 2026-05-06
+
+Detailplan: `docs/CODEX_NEXT_BUILD_PLAN_V2.md`
+
+Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan op 2026-05-06. De vorige `docs/CODEX_NEXT_BUILD_PLAN.md` is afgerond; V2 richt zich daarom op integratie, paper evidence, governance metadata, diagnostics en testbaarheid. Elk item moet bestaande modules hergebruiken, paper-mode-first worden aangesloten en mag live safety niet versoepelen.
+
+- [ ] V2-1 - Feature activation metadata completion gate.
+- [ ] V2-2 - Paper evidence spine.
+- [ ] V2-3 - Veto outcome and replay trace coverage.
+- [ ] V2-4 - Stream/readiness root-cause drilldown for paper scans.
+- [ ] V2-5 - Paper-to-backtest parity dossier.
+- [ ] V2-6 - Multi-position paper stress harness.
+- [ ] V2-7 - Strategy lifecycle evidence binder.
+- [ ] V2-8 - Paper execution reality calibration loop.
+- [ ] V2-9 - Dashboard operator no-trade timeline.
+- [ ] V2-10 - TradingBot service extraction slice: paper evidence publisher.
+- [ ] V2-11 - CLI smoke matrix for read-only operator commands.
+- [ ] V2-12 - Data retention and storage bloat audit.
+- [ ] V2-13 - Indicator warmup and feature availability reporter.
+- [ ] V2-14 - Model confidence blocker decomposition.
+- [ ] V2-15 - Paper setup experiment registry.
+- [ ] V2-16 - News/event evidence lineage for paper candidates.
+
 ## Globale regels
 
 - [ ] Live safety mag nooit versoepeld worden.
