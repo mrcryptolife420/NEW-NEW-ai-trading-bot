@@ -22,6 +22,28 @@ export async function registerFeatureWiringCompletionGateTests({ runCheck, asser
     assert.equal(gate.liveBehaviorChanged, false);
   });
 
+  await runCheck("feature wiring completion gate respects explicit paper integration metadata", async () => {
+    const gate = buildFeatureWiringCompletionGate({
+      audit: {
+        features: [{
+          id: "paper_ready_feature",
+          status: "complete",
+          classifications: ["complete"],
+          activationStage: "paper_only",
+          paperModeIntegration: "paper_only",
+          testRefs: ["test/paperReady.tests.js"],
+          dashboardRefs: ["paperReadySummary"],
+          liveBehaviorPolicy: "No live behavior change."
+        }]
+      }
+    });
+
+    assert.equal(gate.strictStatus, "pass");
+    assert.equal(gate.items[0].activationStage, "paper_only");
+    assert.equal(gate.items[0].paperModeIntegration, "paper_only");
+    assert.deepEqual(gate.items[0].warnings, []);
+  });
+
   await runCheck("feature wiring completion gate blocks config-only feature without waiver", async () => {
     const gate = buildFeatureWiringCompletionGate({
       audit: {

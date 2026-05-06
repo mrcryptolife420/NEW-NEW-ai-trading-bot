@@ -133,3 +133,28 @@ Known `documented_config_only` flags after this batch:
 - `enableTrailingProtection`
 
 These flags stay operator-visible with notes and `nextSafeAction`; future cleanup should either wire them to a real module boundary or deprecate them through a config migration.
+
+## Batch 6: activation metadata gate cleanup
+
+Batch 6 completes V2-1 from `docs/CODEX_NEXT_BUILD_PLAN_V2.md` without changing trading behavior:
+
+- audited feature definitions now expose explicit `activationStage`
+- audited feature definitions now expose explicit `paperModeIntegration`
+- `feature:completion-gate` respects explicit paper integration metadata instead of deriving everything from stage alone
+- paper-only audited items remain paper-only metadata
+- diagnostics-only audited items remain diagnostics-only metadata
+- walk-forward remains offline-only metadata
+
+Validation:
+
+- `node src/cli.js feature:completion-gate` reports `status=pass`, `warningCount=0`, and `passCount=12`.
+- Regression coverage asserts activation metadata exists and that explicit paper integration metadata does not create warnings.
+
+Safety contract:
+
+- no entry permissioning changes
+- no ranking changes
+- no threshold changes
+- no sizing changes
+- no live behavior changes
+- no automatic promotion to live

@@ -97,7 +97,13 @@ export async function registerFeatureAuditTests({ runCheck, assert, fs, os }) {
       assert.ok(Array.isArray(feature.missingDashboardFields));
       assert.ok(feature.completionPlan.length > 20);
       assert.equal(feature.configStatus.status, "complete");
+      assert.ok(feature.activationStage);
+      assert.ok(feature.paperModeIntegration);
     }
+    assert.equal(audit.features.find((item) => item.id === "net_edge_gate").activationStage, "diagnostics_only");
+    assert.equal(audit.features.find((item) => item.id === "net_edge_gate").paperModeIntegration, "not_required");
+    assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").activationStage, "paper_only");
+    assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").paperModeIntegration, "paper_only");
     assert.equal(audit.features.find((item) => item.id === "net_edge_gate").priority, "P1");
     assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").priority, "P3");
     assert.equal(audit.features.find((item) => item.id === "indicator_feature_registry").priority, "P3");

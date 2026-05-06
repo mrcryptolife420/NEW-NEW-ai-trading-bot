@@ -45,6 +45,14 @@ function inferStage(feature = {}) {
     (feature.liveRisk ? "live_candidate" : null);
 }
 
+function inferPaperModeIntegration(feature = {}, stage = "diagnostics_only") {
+  const explicit = text(feature.paperModeIntegration);
+  if (explicit) return explicit;
+  if (stage === "paper_only") return "required";
+  if (stage === "shadow_only") return "shadow_only";
+  return "not_required";
+}
+
 function normalizeGateStage(stage) {
   if (stage === "governance_only" || stage === "live_candidate") return stage;
   return normalizeFeatureActivationStage(stage || "diagnostics_only");
@@ -101,7 +109,7 @@ function evaluateFeature(feature = {}, waiverSet = DEFAULT_WAIVERS) {
     id,
     gateStatus,
     activationStage: stage,
-    paperModeIntegration: stage === "paper_only" ? "required" : stage === "shadow_only" ? "shadow_only" : "not_required",
+    paperModeIntegration: inferPaperModeIntegration(feature, stage),
     issues,
     warnings: [...new Set(warnings)],
     testsPresent,

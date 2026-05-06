@@ -33,7 +33,7 @@ Deze onderdelen bestaan al en moeten worden hergebruikt of verbeterd, niet opnie
 
 ## Prioriteitsoverzicht
 
-1. P0: Feature activation metadata completion gate warnings oplossen.
+1. P0: Feature activation metadata completion gate warnings oplossen. Completed 2026-05-06.
 2. P1: Paper evidence spine van candidate naar outcome naar readmodel naar dashboard/report.
 3. P1: Veto outcome en replay trace coverage vullen vanuit bestaande blockers/readmodel.
 4. P1: Stream/readiness root-cause drilldown voor paper scans.
@@ -50,7 +50,7 @@ Deze onderdelen bestaan al en moeten worden hergebruikt of verbeterd, niet opnie
 
 ## V2-1 - Feature activation metadata completion gate
 
-Status: proposed  
+Status: completed  
 Priority: P0  
 Initial activation: `governance_only`
 
@@ -65,23 +65,25 @@ Reuse:
 
 Taken:
 
-- [ ] Voeg expliciete `activationStage` toe aan alle audited feature definitions.
-- [ ] Voeg expliciete `paperModeIntegration` toe: `not_required`, `shadow_only`, `paper_only` of `offline_only`.
-- [ ] Zorg dat `feature:completion-gate` geen waarschuwing meer geeft voor features die bewust diagnostics-only zijn.
-- [ ] Test dat live-risk-review-needed features niet per ongeluk live-impact krijgen.
-- [ ] Update `docs/FEATURE_COMPLETION_PLAN.md` en `docs/IMPLEMENTATION_MATRIX.md`.
+- [x] Voeg expliciete `activationStage` toe aan alle audited feature definitions.
+- [x] Voeg expliciete `paperModeIntegration` toe: `not_required`, `shadow_only`, `paper_only` of `offline_only`.
+- [x] Zorg dat `feature:completion-gate` geen waarschuwing meer geeft voor features die bewust diagnostics-only zijn.
+- [x] Test dat live-risk-review-needed features niet per ongeluk live-impact krijgen.
+- [x] Update `docs/FEATURE_COMPLETION_PLAN.md` en `docs/IMPLEMENTATION_MATRIX.md`.
 
 Paper-mode aansluiting:
 
-- [ ] Paper-only features blijven expliciet paper-only.
-- [ ] Diagnostics-only features veranderen geen paper/live decisions.
-- [ ] Geen automatische promotie naar live.
+- [x] Paper-only features blijven expliciet paper-only.
+- [x] Diagnostics-only features veranderen geen paper/live decisions.
+- [x] Geen automatische promotie naar live.
 
 Acceptatie:
 
-- [ ] `node src/cli.js feature:completion-gate` geeft `pass` of alleen inhoudelijke warnings.
-- [ ] `npm test` slaagt.
-- [ ] Geen tradinggedrag gewijzigd.
+- [x] `node src/cli.js feature:completion-gate` geeft `pass` of alleen inhoudelijke warnings.
+- [x] `npm test` slaagt.
+- [x] Geen tradinggedrag gewijzigd.
+
+Notitie 2026-05-06: `src/runtime/featureAudit.js` geeft nu expliciete activation metadata per audited feature en `src/runtime/featureWiringCompletionGate.js` respecteert `paperModeIntegration`. `node src/cli.js feature:completion-gate` rapporteert `status=pass`, `warningCount=0`, `passCount=12`. Live-risk-review features blijven diagnostics/paper/offline metadata en krijgen geen live-impact.
 
 ---
 
