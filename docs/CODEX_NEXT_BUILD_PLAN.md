@@ -790,7 +790,7 @@ Notitie 2026-05-06: N16 is afgerond met `src/runtime/operatorReviewLabels.js` en
 
 ### N17 - Watchlist Coverage Balancer
 
-Status: proposed
+Status: completed
 Priority: P2
 Initial activation: `paper_only`
 
@@ -812,24 +812,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add coverage stats by symbol, cluster, regime and setup family.
-- [ ] Suggest paper scan emphasis for under-sampled but data-healthy symbols.
-- [ ] Penalize low-quality or stale-data symbols from paper learning trust.
-- [ ] Add `watchlistCoverageSummary` to dashboard/readmodel.
+- [x] Add coverage stats by symbol, cluster, regime and setup family.
+- [x] Suggest paper scan emphasis for under-sampled but data-healthy symbols.
+- [x] Penalize low-quality or stale-data symbols from paper learning trust.
+- [x] Add `watchlistCoverageSummary` to dashboard/readmodel.
 
 Tests:
 
-- [ ] Empty watchlist gives safe warning.
-- [ ] Over-sampled symbol is detected.
-- [ ] Under-sampled but healthy symbol is suggested for paper scan only.
-- [ ] Low data quality prevents trust.
-- [ ] Live universe selection is unchanged.
+- [x] Empty watchlist gives safe warning.
+- [x] Over-sampled symbol is detected.
+- [x] Under-sampled but healthy symbol is suggested for paper scan only.
+- [x] Low data quality prevents trust.
+- [x] Live universe selection is unchanged.
 
 Acceptance:
 
-- [ ] Paper learning gets broader, cleaner evidence.
-- [ ] No live watchlist or execution behavior changes.
-- [ ] `npm test` passes.
+- [x] Paper learning gets broader, cleaner evidence.
+- [x] No live watchlist or execution behavior changes.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N17 is afgerond met `src/runtime/watchlistCoverageBalancer.js` en `test/watchlistCoverageBalancer.tests.js`. De balancer meet coverage per symbol/cluster/regime/setup family, detecteert over- en under-sampling, suggereert alleen paper scan emphasis voor data-healthy under-sampled symbols, en sluit stale/low-quality symbols uit van paper learning trust. Dashboard/readmodel exposeert `watchlistCoverageSummary`; live universe selection en execution blijven ongewijzigd.
 
 ### N18 - Paper Trade Lifecycle Contract Harness
 

@@ -309,6 +309,20 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveBehaviorChanged: false
       }
     ),
+    watchlistCoverageSummary: objectOrFallback(
+      source.watchlistCoverageSummary ||
+        source.paperLearning?.watchlistCoverageSummary ||
+        source.universe?.watchlistCoverageSummary ||
+        source.marketScanner?.watchlistCoverageSummary,
+      {
+        status: "empty_watchlist",
+        watchlistCount: 0,
+        sampleCount: 0,
+        symbols: [],
+        paperScanEmphasis: [],
+        liveUniverseChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

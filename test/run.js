@@ -185,6 +185,7 @@ import { registerRootBlockerStalenessVerifierTests } from "./rootBlockerStalenes
 import { registerPaperNetEdgeCalibrationWorkbenchTests } from "./paperNetEdgeCalibrationWorkbench.tests.js";
 import { registerShadowStrategyTournamentTests } from "./shadowStrategyTournament.tests.js";
 import { registerOperatorReviewLabelsTests } from "./operatorReviewLabels.tests.js";
+import { registerWatchlistCoverageBalancerTests } from "./watchlistCoverageBalancer.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32564,6 +32565,11 @@ await registerShadowStrategyTournamentTests({
 });
 
 await registerOperatorReviewLabelsTests({
+  runCheck,
+  assert
+});
+
+await registerWatchlistCoverageBalancerTests({
   runCheck,
   assert
 });
