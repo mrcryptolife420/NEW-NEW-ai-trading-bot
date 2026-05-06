@@ -33,7 +33,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [ ] N17 - Watchlist Coverage Balancer.
 - [x] N18 - Paper Trade Lifecycle Contract Harness.
 - [ ] N19 - Readmodel Analytics Query Pack.
-- [ ] N20 - Root Blocker Staleness Verifier.
+- [x] N20 - Root Blocker Staleness Verifier.
 
 ## Globale regels
 

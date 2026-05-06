@@ -154,6 +154,21 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveMutationAdded: false
       }
     ),
+    rootBlockerStalenessSummary: objectOrFallback(
+      source.rootBlockerStalenessSummary ||
+        source.rootBlockers?.stalenessSummary ||
+        source.runtimeReliability?.rootBlockerStalenessSummary ||
+        source.ops?.rootBlockerStalenessSummary,
+      {
+        status: "unavailable",
+        blockerCount: 0,
+        staleSuspected: false,
+        entryUnlockEligible: false,
+        requiredEvidence: [],
+        safeNextAction: "monitor",
+        diagnosticsOnly: true
+      }
+    ),
     datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
     replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
     decisionInputLineageSummary: objectOrFallback(

@@ -181,6 +181,7 @@ import { registerStreamHealthEvidenceTests } from "./streamHealthEvidence.tests.
 import { registerOrderLifecycleAuditorTests } from "./orderLifecycleAuditor.tests.js";
 import { registerModelConfidenceRootCauseTests } from "./modelConfidenceRootCause.tests.js";
 import { registerPaperStrategyCohortScorecardTests } from "./paperStrategyCohortScorecard.tests.js";
+import { registerRootBlockerStalenessVerifierTests } from "./rootBlockerStalenessVerifier.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32540,6 +32541,11 @@ await registerModelConfidenceRootCauseTests({
 });
 
 await registerPaperStrategyCohortScorecardTests({
+  runCheck,
+  assert
+});
+
+await registerRootBlockerStalenessVerifierTests({
   runCheck,
   assert
 });

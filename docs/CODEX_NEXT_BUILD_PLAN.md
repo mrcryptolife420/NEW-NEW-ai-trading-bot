@@ -606,7 +606,7 @@ Acceptance:
 
 ### N13 - Model Confidence Root-Cause Analyzer
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `diagnostics_only` / `paper_only`
 
@@ -652,7 +652,7 @@ Notitie 2026-05-06: N13 is afgerond met `src/runtime/modelConfidenceRootCause.js
 
 ### N14 - Paper Strategy Cohort Scorecard Builder
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `paper_only`
 
@@ -914,7 +914,7 @@ Acceptance:
 
 ### N20 - Root Blocker Staleness Verifier
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `governance_only`
 
@@ -935,24 +935,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add root blocker age, last evidence timestamp, required evidence and safe next action to paper status.
-- [ ] Mark blockers as `stale_suspected` only when hard-safety evidence is absent and data freshness supports it.
-- [ ] Add dashboard/readmodel summary: `rootBlockerStalenessSummary`.
-- [ ] Keep exchange safety, reconcile, manual review and unresolved intents dominant.
+- [x] Add root blocker age, last evidence timestamp, required evidence and safe next action to paper status.
+- [x] Mark blockers as `stale_suspected` only when hard-safety evidence is absent and data freshness supports it.
+- [x] Add dashboard/readmodel summary: `rootBlockerStalenessSummary`.
+- [x] Keep exchange safety, reconcile, manual review and unresolved intents dominant.
 
 Tests:
 
-- [ ] Fresh hard blocker is not stale.
-- [ ] Old dashboard-only blocker can be stale-suspected.
-- [ ] Exchange safety blocker requires reconcile evidence.
-- [ ] Unresolved intent blocks stale clear.
-- [ ] Missing evidence never unlocks entries.
+- [x] Fresh hard blocker is not stale.
+- [x] Old dashboard-only blocker can be stale-suspected.
+- [x] Exchange safety blocker requires reconcile evidence.
+- [x] Unresolved intent blocks stale clear.
+- [x] Missing evidence never unlocks entries.
 
 Acceptance:
 
-- [ ] Operator sees why a blocker remains active and what clears it.
-- [ ] No force unlock or safety bypass.
-- [ ] `npm test` passes.
+- [x] Operator sees why a blocker remains active and what clears it.
+- [x] No force unlock or safety bypass.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N20 is afgerond met `src/runtime/rootBlockerStalenessVerifier.js` en `test/rootBlockerStalenessVerifier.tests.js`. De verifier geeft root blocker age, last evidence timestamp, required evidence, stale-suspect status en safe next action terug. Hard-safety blockers, unresolved intents, critical alerts en reconcile/manual-review posities blijven dominant; `entryUnlockEligible` blijft altijd false omdat dit governance-only observability is. Dashboard/readmodel normalisatie exposeert `rootBlockerStalenessSummary` fallback-safe.
 
 ## Duplicate Or Rejected Suggestions
 
