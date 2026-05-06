@@ -337,6 +337,22 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveBehaviorChanged: false
       }
     ),
+    goldenReplayPackSummary: objectOrFallback(
+      source.goldenReplayPackSummary ||
+        source.replay?.goldenReplayPackSummary ||
+        source.learningAnalytics?.goldenReplayPackSummary ||
+        source.paperLearning?.goldenReplayPackSummary,
+      {
+        status: "empty",
+        packCount: 0,
+        highPriorityCount: 0,
+        byType: {},
+        warnings: [],
+        ciSafe: true,
+        paperOnly: true,
+        liveBehaviorChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

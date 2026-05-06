@@ -22,7 +22,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N6 - Stream Health Monitor And Failover Evidence.
 - [x] N7 - Order Lifecycle And Orphan Order Auditor.
 - [x] N8 - Paper Replay Coverage Autopilot.
-- [ ] N9 - Golden Replay Regression Pack Generator.
+- [x] N9 - Golden Replay Regression Pack Generator.
 - [x] N10 - Paper Net-Edge Calibration Workbench.
 - [ ] N11 - Dashboard Evidence Drilldown.
 - [ ] N12 - Feature Wiring Completion Gate.

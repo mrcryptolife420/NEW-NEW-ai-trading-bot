@@ -464,22 +464,23 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Generate fixture candidates from bad vetoes, missed winners, reconcile uncertainty and execution drag.
-- [ ] Add replay pack metadata with config/data hash and seed.
-- [ ] Add CI-safe golden replay test runner for selected packs.
+- [x] Generate fixture candidates from bad vetoes, missed winners, reconcile uncertainty and execution drag.
+- [x] Add replay pack metadata with config/data hash and seed.
+- [x] Add CI-safe golden replay test runner for selected packs.
+  - Notitie 2026-05-06: N9 is nu echt afgerond met `src/runtime/goldenReplayPackGenerator.js` en `test/goldenReplayPackGenerator.tests.js`. De generator hergebruikt replay scoring, manifesten en incident replay fixtures; output is CI-safe, paper-only en verandert live behavior niet.
 
 Tests:
 
-- [ ] Same replay pack gives stable hash.
-- [ ] Changed decision output produces diff.
-- [ ] Missing sample is warning, not crash.
-- [ ] Bad veto/reconcile uncertainty receive high priority.
+- [x] Same replay pack gives stable hash.
+- [x] Changed decision output produces diff.
+- [x] Missing sample is warning, not crash.
+- [x] Bad veto/reconcile uncertainty receive high priority.
 
 Acceptance:
 
-- [ ] Regression packs protect paper learning and safety behavior.
-- [ ] No automatic live promotion.
-- [ ] `npm test` passes.
+- [x] Regression packs protect paper learning and safety behavior.
+- [x] No automatic live promotion.
+- [x] `npm test` passes.
 
 ### N10 - Paper Net-Edge Calibration Workbench
 

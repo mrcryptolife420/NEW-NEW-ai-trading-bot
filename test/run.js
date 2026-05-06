@@ -187,6 +187,7 @@ import { registerShadowStrategyTournamentTests } from "./shadowStrategyTournamen
 import { registerOperatorReviewLabelsTests } from "./operatorReviewLabels.tests.js";
 import { registerWatchlistCoverageBalancerTests } from "./watchlistCoverageBalancer.tests.js";
 import { registerPaperReplayCoverageAutopilotTests } from "./paperReplayCoverageAutopilot.tests.js";
+import { registerGoldenReplayPackGeneratorTests } from "./goldenReplayPackGenerator.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32576,6 +32577,11 @@ await registerWatchlistCoverageBalancerTests({
 });
 
 await registerPaperReplayCoverageAutopilotTests({
+  runCheck,
+  assert
+});
+
+await registerGoldenReplayPackGeneratorTests({
   runCheck,
   assert
 });
