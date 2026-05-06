@@ -440,7 +440,7 @@ Acceptance:
 
 ### N9 - Golden Replay Regression Pack Generator
 
-Status: proposed
+Status: completed
 Priority: P2
 Initial activation: `governance_only`
 
@@ -672,24 +672,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Build paper-only cohort records for generated candidates, blocked candidates and closed paper trades.
-- [ ] Track sample size, win/loss, bad-veto rate, exit-quality mix, execution drag and data-quality warnings per cohort.
-- [ ] Add `paperStrategyCohortSummary` to dashboard/readmodel.
-- [ ] Feed only diagnostics into strategy lifecycle until separate review.
+- [x] Build paper-only cohort records for generated candidates, blocked candidates and closed paper trades.
+- [x] Track sample size, win/loss, bad-veto rate, exit-quality mix, execution drag and data-quality warnings per cohort.
+- [x] Add `paperStrategyCohortSummary` to dashboard/readmodel.
+- [x] Feed only diagnostics into strategy lifecycle until separate review.
 
 Tests:
 
-- [ ] Empty cohorts are fallback-safe.
-- [ ] Low sample cohort is marked weak evidence.
-- [ ] Bad-veto-heavy cohort is visible but does not relax hard safety.
-- [ ] Negative-edge cohort recommends review/quarantine only.
-- [ ] Live mode cannot auto-promote from paper cohort evidence.
+- [x] Empty cohorts are fallback-safe.
+- [x] Low sample cohort is marked weak evidence.
+- [x] Bad-veto-heavy cohort is visible but does not relax hard safety.
+- [x] Negative-edge cohort recommends review/quarantine only.
+- [x] Live mode cannot auto-promote from paper cohort evidence.
 
 Acceptance:
 
-- [ ] Paper evidence becomes cohort-queryable.
-- [ ] No automatic live promotion or threshold changes.
-- [ ] `npm test` passes.
+- [x] Paper evidence becomes cohort-queryable.
+- [x] No automatic live promotion or threshold changes.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N14 is afgerond met `src/runtime/paperStrategyCohortScorecard.js` en `test/paperStrategyCohortScorecard.tests.js`. De builder groepeert paper candidates, veto outcomes en closed paper trades per strategy/family/regime/session/cluster/activation stage, volgt sample size, bad-veto rate, exit-quality mix, execution drag en data-quality warnings, en exposeert `paperStrategyCohortSummary` fallback-safe. Auto-promotie en auto-retirement blijven expliciet uit.
 
 ### N15 - Shadow Strategy Challenger Tournament
 

@@ -220,6 +220,20 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.paperLearning?.modelConfidenceRootCauseSummary,
       { status: "empty", count: 0, byDriver: {}, diagnosticsOnly: true, liveBehaviorChanged: false }
     ),
+    paperStrategyCohortSummary: objectOrFallback(
+      source.paperStrategyCohortSummary ||
+        source.learningAnalytics?.paperStrategyCohortSummary ||
+        source.paperLearning?.paperStrategyCohortSummary ||
+        source.strategyLifecycle?.paperStrategyCohortSummary,
+      {
+        status: "empty",
+        count: 0,
+        cohorts: [],
+        diagnosticsOnly: true,
+        paperOnly: true,
+        liveBehaviorChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

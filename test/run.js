@@ -179,6 +179,7 @@ import { registerDataQualityScoreV2Tests } from "./dataQualityScoreV2.tests.js";
 import { registerStreamHealthEvidenceTests } from "./streamHealthEvidence.tests.js";
 import { registerOrderLifecycleAuditorTests } from "./orderLifecycleAuditor.tests.js";
 import { registerModelConfidenceRootCauseTests } from "./modelConfidenceRootCause.tests.js";
+import { registerPaperStrategyCohortScorecardTests } from "./paperStrategyCohortScorecard.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32528,6 +32529,11 @@ await registerOrderLifecycleAuditorTests({
 });
 
 await registerModelConfidenceRootCauseTests({
+  runCheck,
+  assert
+});
+
+await registerPaperStrategyCohortScorecardTests({
   runCheck,
   assert
 });
