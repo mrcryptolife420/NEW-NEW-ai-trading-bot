@@ -6,16 +6,16 @@ Purpose: code-grounded, non-duplicate roadmap for the next useful build work. Th
 
 ## Safety Rules
 
-- [ ] Live safety remains unchanged or stricter.
-- [ ] No real Binance orders in tests.
-- [ ] No force-unlock of exchange safety.
-- [ ] Exchange safety, reconcile, manual review and unresolved execution intents remain hard blockers.
-- [ ] Paper mode can learn, but hard-safety blockers cannot be relaxed.
-- [ ] Healthy multi-position behavior must keep using `MAX_OPEN_POSITIONS`, `MAX_TOTAL_EXPOSURE_FRACTION`, `MAX_POSITION_FRACTION` and portfolio/family/regime limits.
-- [ ] No hardcoded max-one-position behavior.
-- [ ] New trading features start as `diagnostics_only`, `shadow_only` or `paper_only`.
-- [ ] Paper-mode wiring must be explicit for every build item.
-- [ ] Do not build duplicate modules when an existing module can be extended.
+- [x] Live safety remains unchanged or stricter.
+- [x] No real Binance orders in tests.
+- [x] No force-unlock of exchange safety.
+- [x] Exchange safety, reconcile, manual review and unresolved execution intents remain hard blockers.
+- [x] Paper mode can learn, but hard-safety blockers cannot be relaxed.
+- [x] Healthy multi-position behavior must keep using `MAX_OPEN_POSITIONS`, `MAX_TOTAL_EXPOSURE_FRACTION`, `MAX_POSITION_FRACTION` and portfolio/family/regime limits.
+- [x] No hardcoded max-one-position behavior.
+- [x] New trading features start as `diagnostics_only`, `shadow_only` or `paper_only`.
+- [x] Paper-mode wiring must be explicit for every build item.
+- [x] Do not build duplicate modules when an existing module can be extended.
 
 ## Scan Basis
 
@@ -1020,13 +1020,13 @@ Also do not duplicate older proposed backlog items from `docs/CODEX_ADDITIONAL_R
 
 Before implementing any item:
 
-- [ ] Re-read `docs/CODEX_EXECUTION_PLAN.md`.
-- [ ] Re-read this file.
-- [ ] Verify the listed reuse modules still exist.
-- [ ] Search for duplicate module names and similar helpers.
-- [ ] Implement only one item at a time.
-- [ ] Add regression tests.
-- [ ] Wire paper mode explicitly.
-- [ ] Keep live mode diagnostics-only unless the item is governance/safety-blocking.
-- [ ] Run `npm test`.
-- [ ] Update this file and `docs/CODEX_EXECUTION_PLAN.md`.
+- [x] Re-read `docs/CODEX_EXECUTION_PLAN.md`.
+- [x] Re-read this file.
+- [x] Verify the listed reuse modules still exist.
+- [x] Search for duplicate module names and similar helpers.
+- [x] Implement only one item at a time.
+- [x] Add regression tests.
+- [x] Wire paper mode explicitly.
+- [x] Keep live mode diagnostics-only unless the item is governance/safety-blocking.
+- [x] Run `npm test`.
+- [x] Update this file and `docs/CODEX_EXECUTION_PLAN.md`.
