@@ -421,24 +421,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Detect missing candles per symbol/timeframe needed by paper learning.
-- [ ] Build a dry-run backfill plan with request-budget estimate.
-- [ ] Mark strategies as `replay_coverage_weak` when coverage is poor.
-- [ ] Expose `paperReplayCoverageSummary` in dashboard/readmodel.
+- [x] Detect missing candles per symbol/timeframe needed by paper learning.
+- [x] Build a dry-run backfill plan with request-budget estimate.
+- [x] Mark strategies as `replay_coverage_weak` when coverage is poor.
+- [x] Expose `paperReplayCoverageSummary` in dashboard/readmodel.
 
 Tests:
 
-- [ ] Empty history produces blocked/weak coverage.
-- [ ] Partial history produces targeted backfill plan.
-- [ ] Full history produces usable coverage.
-- [ ] Request-budget cap prevents unsafe backfill plan.
-- [ ] No live runtime behavior changes.
+- [x] Empty history produces blocked/weak coverage.
+- [x] Partial history produces targeted backfill plan.
+- [x] Full history produces usable coverage.
+- [x] Request-budget cap prevents unsafe backfill plan.
+- [x] No live runtime behavior changes.
 
 Acceptance:
 
-- [ ] Paper learning knows when replay evidence is too weak.
-- [ ] Backfills remain controlled and observable.
-- [ ] `npm test` passes.
+- [x] Paper learning knows when replay evidence is too weak.
+- [x] Backfills remain controlled and observable.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N8 is nu echt afgerond met `src/runtime/paperReplayCoverageAutopilot.js` en `test/paperReplayCoverageAutopilot.tests.js`. De autopilot detecteert missing candles per symbol/timeframe, bouwt alleen dry-run backfill plans met request-budget cap, tagt zwakke strategy coverage als `replay_coverage_weak`, en exposeert `paperReplayCoverageSummary` fallback-safe. Er worden geen backfills uitgevoerd en live behavior blijft ongewijzigd.
 
 ### N9 - Golden Replay Regression Pack Generator
 

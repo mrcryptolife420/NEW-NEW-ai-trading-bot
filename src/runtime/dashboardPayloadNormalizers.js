@@ -323,6 +323,20 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveUniverseChanged: false
       }
     ),
+    paperReplayCoverageSummary: objectOrFallback(
+      source.paperReplayCoverageSummary ||
+        source.paperLearning?.paperReplayCoverageSummary ||
+        source.replay?.paperReplayCoverageSummary ||
+        source.readModel?.paperReplayCoverageSummary,
+      {
+        status: "empty",
+        symbols: [],
+        backfillPlan: [],
+        strategyTags: [],
+        dryRunOnly: true,
+        liveBehaviorChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

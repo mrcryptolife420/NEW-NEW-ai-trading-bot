@@ -186,6 +186,7 @@ import { registerPaperNetEdgeCalibrationWorkbenchTests } from "./paperNetEdgeCal
 import { registerShadowStrategyTournamentTests } from "./shadowStrategyTournament.tests.js";
 import { registerOperatorReviewLabelsTests } from "./operatorReviewLabels.tests.js";
 import { registerWatchlistCoverageBalancerTests } from "./watchlistCoverageBalancer.tests.js";
+import { registerPaperReplayCoverageAutopilotTests } from "./paperReplayCoverageAutopilot.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32570,6 +32571,11 @@ await registerOperatorReviewLabelsTests({
 });
 
 await registerWatchlistCoverageBalancerTests({
+  runCheck,
+  assert
+});
+
+await registerPaperReplayCoverageAutopilotTests({
   runCheck,
   assert
 });
