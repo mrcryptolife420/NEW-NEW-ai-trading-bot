@@ -123,6 +123,23 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.ops?.apiDegradationSummary,
       { degradationLevel: "normal", allowedModes: ["active", "observe_only", "protect_only"], blockedActions: [], warnings: [] }
     ),
+    streamHealthSummary: objectOrFallback(
+      source.streamHealthSummary ||
+        source.streamFallbackHealth ||
+        source.runtimeReliability?.streamHealthSummary ||
+        source.ops?.streamHealthSummary ||
+        source.ops?.streamFallbackHealth,
+      {
+        status: "unknown",
+        reasons: [],
+        warnings: [],
+        streamReplacementAvailable: {},
+        recentFallbacks: [],
+        recentSuppressedFallbacks: [],
+        diagnosticsOnly: true,
+        liveSafetyUnchanged: true
+      }
+    ),
     datasetQualitySummary: objectOrFallback(source.datasetQualitySummary || source.dataIntegrity?.datasetQualitySummary, { status: "blocked", blockingReasons: [] }),
     replayDeterminismSummary: objectOrFallback(source.replayDeterminismSummary || source.dataIntegrity?.replayDeterminismSummary, { status: "unavailable" }),
     decisionInputLineageSummary: objectOrFallback(

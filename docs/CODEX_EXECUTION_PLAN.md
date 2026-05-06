@@ -19,7 +19,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N3 - Paper Exit Policy Lab.
 - [x] N4 - Paper Portfolio Allocator Simulation.
 - [x] N5 - Data Quality Score V2.
-- [ ] N6 - Stream Health Monitor And Failover Evidence.
+- [x] N6 - Stream Health Monitor And Failover Evidence.
 - [ ] N7 - Order Lifecycle And Orphan Order Auditor.
 - [ ] N8 - Paper Replay Coverage Autopilot.
 - [ ] N9 - Golden Replay Regression Pack Generator.

@@ -127,6 +127,7 @@ import {
 import { buildOperatorActionResult } from "./operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "./tradingImprovementDiagnostics.js";
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "./restBudgetGovernor.js";
+import { buildStreamHealthEvidence } from "./streamHealthEvidence.js";
 import { buildFeatureAudit } from "./featureAudit.js";
 import {
   buildLearningFailureSummary,
@@ -11199,100 +11200,33 @@ export class TradingBot {
       config: this.config,
       streamStatus
     });
-    const warnThreshold = Math.max(100, Number(this.config.requestWeightWarnThreshold1m || 4800));
-    const usedWeight1m = Number(rateLimitState?.usedWeight1m || 0);
-    const pressure = Number.isFinite(usedWeight1m) ? usedWeight1m / warnThreshold : 0;
-    const fallbackEntries = Object.entries(this.restFallbackState || {})
-      .map(([key, value]) => ({
-        key,
-        kind: `${key}`.split(":")[0] || "unknown",
-        symbol: `${key}`.split(":")[1] || null,
-        lastAt: value?.lastAt || null,
-        ageMs: Number.isFinite(Date.parse(value?.lastAt || "")) ? Math.max(0, Date.parse(referenceNow) - Date.parse(value.lastAt)) : null
-      }))
-      .sort((left, right) => Number(left.ageMs ?? Infinity) - Number(right.ageMs ?? Infinity))
-      .slice(0, 12);
-    const suppressedEntries = Object.entries(this.restFallbackSuppressedState || {})
-      .map(([key, value]) => ({
-        key,
-        kind: `${key}`.split(":")[0] || "unknown",
-        symbol: `${key}`.split(":")[1] || null,
-        reason: value?.reason || "guarded",
-        lastAt: value?.lastAt || null,
-        ageMs: Number.isFinite(Date.parse(value?.lastAt || "")) ? Math.max(0, Date.parse(referenceNow) - Date.parse(value.lastAt)) : null
-      }))
-      .sort((left, right) => Number(left.ageMs ?? Infinity) - Number(right.ageMs ?? Infinity))
-      .slice(0, 12);
-    const depthFallbacks = fallbackEntries.filter((entry) => entry.kind === "depth");
-    const bookTickerFallbacks = fallbackEntries.filter((entry) => entry.kind === "book_ticker");
-    const publicConnected = streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected ?? false;
-    const publicStreamAuthoritative = streamStatus?.connectivityAuthoritative !== false;
-    const publicStreamStaleChunkCount = Number(streamStatus?.publicStreamStaleChunkCount || 0);
-    const publicStreamPendingChunkCount = Number(streamStatus?.publicStreamPendingChunkCount || 0);
-    const userStreamConnected = Boolean(streamStatus?.userStreamConnected);
-    const userStreamExpected = Boolean(this.config?.binanceApiKey) && (
-      this.config?.botMode === "live" ||
-      this.config?.paperExecutionVenue === "binance_demo_spot"
-    );
-    const userStreamAuthoritative = streamStatus?.connectivityAuthoritative !== false;
-    const localBookHealthy = Number(streamStatus?.localBook?.healthySymbols || streamStatus?.localBook?.syncedSymbols || 0);
-    const topRestCallers = rateLimitState?.topRestCallers || {};
-    const privateRestWeight = Object.entries(topRestCallers).reduce((total, [caller, value]) => (
-      /openOrders|open_orders|openOrderList|open_order_list|account_info|\/api\/v3\/account/i.test(caller)
-        ? total + Number(value?.weight || 0)
-        : total
-    ), 0);
-    const publicFallbackWeight = Object.entries(topRestCallers).reduce((total, [caller, value]) => (
-      /depth_fallback|book_ticker_fallback|\/api\/v3\/depth|\/api\/v3\/ticker\/bookTicker/i.test(caller)
-        ? total + Number(value?.weight || 0)
-        : total
-    ), 0);
-    const status = rateLimitState?.banActive
-      ? "paused_rate_limit_ban"
-      : (userStreamExpected && userStreamAuthoritative && !userStreamConnected && privateRestWeight > 0)
-        ? "private_stream_gap_using_rest"
-      : (publicStreamAuthoritative && publicConnected && publicStreamStaleChunkCount > 0)
-        ? "public_stream_stalled"
-      : pressure >= 0.8 || suppressedEntries.some((entry) => entry.kind === "depth")
-        ? "rest_pressure_guarded"
-      : (publicStreamAuthoritative && !publicConnected && depthFallbacks.length)
-          ? "stream_gap_using_rest_fallback"
-          : depthFallbacks.length
-            ? "watch"
-            : "ready";
-    const recommendedAction = status === "paused_rate_limit_ban"
-      ? "Wacht tot Binance REST ban afloopt; gebruik streams en vermijd handmatige refreshes."
-      : status === "private_stream_gap_using_rest"
-        ? "Controleer user-data stream; private REST open-order/account checks moeten sanity fallback blijven."
-      : status === "public_stream_stalled"
-        ? "Publieke stream is verbonden maar stilgevallen; watchdog hoort de stream automatisch te herstarten."
-      : status === "rest_pressure_guarded"
-        ? "Laat publieke marketdata uit streams komen en stel niet-kritieke scanner/depth REST calls uit."
-        : status === "stream_gap_using_rest_fallback"
-          ? "Controleer stream-connectiviteit; REST depth fallback is alleen noodpad."
-          : "Geen actie nodig.";
-    return {
-      status,
-      generatedAt: referenceNow,
-      publicStreamConnected: Boolean(publicConnected),
-      publicStreamAuthoritative,
-      publicStreamStaleChunkCount: Number.isFinite(publicStreamStaleChunkCount) ? publicStreamStaleChunkCount : 0,
-      publicStreamPendingChunkCount: Number.isFinite(publicStreamPendingChunkCount) ? publicStreamPendingChunkCount : 0,
-      localBookHealthySymbols: Number.isFinite(localBookHealthy) ? localBookHealthy : 0,
-      usedWeight1m: Number.isFinite(usedWeight1m) ? usedWeight1m : null,
-      pressure: Number.isFinite(pressure) ? Number(pressure.toFixed(4)) : null,
-      fallbackCount: fallbackEntries.length,
-      depthFallbackCount: depthFallbacks.length,
-      bookTickerFallbackCount: bookTickerFallbacks.length,
-      suppressedFallbackCount: suppressedEntries.length,
-      userStreamExpected,
-      userStreamConnected,
-      privateRestWeight,
-      publicFallbackWeight,
+    const summary = buildStreamHealthEvidence({
+      streamStatus,
+      userStreamStatus: {
+        connected: streamStatus?.userStreamConnected,
+        lastMessageAt: streamStatus?.userStreamLastMessageAt,
+        expected: Boolean(this.config?.binanceApiKey) && (
+          this.config?.botMode === "live" ||
+          this.config?.paperExecutionVenue === "binance_demo_spot"
+        )
+      },
+      requestBudget: rateLimitState,
+      restFallbackState: this.restFallbackState,
+      restFallbackSuppressedState: this.restFallbackSuppressedState,
       restBudgetGovernor,
-      recentFallbacks: fallbackEntries,
-      recentSuppressedFallbacks: suppressedEntries,
-      recommendedAction
+      config: this.config,
+      now: referenceNow
+    });
+    return {
+      ...summary,
+      publicStreamAuthoritative: streamStatus?.connectivityAuthoritative !== false,
+      localBookHealthySymbols: summary.localBookSyncedSymbols,
+      bookTickerFallbackCount: summary.recentFallbacks.filter((entry) => entry.kind === "book_ticker").length,
+      publicFallbackWeight: Object.entries(rateLimitState?.topRestCallers || {}).reduce((total, [caller, value]) => (
+        /depth_fallback|book_ticker_fallback|\/api\/v3\/depth|\/api\/v3\/ticker\/bookTicker/i.test(caller)
+          ? total + Number(value?.weight || 0)
+          : total
+      ), 0)
     };
   }
 

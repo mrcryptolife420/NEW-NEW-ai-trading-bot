@@ -311,7 +311,7 @@ Notitie 2026-05-05: N5 is afgerond met `src/runtime/dataQualityScoreV2.js` en `t
 
 ### N6 - Stream Health Monitor And Failover Evidence
 
-Status: proposed
+Status: completed
 Priority: P1
 Initial activation: `diagnostics_only`
 
@@ -332,23 +332,25 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add stream health to paper candidate evidence.
-- [ ] Mark paper learning records that relied on REST fallback.
-- [ ] Expose `streamHealthSummary` and stream replacement availability in dashboard/readmodel.
+- [x] Add stream health to paper candidate evidence.
+- [x] Mark paper learning records that relied on REST fallback.
+- [x] Expose `streamHealthSummary` and stream replacement availability in dashboard/readmodel.
 
 Tests:
 
-- [ ] Healthy streams produce `ready`.
-- [ ] Stale user stream blocks live readiness diagnostics.
-- [ ] Local book stream not ready explains guarded depth fallback.
-- [ ] Reconnect storm marks degraded.
-- [ ] Missing stream metadata is fallback-safe.
+- [x] Healthy streams produce `ready`.
+- [x] Stale user stream blocks live readiness diagnostics.
+- [x] Local book stream not ready explains guarded depth fallback.
+- [x] Reconnect storm marks degraded.
+- [x] Missing stream metadata is fallback-safe.
 
 Acceptance:
 
-- [ ] Operator can see whether paper decisions used stream or fallback data.
-- [ ] No force-unlock or live safety relief.
-- [ ] `npm test` passes.
+- [x] Operator can see whether paper decisions used stream or fallback data.
+- [x] No force-unlock or live safety relief.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N6 is afgerond met `src/runtime/streamHealthEvidence.js` en `test/streamHealthEvidence.tests.js`. De helper normaliseert publieke stream, user-data stream, local-orderbook readiness, REST fallback/suppression en reconnect-storm evidence; paper candidates krijgen diagnostics-only stream evidence en dashboard/readmodel exposeert `streamHealthSummary` fallback-safe. De bestaande `TradingBot.buildStreamFallbackHealth` gebruikt deze pure evidence-builder; geen REST fallback wordt geforceerd en live safety blijft ongewijzigd.
 
 ### N7 - Order Lifecycle And Orphan Order Auditor
 
