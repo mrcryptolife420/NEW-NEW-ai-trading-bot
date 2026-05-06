@@ -294,6 +294,21 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveBehaviorChanged: false
       }
     ),
+    operatorReviewLabelSummary: objectOrFallback(
+      source.operatorReviewLabelSummary ||
+        source.learningAnalytics?.operatorReviewLabelSummary ||
+        source.paperLearning?.operatorReviewLabelSummary ||
+        source.reviewLabels?.summary,
+      {
+        status: "empty",
+        count: 0,
+        byLabel: {},
+        byTargetType: {},
+        labels: [],
+        paperAnalyticsOnly: true,
+        liveBehaviorChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

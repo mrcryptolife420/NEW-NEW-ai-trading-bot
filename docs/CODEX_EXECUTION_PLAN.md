@@ -29,7 +29,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N13 - Model Confidence Root-Cause Analyzer.
 - [x] N14 - Paper Strategy Cohort Scorecard Builder.
 - [x] N15 - Shadow Strategy Challenger Tournament.
-- [ ] N16 - Operator Review Label Workbench.
+- [x] N16 - Operator Review Label Workbench.
 - [ ] N17 - Watchlist Coverage Balancer.
 - [x] N18 - Paper Trade Lifecycle Contract Harness.
 - [ ] N19 - Readmodel Analytics Query Pack.

@@ -184,6 +184,7 @@ import { registerPaperStrategyCohortScorecardTests } from "./paperStrategyCohort
 import { registerRootBlockerStalenessVerifierTests } from "./rootBlockerStalenessVerifier.tests.js";
 import { registerPaperNetEdgeCalibrationWorkbenchTests } from "./paperNetEdgeCalibrationWorkbench.tests.js";
 import { registerShadowStrategyTournamentTests } from "./shadowStrategyTournament.tests.js";
+import { registerOperatorReviewLabelsTests } from "./operatorReviewLabels.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32558,6 +32559,11 @@ await registerPaperNetEdgeCalibrationWorkbenchTests({
 });
 
 await registerShadowStrategyTournamentTests({
+  runCheck,
+  assert
+});
+
+await registerOperatorReviewLabelsTests({
   runCheck,
   assert
 });

@@ -745,7 +745,7 @@ Notitie 2026-05-06: N15 is afgerond met `src/runtime/shadowStrategyTournament.js
 
 ### N16 - Operator Review Label Workbench
 
-Status: proposed
+Status: completed
 Priority: P2
 Initial activation: `paper_only` / `diagnostics_only`
 
@@ -767,24 +767,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add a review queue for paper trades, blocked candidates and uncertain veto outcomes.
-- [ ] Persist labels with source, reviewer, confidence and createdAt.
-- [ ] Feed labels into paper scorecards and failure summaries only.
-- [ ] Add `operatorReviewLabelSummary` to dashboard/readmodel.
+- [x] Add a review queue for paper trades, blocked candidates and uncertain veto outcomes.
+- [x] Persist labels with source, reviewer, confidence and createdAt.
+- [x] Feed labels into paper scorecards and failure summaries only.
+- [x] Add `operatorReviewLabelSummary` to dashboard/readmodel.
 
 Tests:
 
-- [ ] Valid label is accepted.
-- [ ] Invalid label is rejected.
-- [ ] Label persists without changing trading decisions.
-- [ ] Label can attach to trade, candidate or veto observation.
-- [ ] Live mode treats labels as diagnostics only.
+- [x] Valid label is accepted.
+- [x] Invalid label is rejected.
+- [x] Label persists without changing trading decisions.
+- [x] Label can attach to trade, candidate or veto observation.
+- [x] Live mode treats labels as diagnostics only.
 
 Acceptance:
 
-- [ ] Human review improves paper analytics.
-- [ ] No live threshold/risk/execution changes.
-- [ ] `npm test` passes.
+- [x] Human review improves paper analytics.
+- [x] No live threshold/risk/execution changes.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N16 is afgerond met `src/runtime/operatorReviewLabels.js` en `test/operatorReviewLabels.tests.js`. De workbench hergebruikt de bestaande trade labeler, exit quality, failure library en veto outcome helpers voor een review queue en valide label-records met source/reviewer/confidence/createdAt. Labels kunnen aan trades, candidates en veto observations hangen, blijven `paperAnalyticsOnly`, en dashboard/readmodel exposeert `operatorReviewLabelSummary` fallback-safe. Live mode behandelt labels diagnostics-only.
 
 ### N17 - Watchlist Coverage Balancer
 
