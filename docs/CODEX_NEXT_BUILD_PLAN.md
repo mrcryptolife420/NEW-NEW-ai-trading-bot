@@ -699,7 +699,7 @@ Notitie 2026-05-06: N14 is afgerond met `src/runtime/paperStrategyCohortScorecar
 
 ### N15 - Shadow Strategy Challenger Tournament
 
-Status: proposed
+Status: completed
 Priority: P2
 Initial activation: `shadow_only`
 
@@ -722,24 +722,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Persist challenger decisions beside champion decisions as `shadow_challenger`.
-- [ ] Compare would-trade, would-block, setup type, root blocker and hypothetical paper outcome.
-- [ ] Add `shadowStrategyTournamentSummary` to dashboard/readmodel.
-- [ ] Gate any future paper influence through `featureActivationGovernor`.
+- [x] Persist challenger decisions beside champion decisions as `shadow_challenger`.
+- [x] Compare would-trade, would-block, setup type, root blocker and hypothetical paper outcome.
+- [x] Add `shadowStrategyTournamentSummary` to dashboard/readmodel.
+- [x] Gate any future paper influence through `featureActivationGovernor`.
 
 Tests:
 
-- [ ] Challenger can disagree without executing.
-- [ ] Champion execution path remains unchanged.
-- [ ] Shadow decisions persist separately.
-- [ ] Hard-safety blocker dominates challenger approval.
-- [ ] Missing challenger output is fallback-safe.
+- [x] Challenger can disagree without executing.
+- [x] Champion execution path remains unchanged.
+- [x] Shadow decisions persist separately.
+- [x] Hard-safety blocker dominates challenger approval.
+- [x] Missing challenger output is fallback-safe.
 
 Acceptance:
 
-- [ ] Strategy alternatives become measurable without execution risk.
-- [ ] No live behavior changes.
-- [ ] `npm test` passes.
+- [x] Strategy alternatives become measurable without execution risk.
+- [x] No live behavior changes.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N15 is afgerond met `src/runtime/shadowStrategyTournament.js` en `test/shadowStrategyTournament.tests.js`. De tournament bouwt aparte `shadow_challenger` records naast champion decisions, vergelijkt wouldTrade/wouldBlock/setup/root blocker/hypothetical outcome, gebruikt `featureActivationGovernor` voor `shadow_only`, en exposeert `shadowStrategyTournamentSummary` fallback-safe. Hard-safety blockers domineren challenger approval; execution en portfolio-impact blijven expliciet false.
 
 ### N16 - Operator Review Label Workbench
 

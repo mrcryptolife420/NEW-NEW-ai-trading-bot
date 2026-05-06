@@ -279,6 +279,21 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveThresholdReliefAllowed: false
       }
     ),
+    shadowStrategyTournamentSummary: objectOrFallback(
+      source.shadowStrategyTournamentSummary ||
+        source.learningAnalytics?.shadowStrategyTournamentSummary ||
+        source.paperLearning?.shadowStrategyTournamentSummary ||
+        source.strategyEvidence?.shadowStrategyTournamentSummary,
+      {
+        status: "empty",
+        count: 0,
+        disagreementCount: 0,
+        records: [],
+        shadowOnly: true,
+        executionAllowed: false,
+        liveBehaviorChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(
