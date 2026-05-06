@@ -353,6 +353,26 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveBehaviorChanged: false
       }
     ),
+    paperDecisionEvidenceDrilldown: objectOrFallback(
+      source.paperDecisionEvidenceDrilldown ||
+        source.dashboardEvidenceDrilldown ||
+        source.decisionDiagnostics?.paperDecisionEvidenceDrilldown ||
+        source.paperLearning?.paperDecisionEvidenceDrilldown,
+      {
+        status: "empty",
+        count: 0,
+        items: [],
+        stateCounts: {},
+        operatorCanDistinguish: {
+          noAlpha: false,
+          badData: false,
+          safetyBlocked: false,
+          dashboardStale: false
+        },
+        diagnosticsOnly: true,
+        liveBehaviorChanged: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

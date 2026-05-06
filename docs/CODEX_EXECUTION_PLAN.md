@@ -24,7 +24,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N8 - Paper Replay Coverage Autopilot.
 - [x] N9 - Golden Replay Regression Pack Generator.
 - [x] N10 - Paper Net-Edge Calibration Workbench.
-- [ ] N11 - Dashboard Evidence Drilldown.
+- [x] N11 - Dashboard Evidence Drilldown.
 - [ ] N12 - Feature Wiring Completion Gate.
 - [x] N13 - Model Confidence Root-Cause Analyzer.
 - [x] N14 - Paper Strategy Cohort Scorecard Builder.

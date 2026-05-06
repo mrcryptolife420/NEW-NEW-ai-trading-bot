@@ -188,6 +188,7 @@ import { registerOperatorReviewLabelsTests } from "./operatorReviewLabels.tests.
 import { registerWatchlistCoverageBalancerTests } from "./watchlistCoverageBalancer.tests.js";
 import { registerPaperReplayCoverageAutopilotTests } from "./paperReplayCoverageAutopilot.tests.js";
 import { registerGoldenReplayPackGeneratorTests } from "./goldenReplayPackGenerator.tests.js";
+import { registerDashboardEvidenceDrilldownTests } from "./dashboardEvidenceDrilldown.tests.js";
 import { registerOperatorSafetyToolingTests } from "./operatorSafetyTooling.tests.js";
 import { registerDataIntegrityMaintenanceTests } from "./dataIntegrityMaintenance.tests.js";
 import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinator.tests.js";
@@ -32582,6 +32583,11 @@ await registerPaperReplayCoverageAutopilotTests({
 });
 
 await registerGoldenReplayPackGeneratorTests({
+  runCheck,
+  assert
+});
+
+await registerDashboardEvidenceDrilldownTests({
   runCheck,
   assert
 });

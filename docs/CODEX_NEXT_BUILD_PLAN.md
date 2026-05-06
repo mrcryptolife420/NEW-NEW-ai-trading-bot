@@ -527,7 +527,7 @@ Notitie 2026-05-06: N10 is afgerond met `src/runtime/paperNetEdgeCalibrationWork
 
 ### N11 - Dashboard Evidence Drilldown
 
-Status: proposed
+Status: completed
 Priority: P3
 Initial activation: `diagnostics_only`
 
@@ -549,24 +549,25 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add `paperDecisionEvidenceDrilldown` to decision cards.
-- [ ] Show root blocker, feature quality, setup thesis, net edge, portfolio crowding and exchange-safety dominance.
-- [ ] Clear stale frontend polling errors after successful snapshot fetch.
-- [ ] Keep old snapshot fallback compatibility.
+- [x] Add `paperDecisionEvidenceDrilldown` to decision cards.
+- [x] Show root blocker, feature quality, setup thesis, net edge, portfolio crowding and exchange-safety dominance.
+- [x] Clear stale frontend polling errors after successful snapshot fetch.
+- [x] Keep old snapshot fallback compatibility.
+  - Notitie 2026-05-06: N11 is afgerond met `src/runtime/dashboardEvidenceDrilldown.js` en fallback-normalizer `paperDecisionEvidenceDrilldown`. De drilldown is diagnostics-only en maakt safety-blocked, bad-data, no-alpha en stale-dashboard/feed states expliciet zonder entry permissioning te wijzigen.
 
 Tests:
 
-- [ ] Empty runtime dashboard does not crash.
-- [ ] Blocked exchange safety remains dominant.
-- [ ] Fresh paper candidate shows evidence chain.
-- [ ] Stale dashboard does not falsely claim trading allowed.
-- [ ] Frontend polling error clears after success.
+- [x] Empty runtime dashboard does not crash.
+- [x] Blocked exchange safety remains dominant.
+- [x] Fresh paper candidate shows evidence chain.
+- [x] Stale dashboard does not falsely claim trading allowed.
+- [x] Frontend polling error clears after success.
 
 Acceptance:
 
-- [ ] Operator can distinguish no-alpha, bad-data, safety-blocked and dashboard-stale states.
-- [ ] No entry permission changes.
-- [ ] `npm test` passes.
+- [x] Operator can distinguish no-alpha, bad-data, safety-blocked and dashboard-stale states.
+- [x] No entry permission changes.
+- [x] `npm test` passes.
 
 ### N12 - Feature Wiring Completion Gate
 
