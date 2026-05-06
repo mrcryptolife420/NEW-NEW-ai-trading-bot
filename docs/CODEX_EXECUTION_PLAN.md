@@ -23,7 +23,7 @@ Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn
 - [x] N7 - Order Lifecycle And Orphan Order Auditor.
 - [ ] N8 - Paper Replay Coverage Autopilot.
 - [ ] N9 - Golden Replay Regression Pack Generator.
-- [ ] N10 - Paper Net-Edge Calibration Workbench.
+- [x] N10 - Paper Net-Edge Calibration Workbench.
 - [ ] N11 - Dashboard Evidence Drilldown.
 - [ ] N12 - Feature Wiring Completion Gate.
 - [x] N13 - Model Confidence Root-Cause Analyzer.

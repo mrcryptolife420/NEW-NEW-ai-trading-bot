@@ -265,6 +265,20 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         liveBehaviorChanged: false
       }
     ),
+    paperNetEdgeCalibrationSummary: objectOrFallback(
+      source.paperNetEdgeCalibrationSummary ||
+        source.learningAnalytics?.paperNetEdgeCalibrationSummary ||
+        source.paperLearning?.paperNetEdgeCalibrationSummary ||
+        source.execution?.paperNetEdgeCalibrationSummary,
+      {
+        status: "empty",
+        sampleCount: 0,
+        groupCount: 0,
+        groups: [],
+        recommendations: [],
+        liveThresholdReliefAllowed: false
+      }
+    ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
     candidateOutcomeSummary: objectOrFallback(

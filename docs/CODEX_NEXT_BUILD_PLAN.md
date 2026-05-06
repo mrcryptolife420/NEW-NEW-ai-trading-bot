@@ -481,7 +481,7 @@ Acceptance:
 
 ### N10 - Paper Net-Edge Calibration Workbench
 
-Status: proposed
+Status: completed
 Priority: P2
 Initial activation: `paper_only`
 
@@ -502,23 +502,25 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Calculate realized vs simulated paper execution drag.
-- [ ] Report per symbol/session/order style net-edge error.
-- [ ] Generate paper-only calibration recommendations.
-- [ ] Keep live gate disabled unless separate live risk review enables stricter blocking.
+- [x] Calculate realized vs simulated paper execution drag.
+- [x] Report per symbol/session/order style net-edge error.
+- [x] Generate paper-only calibration recommendations.
+- [x] Keep live gate disabled unless separate live risk review enables stricter blocking.
 
 Tests:
 
-- [ ] High fees lower net edge.
-- [ ] Slippage model mismatch creates calibration warning.
-- [ ] Thin book lowers fill confidence.
-- [ ] Live mode cannot lower thresholds from positive net-edge diagnostics.
+- [x] High fees lower net edge.
+- [x] Slippage model mismatch creates calibration warning.
+- [x] Thin book lowers fill confidence.
+- [x] Live mode cannot lower thresholds from positive net-edge diagnostics.
 
 Acceptance:
 
-- [ ] Paper fills become more realistic and auditable.
-- [ ] No live safety relief.
-- [ ] `npm test` passes.
+- [x] Paper fills become more realistic and auditable.
+- [x] No live safety relief.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N10 is afgerond met `src/runtime/paperNetEdgeCalibrationWorkbench.js` en `test/paperNetEdgeCalibrationWorkbench.tests.js`. De workbench groepeert paper execution samples per symbol/session/order style, vergelijkt realized fees/slippage/drag met simulated assumptions, berekent net edge via bestaande `netEdgeGate`, gebruikt microstructure fill simulation voor fill confidence, en geeft paper-only calibratie-aanbevelingen. Live mode blijft diagnostics-only met `liveThresholdReliefAllowed=false` en `liveGateEnabled=false`.
 
 ### N11 - Dashboard Evidence Drilldown
 
