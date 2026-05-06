@@ -412,6 +412,14 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
     ),
     indicatorRegimeSummary: objectOrFallback(source.indicatorRegimeSummary || source.tradingQualitySummary?.regimeFit, { score: 0, supportingIndicators: [], conflictingIndicators: [], warnings: [] }),
     learningEvidenceSummary: objectOrFallback(source.learningEvidenceSummary || source.learningAnalytics?.learningEvidenceSummary, { status: "empty", count: 0 }),
+    paperEvidenceSpineSummary: objectOrFallback(
+      source.paperEvidenceSpineSummary ||
+        source.paperLearning?.paperEvidenceSpineSummary ||
+        source.learningAnalytics?.paperEvidenceSpineSummary ||
+        source.paperAnalyticsReadmodelSummary?.paperEvidenceSpineSummary ||
+        source.readModel?.paperAnalyticsReadmodelSummary?.paperEvidenceSpineSummary,
+      { status: "empty", count: 0, packets: [], byState: {}, bySetupType: {}, byRootBlocker: {}, paperOnly: true, diagnosticsOnly: true, liveBehaviorChanged: false }
+    ),
     candidateOutcomeSummary: objectOrFallback(
       source.candidateOutcomeSummary ||
         source.learningAnalytics?.candidateOutcomeSummary ||

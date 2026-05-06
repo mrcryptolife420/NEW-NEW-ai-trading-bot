@@ -83,6 +83,9 @@ export async function registerReadModelAnalyticsQueriesTests({ runCheck, assert 
     assert.equal(summary.vetoOutcomes.bad_veto, 1);
     assert.equal(summary.blockerTimelines[0].reason, "model_confidence_too_low");
     assert.equal(summary.cohortScorecards[0].strategyId, "breakout_retest");
+    assert.equal(summary.paperEvidenceSpineSummary.status, "ready");
+    assert.equal(summary.paperEvidenceSpineSummary.count, 1);
+    assert.equal(summary.paperEvidenceSpineSummary.paperOnly, true);
     db.close();
   });
 
@@ -116,6 +119,7 @@ export async function registerReadModelAnalyticsQueriesTests({ runCheck, assert 
     });
 
     assert.equal(fallback.paperAnalyticsReadmodelSummary.status, "unavailable");
+    assert.equal(fallback.paperEvidenceSpineSummary.status, "empty");
     assert.equal(normalized.paperAnalyticsReadmodelSummary.paperTrades.length, 1);
     assert.doesNotThrow(() => JSON.stringify(normalized.paperAnalyticsReadmodelSummary));
   });

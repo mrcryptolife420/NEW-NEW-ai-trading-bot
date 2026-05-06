@@ -1,3 +1,5 @@
+import { buildPaperEvidenceSpine } from "../runtime/paperEvidenceSpine.js";
+
 const REQUIRED_ANALYTICS_TABLES = [
   "trades",
   "decisions",
@@ -132,6 +134,7 @@ export function buildPaperAnalyticsReadModelSummary({ db = null, status = null, 
     if (result.error) warnings.push(result.error);
   }
 
+  const normalizedDecisions = decisions.rows.map(normalizeDecision);
   const normalizedTrades = trades.rows.map(normalizeTrade);
   const exitQualityCounts = normalizedTrades.reduce((acc, trade) => {
     const key = trade.exitQuality || "unknown_exit_quality";
@@ -160,7 +163,7 @@ export function buildPaperAnalyticsReadModelSummary({ db = null, status = null, 
     dbStatus: status?.status || "unknown",
     tables: status?.tables || {},
     missingTables,
-    paperCandidates: decisions.rows.map(normalizeDecision),
+    paperCandidates: normalizedDecisions,
     blockerTimelines: blockers.rows.map((row) => ({
       reason: row.reason || "unknown",
       count: safeNumber(row.count, 0),
@@ -179,6 +182,11 @@ export function buildPaperAnalyticsReadModelSummary({ db = null, status = null, 
       expectancyPct: safeNumber(row.expectancyPct, 0),
       confidence: safeNumber(row.confidence, 0)
     })),
+    paperEvidenceSpineSummary: buildPaperEvidenceSpine({
+      decisions: normalizedDecisions,
+      trades: normalizedTrades,
+      limit: cappedLimit
+    }).summary,
     counts: {
       paperCandidates: decisions.rows.length,
       blockerTimelines: blockers.rows.length,

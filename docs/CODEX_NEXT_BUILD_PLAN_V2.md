@@ -34,7 +34,7 @@ Deze onderdelen bestaan al en moeten worden hergebruikt of verbeterd, niet opnie
 ## Prioriteitsoverzicht
 
 1. P0: Feature activation metadata completion gate warnings oplossen. Completed 2026-05-06.
-2. P1: Paper evidence spine van candidate naar outcome naar readmodel naar dashboard/report.
+2. P1: Paper evidence spine van candidate naar outcome naar readmodel naar dashboard/report. Completed 2026-05-06.
 3. P1: Veto outcome en replay trace coverage vullen vanuit bestaande blockers/readmodel.
 4. P1: Stream/readiness root-cause drilldown voor paper scans.
 5. P2: Paper-to-backtest parity dossier.
@@ -89,7 +89,7 @@ Notitie 2026-05-06: `src/runtime/featureAudit.js` geeft nu expliciete activation
 
 ## V2-2 - Paper evidence spine
 
-Status: proposed  
+Status: completed  
 Priority: P1  
 Initial activation: `paper_only`
 
@@ -107,23 +107,25 @@ Reuse:
 
 Taken:
 
-- [ ] Maak een compacte paper evidence packet builder rond bestaande helpers.
-- [ ] Link `decisionId`, `candidateId`, `tradeId`, `setupType`, `rootBlocker`, `thesis`, `outcome`, `exitQuality`, `failureMode`.
-- [ ] Sla de packet read-only/rebuildable op via readmodel of journal reference, zonder source-of-truth migratie.
-- [ ] Toon samenvatting in report/dashboard als optioneel veld.
-- [ ] Voeg tests toe voor approved trade, blocked setup, missing trade en missing thesis.
+- [x] Maak een compacte paper evidence packet builder rond bestaande helpers.
+- [x] Link `decisionId`, `candidateId`, `tradeId`, `setupType`, `rootBlocker`, `thesis`, `outcome`, `exitQuality`, `failureMode`.
+- [x] Sla de packet read-only/rebuildable op via readmodel of journal reference, zonder source-of-truth migratie.
+- [x] Toon samenvatting in report/dashboard als optioneel veld.
+- [x] Voeg tests toe voor approved trade, blocked setup, missing trade en missing thesis.
 
 Paper-mode aansluiting:
 
-- [ ] Elke paper candidate krijgt een auditbaar evidence packet waar data beschikbaar is.
-- [ ] Live krijgt hoogstens metadata/observability, geen decision impact.
-- [ ] Hard-safety blockers blijven dominant.
+- [x] Elke paper candidate krijgt een auditbaar evidence packet waar data beschikbaar is.
+- [x] Live krijgt hoogstens metadata/observability, geen decision impact.
+- [x] Hard-safety blockers blijven dominant.
 
 Acceptatie:
 
-- [ ] Packet builder is fallback-safe.
-- [ ] Geen NaN/Infinity.
-- [ ] `npm test` slaagt.
+- [x] Packet builder is fallback-safe.
+- [x] Geen NaN/Infinity.
+- [x] `npm test` slaagt.
+
+Notitie 2026-05-06: `src/runtime/paperEvidenceSpine.js` toegevoegd als pure paper-only diagnosticslaag boven bestaande `learningEvidencePipeline`. Readmodel analytics bouwt nu optioneel `paperEvidenceSpineSummary` uit decisions/trades, en dashboard normalizers hebben fallback-safe visibility. Geen journal/source-of-truth migratie, geen entry/risk/execution wijziging.
 
 ---
 

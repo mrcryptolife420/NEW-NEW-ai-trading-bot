@@ -42,7 +42,7 @@ Detailplan: `docs/CODEX_NEXT_BUILD_PLAN_V2.md`
 Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan op 2026-05-06. De vorige `docs/CODEX_NEXT_BUILD_PLAN.md` is afgerond; V2 richt zich daarom op integratie, paper evidence, governance metadata, diagnostics en testbaarheid. Elk item moet bestaande modules hergebruiken, paper-mode-first worden aangesloten en mag live safety niet versoepelen.
 
 - [x] V2-1 - Feature activation metadata completion gate.
-- [ ] V2-2 - Paper evidence spine.
+- [x] V2-2 - Paper evidence spine.
 - [ ] V2-3 - Veto outcome and replay trace coverage.
 - [ ] V2-4 - Stream/readiness root-cause drilldown for paper scans.
 - [ ] V2-5 - Paper-to-backtest parity dossier.

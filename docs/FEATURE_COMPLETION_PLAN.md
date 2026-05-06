@@ -158,3 +158,22 @@ Safety contract:
 - no sizing changes
 - no live behavior changes
 - no automatic promotion to live
+
+## V2 Batch 2: paper evidence spine
+
+V2 Batch 2 completes V2-2 from `docs/CODEX_NEXT_BUILD_PLAN_V2.md` without changing trading behavior:
+
+- `src/runtime/paperEvidenceSpine.js` builds compact paper evidence packets around existing learning helpers.
+- Packets link decision, candidate, trade, setup, root blocker, thesis, veto/exit outcome, failure mode and replay priority where data is available.
+- `buildPaperAnalyticsReadModelSummary` now exposes optional `paperEvidenceSpineSummary` using rebuildable readmodel rows.
+- `normalizeDashboardSnapshotPayload` exposes `paperEvidenceSpineSummary` with safe fallbacks.
+
+Safety contract:
+
+- paper-only diagnostics
+- source-of-truth remains JSON/NDJSON
+- no entry permissioning changes
+- no ranking changes
+- no threshold changes
+- no sizing changes
+- no live behavior changes
