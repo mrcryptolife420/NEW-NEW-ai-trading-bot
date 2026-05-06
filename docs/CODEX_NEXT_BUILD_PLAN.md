@@ -111,24 +111,26 @@ Do not duplicate:
 
 Paper-mode connection:
 
-- [ ] Add a paper-only candidate lab record for each candidate: generated, blocked, approved, skipped, shadow-approved.
-- [ ] Store `candidateId`, `decisionId`, `setupType`, top evidence, top conflicts, blocker family, feature activation stage and paper eligibility.
-- [ ] Make live mode emit diagnostics only with `runtimeApplied=false`.
-- [ ] Add dashboard/readmodel summary: `paperCandidateLabSummary`.
+- [x] Add a paper-only candidate lab record for each candidate: generated, blocked, approved, skipped, shadow-approved.
+- [x] Store `candidateId`, `decisionId`, `setupType`, top evidence, top conflicts, blocker family, feature activation stage and paper eligibility.
+- [x] Make live mode emit diagnostics only with `runtimeApplied=false`.
+- [x] Add dashboard/readmodel summary: `paperCandidateLabSummary`.
 
 Tests:
 
-- [ ] Blocked candidate is recorded without executing.
-- [ ] Approved paper candidate is recorded with paper eligibility.
-- [ ] Live mode produces diagnostics only and cannot change execution permission.
-- [ ] Hard-safety blocker remains hard in paper.
-- [ ] Missing candidate fields are fallback-safe.
+- [x] Blocked candidate is recorded without executing.
+- [x] Approved paper candidate is recorded with paper eligibility.
+- [x] Live mode produces diagnostics only and cannot change execution permission.
+- [x] Hard-safety blocker remains hard in paper.
+- [x] Missing candidate fields are fallback-safe.
 
 Acceptance:
 
-- [ ] Paper mode has an auditable candidate trail.
-- [ ] No live threshold, ranking, sizing or execution behavior changes.
-- [ ] `npm test` passes.
+- [x] Paper mode has an auditable candidate trail.
+- [x] No live threshold, ranking, sizing or execution behavior changes.
+- [x] `npm test` passes.
+
+Notitie 2026-05-06: N1 is afgerond met `src/runtime/paperCandidateLab.js` en `test/paperCandidateLab.tests.js`. De lab-orchestrator hergebruikt candidate explainability, decision support diagnostics, learning evidence en feature activation governance; records bevatten candidate/decision/setup/evidence/conflict/blocker-family/activation-stage/paper-eligibility. Live blijft diagnostics-only met `runtimeApplied=false`; hard-safety blockers blijven niet paper-eligible.
 
 ### N2 - Candidate Outcome Tracker
 

@@ -14,7 +14,7 @@ Detailplan: `docs/CODEX_NEXT_BUILD_PLAN.md`
 
 Status: proposed. Deze items zijn toegevoegd na een nieuwe codebase-scan en zijn bewust niet-dubbel met bestaande modules. Elk item moet paper-mode-first worden aangesloten en mag live safety niet versoepelen.
 
-- [ ] N1 - Paper Candidate Lab.
+- [x] N1 - Paper Candidate Lab.
 - [x] N2 - Candidate Outcome Tracker.
 - [x] N3 - Paper Exit Policy Lab.
 - [x] N4 - Paper Portfolio Allocator Simulation.

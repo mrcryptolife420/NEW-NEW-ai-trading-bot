@@ -213,6 +213,22 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.explainability?.candidates,
       { status: "unavailable", count: 0, items: [] }
     ),
+    paperCandidateLabSummary: objectOrFallback(
+      source.paperCandidateLabSummary ||
+        source.paperLearning?.paperCandidateLabSummary ||
+        source.learningAnalytics?.paperCandidateLabSummary ||
+        source.decisionDiagnostics?.paperCandidateLabSummary,
+      {
+        status: "empty",
+        count: 0,
+        byState: {},
+        byBlockerFamily: {},
+        records: [],
+        diagnosticsOnly: true,
+        liveBehaviorChanged: false,
+        executionPermissionChanged: false
+      }
+    ),
     modelConfidenceRootCauseSummary: objectOrFallback(
       source.modelConfidenceRootCauseSummary ||
         source.decisionDiagnostics?.modelConfidenceRootCauseSummary ||
