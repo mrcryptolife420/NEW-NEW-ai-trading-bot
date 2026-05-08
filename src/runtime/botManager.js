@@ -593,15 +593,19 @@ export class BotManager {
     });
   }
 
-  getConfigProfiles() {
+  async getConfigProfiles() {
     const current = this.config || {};
+    const envPath = current.envPath || path.join(this.projectRoot, ".env");
+    const envValues = parseEnvText(await readEnvFile(envPath));
+    const isProfileActive = (profile) => Object.entries(profile.env || {})
+      .every(([key, value]) => (envValues[key] ?? "") === `${value ?? ""}`);
     return {
       current: {
         mode: current.botMode || "paper",
         configProfile: current.profile?.id || null,
         paperModeProfile: current.paperModeProfile || "learn",
         paperExecutionVenue: current.paperExecutionVenue || "internal",
-        envPath: current.envPath || path.join(this.projectRoot, ".env"),
+        envPath,
         projectRoot: this.projectRoot,
         runtimeDir: current.runtimeDir || null,
         historyDir: current.historyDir || null,
@@ -614,9 +618,7 @@ export class BotManager {
         description: profile.description,
         neural: profile.env.NEURAL_SELF_TUNING_ENABLED === "true" ? "full paper-only" : profile.mode === "live" ? "observe only" : "safe partial",
         requiresLiveAcknowledgement: profile.requiresLiveAcknowledgement === true,
-        active: (profile.env.BOT_MODE || "paper") === (current.botMode || "paper")
-          && (!profile.env.PAPER_MODE_PROFILE || profile.env.PAPER_MODE_PROFILE === current.paperModeProfile)
-          && (!profile.env.CONFIG_PROFILE || profile.env.CONFIG_PROFILE === current.profile?.id)
+        active: isProfileActive(profile)
       }))
     };
   }

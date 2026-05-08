@@ -180,7 +180,7 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendJson(response, 200, await manager.getSafeEnvStatus());
   }
   if (request.method === "GET" && url.pathname === "/api/config/profiles") {
-    return sendJson(response, 200, manager.getConfigProfiles());
+    return sendJson(response, 200, await manager.getConfigProfiles());
   }
   if (request.method === "GET" && url.pathname === "/api/readiness") {
     const readiness = await manager.getOperationalReadiness();

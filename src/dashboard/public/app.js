@@ -709,8 +709,23 @@ async function applyProfile(profile) {
     const acknowledgement = window.prompt?.("Typ exact I_UNDERSTAND_LIVE_TRADING_RISK om live mode te configureren.") || "";
     body.liveAcknowledgement = acknowledgement;
   }
+  renderProfilePreview({
+    profile,
+    updates: profile.env || {},
+    warnings: ["Profiel wordt toegepast. .env wordt geschreven en configuratie wordt opnieuw geladen."]
+  });
   const result = await mutateAndRefresh("/api/config/profile/apply", body);
-  renderProfilePreview(result);
+  if (!result) {
+    throw new Error("Er loopt al een configuratie-actie. Wacht tot die klaar is en probeer opnieuw.");
+  }
+  renderProfilePreview({
+    ...result,
+    warnings: [
+      result.applied ? "Profiel toegepast. .env wijzigingen zijn hieronder zichtbaar." : "Profielactie afgerond.",
+      ...(result.writeVerified === false ? [`Schrijfcontrole mismatch: ${(result.mismatches || []).join(", ") || "onbekend"}`] : []),
+      ...(result.warnings || [])
+    ]
+  });
   await fetchProfiles();
 }
 
@@ -1722,7 +1737,9 @@ function renderQuickActions(snapshot) {
 }
 
 async function mutateAndRefresh(path, body = {}) {
-  if (busy) return;
+  if (busy) {
+    throw new Error("Er loopt al een dashboard-actie. Wacht tot die klaar is en probeer opnieuw.");
+  }
   busy = true;
   try {
     const response = await api(path, { method: "POST", body });
