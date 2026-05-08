@@ -4,6 +4,7 @@ import path from "node:path";
 import { BotManager } from "../runtime/botManager.js";
 import { buildWindowsGuiStatus } from "./guiStatus.js";
 import { DashboardEventBus } from "./eventBus.js";
+import { buildFastExecutionDashboardSummary } from "./fastExecutionDashboard.js";
 
 const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -149,6 +150,13 @@ async function handleApi(request, response, manager, eventBus = null) {
       readiness,
       config: manager.config || {},
       projectRoot: manager.projectRoot || process.cwd()
+    }));
+  }
+  if (request.method === "GET" && url.pathname === "/api/gui/fast-execution") {
+    const snapshot = await manager.getSnapshot();
+    return sendJson(response, 200, buildFastExecutionDashboardSummary({
+      snapshot,
+      config: manager.config || {}
     }));
   }
   if (request.method === "GET" && url.pathname === "/api/readiness") {

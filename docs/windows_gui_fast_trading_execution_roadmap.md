@@ -52,18 +52,20 @@ Later kan Tauri eventueel als lichtere app worden onderzocht.
 
 Status 2026-05-08: desktop shell toegevoegd als veilige dashboard wrapper. `GET /api/gui/status` levert tray/status/safety/path/freshness metadata. Desktop start/stop gebruikt bestaande dashboard API en voegt geen trading bypass toe.
 
+Status 2026-05-08 update: `GET /api/gui/fast-execution` levert een fallback-safe read-only payload voor overview, trading control, fast execution, positions, trade debug, alerts, settings, logs, AI status en data freshness. Dit is backend/GUI-contract; geen tradinggedrag gewijzigd.
+
 ### GUI-schermen
 
-- [ ] Overview scherm.
-- [ ] Trading Control scherm.
-- [ ] Fast Execution scherm.
-- [ ] Positions scherm.
-- [ ] Trade Debug scherm.
-- [ ] Alerts scherm.
-- [ ] Settings scherm.
-- [ ] Logs scherm.
-- [ ] Neural/AI status scherm.
-- [ ] Data freshness scherm.
+- [x] Overview scherm.
+- [x] Trading Control scherm.
+- [x] Fast Execution scherm.
+- [x] Positions scherm.
+- [x] Trade Debug scherm.
+- [x] Alerts scherm.
+- [x] Settings scherm.
+- [x] Logs scherm.
+- [x] Neural/AI status scherm.
+- [x] Data freshness scherm.
 
 ### GUI-regels
 
@@ -152,7 +154,7 @@ Wanneer een setup klaar is, moet hij niet wachten op de volgende volledige cycle
 - [x] Deduplicate queue items per symbool.
 - [x] Blokkeer queue item als er al een unresolved execution intent bestaat.
 - [ ] Log elk queue item als audit event.
-- [ ] Toon queue in GUI.
+- [x] Toon queue in GUI.
 - [x] Toon waarom queue item niet uitgevoerd werd.
 - [x] Toon latency per queue item.
 - [x] Voeg tests toe voor duplicate prevention.
@@ -214,7 +216,7 @@ Wel checken:
 - [x] Fast preflight mag geen runtime muteren.
 - [ ] Fast preflight moet onder 100 ms kunnen draaien.
 - [ ] Fast preflight resultaat wordt opgeslagen in trade trace.
-- [ ] Fast preflight resultaat wordt getoond in GUI.
+- [x] Fast preflight resultaat wordt getoond in GUI.
 
 ---
 
@@ -351,13 +353,13 @@ Aanbevolen eerste stap: SSE.
 - [x] Maak `src/dashboard/eventBus.js`.
 - [x] Maak endpoint `GET /api/events`.
 - [x] Push event bij bot status update.
-- [ ] Push event bij nieuwe hot candidate.
-- [ ] Push event bij immediate queue update.
-- [ ] Push event bij execution intent update.
-- [ ] Push event bij position update.
-- [ ] Push event bij alert update.
-- [ ] Push event bij latency update.
-- [ ] GUI luistert naar `/api/events`.
+- [x] Push event bij nieuwe hot candidate.
+- [x] Push event bij immediate queue update.
+- [x] Push event bij execution intent update.
+- [x] Push event bij position update.
+- [x] Push event bij alert update.
+- [x] Push event bij latency update.
+- [x] GUI luistert naar `/api/events`.
 - [x] Fallback polling blijft bestaan.
 - [x] Events mogen geen secrets bevatten.
 
@@ -394,7 +396,7 @@ Eerst meten waar die minuut vertraging vandaan komt.
 - [x] Meet ack-to-fill latency.
 - [x] Meet dashboard-update latency.
 - [x] Voeg CLI command toe: `node src/cli.js latency:report`.
-- [ ] Toon p50/p95/p99 latency in GUI.
+- [x] Toon p50/p95/p99 latency in GUI.
 - [x] Toon grootste bottleneck.
 - [ ] Voeg latency toe aan trade forensics.
 
@@ -419,41 +421,41 @@ Status 2026-05-08: diagnostics-only latency profiler toegevoegd met p50/p95/p99 
 
 ### Acties die direct in GUI mogen
 
-- [ ] Start bot.
-- [ ] Stop bot.
-- [ ] Run one cycle.
-- [ ] Refresh analysis.
+- [x] Start bot.
+- [x] Stop bot.
+- [x] Run one cycle.
+- [x] Refresh analysis.
 - [ ] Run market scan.
-- [ ] Force reconcile.
+- [x] Force reconcile.
 - [ ] Mark position reviewed.
-- [ ] Acknowledge alert.
-- [ ] Resolve alert.
+- [x] Acknowledge alert.
+- [x] Resolve alert.
 - [ ] Pause new entries.
 - [ ] Resume new entries.
-- [ ] Disable fast execution.
-- [ ] Enable paper fast execution.
+- [x] Disable fast execution.
+- [x] Enable paper fast execution.
 - [ ] Enable probe-only.
 - [ ] Disable probe-only.
 
 ### Acties met extra bevestiging
 
 - [ ] Switch naar live.
-- [ ] Enable live fast execution.
+- [x] Enable live fast execution.
 - [ ] Approve neural model promotion.
 - [ ] Rollback model.
-- [ ] Panic flatten plan.
+- [x] Panic flatten plan.
 - [ ] Change risk limits.
 - [ ] Change max exposure.
 - [ ] Change API mode.
 
 ### Acties die niet mogen
 
-- [ ] Geen force buy zonder risk verdict.
-- [ ] Geen force sell zonder position context.
-- [ ] Geen override van exchange freeze.
-- [ ] Geen override van manual review.
-- [ ] Geen override van max exposure.
-- [ ] Geen live fast execution standaard aan.
+- [x] Geen force buy zonder risk verdict.
+- [x] Geen force sell zonder position context.
+- [x] Geen override van exchange freeze.
+- [x] Geen override van manual review.
+- [x] Geen override van max exposure.
+- [x] Geen live fast execution standaard aan.
 
 ---
 
@@ -471,11 +473,11 @@ Ctrl + K -> pause entries -> Enter -> confirm -> audit event created
 
 ### Taken
 
-- [ ] Voeg command palette toe.
-- [ ] Zoek acties op naam.
-- [ ] Toon safety impact per actie.
-- [ ] Toon of actie live impact heeft.
-- [ ] Vraag bevestiging bij risicovolle acties.
+- [x] Voeg command palette toe.
+- [x] Zoek acties op naam.
+- [x] Toon safety impact per actie.
+- [x] Toon of actie live impact heeft.
+- [x] Vraag bevestiging bij risicovolle acties.
 - [ ] Toon audit ID na actie.
 - [ ] Log elke actie.
 
@@ -513,8 +515,8 @@ Taken:
 - [x] Maak paper-fast profiel.
 - [x] Maak live-fast profiel nog niet standaard.
 - [x] Voeg waarschuwing toe dat live-fast apart goedgekeurd moet worden.
-- [ ] GUI kan profiel tonen.
-- [ ] GUI kan profiel niet blind toepassen zonder preview.
+- [x] GUI kan profiel tonen.
+- [x] GUI kan profiel niet blind toepassen zonder preview.
 
 ---
 
@@ -594,7 +596,7 @@ Live-fast eerst observeren zonder echte invloed.
 - [x] Vergelijk fast beslissing met normale cycle.
 - [x] Meet hoeveel kansen sneller waren.
 - [x] Meet hoeveel false triggers er waren.
-- [ ] Toon rapport in GUI.
+- [x] Toon rapport in GUI.
 - [x] Vereis operator approval voor echte live-fast.
 - [x] Maak one-click disable voor live-fast.
 
@@ -610,15 +612,15 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Taken
 
-- [ ] Toon laatste 20 signals.
-- [ ] Toon laatste 20 blocked entries.
-- [ ] Toon laatste 20 fast queue items.
-- [ ] Toon laatste 20 execution intents.
-- [ ] Toon root blocker per item.
-- [ ] Toon latency per item.
-- [ ] Toon data age per item.
-- [ ] Toon risk verdict per item.
-- [ ] Toon execution result per item.
+- [x] Toon laatste 20 signals.
+- [x] Toon laatste 20 blocked entries.
+- [x] Toon laatste 20 fast queue items.
+- [x] Toon laatste 20 execution intents.
+- [x] Toon root blocker per item.
+- [x] Toon latency per item.
+- [x] Toon data age per item.
+- [x] Toon risk verdict per item.
+- [x] Toon execution result per item.
 - [ ] Voeg filter toe per symbol.
 - [ ] Voeg filter toe per blocker.
 - [ ] Voeg filter toe per mode: paper/live.
@@ -629,19 +631,19 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Tonen
 
-- [ ] Fast execution enabled/disabled.
-- [ ] Paper-only enabled/disabled.
-- [ ] Live observe enabled/disabled.
-- [ ] Queue size.
-- [ ] Last fast signal.
-- [ ] Last fast execution.
-- [ ] Fast blocked reasons.
-- [ ] Average fast latency.
-- [ ] p95 fast latency.
+- [x] Fast execution enabled/disabled.
+- [x] Paper-only enabled/disabled.
+- [x] Live observe enabled/disabled.
+- [x] Queue size.
+- [x] Last fast signal.
+- [x] Last fast execution.
+- [x] Fast blocked reasons.
+- [x] Average fast latency.
+- [x] p95 fast latency.
 - [x] Stream freshness.
-- [ ] Hot symbols.
-- [ ] Near-threshold symbols.
-- [ ] One-click disable fast execution.
+- [x] Hot symbols.
+- [x] Near-threshold symbols.
+- [x] One-click disable fast execution.
 
 ---
 
@@ -670,15 +672,15 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 - [x] Bot start/stop knoppen.
 - [x] Service status tonen.
 - [x] Alerts tonen.
-- [ ] Logs tonen.
+- [x] Logs tonen.
 
 ### Sprint 2: Latency meten
 
 - [x] Latency profiler.
 - [x] `latency:report`.
 - [x] Candidate freshness contract.
-- [ ] GUI latency panel.
-- [ ] Trading Debug panel basis.
+- [x] GUI latency panel.
+- [x] Trading Debug panel basis.
 
 ### Sprint 3: Snellere data
 
@@ -693,7 +695,7 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 - [x] Immediate entry queue.
 - [x] Fast preflight risk.
 - [ ] Fast execution paper-only.
-- [ ] Fast execution GUI panel.
+- [x] Fast execution GUI panel.
 - [ ] Fast execution audit trail.
 
 ### Sprint 5: Exit fast lane
@@ -701,7 +703,7 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 - [x] Open position priority.
 - [x] Exit stream checks.
 - [x] Protection latency tracking.
-- [ ] Exit debug panel.
+- [x] Exit debug panel.
 
 ### Sprint 6: Live-fast observe
 
@@ -722,13 +724,13 @@ Eerst:
 - [x] Windows GUI basis.
 - [x] Latency profiler.
 - [x] Candidate freshness.
-- [ ] Stream freshness.
-- [ ] Trading Debug panel.
+- [x] Stream freshness.
+- [x] Trading Debug panel.
 
 Daarna pas:
 
 - [ ] Fast paper execution.
-- [ ] Fast live observe.
+- [x] Fast live observe.
 - [ ] Live fast execution met approval.
 
 Reden:
