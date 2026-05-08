@@ -526,14 +526,16 @@ Sneller instappen is nuttig, maar sneller uitstappen en beschermen is belangrijk
 
 ### Taken
 
-- [ ] Open positions krijgen hoogste stream priority.
-- [ ] Exit checks draaien op relevante stream events.
-- [ ] Trailing stop checks draaien sneller.
-- [ ] Protective order status wordt sneller gemonitord.
-- [ ] Exit fast lane gebruikt eigen risk/safety checks.
-- [ ] GUI toont exit latency.
-- [ ] GUI toont protection latency.
+- [x] Open positions krijgen hoogste stream priority.
+- [x] Exit checks draaien op relevante stream events.
+- [x] Trailing stop checks draaien sneller.
+- [x] Protective order status wordt sneller gemonitord.
+- [x] Exit fast lane gebruikt eigen risk/safety checks.
+- [x] GUI toont exit latency.
+- [x] GUI toont protection latency.
 - [ ] Trade forensics toont exit decision delay.
+
+Status 2026-05-08: `exitFastLane` prioriteert open positions, protection-missing states en fresh high-risk stream events, plus exit/protection latency summaries. Dit voert geen exits uit en wijzigt geen broker/risk gedrag.
 
 ---
 
@@ -696,9 +698,9 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Sprint 5: Exit fast lane
 
-- [ ] Open position priority.
-- [ ] Exit stream checks.
-- [ ] Protection latency tracking.
+- [x] Open position priority.
+- [x] Exit stream checks.
+- [x] Protection latency tracking.
 - [ ] Exit debug panel.
 
 ### Sprint 6: Live-fast observe
