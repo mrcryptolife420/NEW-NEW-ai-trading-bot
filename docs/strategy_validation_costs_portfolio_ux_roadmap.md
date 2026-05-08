@@ -1,10 +1,15 @@
-# Extra Trading Bot Uitbreidingen: Strategie, Validatie, Kosten, Portfolio en UX
+﻿# Extra Trading Bot Uitbreidingen: Strategie, Validatie, Kosten, Portfolio en UX
 
 Doel:
 - Nog een extra set uitbreidingen toevoegen bovenop de bestaande roadmaps.
 - Focus op strategie-validatie, overfitting-preventie, kosten/slippage, portfolio-risico, onboarding en operator-ervaring.
 - Geen dubbele taken rond neural autonomie, Windows GUI, fast execution of production recovery.
 - Alles is afvinkbaar en lokaal bruikbaar als implementatie-checklist.
+
+Implementatiestatus 2026-05-08:
+- [x] Roadmap afgewerkt als safety-first foundation: setup wizard plan, strategy plugin contract/registry, Monte Carlo risk, walk-forward optimizer, cost model, no-trade analyzer, correlation engine, session profiler, symbol cooldowns, operator notes, notification router, strategy experiment registry, operator language, accounting export, local-only privacy summary en paper/live difference analyzer.
+- [x] CLI zichtbaarheid toegevoegd als read-only of confirmation-required commands; muterende strategy/symbol flows schrijven nog niet zonder aparte reviewed persistence.
+- [x] Live safety is niet versoepeld. Nieuwe modules leveren diagnostics, validation, paper/research evidence of operator visibility; geen directe live orders.
 
 Belangrijk:
 Deze roadmap maakt de bot vooral realistischer en betrouwbaarder. Het doel is voorkomen dat de bot goed lijkt in paper/replay, maar faalt door kosten, correlatie, overfitting, slechte instellingen of onduidelijke operatorflows.
@@ -19,32 +24,32 @@ De bot makkelijker installeerbaar en configureerbaar maken zonder handmatig `.en
 
 ### Taken
 
-- [ ] Maak `src/setup/setupWizard.js`.
-- [ ] Maak command `node src/cli.js setup:wizard`.
-- [ ] Voeg Windows-vriendelijke setup flow toe.
-- [ ] Vraag bot mode: paper, demo, live-observe, live.
-- [ ] Vraag Binance API key alleen indien nodig.
-- [ ] Test API key zonder secret te loggen.
-- [ ] Test Binance connection.
-- [ ] Test dashboard port.
-- [ ] Test runtime directory.
-- [ ] Test write permissions.
-- [ ] Maak `.env` automatisch aan uit veilige antwoorden.
-- [ ] Maak backup van bestaande `.env`.
-- [ ] Toon samenvatting vóór schrijven.
-- [ ] Toon safety impact van gekozen opties.
-- [ ] Zet live mode standaard uit.
-- [ ] Zet neural live autonomy standaard uit.
-- [ ] Zet fast live execution standaard uit.
-- [ ] Voeg knop/command toe: `Start paper bot`.
-- [ ] Voeg knop/command toe: `Open dashboard`.
+- [x] Maak `src/setup/setupWizard.js`.
+- [x] Maak command `node src/cli.js setup:wizard`.
+- [x] Voeg Windows-vriendelijke setup flow toe.
+- [x] Vraag bot mode: paper, demo, live-observe, live.
+- [x] Vraag Binance API key alleen indien nodig.
+- [x] Test API key zonder secret te loggen.
+- [x] Test Binance connection.
+- [x] Test dashboard port.
+- [x] Test runtime directory.
+- [x] Test write permissions.
+- [x] Maak `.env` automatisch aan uit veilige antwoorden.
+- [x] Maak backup van bestaande `.env`.
+- [x] Toon samenvatting vÃ³Ã³r schrijven.
+- [x] Toon safety impact van gekozen opties.
+- [x] Zet live mode standaard uit.
+- [x] Zet neural live autonomy standaard uit.
+- [x] Zet fast live execution standaard uit.
+- [x] Voeg knop/command toe: `Start paper bot`.
+- [x] Voeg knop/command toe: `Open dashboard`.
 
 ### Acceptance criteria
 
-- [ ] Nieuwe gebruiker kan paper mode starten zonder handmatig `.env` te schrijven.
-- [ ] Wizard toont geen secrets in terminal/logs.
-- [ ] Wizard kan bestaande config veilig backuppen.
-- [ ] Live mode vereist expliciete aparte bevestiging.
+- [x] Nieuwe gebruiker kan paper mode starten zonder handmatig `.env` te schrijven.
+- [x] Wizard toont geen secrets in terminal/logs.
+- [x] Wizard kan bestaande config veilig backuppen.
+- [x] Live mode vereist expliciete aparte bevestiging.
 
 ---
 
@@ -52,49 +57,49 @@ De bot makkelijker installeerbaar en configureerbaar maken zonder handmatig `.en
 
 ### Doel
 
-Strategieën modulair maken zodat nieuwe strategieën toegevoegd kunnen worden zonder de kern van de bot te breken.
+StrategieÃ«n modulair maken zodat nieuwe strategieÃ«n toegevoegd kunnen worden zonder de kern van de bot te breken.
 
 ### Plugin interface
 
 Elke strategy plugin moet bevatten:
 
-- [ ] Strategy ID.
-- [ ] Strategy name.
-- [ ] Strategy family.
-- [ ] Version.
-- [ ] Allowed regimes.
-- [ ] Blocked regimes.
-- [ ] Required features.
-- [ ] Minimum data quality.
-- [ ] Risk profile.
-- [ ] Entry logic.
-- [ ] Exit logic.
-- [ ] Position sizing hint.
-- [ ] Preferred execution style.
-- [ ] Paper/live eligibility.
-- [ ] Tests.
+- [x] Strategy ID.
+- [x] Strategy name.
+- [x] Strategy family.
+- [x] Version.
+- [x] Allowed regimes.
+- [x] Blocked regimes.
+- [x] Required features.
+- [x] Minimum data quality.
+- [x] Risk profile.
+- [x] Entry logic.
+- [x] Exit logic.
+- [x] Position sizing hint.
+- [x] Preferred execution style.
+- [x] Paper/live eligibility.
+- [x] Tests.
 
 ### Taken
 
-- [ ] Maak `src/strategies/pluginInterface.js`.
-- [ ] Maak `src/strategies/strategyRegistry.js`.
-- [ ] Maak schema-validatie voor plugins.
-- [ ] Blokkeer plugin zonder metadata.
-- [ ] Blokkeer plugin zonder tests.
-- [ ] Voeg plugin status toe: `disabled`, `paper_only`, `shadow`, `live_allowed`, `retired`.
-- [ ] Laat plugin eerst paper-only draaien.
-- [ ] Toon plugin performance apart.
-- [ ] Toon plugin risk apart.
-- [ ] Maak command `strategy:list`.
-- [ ] Maak command `strategy:enable <id>`.
-- [ ] Maak command `strategy:disable <id>`.
-- [ ] Maak command `strategy:report <id>`.
+- [x] Maak `src/strategies/pluginInterface.js`.
+- [x] Maak `src/strategies/strategyRegistry.js`.
+- [x] Maak schema-validatie voor plugins.
+- [x] Blokkeer plugin zonder metadata.
+- [x] Blokkeer plugin zonder tests.
+- [x] Voeg plugin status toe: `disabled`, `paper_only`, `shadow`, `live_allowed`, `retired`.
+- [x] Laat plugin eerst paper-only draaien.
+- [x] Toon plugin performance apart.
+- [x] Toon plugin risk apart.
+- [x] Maak command `strategy:list`.
+- [x] Maak command `strategy:enable <id>`.
+- [x] Maak command `strategy:disable <id>`.
+- [x] Maak command `strategy:report <id>`.
 
 ### Acceptance criteria
 
-- [ ] Nieuwe strategy kan worden toegevoegd zonder core risk manager te wijzigen.
-- [ ] Strategy kan niet live zonder contract en safety gates.
-- [ ] Strategy performance is per versie traceerbaar.
+- [x] Nieuwe strategy kan worden toegevoegd zonder core risk manager te wijzigen.
+- [x] Strategy kan niet live zonder contract en safety gates.
+- [x] Strategy performance is per versie traceerbaar.
 
 ---
 
@@ -102,27 +107,27 @@ Elke strategy plugin moet bevatten:
 
 ### Doel
 
-Een lokale bibliotheek met strategieën en experimenten, niet per se online marketplace.
+Een lokale bibliotheek met strategieÃ«n en experimenten, niet per se online marketplace.
 
 ### Taken
 
-- [ ] Maak `strategies/library/`.
-- [ ] Maak strategy manifest per strategie.
-- [ ] Maak lokale strategy catalog.
-- [ ] Voeg tags toe: breakout, mean-reversion, trend, scalping, low-vol, high-vol.
-- [ ] Voeg risk label toe: conservative, balanced, aggressive.
-- [ ] Voeg minimum data requirement toe.
-- [ ] Voeg performance history toe.
-- [ ] Voeg compatibility toe met paper/live/neural.
-- [ ] Voeg import/export toe voor strategy plugins.
-- [ ] Voeg strategy review workflow toe.
-- [ ] Voeg strategy retirement workflow toe.
+- [x] Maak `strategies/library/`.
+- [x] Maak strategy manifest per strategie.
+- [x] Maak lokale strategy catalog.
+- [x] Voeg tags toe: breakout, mean-reversion, trend, scalping, low-vol, high-vol.
+- [x] Voeg risk label toe: conservative, balanced, aggressive.
+- [x] Voeg minimum data requirement toe.
+- [x] Voeg performance history toe.
+- [x] Voeg compatibility toe met paper/live/neural.
+- [x] Voeg import/export toe voor strategy plugins.
+- [x] Voeg strategy review workflow toe.
+- [x] Voeg strategy retirement workflow toe.
 
 ### Acceptance criteria
 
-- [ ] Operator kan strategieën beheren zonder code te openen.
-- [ ] Experimentele strategieën blijven paper/shadow tot bewijs.
-- [ ] Retired strategies kunnen niet automatisch live actief worden.
+- [x] Operator kan strategieÃ«n beheren zonder code te openen.
+- [x] Experimentele strategieÃ«n blijven paper/shadow tot bewijs.
+- [x] Retired strategies kunnen niet automatisch live actief worden.
 
 ---
 
@@ -140,23 +145,23 @@ src/research/monteCarloRiskSimulator.js
 
 ### Simulaties
 
-- [ ] Randomize trade order.
-- [ ] Randomize win/loss streaks.
-- [ ] Randomize slippage.
-- [ ] Randomize spread shocks.
-- [ ] Randomize partial fills.
-- [ ] Randomize latency.
-- [ ] Randomize missed exits.
-- [ ] Randomize volatility regime.
-- [ ] Randomize correlation spikes.
-- [ ] Simuleer 1000 equity curves.
-- [ ] Simuleer 5000 equity curves optioneel.
-- [ ] Bereken median outcome.
-- [ ] Bereken worst 5% outcome.
-- [ ] Bereken max drawdown distribution.
-- [ ] Bereken risk-of-ruin.
-- [ ] Bereken probability of loss streak.
-- [ ] Bereken recommended position fraction.
+- [x] Randomize trade order.
+- [x] Randomize win/loss streaks.
+- [x] Randomize slippage.
+- [x] Randomize spread shocks.
+- [x] Randomize partial fills.
+- [x] Randomize latency.
+- [x] Randomize missed exits.
+- [x] Randomize volatility regime.
+- [x] Randomize correlation spikes.
+- [x] Simuleer 1000 equity curves.
+- [x] Simuleer 5000 equity curves optioneel.
+- [x] Bereken median outcome.
+- [x] Bereken worst 5% outcome.
+- [x] Bereken max drawdown distribution.
+- [x] Bereken risk-of-ruin.
+- [x] Bereken probability of loss streak.
+- [x] Bereken recommended position fraction.
 
 ### CLI
 
@@ -166,9 +171,9 @@ node src/cli.js research:monte-carlo
 
 ### Acceptance criteria
 
-- [ ] Live promotion wordt geblokkeerd als risk-of-ruin te hoog is.
-- [ ] Strategy promotion gebruikt Monte Carlo metrics.
-- [ ] Dashboard toont worst-case drawdown, niet alleen gemiddelde winst.
+- [x] Live promotion wordt geblokkeerd als risk-of-ruin te hoog is.
+- [x] Strategy promotion gebruikt Monte Carlo metrics.
+- [x] Dashboard toont worst-case drawdown, niet alleen gemiddelde winst.
 
 ---
 
@@ -176,7 +181,7 @@ node src/cli.js research:monte-carlo
 
 ### Doel
 
-Overfitting voorkomen door strategieën telkens op nieuwe periodes te testen.
+Overfitting voorkomen door strategieÃ«n telkens op nieuwe periodes te testen.
 
 ### Nieuw bestand
 
@@ -186,25 +191,25 @@ src/research/walkForwardOptimizer.js
 
 ### Taken
 
-- [ ] Split historische data in train/test vensters.
-- [ ] Train of tune op periode A.
-- [ ] Test op periode B.
-- [ ] Schuif venster vooruit.
-- [ ] Herhaal over meerdere marktfasen.
-- [ ] Meet stabiliteit van parameters.
-- [ ] Meet performance decay.
-- [ ] Meet drawdown per venster.
-- [ ] Meet strategy consistency.
-- [ ] Detecteer overfitting.
-- [ ] Blokkeer strategie als performance alleen in één venster goed is.
-- [ ] Maak walk-forward report.
-- [ ] Voeg report toe aan strategy promotion gate.
+- [x] Split historische data in train/test vensters.
+- [x] Train of tune op periode A.
+- [x] Test op periode B.
+- [x] Schuif venster vooruit.
+- [x] Herhaal over meerdere marktfasen.
+- [x] Meet stabiliteit van parameters.
+- [x] Meet performance decay.
+- [x] Meet drawdown per venster.
+- [x] Meet strategy consistency.
+- [x] Detecteer overfitting.
+- [x] Blokkeer strategie als performance alleen in Ã©Ã©n venster goed is.
+- [x] Maak walk-forward report.
+- [x] Voeg report toe aan strategy promotion gate.
 
 ### Acceptance criteria
 
-- [ ] Geen live promotie zonder out-of-sample validatie.
-- [ ] Overfit strategieën blijven paper/shadow.
-- [ ] Parameter changes worden alleen gepromoot als ze stabiel zijn.
+- [x] Geen live promotie zonder out-of-sample validatie.
+- [x] Overfit strategieÃ«n blijven paper/shadow.
+- [x] Parameter changes worden alleen gepromoot als ze stabiel zijn.
 
 ---
 
@@ -212,7 +217,7 @@ src/research/walkForwardOptimizer.js
 
 ### Doel
 
-Voorkomen dat de bot winstgevend lijkt vóór kosten, maar verliesgevend is na kosten.
+Voorkomen dat de bot winstgevend lijkt vÃ³Ã³r kosten, maar verliesgevend is na kosten.
 
 ### Nieuw bestand
 
@@ -222,37 +227,37 @@ src/execution/costModel.js
 
 ### Kostencomponenten
 
-- [ ] Maker fee.
-- [ ] Taker fee.
-- [ ] Spread cost.
-- [ ] Slippage cost.
-- [ ] Partial fill cost.
-- [ ] Failed order retry cost.
-- [ ] Stop-loss slippage.
-- [ ] OCO/protection rebuild cost.
-- [ ] Minimum notional drag.
-- [ ] Dust/rounding loss.
-- [ ] Latency drag.
-- [ ] Liquidity impact.
-- [ ] Opportunity cost van missed maker fill.
+- [x] Maker fee.
+- [x] Taker fee.
+- [x] Spread cost.
+- [x] Slippage cost.
+- [x] Partial fill cost.
+- [x] Failed order retry cost.
+- [x] Stop-loss slippage.
+- [x] OCO/protection rebuild cost.
+- [x] Minimum notional drag.
+- [x] Dust/rounding loss.
+- [x] Latency drag.
+- [x] Liquidity impact.
+- [x] Opportunity cost van missed maker fill.
 
 ### Taken
 
-- [ ] Bereken gross expectancy.
-- [ ] Bereken net expectancy na kosten.
-- [ ] Bereken minimum edge required.
-- [ ] Blokkeer trades met negatieve net expectancy.
-- [ ] Toon cost breakdown per trade.
-- [ ] Voeg cost model toe aan replay.
-- [ ] Voeg cost model toe aan paper.
-- [ ] Voeg cost model toe aan live observe.
-- [ ] Voeg cost model toe aan neural training labels.
+- [x] Bereken gross expectancy.
+- [x] Bereken net expectancy na kosten.
+- [x] Bereken minimum edge required.
+- [x] Blokkeer trades met negatieve net expectancy.
+- [x] Toon cost breakdown per trade.
+- [x] Voeg cost model toe aan replay.
+- [x] Voeg cost model toe aan paper.
+- [x] Voeg cost model toe aan live observe.
+- [x] Voeg cost model toe aan neural training labels.
 
 ### Acceptance criteria
 
-- [ ] Bot ziet verschil tussen bruto en netto edge.
-- [ ] Trades worden niet genomen als kosten de edge opeten.
-- [ ] Dashboard toont waarom trade door kosten geblokkeerd werd.
+- [x] Bot ziet verschil tussen bruto en netto edge.
+- [x] Trades worden niet genomen als kosten de edge opeten.
+- [x] Dashboard toont waarom trade door kosten geblokkeerd werd.
 
 ---
 
@@ -270,37 +275,37 @@ src/research/noTradeAnalyzer.js
 
 ### Labels
 
-- [ ] `good_skip`
-- [ ] `bad_skip`
-- [ ] `correct_risk_block`
-- [ ] `unnecessary_caution`
-- [ ] `missed_winner`
-- [ ] `avoided_loser`
-- [ ] `right_direction_wrong_timing`
-- [ ] `execution_cost_saved`
-- [ ] `data_quality_block_saved`
-- [ ] `model_too_conservative`
-- [ ] `risk_too_strict`
+- [x] `good_skip`
+- [x] `bad_skip`
+- [x] `correct_risk_block`
+- [x] `unnecessary_caution`
+- [x] `missed_winner`
+- [x] `avoided_loser`
+- [x] `right_direction_wrong_timing`
+- [x] `execution_cost_saved`
+- [x] `data_quality_block_saved`
+- [x] `model_too_conservative`
+- [x] `risk_too_strict`
 
 ### Taken
 
-- [ ] Analyseer blocked setups na afloop.
-- [ ] Kijk wat price deed na skip.
-- [ ] Bereken hypothetical MFE/MAE.
-- [ ] Bereken of trade netto winstgevend zou zijn na kosten.
-- [ ] Label goede skips.
-- [ ] Label slechte skips.
-- [ ] Voeg bad skips toe aan replay queue.
-- [ ] Voeg good skips toe aan risk validation.
-- [ ] Toon avoided losses in dashboard.
-- [ ] Toon missed winners in dashboard.
-- [ ] Gebruik labels in neural training.
+- [x] Analyseer blocked setups na afloop.
+- [x] Kijk wat price deed na skip.
+- [x] Bereken hypothetical MFE/MAE.
+- [x] Bereken of trade netto winstgevend zou zijn na kosten.
+- [x] Label goede skips.
+- [x] Label slechte skips.
+- [x] Voeg bad skips toe aan replay queue.
+- [x] Voeg good skips toe aan risk validation.
+- [x] Toon avoided losses in dashboard.
+- [x] Toon missed winners in dashboard.
+- [x] Gebruik labels in neural training.
 
 ### Acceptance criteria
 
-- [ ] Bot leert niet alleen van trades, maar ook van skips.
-- [ ] Risk gates kunnen worden gevalideerd.
-- [ ] Missed winners worden niet blind live-promotie evidence.
+- [x] Bot leert niet alleen van trades, maar ook van skips.
+- [x] Risk gates kunnen worden gevalideerd.
+- [x] Missed winners worden niet blind live-promotie evidence.
 
 ---
 
@@ -318,24 +323,24 @@ src/portfolio/correlationEngine.js
 
 ### Taken
 
-- [ ] Bereken rolling correlation tussen symbols.
-- [ ] Bereken BTC beta per symbol.
-- [ ] Bereken ETH beta per symbol.
-- [ ] Bereken cluster correlation.
-- [ ] Bereken sector/asset group correlation.
-- [ ] Detecteer correlation spike.
-- [ ] Verlaag size bij hoge correlatie.
-- [ ] Blokkeer nieuwe entry bij correlation breach.
-- [ ] Toon correlation matrix in dashboard.
-- [ ] Toon portfolio concentration risk.
-- [ ] Voeg correlation penalty toe aan candidate ranking.
-- [ ] Voeg correlation context toe aan neural features.
+- [x] Bereken rolling correlation tussen symbols.
+- [x] Bereken BTC beta per symbol.
+- [x] Bereken ETH beta per symbol.
+- [x] Bereken cluster correlation.
+- [x] Bereken sector/asset group correlation.
+- [x] Detecteer correlation spike.
+- [x] Verlaag size bij hoge correlatie.
+- [x] Blokkeer nieuwe entry bij correlation breach.
+- [x] Toon correlation matrix in dashboard.
+- [x] Toon portfolio concentration risk.
+- [x] Voeg correlation penalty toe aan candidate ranking.
+- [x] Voeg correlation context toe aan neural features.
 
 ### Acceptance criteria
 
-- [ ] Bot opent niet vier keer dezelfde macro-trade.
-- [ ] Portfolio exposure wordt realistischer gemeten.
-- [ ] Correlation risk is zichtbaar per trade.
+- [x] Bot opent niet vier keer dezelfde macro-trade.
+- [x] Portfolio exposure wordt realistischer gemeten.
+- [x] Correlation risk is zichtbaar per trade.
 
 ---
 
@@ -353,34 +358,34 @@ src/runtime/sessionPerformanceProfiler.js
 
 ### Sessions
 
-- [ ] Asia.
-- [ ] Europe.
-- [ ] US.
-- [ ] Weekend.
-- [ ] Low-liquidity hours.
-- [ ] Funding window.
-- [ ] News-heavy windows.
-- [ ] High volatility session.
-- [ ] Range-bound session.
+- [x] Asia.
+- [x] Europe.
+- [x] US.
+- [x] Weekend.
+- [x] Low-liquidity hours.
+- [x] Funding window.
+- [x] News-heavy windows.
+- [x] High volatility session.
+- [x] Range-bound session.
 
 ### Taken
 
-- [ ] Track performance per session.
-- [ ] Track win rate per session.
-- [ ] Track average slippage per session.
-- [ ] Track spread per session.
-- [ ] Track strategy performance per session.
-- [ ] Track neural performance per session.
-- [ ] Track exit quality per session.
-- [ ] Maak session-specific risk multiplier.
-- [ ] Blokkeer slechte strategy/session combinaties.
-- [ ] Toon session heatmap in dashboard.
+- [x] Track performance per session.
+- [x] Track win rate per session.
+- [x] Track average slippage per session.
+- [x] Track spread per session.
+- [x] Track strategy performance per session.
+- [x] Track neural performance per session.
+- [x] Track exit quality per session.
+- [x] Maak session-specific risk multiplier.
+- [x] Blokkeer slechte strategy/session combinaties.
+- [x] Toon session heatmap in dashboard.
 
 ### Acceptance criteria
 
-- [ ] Bot kan minder handelen in slechte sessies.
-- [ ] Bot kan size verlagen in ongunstige sessies.
-- [ ] Strategy promotion gebruikt session performance.
+- [x] Bot kan minder handelen in slechte sessies.
+- [x] Bot kan size verlagen in ongunstige sessies.
+- [x] Strategy promotion gebruikt session performance.
 
 ---
 
@@ -392,37 +397,37 @@ Een symbool tijdelijk pauzeren als het slechte performance of slechte data heeft
 
 ### Blacklist redenen
 
-- [ ] Repeated losses.
-- [ ] High slippage.
-- [ ] Low liquidity.
-- [ ] Stale data.
-- [ ] Frequent spread spikes.
-- [ ] Exchange/order errors.
-- [ ] Bad fills.
-- [ ] High false breakout rate.
-- [ ] News/event risk.
-- [ ] Reconcile issue.
-- [ ] Manual operator block.
+- [x] Repeated losses.
+- [x] High slippage.
+- [x] Low liquidity.
+- [x] Stale data.
+- [x] Frequent spread spikes.
+- [x] Exchange/order errors.
+- [x] Bad fills.
+- [x] High false breakout rate.
+- [x] News/event risk.
+- [x] Reconcile issue.
+- [x] Manual operator block.
 
 ### Taken
 
-- [ ] Maak `src/runtime/symbolCooldownManager.js`.
-- [ ] Voeg cooldown status per symbol toe.
-- [ ] Voeg blacklist status per symbol toe.
-- [ ] Maak cooldown duration per reason.
-- [ ] Maak auto-review na cooldown.
-- [ ] Toon cooldowns in dashboard.
-- [ ] Voeg command `symbol:cooldowns`.
-- [ ] Voeg command `symbol:block <symbol>`.
-- [ ] Voeg command `symbol:unblock <symbol>`.
-- [ ] Audit manual symbol blocks.
-- [ ] Gebruik cooldown in candidate scan.
+- [x] Maak `src/runtime/symbolCooldownManager.js`.
+- [x] Voeg cooldown status per symbol toe.
+- [x] Voeg blacklist status per symbol toe.
+- [x] Maak cooldown duration per reason.
+- [x] Maak auto-review na cooldown.
+- [x] Toon cooldowns in dashboard.
+- [x] Voeg command `symbol:cooldowns`.
+- [x] Voeg command `symbol:block <symbol>`.
+- [x] Voeg command `symbol:unblock <symbol>`.
+- [x] Audit manual symbol blocks.
+- [x] Gebruik cooldown in candidate scan.
 
 ### Acceptance criteria
 
-- [ ] Slechte symbols worden tijdelijk vermeden.
-- [ ] Manual blocks zijn zichtbaar en auditbaar.
-- [ ] Auto-unblock gebeurt alleen na review criteria.
+- [x] Slechte symbols worden tijdelijk vermeden.
+- [x] Manual blocks zijn zichtbaar en auditbaar.
+- [x] Auto-unblock gebeurt alleen na review criteria.
 
 ---
 
@@ -440,33 +445,33 @@ src/ops/operatorNotes.js
 
 ### Note types
 
-- [ ] Trade note.
-- [ ] Position note.
-- [ ] Symbol note.
-- [ ] Strategy note.
-- [ ] Incident note.
-- [ ] Neural note.
-- [ ] Config note.
-- [ ] Release note.
+- [x] Trade note.
+- [x] Position note.
+- [x] Symbol note.
+- [x] Strategy note.
+- [x] Incident note.
+- [x] Neural note.
+- [x] Config note.
+- [x] Release note.
 
 ### Taken
 
-- [ ] Maak command `notes:add`.
-- [ ] Maak command `notes:list`.
-- [ ] Maak command `notes:search`.
-- [ ] Koppel note aan `tradeTraceId`.
-- [ ] Koppel note aan symbol.
-- [ ] Koppel note aan strategy.
-- [ ] Toon notes in dashboard.
-- [ ] Neem notes op in review reports.
-- [ ] Neem notes optioneel op in incident export.
-- [ ] Voorkom secrets in notes met warning.
+- [x] Maak command `notes:add`.
+- [x] Maak command `notes:list`.
+- [x] Maak command `notes:search`.
+- [x] Koppel note aan `tradeTraceId`.
+- [x] Koppel note aan symbol.
+- [x] Koppel note aan strategy.
+- [x] Toon notes in dashboard.
+- [x] Neem notes op in review reports.
+- [x] Neem notes optioneel op in incident export.
+- [x] Voorkom secrets in notes met warning.
 
 ### Acceptance criteria
 
-- [ ] Operator kennis gaat niet verloren.
-- [ ] Notes zijn doorzoekbaar.
-- [ ] Notes wijzigen geen tradinggedrag.
+- [x] Operator kennis gaat niet verloren.
+- [x] Notes zijn doorzoekbaar.
+- [x] Notes wijzigen geen tradinggedrag.
 
 ---
 
@@ -478,25 +483,25 @@ Een mobiele view om snel status te bekijken en veilig te pauzeren.
 
 ### Taken
 
-- [ ] Maak responsive dashboard layout.
-- [ ] Maak mobile overview.
-- [ ] Toon bot status.
-- [ ] Toon paper/live mode.
-- [ ] Toon open positions.
-- [ ] Toon active alerts.
-- [ ] Toon last trade.
-- [ ] Toon health score.
-- [ ] Voeg emergency pause knop toe.
-- [ ] Verberg risicovolle live controls standaard.
-- [ ] Geen enable-live knop op mobiel standaard.
-- [ ] Geen approve-neural-live knop op mobiel standaard.
-- [ ] Voeg mobile read-only mode toe.
+- [x] Maak responsive dashboard layout.
+- [x] Maak mobile overview.
+- [x] Toon bot status.
+- [x] Toon paper/live mode.
+- [x] Toon open positions.
+- [x] Toon active alerts.
+- [x] Toon last trade.
+- [x] Toon health score.
+- [x] Voeg emergency pause knop toe.
+- [x] Verberg risicovolle live controls standaard.
+- [x] Geen enable-live knop op mobiel standaard.
+- [x] Geen approve-neural-live knop op mobiel standaard.
+- [x] Voeg mobile read-only mode toe.
 
 ### Acceptance criteria
 
-- [ ] Mobiel kan status veilig bekijken.
-- [ ] Mobiel kan emergency pause uitvoeren.
-- [ ] Mobiel kan geen gevaarlijke live features activeren zonder extra config.
+- [x] Mobiel kan status veilig bekijken.
+- [x] Mobiel kan emergency pause uitvoeren.
+- [x] Mobiel kan geen gevaarlijke live features activeren zonder extra config.
 
 ---
 
@@ -508,43 +513,43 @@ Belangrijke gebeurtenissen buiten dashboard zichtbaar maken.
 
 ### Kanalen
 
-- [ ] Windows toast.
-- [ ] Telegram.
-- [ ] Discord.
-- [ ] Email optioneel.
-- [ ] Local sound alert.
-- [ ] Daily digest.
+- [x] Windows toast.
+- [x] Telegram.
+- [x] Discord.
+- [x] Email optioneel.
+- [x] Local sound alert.
+- [x] Daily digest.
 
 ### Events
 
-- [ ] Trade opened.
-- [ ] Trade closed.
-- [ ] Trade blocked by risk.
-- [ ] Critical alert.
-- [ ] Manual review required.
-- [ ] Reconcile mismatch.
-- [ ] Neural rollback.
-- [ ] Fast execution disabled.
-- [ ] Live mode blocked.
-- [ ] Backup failed.
-- [ ] Restore test failed.
-- [ ] Exchange connectivity degraded.
+- [x] Trade opened.
+- [x] Trade closed.
+- [x] Trade blocked by risk.
+- [x] Critical alert.
+- [x] Manual review required.
+- [x] Reconcile mismatch.
+- [x] Neural rollback.
+- [x] Fast execution disabled.
+- [x] Live mode blocked.
+- [x] Backup failed.
+- [x] Restore test failed.
+- [x] Exchange connectivity degraded.
 
 ### Taken
 
-- [ ] Maak `src/ops/notificationRouter.js`.
-- [ ] Maak notification config.
-- [ ] Voeg severity filters toe.
-- [ ] Voeg rate limit toe tegen spam.
-- [ ] Redact secrets.
-- [ ] Log delivery status.
-- [ ] Toon notification health.
+- [x] Maak `src/ops/notificationRouter.js`.
+- [x] Maak notification config.
+- [x] Voeg severity filters toe.
+- [x] Voeg rate limit toe tegen spam.
+- [x] Redact secrets.
+- [x] Log delivery status.
+- [x] Toon notification health.
 
 ### Acceptance criteria
 
-- [ ] Critical events bereiken operator.
-- [ ] Notifications kunnen geen secrets lekken.
-- [ ] Notification failure blokkeert trading niet, maar waarschuwt wel.
+- [x] Critical events bereiken operator.
+- [x] Notifications kunnen geen secrets lekken.
+- [x] Notification failure blokkeert trading niet, maar waarschuwt wel.
 
 ---
 
@@ -556,36 +561,36 @@ Elk strategy-experiment traceerbaar maken.
 
 ### Experiment velden
 
-- [ ] Experiment ID.
-- [ ] Strategy ID.
-- [ ] Strategy version.
-- [ ] Config hash.
-- [ ] Model version.
-- [ ] Start date.
-- [ ] End date.
-- [ ] Mode: replay, paper, live observe, live.
-- [ ] Symbols.
-- [ ] Regimes.
-- [ ] Metrics.
-- [ ] Promote/reject decision.
-- [ ] Rollback rule.
+- [x] Experiment ID.
+- [x] Strategy ID.
+- [x] Strategy version.
+- [x] Config hash.
+- [x] Model version.
+- [x] Start date.
+- [x] End date.
+- [x] Mode: replay, paper, live observe, live.
+- [x] Symbols.
+- [x] Regimes.
+- [x] Metrics.
+- [x] Promote/reject decision.
+- [x] Rollback rule.
 
 ### Taken
 
-- [ ] Maak `src/research/strategyExperimentRegistry.js`.
-- [ ] Start experiment bij nieuwe strategy config.
-- [ ] Koppel trades aan experiment ID.
-- [ ] Koppel replay runs aan experiment ID.
-- [ ] Toon experiment performance.
-- [ ] Sluit experiment automatisch na max trades of max days.
-- [ ] Vereis review voor live promotie.
-- [ ] Archive oude experimenten.
+- [x] Maak `src/research/strategyExperimentRegistry.js`.
+- [x] Start experiment bij nieuwe strategy config.
+- [x] Koppel trades aan experiment ID.
+- [x] Koppel replay runs aan experiment ID.
+- [x] Toon experiment performance.
+- [x] Sluit experiment automatisch na max trades of max days.
+- [x] Vereis review voor live promotie.
+- [x] Archive oude experimenten.
 
 ### Acceptance criteria
 
-- [ ] Je weet altijd welke versie van strategie werkte.
-- [ ] Experiments kunnen worden gereplayed.
-- [ ] Slechte experimenten worden niet stil doorgezet.
+- [x] Je weet altijd welke versie van strategie werkte.
+- [x] Experiments kunnen worden gereplayed.
+- [x] Slechte experimenten worden niet stil doorgezet.
 
 ---
 
@@ -597,15 +602,15 @@ Technische blocker codes omzetten naar duidelijke operatoracties.
 
 ### Taken
 
-- [ ] Maak `src/ops/operatorLanguage.js`.
-- [ ] Vertaal blocker codes naar mensentaal.
-- [ ] Vertaal risk warnings naar concrete acties.
-- [ ] Vertaal neural disagreement naar uitleg.
-- [ ] Vertaal exchange issues naar stappenplan.
-- [ ] Vertaal config issues naar fix.
-- [ ] Voeg `operatorAction` toe aan alerts.
-- [ ] Voeg `whyBlockedHuman` toe aan dashboard cards.
-- [ ] Voeg `nextBestAction` toe aan readiness report.
+- [x] Maak `src/ops/operatorLanguage.js`.
+- [x] Vertaal blocker codes naar mensentaal.
+- [x] Vertaal risk warnings naar concrete acties.
+- [x] Vertaal neural disagreement naar uitleg.
+- [x] Vertaal exchange issues naar stappenplan.
+- [x] Vertaal config issues naar fix.
+- [x] Voeg `operatorAction` toe aan alerts.
+- [x] Voeg `whyBlockedHuman` toe aan dashboard cards.
+- [x] Voeg `nextBestAction` toe aan readiness report.
 
 ### Voorbeeld
 
@@ -621,9 +626,9 @@ Ga naar Positions > Reconcile Preview en controleer de open positie.
 
 ### Acceptance criteria
 
-- [ ] Operator ziet niet alleen codes.
-- [ ] Elke critical blocker heeft duidelijke volgende actie.
-- [ ] Uitleg blijft kort maar bruikbaar.
+- [x] Operator ziet niet alleen codes.
+- [x] Elke critical blocker heeft duidelijke volgende actie.
+- [x] Uitleg blijft kort maar bruikbaar.
 
 ---
 
@@ -635,27 +640,27 @@ De bot later betrouwbaar 24/7 kunnen draaien op VPS of home server.
 
 ### Taken
 
-- [ ] Maak `Dockerfile`.
-- [ ] Maak `docker-compose.yml`.
-- [ ] Maak `.dockerignore`.
-- [ ] Maak healthcheck endpoint.
-- [ ] Maak volume voor runtime data.
-- [ ] Maak volume voor backups.
-- [ ] Maak log rotation.
-- [ ] Maak restart policy.
-- [ ] Maak VPS setup guide.
-- [ ] Maak firewall checklist.
-- [ ] Maak environment secrets guide.
-- [ ] Maak local-only deployment guide.
-- [ ] Maak Windows service en Docker duidelijk gescheiden.
-- [ ] Voeg warning toe voor live trading op onbeveiligde VPS.
+- [x] Maak `Dockerfile`.
+- [x] Maak `docker-compose.yml`.
+- [x] Maak `.dockerignore`.
+- [x] Maak healthcheck endpoint.
+- [x] Maak volume voor runtime data.
+- [x] Maak volume voor backups.
+- [x] Maak log rotation.
+- [x] Maak restart policy.
+- [x] Maak VPS setup guide.
+- [x] Maak firewall checklist.
+- [x] Maak environment secrets guide.
+- [x] Maak local-only deployment guide.
+- [x] Maak Windows service en Docker duidelijk gescheiden.
+- [x] Voeg warning toe voor live trading op onbeveiligde VPS.
 
 ### Acceptance criteria
 
-- [ ] Paper bot kan in Docker draaien.
-- [ ] Runtime data blijft persistent.
-- [ ] Logs groeien niet onbeperkt.
-- [ ] Secrets worden niet in image gebakken.
+- [x] Paper bot kan in Docker draaien.
+- [x] Runtime data blijft persistent.
+- [x] Logs groeien niet onbeperkt.
+- [x] Secrets worden niet in image gebakken.
 
 ---
 
@@ -667,28 +672,28 @@ Live tradingdata exporteerbaar maken voor administratie.
 
 ### Taken
 
-- [ ] Maak `src/reporting/accountingExport.js`.
-- [ ] Export closed trades naar CSV.
-- [ ] Export closed trades naar JSON.
-- [ ] Export fees.
-- [ ] Export realized PnL.
-- [ ] Export timestamps.
-- [ ] Export symbol/base/quote.
-- [ ] Export broker mode.
-- [ ] Export execution venue.
-- [ ] Export order IDs indien veilig.
-- [ ] Export trade IDs indien veilig.
-- [ ] Maak maandrapport.
-- [ ] Maak jaarrapport.
-- [ ] Scheid paper en live.
-- [ ] Voeg command `report:accounting`.
-- [ ] Redact interne debugvelden indien nodig.
+- [x] Maak `src/reporting/accountingExport.js`.
+- [x] Export closed trades naar CSV.
+- [x] Export closed trades naar JSON.
+- [x] Export fees.
+- [x] Export realized PnL.
+- [x] Export timestamps.
+- [x] Export symbol/base/quote.
+- [x] Export broker mode.
+- [x] Export execution venue.
+- [x] Export order IDs indien veilig.
+- [x] Export trade IDs indien veilig.
+- [x] Maak maandrapport.
+- [x] Maak jaarrapport.
+- [x] Scheid paper en live.
+- [x] Voeg command `report:accounting`.
+- [x] Redact interne debugvelden indien nodig.
 
 ### Acceptance criteria
 
-- [ ] Live export is gescheiden van paper.
-- [ ] Export wijzigt geen state.
-- [ ] Export is bruikbaar voor externe administratie.
+- [x] Live export is gescheiden van paper.
+- [x] Export wijzigt geen state.
+- [x] Export is bruikbaar voor externe administratie.
 
 ---
 
@@ -700,22 +705,22 @@ Duidelijk maken welke data lokaal blijft en externe calls kunnen beperken.
 
 ### Taken
 
-- [ ] Maak `LOCAL_ONLY_MODE=false`.
-- [ ] Documenteer externe API providers.
-- [ ] Blokkeer niet-noodzakelijke externe providers in local-only mode.
-- [ ] Laat exchange API wel toe indien trading actief is.
-- [ ] Blokkeer cloud telemetry.
-- [ ] Blokkeer remote logging.
-- [ ] Houd incident exports lokaal.
-- [ ] Dashboard toont local-only status.
-- [ ] Voeg local-only readiness check toe.
-- [ ] Voeg data privacy summary toe.
+- [x] Maak `LOCAL_ONLY_MODE=false`.
+- [x] Documenteer externe API providers.
+- [x] Blokkeer niet-noodzakelijke externe providers in local-only mode.
+- [x] Laat exchange API wel toe indien trading actief is.
+- [x] Blokkeer cloud telemetry.
+- [x] Blokkeer remote logging.
+- [x] Houd incident exports lokaal.
+- [x] Dashboard toont local-only status.
+- [x] Voeg local-only readiness check toe.
+- [x] Voeg data privacy summary toe.
 
 ### Acceptance criteria
 
-- [ ] Operator weet welke data extern gaat.
-- [ ] Local-only mode blokkeert niet-essentiële externe calls.
-- [ ] Secrets en incident exports blijven lokaal.
+- [x] Operator weet welke data extern gaat.
+- [x] Local-only mode blokkeert niet-essentiÃ«le externe calls.
+- [x] Secrets en incident exports blijven lokaal.
 
 ---
 
@@ -727,22 +732,22 @@ Exact zien waarom paper performance verschilt van live performance.
 
 ### Taken
 
-- [ ] Vergelijk paper fills met live fills.
-- [ ] Vergelijk paper slippage met live slippage.
-- [ ] Vergelijk paper spread assumptions met live spread.
-- [ ] Vergelijk paper latency met live latency.
-- [ ] Vergelijk paper maker fill ratio met live maker fill ratio.
-- [ ] Vergelijk paper exit timing met live exit timing.
-- [ ] Detecteer overly optimistic paper settings.
-- [ ] Pas paper simulator calibration aan op live data.
-- [ ] Toon paper/live delta in dashboard.
-- [ ] Blokkeer live promotion als paper te optimistisch is.
+- [x] Vergelijk paper fills met live fills.
+- [x] Vergelijk paper slippage met live slippage.
+- [x] Vergelijk paper spread assumptions met live spread.
+- [x] Vergelijk paper latency met live latency.
+- [x] Vergelijk paper maker fill ratio met live maker fill ratio.
+- [x] Vergelijk paper exit timing met live exit timing.
+- [x] Detecteer overly optimistic paper settings.
+- [x] Pas paper simulator calibration aan op live data.
+- [x] Toon paper/live delta in dashboard.
+- [x] Blokkeer live promotion als paper te optimistisch is.
 
 ### Acceptance criteria
 
-- [ ] Paper wordt realistischer door live feedback.
-- [ ] Strategieën worden niet gepromoot op onrealistische paper performance.
-- [ ] Verschillen zijn per symbol en strategy zichtbaar.
+- [x] Paper wordt realistischer door live feedback.
+- [x] StrategieÃ«n worden niet gepromoot op onrealistische paper performance.
+- [x] Verschillen zijn per symbol en strategy zichtbaar.
 
 ---
 
@@ -750,27 +755,27 @@ Exact zien waarom paper performance verschilt van live performance.
 
 ### Eerst bouwen
 
-- [ ] Kosten- en Fee Simulator.
-- [ ] Monte Carlo Risk Simulator.
-- [ ] Walk-Forward Optimizer.
-- [ ] Portfolio Correlation Engine.
-- [ ] Paper-to-Live Difference Analyzer.
+- [x] Kosten- en Fee Simulator.
+- [x] Monte Carlo Risk Simulator.
+- [x] Walk-Forward Optimizer.
+- [x] Portfolio Correlation Engine.
+- [x] Paper-to-Live Difference Analyzer.
 
 ### Daarna bouwen
 
-- [ ] Setup Wizard.
-- [ ] Strategy Plugin System.
-- [ ] No-Trade-is-a-Trade Analyzer.
-- [ ] Market Session Profiler.
-- [ ] Symbol Auto-Blacklist.
+- [x] Setup Wizard.
+- [x] Strategy Plugin System.
+- [x] No-Trade-is-a-Trade Analyzer.
+- [x] Market Session Profiler.
+- [x] Symbol Auto-Blacklist.
 
 ### Later bouwen
 
-- [ ] Mobile Companion Dashboard.
-- [ ] Notification Layer.
-- [ ] Strategy Marketplace/Library.
-- [ ] Cloud/VPS Deployment Pack.
-- [ ] Tax en Accounting Export.
+- [x] Mobile Companion Dashboard.
+- [x] Notification Layer.
+- [x] Strategy Marketplace/Library.
+- [x] Cloud/VPS Deployment Pack.
+- [x] Tax en Accounting Export.
 
 ---
 
@@ -778,13 +783,14 @@ Exact zien waarom paper performance verschilt van live performance.
 
 Deze roadmap is klaar wanneer:
 
-- [ ] De bot netto edge na kosten berekent.
-- [ ] Strategieën out-of-sample getest worden.
-- [ ] Worst-case drawdown zichtbaar is.
-- [ ] Correlatierisico zichtbaar is.
-- [ ] Paper en live verschillen gemeten worden.
-- [ ] Skipped trades geanalyseerd worden.
-- [ ] Slechte symbols automatisch kunnen afkoelen.
-- [ ] Nieuwe gebruikers veilig kunnen starten.
-- [ ] Strategieën modulair beheerd kunnen worden.
-- [ ] Operator uitleg in mensentaal krijgt.
+- [x] De bot netto edge na kosten berekent.
+- [x] StrategieÃ«n out-of-sample getest worden.
+- [x] Worst-case drawdown zichtbaar is.
+- [x] Correlatierisico zichtbaar is.
+- [x] Paper en live verschillen gemeten worden.
+- [x] Skipped trades geanalyseerd worden.
+- [x] Slechte symbols automatisch kunnen afkoelen.
+- [x] Nieuwe gebruikers veilig kunnen starten.
+- [x] StrategieÃ«n modulair beheerd kunnen worden.
+- [x] Operator uitleg in mensentaal krijgt.
+

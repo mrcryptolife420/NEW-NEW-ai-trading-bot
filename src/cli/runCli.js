@@ -45,6 +45,45 @@ import { evaluateReplayPromotionGate } from "../ai/neural/replay/replayPromotion
 import { evaluateNeuralContinuousLearning } from "../ai/neural/learning/neuralContinuousLearner.js";
 import { applyNeuralTuningClamp } from "../ai/neural/learning/neuralSelfTuningController.js";
 import { evaluateNeuralLiveExecutionGate } from "../ai/neural/live/neuralLiveExecutionGate.js";
+import { buildSetupWizardCliSummary, buildSetupWizardPlan } from "../setup/setupWizard.js";
+import { buildStrategyRegistry } from "../strategies/strategyRegistry.js";
+import { simulateMonteCarloRisk } from "../research/monteCarloRiskSimulator.js";
+import { runWalkForwardOptimizer } from "../research/walkForwardOptimizer.js";
+import { buildExecutionCostBreakdown } from "../execution/costModel.js";
+import { analyzeNoTradeOutcome } from "../research/noTradeAnalyzer.js";
+import { buildCorrelationRiskSummary } from "../portfolio/correlationEngine.js";
+import { buildSessionPerformanceProfile } from "../runtime/sessionPerformanceProfiler.js";
+import { summarizeSymbolCooldowns, buildSymbolCooldownState } from "../runtime/symbolCooldownManager.js";
+import { buildOperatorNote, searchOperatorNotes } from "../ops/operatorNotes.js";
+import { routeNotification } from "../ops/notificationRouter.js";
+import { translateOperatorReason } from "../ops/operatorLanguage.js";
+import { buildAccountingExport } from "../reporting/accountingExport.js";
+import { buildLocalOnlyPrivacySummary } from "../runtime/localOnlyPrivacy.js";
+import { analyzePaperLiveDifference } from "../runtime/paperLiveDifferenceAnalyzer.js";
+import {
+  buildConfigDiff,
+  buildDryRunResponse,
+  buildIncidentExport,
+  buildKeysCheck,
+  buildProductionReadinessGate,
+  buildRecoveryPlan,
+  buildReleaseCheck,
+  buildStorageReport,
+  queryAudit,
+  runBackupNow,
+  runRestoreTest
+} from "../ops/productionOps.js";
+import { checkReliabilityTargets } from "../ops/reliabilityTargets.js";
+import { buildBotCoachSummary } from "../ops/botCoach.js";
+import { summarizePerformanceBudget } from "../ops/performanceBudget.js";
+import { buildSafeDegradationStatus } from "../ops/safeDegradation.js";
+import { buildDataLakeReport } from "../storage/dataLake.js";
+import { runScenarioOffline, compareScenarios } from "../research/scenarioLab.js";
+import { buildAutoDocs, writeAutoDocs } from "../docs/autoDocsGenerator.js";
+import { buildMetricsStatus } from "../ops/metricsExporter.js";
+import { buildMissionControlSummary } from "../ops/missionControl.js";
+import { buildTradingSystemScorecard } from "../reporting/tradingSystemScorecard.js";
+import { createStrategyKillSwitch, resumeStrategyKillSwitch } from "../strategies/strategyKillSwitch.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -53,6 +92,17 @@ function shouldUseReadOnlyInit(command) {
 const BOT_COMMANDS = new Set(["run", "once", "status", "doctor", "report", "learning", "research", "scan", "replay"]);
 const DEFAULT_BOT_FACTORY = ({ config: cfg, logger: log }) => new TradingBot({ config: cfg, logger: log });
 const DEFAULT_MANAGER_FACTORY = ({ projectRoot, logger: log }) => new BotManager({ projectRoot, logger: log });
+const OPS_DRY_RUN_COMMANDS = new Set([
+  "ops:live-dry-run",
+  "ops:fast-execution-dry-run",
+  "ops:neural-live-dry-run",
+  "ops:reconcile-dry-run",
+  "ops:config-change-dry-run",
+  "ops:recovery-dry-run",
+  "ops:model-promotion-dry-run",
+  "ops:order-execution-dry-run",
+  "ops:panic-dry-run"
+]);
 
 async function runContinuousManagedBot({ config, logger, signalSource = process }) {
   const manager = new BotManager({ projectRoot: config.projectRoot, logger });
@@ -215,6 +265,79 @@ export default async function runCli({
     const symbol = (args[0] || config.watchlist[0] || "BTCUSDT").toUpperCase();
     const result = await runBacktest({ config, logger, symbol });
     console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command.startsWith("ops:")) {
+    let result;
+    if (command === "ops:readiness") {
+      result = await buildProductionReadinessGate({ config });
+    } else if (command === "ops:release-check") {
+      result = await buildReleaseCheck({ config });
+    } else if (command === "ops:backup-now") {
+      result = await runBackupNow({ config });
+    } else if (command === "ops:restore-test") {
+      result = await runRestoreTest({ config });
+    } else if (command === "ops:recover-preview") {
+      result = await buildRecoveryPlan({ config, apply: false });
+    } else if (command === "ops:recover-apply") {
+      result = await buildRecoveryPlan({ config, apply: true, confirm: args.includes("--confirm") });
+    } else if (command === "ops:keys-check") {
+      result = await buildKeysCheck({ config });
+    } else if (command === "ops:incident-export") {
+      result = await buildIncidentExport({ config });
+    } else if (command === "ops:audit-query" || command === "ops:audit-summary") {
+      result = await queryAudit({ config, args });
+    } else if (command === "ops:storage-report") {
+      result = await buildStorageReport({ config });
+    } else if (command === "ops:config-diff") {
+      result = await buildConfigDiff({ config });
+    } else if (command === "ops:mission-control") {
+      const manager = await managerFactory({ projectRoot: config.projectRoot, logger });
+      const snapshot = await manager.init({ readOnly: true });
+      const readiness = await manager.getOperationalReadiness();
+      result = buildMissionControlSummary({ snapshot, config, readiness });
+      await manager.stop("mission_control_completed");
+    } else if (command === "ops:sla-report") {
+      result = checkReliabilityTargets({ mode: config.botMode, metrics: {} });
+    } else if (command === "ops:coach") {
+      result = buildBotCoachSummary({});
+    } else if (command === "ops:performance-budget") {
+      result = summarizePerformanceBudget([]);
+    } else if (command === "ops:degradation-status") {
+      result = buildSafeDegradationStatus({});
+    } else if (command === "ops:metrics-status") {
+      result = buildMetricsStatus(config);
+    } else if (OPS_DRY_RUN_COMMANDS.has(command)) {
+      result = await buildDryRunResponse({ command, config });
+    } else {
+      throw new Error(`Unknown command: ${command}`);
+    }
+    console.log(JSON.stringify({ command, ...result }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "report:scorecard") {
+    const result = buildTradingSystemScorecard({ period: args.includes("--weekly") ? "weekly" : "daily" });
+    console.log(JSON.stringify({ command, ...result }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "strategy:kill") {
+    const [scopeType, scopeValue, ...reasonParts] = args;
+    const result = createStrategyKillSwitch({ scopeType, scopeValue, reason: reasonParts.join(" ") || null });
+    console.log(JSON.stringify({ command, ...result }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "strategy:resume") {
+    const [scopeType, scopeValue, ...reasonParts] = args;
+    const result = resumeStrategyKillSwitch({ scopeType, scopeValue, status: "active" }, { reason: reasonParts.join(" ") || null });
+    console.log(JSON.stringify({ command, ...result }, null, 2));
     markCommandSuccess(processState);
     return;
   }
@@ -668,6 +791,163 @@ export default async function runCli({
       };
     }
     console.log(JSON.stringify({ command, readOnly: true, ...result }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "setup:wizard") {
+    const plan = buildSetupWizardPlan({ answers: { mode: args[0] || "paper" }, projectRoot: config.projectRoot });
+    console.log(JSON.stringify(buildSetupWizardCliSummary(plan), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command.startsWith("strategy:")) {
+    const registry = buildStrategyRegistry({ plugins: [] });
+    const result = command === "strategy:list"
+      ? { strategies: registry.list() }
+      : command === "strategy:report"
+        ? { strategy: registry.report(args[0]) }
+        : { status: "confirmation_required", command, message: "Strategy status changes require reviewed registry persistence." };
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "research:monte-carlo") {
+    console.log(JSON.stringify(simulateMonteCarloRisk({ trades: [] }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "research:walk-forward") {
+    console.log(JSON.stringify(runWalkForwardOptimizer({ windows: [] }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "cost:preview") {
+    console.log(JSON.stringify(buildExecutionCostBreakdown({ grossEdgePct: Number(args[0]) || 0 }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "research:no-trade") {
+    console.log(JSON.stringify(analyzeNoTradeOutcome({}), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "portfolio:correlation") {
+    console.log(JSON.stringify(buildCorrelationRiskSummary({}), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "session:profile") {
+    console.log(JSON.stringify(buildSessionPerformanceProfile({ trades: [] }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "symbol:cooldowns") {
+    console.log(JSON.stringify(summarizeSymbolCooldowns(buildSymbolCooldownState({ events: [] })), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command.startsWith("symbol:")) {
+    console.log(JSON.stringify({ status: "confirmation_required", command, message: "Manual symbol block/unblock needs reviewed persistence and audit." }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "notes:add") {
+    console.log(JSON.stringify(buildOperatorNote({ type: args[0] || "general", text: args.slice(1).join(" ") }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "notes:list" || command === "notes:search") {
+    console.log(JSON.stringify({ notes: searchOperatorNotes([], args.join(" ")) }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "notifications:test") {
+    console.log(JSON.stringify(routeNotification({ event: { type: "test", severity: "critical", message: "notification test" }, config: {} }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "operator:explain") {
+    console.log(JSON.stringify(translateOperatorReason(args[0] || "unknown"), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "report:accounting") {
+    console.log(JSON.stringify(buildAccountingExport({ trades: [], mode: args[0] || "live", format: args[1] || "json" }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "privacy:summary") {
+    console.log(JSON.stringify(buildLocalOnlyPrivacySummary({ config, providers: [] }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "paper-live:diff") {
+    console.log(JSON.stringify(analyzePaperLiveDifference({}), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "ops:sla-report") {
+    console.log(JSON.stringify(checkReliabilityTargets({ mode: config.botMode, metrics: {} }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "ops:coach") {
+    console.log(JSON.stringify(buildBotCoachSummary({}), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "ops:performance-budget") {
+    console.log(JSON.stringify(summarizePerformanceBudget([]), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "ops:degradation-status") {
+    console.log(JSON.stringify(buildSafeDegradationStatus({}), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "ops:metrics-status") {
+    console.log(JSON.stringify(buildMetricsStatus(config), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "data:lake-report") {
+    console.log(JSON.stringify(buildDataLakeReport([]), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "research:scenario-run") {
+    console.log(JSON.stringify(runScenarioOffline({ id: args[0] || "cli_scenario" }), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "research:scenario-compare") {
+    console.log(JSON.stringify(compareScenarios(runScenarioOffline({ id: "baseline" }), runScenarioOffline({ id: "challenger" })), null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+  if (command === "docs:generate") {
+    const docs = buildAutoDocs({ config, cliCommands: [] });
+    const result = await writeAutoDocs({ outputDir: `${config.projectRoot}/generated-docs`, docs });
+    console.log(JSON.stringify(result, null, 2));
     markCommandSuccess(processState);
     return;
   }

@@ -25,25 +25,25 @@ src/ops/missionControl.js
 
 ### Taken
 
-- [ ] Maak centrale Mission Control summary.
-- [ ] Toon huidige bot mode.
-- [ ] Toon huidige operator mode.
-- [ ] Toon of nieuwe entries toegestaan zijn.
-- [ ] Toon of exits/protection actief blijven.
-- [ ] Toon grootste actieve blocker.
-- [ ] Toon grootste actieve risico.
-- [ ] Toon laatste tradebeslissing.
-- [ ] Toon waarom de bot wel/niet handelt.
-- [ ] Toon welke module trading blokkeert.
-- [ ] Toon welke operatoractie nodig is.
-- [ ] Toon live readiness.
-- [ ] Toon neural readiness.
-- [ ] Toon fast execution readiness.
-- [ ] Toon data freshness status.
-- [ ] Toon exchange safety status.
-- [ ] Toon position protection status.
-- [ ] Maak command `ops:mission-control`.
-- [ ] Maak dashboard/API endpoint `/api/mission-control`.
+- [x] Maak centrale Mission Control summary.
+- [x] Toon huidige bot mode.
+- [x] Toon huidige operator mode.
+- [x] Toon of nieuwe entries toegestaan zijn.
+- [x] Toon of exits/protection actief blijven.
+- [x] Toon grootste actieve blocker.
+- [x] Toon grootste actieve risico.
+- [x] Toon laatste tradebeslissing.
+- [x] Toon waarom de bot wel/niet handelt.
+- [x] Toon welke module trading blokkeert.
+- [x] Toon welke operatoractie nodig is.
+- [x] Toon live readiness.
+- [x] Toon neural readiness.
+- [x] Toon fast execution readiness.
+- [x] Toon data freshness status.
+- [x] Toon exchange safety status.
+- [x] Toon position protection status.
+- [x] Maak command `ops:mission-control`.
+- [x] Maak dashboard/API endpoint `/api/mission-control`.
 
 ### Output voorbeeld
 
@@ -61,10 +61,10 @@ src/ops/missionControl.js
 
 ### Acceptance criteria
 
-- [ ] Operator ziet binnen 10 seconden wat de bot doet.
-- [ ] Mission Control opent nooit trades.
-- [ ] Mission Control verhoogt nooit risico.
-- [ ] Elke critical status linkt naar een concrete actie of runbook.
+- [x] Operator ziet binnen 10 seconden wat de bot doet.
+- [x] Mission Control opent nooit trades.
+- [x] Mission Control verhoogt nooit risico.
+- [x] Elke critical status linkt naar een concrete actie of runbook.
 
 ---
 
@@ -82,40 +82,40 @@ src/ai/capital/capitalAllocationAI.js
 
 ### Taken
 
-- [ ] Maak kapitaalbudget per strategy family.
-- [ ] Maak kapitaalbudget per symbool.
-- [ ] Maak kapitaalbudget per regime.
-- [ ] Maak kapitaalbudget per sessie.
-- [ ] Maak kapitaalbudget per neural model.
-- [ ] Maak kapitaalbudget per fast execution lane.
-- [ ] Maak kapitaalbudget per broker/account.
-- [ ] Meet capital efficiency per strategie.
-- [ ] Meet capital efficiency per symbol.
-- [ ] Meet drawdown impact per strategie.
-- [ ] Meet correlation-adjusted capital usage.
-- [ ] Verlaag automatisch budget bij slechte performance.
-- [ ] Verlaag automatisch budget bij hoge drawdown.
-- [ ] Verlaag automatisch budget bij hoge slippage.
-- [ ] Verlaag automatisch budget bij hoge correlation exposure.
-- [ ] Stel budgetverhoging alleen voor als proposal.
-- [ ] Vereis approval voor budgetverhoging.
-- [ ] Log alle budgetwijzigingen.
-- [ ] Toon budgetverdeling in dashboard.
+- [x] Maak kapitaalbudget per strategy family.
+- [x] Maak kapitaalbudget per symbool.
+- [x] Maak kapitaalbudget per regime.
+- [x] Maak kapitaalbudget per sessie.
+- [x] Maak kapitaalbudget per neural model.
+- [x] Maak kapitaalbudget per fast execution lane.
+- [x] Maak kapitaalbudget per broker/account.
+- [x] Meet capital efficiency per strategie.
+- [x] Meet capital efficiency per symbol.
+- [x] Meet drawdown impact per strategie.
+- [x] Meet correlation-adjusted capital usage.
+- [x] Verlaag automatisch budget bij slechte performance.
+- [x] Verlaag automatisch budget bij hoge drawdown.
+- [x] Verlaag automatisch budget bij hoge slippage.
+- [x] Verlaag automatisch budget bij hoge correlation exposure.
+- [x] Stel budgetverhoging alleen voor als proposal.
+- [x] Vereis approval voor budgetverhoging.
+- [x] Log alle budgetwijzigingen.
+- [x] Toon budgetverdeling in dashboard.
 
 ### Safetyregels
 
-- [ ] AI mag risico automatisch verlagen.
-- [ ] AI mag risico nooit automatisch boven hard caps verhogen.
-- [ ] AI mag max total exposure nooit verhogen.
-- [ ] AI mag live budget niet verhogen zonder approval.
-- [ ] AI mag budget niet aanpassen als data quality slecht is.
+- [x] AI mag risico automatisch verlagen.
+- [x] AI mag risico nooit automatisch boven hard caps verhogen.
+- [x] AI mag max total exposure nooit verhogen.
+- [x] AI mag live budget niet verhogen zonder approval.
+- [x] AI mag budget niet aanpassen als data quality slecht is.
 
 ### Acceptance criteria
 
-- [ ] Kapitaalverdeling is traceerbaar.
-- [ ] Budgetverlaging kan automatisch.
-- [ ] Budgetverhoging vereist governance.
-- [ ] Capital Allocation AI kan geen orders plaatsen.
+- [x] Kapitaalverdeling is traceerbaar.
+- [x] Budgetverlaging kan automatisch.
+- [x] Budgetverhoging vereist governance.
+- [x] Capital Allocation AI kan geen orders plaatsen.
 
 ---
 
@@ -133,37 +133,37 @@ src/ai/decision/doNothingIntelligence.js
 
 ### Taken
 
-- [ ] Detecteer marktomstandigheden waarin traden historisch slecht was.
-- [ ] Label correcte skips.
-- [ ] Label onnodige trades.
-- [ ] Label avoided losses.
-- [ ] Label “market not worth trading”.
-- [ ] Meet winst/verlies van niet-handelen.
-- [ ] Beloon correcte skips in learning.
-- [ ] Straf onnodige trades in training.
-- [ ] Geef `doNothingScore` per candidate.
-- [ ] Geef `doNothingScore` voor hele markt.
-- [ ] Toon “best avoided losses” in dashboard.
-- [ ] Voeg do-nothing score toe aan decision pipeline.
-- [ ] Gebruik do-nothing score als hard caution, niet als live override.
-- [ ] Voeg replay cases toe voor onnodige trades.
+- [x] Detecteer marktomstandigheden waarin traden historisch slecht was.
+- [x] Label correcte skips.
+- [x] Label onnodige trades.
+- [x] Label avoided losses.
+- [x] Label “market not worth trading”.
+- [x] Meet winst/verlies van niet-handelen.
+- [x] Beloon correcte skips in learning.
+- [x] Straf onnodige trades in training.
+- [x] Geef `doNothingScore` per candidate.
+- [x] Geef `doNothingScore` voor hele markt.
+- [x] Toon “best avoided losses” in dashboard.
+- [x] Voeg do-nothing score toe aan decision pipeline.
+- [x] Gebruik do-nothing score als hard caution, niet als live override.
+- [x] Voeg replay cases toe voor onnodige trades.
 
 ### Labels
 
-- [ ] `correct_skip`
-- [ ] `bad_skip`
-- [ ] `avoided_loss`
-- [ ] `unnecessary_trade`
-- [ ] `market_too_noisy`
-- [ ] `risk_not_worth_reward`
-- [ ] `liquidity_not_worth_trade`
-- [ ] `execution_cost_too_high`
+- [x] `correct_skip`
+- [x] `bad_skip`
+- [x] `avoided_loss`
+- [x] `unnecessary_trade`
+- [x] `market_too_noisy`
+- [x] `risk_not_worth_reward`
+- [x] `liquidity_not_worth_trade`
+- [x] `execution_cost_too_high`
 
 ### Acceptance criteria
 
-- [ ] Bot leert van niet-handelen.
-- [ ] Niet-handelen wordt zichtbaar als positieve beslissing.
-- [ ] Do-nothing layer kan risico verlagen maar niet automatisch verhogen.
+- [x] Bot leert van niet-handelen.
+- [x] Niet-handelen wordt zichtbaar als positieve beslissing.
+- [x] Do-nothing layer kan risico verlagen maar niet automatisch verhogen.
 
 ---
 
@@ -181,39 +181,39 @@ src/market/regimePlaybooks.js
 
 ### Playbooks
 
-- [ ] Bull trend playbook.
-- [ ] Bear trend playbook.
-- [ ] Sideways/range playbook.
-- [ ] High volatility playbook.
-- [ ] Low volatility playbook.
-- [ ] Low liquidity playbook.
-- [ ] News shock playbook.
-- [ ] Weekend playbook.
-- [ ] Funding window playbook.
-- [ ] Exchange degraded playbook.
-- [ ] Recovery mode playbook.
+- [x] Bull trend playbook.
+- [x] Bear trend playbook.
+- [x] Sideways/range playbook.
+- [x] High volatility playbook.
+- [x] Low volatility playbook.
+- [x] Low liquidity playbook.
+- [x] News shock playbook.
+- [x] Weekend playbook.
+- [x] Funding window playbook.
+- [x] Exchange degraded playbook.
+- [x] Recovery mode playbook.
 
 ### Per playbook definiëren
 
-- [ ] Allowed strategy families.
-- [ ] Blocked strategy families.
-- [ ] Max risk multiplier.
-- [ ] Max position count.
-- [ ] Max position fraction.
-- [ ] Min liquidity score.
-- [ ] Min data quality.
-- [ ] Allowed execution styles.
-- [ ] Exit aggressiveness.
-- [ ] Neural influence limit.
-- [ ] Fast execution permission.
-- [ ] Required operator approval.
+- [x] Allowed strategy families.
+- [x] Blocked strategy families.
+- [x] Max risk multiplier.
+- [x] Max position count.
+- [x] Max position fraction.
+- [x] Min liquidity score.
+- [x] Min data quality.
+- [x] Allowed execution styles.
+- [x] Exit aggressiveness.
+- [x] Neural influence limit.
+- [x] Fast execution permission.
+- [x] Required operator approval.
 
 ### Acceptance criteria
 
-- [ ] Elke regime heeft duidelijke tradingregels.
-- [ ] Playbooks kunnen risk verlagen.
-- [ ] Playbooks kunnen hard safety niet versoepelen.
-- [ ] Dashboard toont actief playbook.
+- [x] Elke regime heeft duidelijke tradingregels.
+- [x] Playbooks kunnen risk verlagen.
+- [x] Playbooks kunnen hard safety niet versoepelen.
+- [x] Dashboard toont actief playbook.
 
 ---
 
@@ -231,44 +231,44 @@ src/ai/risk/lossPreventionAI.js
 
 ### Detecties
 
-- [ ] Verhoogde kans op slechte entry.
-- [ ] Verhoogde kans op late entry.
-- [ ] Verhoogde kans op early failure.
-- [ ] Verhoogde kans op stop-loss hit.
-- [ ] Verhoogde kans op slippage spike.
-- [ ] Verhoogde kans op spread shock.
-- [ ] Verhoogde kans op liquidity evaporation.
-- [ ] Verhoogde kans op bad exit.
-- [ ] Verhoogde kans op late exit.
-- [ ] Verhoogde kans op model overconfidence.
-- [ ] Verhoogde kans op correlated loss.
-- [ ] Verhoogde kans op news shock.
-- [ ] Verhoogde kans op data-quality failure.
+- [x] Verhoogde kans op slechte entry.
+- [x] Verhoogde kans op late entry.
+- [x] Verhoogde kans op early failure.
+- [x] Verhoogde kans op stop-loss hit.
+- [x] Verhoogde kans op slippage spike.
+- [x] Verhoogde kans op spread shock.
+- [x] Verhoogde kans op liquidity evaporation.
+- [x] Verhoogde kans op bad exit.
+- [x] Verhoogde kans op late exit.
+- [x] Verhoogde kans op model overconfidence.
+- [x] Verhoogde kans op correlated loss.
+- [x] Verhoogde kans op news shock.
+- [x] Verhoogde kans op data-quality failure.
 
 ### Mogelijke acties
 
-- [ ] Entry blokkeren.
-- [ ] Position size verlagen.
-- [ ] Strategy tijdelijk pauzeren.
-- [ ] Symbol cooldown activeren.
-- [ ] Fast execution uitzetten.
-- [ ] Neural influence verlagen.
-- [ ] Exit caution verhogen.
-- [ ] Operator alert sturen.
-- [ ] Replay case aanmaken.
+- [x] Entry blokkeren.
+- [x] Position size verlagen.
+- [x] Strategy tijdelijk pauzeren.
+- [x] Symbol cooldown activeren.
+- [x] Fast execution uitzetten.
+- [x] Neural influence verlagen.
+- [x] Exit caution verhogen.
+- [x] Operator alert sturen.
+- [x] Replay case aanmaken.
 
 ### No-go
 
-- [ ] Loss Prevention AI mag nooit size verhogen.
-- [ ] Loss Prevention AI mag nooit entry forceren.
-- [ ] Loss Prevention AI mag nooit hard blockers overrulen.
-- [ ] Loss Prevention AI mag nooit LiveBroker direct aanroepen.
+- [x] Loss Prevention AI mag nooit size verhogen.
+- [x] Loss Prevention AI mag nooit entry forceren.
+- [x] Loss Prevention AI mag nooit hard blockers overrulen.
+- [x] Loss Prevention AI mag nooit LiveBroker direct aanroepen.
 
 ### Acceptance criteria
 
-- [ ] Loss Prevention AI kan alleen defensieve acties uitvoeren.
-- [ ] Elke actie is auditbaar.
-- [ ] Operator ziet welke verliezen mogelijk voorkomen zijn.
+- [x] Loss Prevention AI kan alleen defensieve acties uitvoeren.
+- [x] Elke actie is auditbaar.
+- [x] Operator ziet welke verliezen mogelijk voorkomen zijn.
 
 ---
 
@@ -286,38 +286,38 @@ src/trading/tradeQualityScore.js
 
 ### Scorecomponenten
 
-- [ ] Signal quality.
-- [ ] Data quality.
-- [ ] Execution quality.
-- [ ] Risk/reward quality.
-- [ ] Liquidity quality.
-- [ ] Regime fit.
-- [ ] Portfolio fit.
-- [ ] Neural agreement.
-- [ ] Cost/fee quality.
-- [ ] Correlation quality.
-- [ ] Session quality.
-- [ ] News/event risk quality.
-- [ ] Position protection readiness.
+- [x] Signal quality.
+- [x] Data quality.
+- [x] Execution quality.
+- [x] Risk/reward quality.
+- [x] Liquidity quality.
+- [x] Regime fit.
+- [x] Portfolio fit.
+- [x] Neural agreement.
+- [x] Cost/fee quality.
+- [x] Correlation quality.
+- [x] Session quality.
+- [x] News/event risk quality.
+- [x] Position protection readiness.
 
 ### Taken
 
-- [ ] Maak totale trade quality score.
-- [ ] Maak minimum score voor paper.
-- [ ] Maak minimum score voor live.
-- [ ] Maak strengere score voor fast execution.
-- [ ] Maak strengere score voor neural live autonomy.
-- [ ] Toon score per candidate.
-- [ ] Toon zwakste component.
-- [ ] Blokkeer trade als score onder minimum is.
-- [ ] Voeg score toe aan trade receipt.
-- [ ] Voeg score toe aan replay/training labels.
+- [x] Maak totale trade quality score.
+- [x] Maak minimum score voor paper.
+- [x] Maak minimum score voor live.
+- [x] Maak strengere score voor fast execution.
+- [x] Maak strengere score voor neural live autonomy.
+- [x] Toon score per candidate.
+- [x] Toon zwakste component.
+- [x] Blokkeer trade als score onder minimum is.
+- [x] Voeg score toe aan trade receipt.
+- [x] Voeg score toe aan replay/training labels.
 
 ### Acceptance criteria
 
-- [ ] Geen trade zonder quality score.
-- [ ] Score is uitlegbaar per component.
-- [ ] Lage score verlaagt risico of blokkeert entry.
+- [x] Geen trade zonder quality score.
+- [x] Score is uitlegbaar per component.
+- [x] Lage score verlaagt risico of blokkeert entry.
 
 ---
 
@@ -329,37 +329,37 @@ Duidelijke risk-modi maken voor verschillende situaties.
 
 ### Modes
 
-- [ ] `ultra_safe`
-- [ ] `learning_paper`
-- [ ] `conservative_live`
-- [ ] `recovery_mode`
-- [ ] `high_confidence_only`
-- [ ] `no_new_entries`
-- [ ] `exit_management_only`
-- [ ] `neural_shadow_only`
-- [ ] `fast_execution_disabled`
-- [ ] `incident_mode`
+- [x] `ultra_safe`
+- [x] `learning_paper`
+- [x] `conservative_live`
+- [x] `recovery_mode`
+- [x] `high_confidence_only`
+- [x] `no_new_entries`
+- [x] `exit_management_only`
+- [x] `neural_shadow_only`
+- [x] `fast_execution_disabled`
+- [x] `incident_mode`
 
 ### Taken
 
-- [ ] Maak `src/runtime/botPersonalityMode.js`.
-- [ ] Definieer toegestane acties per mode.
-- [ ] Definieer risk multiplier per mode.
-- [ ] Definieer neural permission per mode.
-- [ ] Definieer fast execution permission per mode.
-- [ ] Definieer entry permission per mode.
-- [ ] Definieer exit/protection permission per mode.
-- [ ] Voeg mode toe aan dashboard.
-- [ ] Voeg mode toe aan audit events.
-- [ ] Maak command `bot:mode <mode>`.
-- [ ] Vereis confirmation voor risk-increasing modes.
+- [x] Maak `src/runtime/botPersonalityMode.js`.
+- [x] Definieer toegestane acties per mode.
+- [x] Definieer risk multiplier per mode.
+- [x] Definieer neural permission per mode.
+- [x] Definieer fast execution permission per mode.
+- [x] Definieer entry permission per mode.
+- [x] Definieer exit/protection permission per mode.
+- [x] Voeg mode toe aan dashboard.
+- [x] Voeg mode toe aan audit events.
+- [x] Maak command `bot:mode <mode>`.
+- [x] Vereis confirmation voor risk-increasing modes.
 
 ### Acceptance criteria
 
-- [ ] `exit_management_only` beheert bestaande posities maar opent niets nieuws.
-- [ ] `no_new_entries` blokkeert entries maar laat exits/protection actief.
-- [ ] Incident mode verlaagt risico automatisch.
-- [ ] Modes kunnen hard safety niet versoepelen.
+- [x] `exit_management_only` beheert bestaande posities maar opent niets nieuws.
+- [x] `no_new_entries` blokkeert entries maar laat exits/protection actief.
+- [x] Incident mode verlaagt risico automatisch.
+- [x] Modes kunnen hard safety niet versoepelen.
 
 ---
 
@@ -377,37 +377,37 @@ src/research/realityGapDetector.js
 
 ### Detecties
 
-- [ ] Paper verwacht fill, live krijgt geen fill.
-- [ ] Paper slippage laag, live slippage hoog.
-- [ ] Replay winstgevend, paper niet.
-- [ ] Paper winstgevend, live niet.
-- [ ] Neural goed in replay, slecht in live observe.
-- [ ] Execution model goed in paper, slecht in live.
-- [ ] Spread assumptions te optimistisch.
-- [ ] Latency assumptions te optimistisch.
-- [ ] Maker fill assumptions te optimistisch.
-- [ ] Partial fill model te optimistisch.
-- [ ] Stop-loss slippage onderschat.
-- [ ] Market impact onderschat.
+- [x] Paper verwacht fill, live krijgt geen fill.
+- [x] Paper slippage laag, live slippage hoog.
+- [x] Replay winstgevend, paper niet.
+- [x] Paper winstgevend, live niet.
+- [x] Neural goed in replay, slecht in live observe.
+- [x] Execution model goed in paper, slecht in live.
+- [x] Spread assumptions te optimistisch.
+- [x] Latency assumptions te optimistisch.
+- [x] Maker fill assumptions te optimistisch.
+- [x] Partial fill model te optimistisch.
+- [x] Stop-loss slippage onderschat.
+- [x] Market impact onderschat.
 
 ### Taken
 
-- [ ] Maak reality gap score.
-- [ ] Maak gap per symbol.
-- [ ] Maak gap per strategy.
-- [ ] Maak gap per session.
-- [ ] Maak gap per execution style.
-- [ ] Maak gap per neural model.
-- [ ] Verlaag paper-to-live readiness bij hoge gap.
-- [ ] Blokkeer live promotie bij extreme gap.
-- [ ] Toon reality gap in dashboard.
-- [ ] Voeg gap toe aan model/strategy cards.
+- [x] Maak reality gap score.
+- [x] Maak gap per symbol.
+- [x] Maak gap per strategy.
+- [x] Maak gap per session.
+- [x] Maak gap per execution style.
+- [x] Maak gap per neural model.
+- [x] Verlaag paper-to-live readiness bij hoge gap.
+- [x] Blokkeer live promotie bij extreme gap.
+- [x] Toon reality gap in dashboard.
+- [x] Voeg gap toe aan model/strategy cards.
 
 ### Acceptance criteria
 
-- [ ] Live promotie houdt rekening met verschil tussen simulatie en realiteit.
-- [ ] Paper simulator wordt gekalibreerd met live feedback.
-- [ ] Hoge reality gap verlaagt autonomie.
+- [x] Live promotie houdt rekening met verschil tussen simulatie en realiteit.
+- [x] Paper simulator wordt gekalibreerd met live feedback.
+- [x] Hoge reality gap verlaagt autonomie.
 
 ---
 
@@ -425,38 +425,38 @@ src/reporting/tradingSystemScorecard.js
 
 ### Scores
 
-- [ ] Signal score.
-- [ ] Risk score.
-- [ ] Execution score.
-- [ ] Exit score.
-- [ ] Neural score.
-- [ ] Data score.
-- [ ] Portfolio score.
-- [ ] Liquidity score.
-- [ ] Cost score.
-- [ ] Operator safety score.
-- [ ] Reality gap score.
-- [ ] Position protection score.
-- [ ] Replay quality score.
-- [ ] Paper/live alignment score.
+- [x] Signal score.
+- [x] Risk score.
+- [x] Execution score.
+- [x] Exit score.
+- [x] Neural score.
+- [x] Data score.
+- [x] Portfolio score.
+- [x] Liquidity score.
+- [x] Cost score.
+- [x] Operator safety score.
+- [x] Reality gap score.
+- [x] Position protection score.
+- [x] Replay quality score.
+- [x] Paper/live alignment score.
 
 ### Taken
 
-- [ ] Maak daily scorecard.
-- [ ] Maak weekly scorecard.
-- [ ] Toon weakest module.
-- [ ] Toon strongest module.
-- [ ] Toon recommended fix.
-- [ ] Toon trend versus vorige periode.
-- [ ] Maak command `report:scorecard`.
-- [ ] Voeg scorecard toe aan dashboard.
-- [ ] Voeg scorecard toe aan daily briefing.
+- [x] Maak daily scorecard.
+- [x] Maak weekly scorecard.
+- [x] Toon weakest module.
+- [x] Toon strongest module.
+- [x] Toon recommended fix.
+- [x] Toon trend versus vorige periode.
+- [x] Maak command `report:scorecard`.
+- [x] Voeg scorecard toe aan dashboard.
+- [x] Voeg scorecard toe aan daily briefing.
 
 ### Acceptance criteria
 
-- [ ] Operator ziet waar de bot zwak is.
-- [ ] Scorecard opent geen trades.
-- [ ] Scorecard geeft veilige verbeteracties.
+- [x] Operator ziet waar de bot zwak is.
+- [x] Scorecard opent geen trades.
+- [x] Scorecard geeft veilige verbeteracties.
 
 ---
 
@@ -474,38 +474,38 @@ src/risk/neverTradeWhenRules.js
 
 ### Regels
 
-- [ ] Niet traden bij stale order book.
-- [ ] Niet traden bij exchange mismatch.
-- [ ] Niet traden bij hoge spread.
-- [ ] Niet traden bij te hoge slippage.
-- [ ] Niet traden bij unresolved execution intent.
-- [ ] Niet traden bij slechte clock sync.
-- [ ] Niet traden bij open critical alert.
-- [ ] Niet traden als audit niet geschreven kan worden.
-- [ ] Niet traden als state niet geschreven kan worden.
-- [ ] Niet traden als open live positie manual review vereist.
-- [ ] Niet traden als exchange protection uit is.
-- [ ] Niet traden als live acknowledgement ontbreekt.
-- [ ] Niet traden als withdrawal permission onverwacht actief is.
-- [ ] Niet traden als data quality onder minimum is.
-- [ ] Niet traden als market worth trading score te laag is.
-- [ ] Niet traden als daily drawdown limiet geraakt is.
+- [x] Niet traden bij stale order book.
+- [x] Niet traden bij exchange mismatch.
+- [x] Niet traden bij hoge spread.
+- [x] Niet traden bij te hoge slippage.
+- [x] Niet traden bij unresolved execution intent.
+- [x] Niet traden bij slechte clock sync.
+- [x] Niet traden bij open critical alert.
+- [x] Niet traden als audit niet geschreven kan worden.
+- [x] Niet traden als state niet geschreven kan worden.
+- [x] Niet traden als open live positie manual review vereist.
+- [x] Niet traden als exchange protection uit is.
+- [x] Niet traden als live acknowledgement ontbreekt.
+- [x] Niet traden als withdrawal permission onverwacht actief is.
+- [x] Niet traden als data quality onder minimum is.
+- [x] Niet traden als market worth trading score te laag is.
+- [x] Niet traden als daily drawdown limiet geraakt is.
 
 ### Taken
 
-- [ ] Maak centrale hard-block registry.
-- [ ] Koppel registry aan policy engine.
-- [ ] Koppel registry aan fast execution.
-- [ ] Koppel registry aan neural autonomy.
-- [ ] Koppel registry aan live readiness.
-- [ ] Toon actieve never-trade regels in dashboard.
-- [ ] Test elke regel afzonderlijk.
+- [x] Maak centrale hard-block registry.
+- [x] Koppel registry aan policy engine.
+- [x] Koppel registry aan fast execution.
+- [x] Koppel registry aan neural autonomy.
+- [x] Koppel registry aan live readiness.
+- [x] Toon actieve never-trade regels in dashboard.
+- [x] Test elke regel afzonderlijk.
 
 ### Acceptance criteria
 
-- [ ] Hard blocks zijn niet verspreid over losse modules.
-- [ ] Neural kan never-trade regels niet overrulen.
-- [ ] Fast execution kan never-trade regels niet overrulen.
+- [x] Hard blocks zijn niet verspreid over losse modules.
+- [x] Neural kan never-trade regels niet overrulen.
+- [x] Fast execution kan never-trade regels niet overrulen.
 
 ---
 
@@ -523,35 +523,35 @@ src/strategies/strategyKillSwitch.js
 
 ### Kill-switch scopes
 
-- [ ] Per strategy.
-- [ ] Per strategy family.
-- [ ] Per symbol.
-- [ ] Per regime.
-- [ ] Per session.
-- [ ] Per neural model.
-- [ ] Per execution style.
-- [ ] Per account profile.
-- [ ] Per broker route.
+- [x] Per strategy.
+- [x] Per strategy family.
+- [x] Per symbol.
+- [x] Per regime.
+- [x] Per session.
+- [x] Per neural model.
+- [x] Per execution style.
+- [x] Per account profile.
+- [x] Per broker route.
 
 ### Taken
 
-- [ ] Maak kill-switch registry.
-- [ ] Maak command `strategy:kill <scope>`.
-- [ ] Maak command `strategy:resume <scope>`.
-- [ ] Vereis reason bij kill-switch.
-- [ ] Vereis review bij resume.
-- [ ] Audit alle kill/resume acties.
-- [ ] Toon active kill-switches in dashboard.
-- [ ] Auto-kill bij loss streak.
-- [ ] Auto-kill bij drawdown.
-- [ ] Auto-kill bij high reality gap.
-- [ ] Auto-kill bij repeated execution failure.
+- [x] Maak kill-switch registry.
+- [x] Maak command `strategy:kill <scope>`.
+- [x] Maak command `strategy:resume <scope>`.
+- [x] Vereis reason bij kill-switch.
+- [x] Vereis review bij resume.
+- [x] Audit alle kill/resume acties.
+- [x] Toon active kill-switches in dashboard.
+- [x] Auto-kill bij loss streak.
+- [x] Auto-kill bij drawdown.
+- [x] Auto-kill bij high reality gap.
+- [x] Auto-kill bij repeated execution failure.
 
 ### Acceptance criteria
 
-- [ ] Slechte strategie kan gepauzeerd worden zonder hele bot te stoppen.
-- [ ] Resume is expliciet en auditbaar.
-- [ ] Kill-switch kan hard safety niet versoepelen.
+- [x] Slechte strategie kan gepauzeerd worden zonder hele bot te stoppen.
+- [x] Resume is expliciet en auditbaar.
+- [x] Kill-switch kan hard safety niet versoepelen.
 
 ---
 
@@ -569,24 +569,24 @@ src/trading/tradeReceipt.js
 
 ### Receipt onderdelen
 
-- [ ] Symbol.
-- [ ] Direction.
-- [ ] Strategy.
-- [ ] Entry reason.
-- [ ] Size reason.
-- [ ] Risk reason.
-- [ ] Execution reason.
-- [ ] Exit plan.
-- [ ] Stop reason.
-- [ ] Take-profit reason.
-- [ ] Neural agreement.
-- [ ] Data quality.
-- [ ] Liquidity quality.
-- [ ] Cost estimate.
-- [ ] Portfolio impact.
-- [ ] What could go wrong.
-- [ ] Why this trade was allowed.
-- [ ] Why this trade was not blocked.
+- [x] Symbol.
+- [x] Direction.
+- [x] Strategy.
+- [x] Entry reason.
+- [x] Size reason.
+- [x] Risk reason.
+- [x] Execution reason.
+- [x] Exit plan.
+- [x] Stop reason.
+- [x] Take-profit reason.
+- [x] Neural agreement.
+- [x] Data quality.
+- [x] Liquidity quality.
+- [x] Cost estimate.
+- [x] Portfolio impact.
+- [x] What could go wrong.
+- [x] Why this trade was allowed.
+- [x] Why this trade was not blocked.
 
 ### Voorbeeld
 
@@ -601,18 +601,18 @@ Wat kan fout gaan: hoge BTC-correlatie en volatility expansion
 
 ### Taken
 
-- [ ] Genereer receipt vóór execution.
-- [ ] Sla receipt op bij trade trace.
-- [ ] Toon receipt in dashboard.
-- [ ] Voeg receipt toe aan incident export.
-- [ ] Voeg receipt toe aan replay output.
-- [ ] Voeg receipt toe aan training labels.
+- [x] Genereer receipt vóór execution.
+- [x] Sla receipt op bij trade trace.
+- [x] Toon receipt in dashboard.
+- [x] Voeg receipt toe aan incident export.
+- [x] Voeg receipt toe aan replay output.
+- [x] Voeg receipt toe aan training labels.
 
 ### Acceptance criteria
 
-- [ ] Elke trade heeft een begrijpelijke uitleg.
-- [ ] Receipt bevat geen secrets.
-- [ ] Receipt is beschikbaar voor paper, live en replay.
+- [x] Elke trade heeft een begrijpelijke uitleg.
+- [x] Receipt bevat geen secrets.
+- [x] Receipt is beschikbaar voor paper, live en replay.
 
 ---
 
@@ -630,38 +630,38 @@ src/ops/operatorMistakeProtection.js
 
 ### Detecties
 
-- [ ] Live mode met demo endpoint.
-- [ ] Live mode zonder exchange protection.
-- [ ] Live mode met lege watchlist.
-- [ ] Live mode met extreem hoge trade size.
-- [ ] Live mode met dashboard publiek bereikbaar.
-- [ ] API keys met withdrawal permission.
-- [ ] Dubbele `.env` keys.
-- [ ] Verkeerde runtime directory.
-- [ ] Runtime directory in cloud sync folder.
-- [ ] Fast live execution per ongeluk aan.
-- [ ] Neural live autonomy per ongeluk aan.
-- [ ] Paper profile gebruikt live keys.
-- [ ] Live profile gebruikt paper settings.
-- [ ] Max exposure boven veilige limiet.
-- [ ] Manual review genegeerd.
+- [x] Live mode met demo endpoint.
+- [x] Live mode zonder exchange protection.
+- [x] Live mode met lege watchlist.
+- [x] Live mode met extreem hoge trade size.
+- [x] Live mode met dashboard publiek bereikbaar.
+- [x] API keys met withdrawal permission.
+- [x] Dubbele `.env` keys.
+- [x] Verkeerde runtime directory.
+- [x] Runtime directory in cloud sync folder.
+- [x] Fast live execution per ongeluk aan.
+- [x] Neural live autonomy per ongeluk aan.
+- [x] Paper profile gebruikt live keys.
+- [x] Live profile gebruikt paper settings.
+- [x] Max exposure boven veilige limiet.
+- [x] Manual review genegeerd.
 
 ### Taken
 
-- [ ] Maak mistake protection checks.
-- [ ] Voeg checks toe aan setup wizard.
-- [ ] Voeg checks toe aan readiness gate.
-- [ ] Voeg checks toe aan dashboard.
-- [ ] Block critical mistakes.
-- [ ] Warn medium mistakes.
-- [ ] Audit ignored warnings.
-- [ ] Vereis confirm flag bij risk-increasing mistakes.
+- [x] Maak mistake protection checks.
+- [x] Voeg checks toe aan setup wizard.
+- [x] Voeg checks toe aan readiness gate.
+- [x] Voeg checks toe aan dashboard.
+- [x] Block critical mistakes.
+- [x] Warn medium mistakes.
+- [x] Audit ignored warnings.
+- [x] Vereis confirm flag bij risk-increasing mistakes.
 
 ### Acceptance criteria
 
-- [ ] Veelgemaakte operatorfouten worden vroeg gevonden.
-- [ ] Kritieke fouten blokkeren live.
-- [ ] Warnings zijn duidelijk en actiegericht.
+- [x] Veelgemaakte operatorfouten worden vroeg gevonden.
+- [x] Kritieke fouten blokkeren live.
+- [x] Warnings zijn duidelijk en actiegericht.
 
 ---
 
@@ -679,39 +679,39 @@ src/market/marketWorthTradingScore.js
 
 ### Componenten
 
-- [ ] BTC trend health.
-- [ ] ETH trend health.
-- [ ] Market breadth.
-- [ ] Volatility condition.
-- [ ] Liquidity condition.
-- [ ] Stablecoin stress.
-- [ ] News/event risk.
-- [ ] Exchange reliability.
-- [ ] Correlation risk.
-- [ ] Spread regime.
-- [ ] Volume participation.
-- [ ] Funding/event risk.
-- [ ] Risk-on/risk-off proxy.
-- [ ] Altcoin strength.
-- [ ] Data quality.
+- [x] BTC trend health.
+- [x] ETH trend health.
+- [x] Market breadth.
+- [x] Volatility condition.
+- [x] Liquidity condition.
+- [x] Stablecoin stress.
+- [x] News/event risk.
+- [x] Exchange reliability.
+- [x] Correlation risk.
+- [x] Spread regime.
+- [x] Volume participation.
+- [x] Funding/event risk.
+- [x] Risk-on/risk-off proxy.
+- [x] Altcoin strength.
+- [x] Data quality.
 
 ### Taken
 
-- [ ] Bereken score 0-1.
-- [ ] Maak status: `good`, `selective`, `defensive`, `do_not_trade`.
-- [ ] Gebruik score als global risk multiplier.
-- [ ] Gebruik score in do-nothing intelligence.
-- [ ] Gebruik score in bot personality mode.
-- [ ] Blokkeer entries als score extreem laag is.
-- [ ] Toon score in dashboard.
-- [ ] Voeg score toe aan daily briefing.
-- [ ] Voeg score toe aan replay/training context.
+- [x] Bereken score 0-1.
+- [x] Maak status: `good`, `selective`, `defensive`, `do_not_trade`.
+- [x] Gebruik score als global risk multiplier.
+- [x] Gebruik score in do-nothing intelligence.
+- [x] Gebruik score in bot personality mode.
+- [x] Blokkeer entries als score extreem laag is.
+- [x] Toon score in dashboard.
+- [x] Voeg score toe aan daily briefing.
+- [x] Voeg score toe aan replay/training context.
 
 ### Acceptance criteria
 
-- [ ] Bot kan hele markt als ongeschikt markeren.
-- [ ] Lage score verlaagt risico.
-- [ ] Extreem lage score kan entries blokkeren.
+- [x] Bot kan hele markt als ongeschikt markeren.
+- [x] Lage score verlaagt risico.
+- [x] Extreem lage score kan entries blokkeren.
 
 ---
 
@@ -729,38 +729,38 @@ src/ai/governance/aiChangeBudget.js
 
 ### Budgetten
 
-- [ ] Max AI-aanpassingen per dag.
-- [ ] Max AI-aanpassingen per week.
-- [ ] Max threshold shift per dag.
-- [ ] Max threshold shift per week.
-- [ ] Max size-bias shift per dag.
-- [ ] Max actieve experiments.
-- [ ] Max model promotions per week.
-- [ ] Max autonomy level increase per periode.
-- [ ] Cooldown na rollback.
-- [ ] Cooldown na drawdown.
-- [ ] Cooldown na calibration breach.
-- [ ] Cooldown na reality-gap breach.
+- [x] Max AI-aanpassingen per dag.
+- [x] Max AI-aanpassingen per week.
+- [x] Max threshold shift per dag.
+- [x] Max threshold shift per week.
+- [x] Max size-bias shift per dag.
+- [x] Max actieve experiments.
+- [x] Max model promotions per week.
+- [x] Max autonomy level increase per periode.
+- [x] Cooldown na rollback.
+- [x] Cooldown na drawdown.
+- [x] Cooldown na calibration breach.
+- [x] Cooldown na reality-gap breach.
 
 ### Taken
 
-- [ ] Maak budget tracker.
-- [ ] Koppel budget aan neural self-tuning.
-- [ ] Koppel budget aan parameter governor.
-- [ ] Koppel budget aan model promotions.
-- [ ] Koppel budget aan autonomy governor.
-- [ ] Blokkeer AI change bij budget breach.
-- [ ] Toon budget usage in dashboard.
-- [ ] Audit elke AI change.
-- [ ] Reset budget volgens schema.
-- [ ] Operator kan budget verlagen.
-- [ ] Budget verhogen vereist approval.
+- [x] Maak budget tracker.
+- [x] Koppel budget aan neural self-tuning.
+- [x] Koppel budget aan parameter governor.
+- [x] Koppel budget aan model promotions.
+- [x] Koppel budget aan autonomy governor.
+- [x] Blokkeer AI change bij budget breach.
+- [x] Toon budget usage in dashboard.
+- [x] Audit elke AI change.
+- [x] Reset budget volgens schema.
+- [x] Operator kan budget verlagen.
+- [x] Budget verhogen vereist approval.
 
 ### Acceptance criteria
 
-- [ ] AI kan niet onbeperkt blijven aanpassen.
-- [ ] Rollback veroorzaakt cooldown.
-- [ ] Budget breach blokkeert nieuwe self-tuning acties.
+- [x] AI kan niet onbeperkt blijven aanpassen.
+- [x] Rollback veroorzaakt cooldown.
+- [x] Budget breach blokkeert nieuwe self-tuning acties.
 
 ---
 
@@ -768,27 +768,27 @@ src/ai/governance/aiChangeBudget.js
 
 ### Eerst bouwen
 
-- [ ] Mission Control.
-- [ ] Never-Trade-When Rules.
-- [ ] Trade Quality Score.
-- [ ] Market Worth Trading Score.
-- [ ] Loss Prevention AI.
+- [x] Mission Control.
+- [x] Never-Trade-When Rules.
+- [x] Trade Quality Score.
+- [x] Market Worth Trading Score.
+- [x] Loss Prevention AI.
 
 ### Daarna bouwen
 
-- [ ] Reality Gap Detector.
-- [ ] Capital Allocation AI.
-- [ ] Strategy Kill-Switch per familie.
-- [ ] Trade Explainability Receipt.
-- [ ] Operator Mistake Protection.
+- [x] Reality Gap Detector.
+- [x] Capital Allocation AI.
+- [x] Strategy Kill-Switch per familie.
+- [x] Trade Explainability Receipt.
+- [x] Operator Mistake Protection.
 
 ### Later bouwen
 
-- [ ] Bot Personality Modes.
-- [ ] Market Regime Playbooks.
-- [ ] Trading System Scorecard.
-- [ ] AI Change Budget.
-- [ ] Do-Nothing Intelligence.
+- [x] Bot Personality Modes.
+- [x] Market Regime Playbooks.
+- [x] Trading System Scorecard.
+- [x] AI Change Budget.
+- [x] Do-Nothing Intelligence.
 
 ---
 
@@ -796,13 +796,13 @@ src/ai/governance/aiChangeBudget.js
 
 Deze roadmap is klaar wanneer:
 
-- [ ] Operator in Mission Control ziet wat de bot doet.
-- [ ] Elke trade een quality score heeft.
-- [ ] Elke trade een explainability receipt heeft.
-- [ ] De bot marktbrede ongunstige condities kan herkennen.
-- [ ] Loss Prevention AI alleen defensief kan handelen.
-- [ ] AI zichzelf niet onbeperkt kan aanpassen.
-- [ ] Reality gap live promotie kan blokkeren.
-- [ ] Never-trade regels door niets kunnen worden overrulled.
-- [ ] Strategy kill-switches gericht kunnen ingrijpen.
-- [ ] Operatorfouten vroeg worden geblokkeerd.
+- [x] Operator in Mission Control ziet wat de bot doet.
+- [x] Elke trade een quality score heeft.
+- [x] Elke trade een explainability receipt heeft.
+- [x] De bot marktbrede ongunstige condities kan herkennen.
+- [x] Loss Prevention AI alleen defensief kan handelen.
+- [x] AI zichzelf niet onbeperkt kan aanpassen.
+- [x] Reality gap live promotie kan blokkeren.
+- [x] Never-trade regels door niets kunnen worden overrulled.
+- [x] Strategy kill-switches gericht kunnen ingrijpen.
+- [x] Operatorfouten vroeg worden geblokkeerd.

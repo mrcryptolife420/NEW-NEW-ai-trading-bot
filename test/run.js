@@ -213,6 +213,9 @@ import { registerFastSignalTriggerServiceTests } from "./fastSignalTriggerServic
 import { registerFastExecutionTraceTests } from "./fastExecutionTrace.tests.js";
 import { registerFastPaperExecutionTests } from "./fastPaperExecution.tests.js";
 import { registerNeuralAutonomyRoadmapTests } from "./neuralAutonomyRoadmap.tests.js";
+import { registerStrategyValidationCostsPortfolioUxTests } from "./strategyValidationCostsPortfolioUx.tests.js";
+import { registerMissionControlRiskIntelligenceTests } from "./missionControlRiskIntelligence.tests.js";
+import { registerScalabilityMultiExchangePolicyObservabilityTests } from "./scalabilityMultiExchangePolicyObservability.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
@@ -21149,7 +21152,7 @@ await runCheck("dashboard header removes duplicate blocker and action hero pills
 
 await runCheck("dashboard layout uses operator-first overview grids and progressive disclosure", async () => {
   const cssSource = await fs.readFile(new URL("../src/dashboard/public/styles.css", import.meta.url), "utf8");
-  assert.match(cssSource, /\.overview-layout,\s*\.primary-layout,\s*\.activity-layout\s*\{[\s\S]*align-items:\s*start;/);
+  assert.match(cssSource, /\.overview-layout,\s*\.primary-layout,(?:\s*\.[\w-]+,)*\s*\.activity-layout\s*\{[\s\S]*align-items:\s*start;/);
   assert.match(cssSource, /\.advanced-layout\s*\{/);
   assert.match(cssSource, /\.headline-strip\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(cssSource, /\.overview-card-grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
@@ -32740,6 +32743,21 @@ await registerFastPaperExecutionTests({
 });
 
 await registerNeuralAutonomyRoadmapTests({
+  runCheck,
+  assert
+});
+
+await registerStrategyValidationCostsPortfolioUxTests({
+  runCheck,
+  assert
+});
+
+await registerMissionControlRiskIntelligenceTests({
+  runCheck,
+  assert
+});
+
+await registerScalabilityMultiExchangePolicyObservabilityTests({
   runCheck,
   assert
 });

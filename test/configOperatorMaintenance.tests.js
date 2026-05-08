@@ -8,6 +8,7 @@ import { normalizeDashboardSnapshotPayload } from "../src/runtime/dashboardPaylo
 import { buildExecutionIntentRows, buildExecutionIntentSummary } from "../src/execution/executionIntentView.js";
 import { beginExecutionIntent, resolveExecutionIntent } from "../src/execution/executionIntentLedger.js";
 import { buildReconcileEvidenceSummary } from "../src/execution/reconcileEvidenceSummary.js";
+import { buildProductionReadinessGate, runBackupNow, runRestoreTest } from "../src/ops/productionOps.js";
 
 async function withEnv(keys, fn) {
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
@@ -214,6 +215,75 @@ export async function registerConfigOperatorMaintenanceTests({
     const output = JSON.parse(lines[0]);
     assert.equal(output.status, "ok");
     assert.equal(output.unresolved, 1);
+  });
+
+  await runCheck("production ops readiness blocks unresolved intents and exposes safe CLI commands", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "production-ops-"));
+    const runtimeDir = path.join(root, "runtime");
+    const { StateStore } = await import("../src/storage/stateStore.js");
+    const store = new StateStore(runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    beginExecutionIntent(runtime, { kind: "entry", symbol: "BTCUSDT", idempotencyKey: "prod-readiness" });
+    await store.saveRuntime(runtime);
+    const config = {
+      projectRoot: root,
+      runtimeDir,
+      botMode: "paper",
+      stateBackupEnabled: true,
+      stateBackupRetention: 4,
+      stateBackupIntervalMinutes: 30,
+      enableExchangeProtection: true,
+      liveTradingAcknowledged: "",
+      riskPerTrade: 0.01,
+      releaseChannel: "paper"
+    };
+    const readiness = await buildProductionReadinessGate({ config });
+    assert.equal(readiness.status, "blocked");
+    assert.equal(readiness.reasons.includes("unresolved_intents"), true);
+    const backup = await runBackupNow({ config });
+    assert.equal(backup.status, "ready");
+    const restore = await runRestoreTest({ config });
+    assert.equal(restore.status, "ready");
+
+    const lines = [];
+    const previousLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+      const processState = { exitCode: undefined };
+      await runCli({
+        command: "ops:readiness",
+        args: [],
+        config,
+        logger: { info() {}, warn() {}, error() {}, debug() {} },
+        processState
+      });
+      await runCli({
+        command: "ops:release-check",
+        args: [],
+        config,
+        logger: { info() {}, warn() {}, error() {}, debug() {} },
+        processState
+      });
+      await runCli({
+        command: "ops:live-dry-run",
+        args: [],
+        config,
+        logger: { info() {}, warn() {}, error() {}, debug() {} },
+        processState
+      });
+      assert.equal(processState.exitCode, 0);
+    } finally {
+      console.log = previousLog;
+    }
+    const readinessOutput = JSON.parse(lines[0]);
+    const releaseOutput = JSON.parse(lines[1]);
+    const dryRunOutput = JSON.parse(lines[2]);
+    assert.equal(readinessOutput.command, "ops:readiness");
+    assert.equal(readinessOutput.reasons.includes("unresolved_intents"), true);
+    assert.equal(releaseOutput.command, "ops:release-check");
+    assert.equal(dryRunOutput.dryRun, true);
+    assert.equal(dryRunOutput.mutatesState, false);
   });
 
   await runCheck("reconcile evidence summary preserves manual-review evidence", async () => {
