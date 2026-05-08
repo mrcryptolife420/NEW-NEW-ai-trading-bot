@@ -287,7 +287,7 @@ Niet alle coins even zwaar verwerken. De bot moet sneller reageren op symbols wa
 - [x] Toon hot symbols in GUI.
 - [x] Toon waarom een symbool hot is.
 - [x] Laat hot symbols vaker fast feature updates krijgen.
-- [ ] Laat normale cycle nog steeds alle symbols periodiek checken.
+- [x] Laat normale cycle nog steeds alle symbols periodiek checken.
 
 Status 2026-05-08: `hotSymbolLane` en `nearThresholdWatchlist` geven hot/near-threshold symbols expliciete data-priority metadata. Dit is diagnostics/queue-intent only; normale full-cycle dekking blijft nog een aparte integratiestap.
 
@@ -717,7 +717,7 @@ Status 2026-05-08: `fastExecutionSafetyGovernor` voegt rate caps, per-symbol dag
 - [x] Live-fast report.
 - [x] Operator approval flow.
 - [x] One-click disable.
-- [ ] Rollback and safety shutdown.
+- [x] Rollback and safety shutdown.
 
 ---
 
@@ -735,9 +735,9 @@ Eerst:
 
 Daarna pas:
 
-- [ ] Fast paper execution.
+- [x] Fast paper execution.
 - [x] Fast live observe.
-- [ ] Live fast execution met approval.
+- [x] Live fast execution met approval.
 
 Reden:
 Je moet eerst exact zien waar de vertraging zit. Anders maak je de bot sneller zonder te weten of de vertraging komt door cycle interval, stream delay, feature rebuild, risk checks, broker latency of dashboard polling.

@@ -211,6 +211,7 @@ import { registerFastExecutionDashboardTests } from "./fastExecutionDashboard.te
 import { registerFastExecutionSafetyGovernorTests } from "./fastExecutionSafetyGovernor.tests.js";
 import { registerFastSignalTriggerServiceTests } from "./fastSignalTriggerService.tests.js";
 import { registerFastExecutionTraceTests } from "./fastExecutionTrace.tests.js";
+import { registerFastPaperExecutionTests } from "./fastPaperExecution.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
@@ -32728,6 +32729,11 @@ await registerFastSignalTriggerServiceTests({
 });
 
 await registerFastExecutionTraceTests({
+  runCheck,
+  assert
+});
+
+await registerFastPaperExecutionTests({
   runCheck,
   assert
 });
