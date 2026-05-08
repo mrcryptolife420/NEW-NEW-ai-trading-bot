@@ -200,6 +200,7 @@ import { registerPostReconcileEntryLimitsTests } from "./postReconcileEntryLimit
 import { registerTradingQualityUpgradeTests } from "./tradingQualityUpgrade.tests.js";
 import { registerTradingPathHealthTests } from "./tradingPathHealth.tests.js";
 import { registerWindowsGuiStatusTests } from "./windowsGuiStatus.tests.js";
+import { registerLatencyProfilerTests } from "./latencyProfiler.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
@@ -32662,6 +32663,11 @@ await registerTradingPathHealthTests({
 });
 
 await registerWindowsGuiStatusTests({
+  runCheck,
+  assert
+});
+
+await registerLatencyProfilerTests({
   runCheck,
   assert
 });

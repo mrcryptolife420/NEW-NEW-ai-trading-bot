@@ -37,6 +37,7 @@ import {
 import { buildCanaryReleaseGate, buildCanaryReleaseSummary } from "../runtime/canaryReleaseGate.js";
 import { buildOperatorActionQueue } from "../runtime/operatorActionQueue.js";
 import { buildWalkForwardDeploymentReport } from "../research/walkForwardDeploymentReport.js";
+import { buildLatencyProfilerReport } from "../runtime/latencyProfiler.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -304,6 +305,16 @@ export default async function runCli({
         : [];
     const queue = buildOperatorActionQueue({ alerts, existing, limit: config.operatorActionQueueMaxItems || 20 });
     console.log(JSON.stringify({ readOnly: true, ...queue }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "latency:report") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const result = buildLatencyProfilerReport({ runtimeState: runtime });
+    console.log(JSON.stringify({ readOnly: true, ...result }, null, 2));
     markCommandSuccess(processState);
     return;
   }

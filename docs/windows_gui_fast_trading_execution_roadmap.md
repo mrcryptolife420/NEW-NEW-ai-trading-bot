@@ -379,18 +379,20 @@ Eerst meten waar die minuut vertraging vandaan komt.
 
 ### Taken
 
-- [ ] Maak `src/runtime/latencyProfiler.js`.
-- [ ] Meet stream-to-signal latency.
-- [ ] Meet signal-to-risk latency.
-- [ ] Meet risk-to-intent latency.
-- [ ] Meet intent-to-submit latency.
-- [ ] Meet submit-to-ack latency.
-- [ ] Meet ack-to-fill latency.
-- [ ] Meet dashboard-update latency.
-- [ ] Voeg CLI command toe: `node src/cli.js latency:report`.
+- [x] Maak `src/runtime/latencyProfiler.js`.
+- [x] Meet stream-to-signal latency.
+- [x] Meet signal-to-risk latency.
+- [x] Meet risk-to-intent latency.
+- [x] Meet intent-to-submit latency.
+- [x] Meet submit-to-ack latency.
+- [x] Meet ack-to-fill latency.
+- [x] Meet dashboard-update latency.
+- [x] Voeg CLI command toe: `node src/cli.js latency:report`.
 - [ ] Toon p50/p95/p99 latency in GUI.
-- [ ] Toon grootste bottleneck.
+- [x] Toon grootste bottleneck.
 - [ ] Voeg latency toe aan trade forensics.
+
+Status 2026-05-08: diagnostics-only latency profiler toegevoegd met p50/p95/p99 per stage en read-only CLI `latency:report`. Nog niet gekoppeld aan trade forensics of GUI panel.
 
 ### Voorbeeld output
 
@@ -658,8 +660,8 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Sprint 2: Latency meten
 
-- [ ] Latency profiler.
-- [ ] `latency:report`.
+- [x] Latency profiler.
+- [x] `latency:report`.
 - [ ] Candidate freshness contract.
 - [ ] GUI latency panel.
 - [ ] Trading Debug panel basis.
@@ -704,7 +706,7 @@ Niet meteen live sneller maken.
 Eerst:
 
 - [x] Windows GUI basis.
-- [ ] Latency profiler.
+- [x] Latency profiler.
 - [ ] Candidate freshness.
 - [ ] Stream freshness.
 - [ ] Trading Debug panel.
