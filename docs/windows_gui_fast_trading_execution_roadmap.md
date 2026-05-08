@@ -539,15 +539,17 @@ Geen trade uitvoeren op oude analyse.
 
 ### Taken
 
-- [ ] Elke candidate krijgt `createdAt`.
-- [ ] Elke candidate krijgt `validUntil`.
-- [ ] Elke candidate krijgt `marketDataAgeMs`.
-- [ ] Elke candidate krijgt `featureAgeMs`.
-- [ ] Elke candidate krijgt `dataFreshnessStatus`.
+- [x] Elke candidate krijgt `createdAt`.
+- [x] Elke candidate krijgt `validUntil`.
+- [x] Elke candidate krijgt `marketDataAgeMs`.
+- [x] Elke candidate krijgt `featureAgeMs`.
+- [x] Elke candidate krijgt `dataFreshnessStatus`.
 - [ ] Fast execution weigert verlopen candidates.
-- [ ] GUI toont candidate age.
-- [ ] Dashboard toont stale candidates apart.
+- [x] GUI toont candidate age.
+- [x] Dashboard toont stale candidates apart.
 - [ ] Audit logt wanneer candidate verlopen was.
+
+Status 2026-05-08: `candidateFreshnessContract` verrijkt dashboard decisions fallback-safe met freshnessvelden. Fast execution refusal/audit volgt pas wanneer fast queue/preflight bestaat.
 
 ---
 
@@ -662,7 +664,7 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 - [x] Latency profiler.
 - [x] `latency:report`.
-- [ ] Candidate freshness contract.
+- [x] Candidate freshness contract.
 - [ ] GUI latency panel.
 - [ ] Trading Debug panel basis.
 
@@ -707,7 +709,7 @@ Eerst:
 
 - [x] Windows GUI basis.
 - [x] Latency profiler.
-- [ ] Candidate freshness.
+- [x] Candidate freshness.
 - [ ] Stream freshness.
 - [ ] Trading Debug panel.
 

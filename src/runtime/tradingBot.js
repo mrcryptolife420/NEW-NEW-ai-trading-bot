@@ -85,6 +85,7 @@ import { ensureSignalFlowMetricsState } from "./signalFlowService.js";
 import { PersistenceCoordinator } from "./persistenceCoordinator.js";
 import { executeDecisionPipeline } from "./decisionPipeline.js";
 import { normalizeDecisionForAudit } from "./decisionContract.js";
+import { attachCandidateFreshness } from "./candidateFreshnessContract.js";
 import { runTradingCycle } from "./cycleRunner.js";
 import {
   buildDashboardSnapshotContract,
@@ -23415,6 +23416,12 @@ export class TradingBot {
   }
 
   buildDashboardDecisionView(decision = {}) {
+    const freshnessAnnotatedDecision = attachCandidateFreshness(decision, {
+      now: nowIso(),
+      ttlMs: this.config?.fastExecutionCandidateTtlMs || 5000,
+      maxMarketDataAgeMs: this.config?.fastExecutionMinDataFreshnessMs || 1500
+    });
+    decision = freshnessAnnotatedDecision;
     const strategy = decision.strategy || decision.strategySummary || {};
     const lowConfidencePressure = summarizeLowConfidencePressure(decision.lowConfidencePressure || {});
     const decisionTruth = buildDecisionTruthView(decision);
@@ -23617,6 +23624,12 @@ export class TradingBot {
     const marketProviders = summarizeMarketProviders(decision.marketProviderSummary || {});
     return {
       symbol: decision.symbol,
+      createdAt: decision.createdAt || null,
+      validUntil: decision.validUntil || null,
+      marketDataAgeMs: decision.marketDataAgeMs,
+      featureAgeMs: decision.featureAgeMs,
+      dataFreshnessStatus: decision.dataFreshnessStatus,
+      candidateFreshness: decision.candidateFreshness || null,
       auditContract: normalizeDecisionForAudit({
         ...decision,
         mode: this.config?.botMode || "paper",

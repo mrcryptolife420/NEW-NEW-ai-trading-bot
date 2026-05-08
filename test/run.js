@@ -201,6 +201,7 @@ import { registerTradingQualityUpgradeTests } from "./tradingQualityUpgrade.test
 import { registerTradingPathHealthTests } from "./tradingPathHealth.tests.js";
 import { registerWindowsGuiStatusTests } from "./windowsGuiStatus.tests.js";
 import { registerLatencyProfilerTests } from "./latencyProfiler.tests.js";
+import { registerCandidateFreshnessContractTests } from "./candidateFreshnessContract.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
@@ -32668,6 +32669,11 @@ await registerWindowsGuiStatusTests({
 });
 
 await registerLatencyProfilerTests({
+  runCheck,
+  assert
+});
+
+await registerCandidateFreshnessContractTests({
   runCheck,
   assert
 });
