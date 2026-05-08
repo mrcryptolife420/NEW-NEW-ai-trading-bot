@@ -617,6 +617,7 @@ export class BotManager {
         mode: profile.mode,
         description: profile.description,
         neural: profile.env.NEURAL_SELF_TUNING_ENABLED === "true" ? "full paper-only" : profile.mode === "live" ? "observe only" : "safe partial",
+        env: { ...profile.env },
         requiresLiveAcknowledgement: profile.requiresLiveAcknowledgement === true,
         active: isProfileActive(profile)
       }))
@@ -651,7 +652,6 @@ export class BotManager {
       await this.stopUnlocked("config_profile_apply");
       const writeResult = await updateEnvFile(envPath, updates);
       await this.reinitializeBot();
-      await this.bot.refreshAnalysis?.();
       this.lastModeSwitchAt = nowIso();
       if (wasRunning && nextMode !== "live") {
         this.stopRequested = false;
@@ -672,9 +672,24 @@ export class BotManager {
         writeVerified: writeResult.writeVerified,
         mismatches: writeResult.mismatches,
         restarted: wasRunning && nextMode !== "live",
+        profiles: await this.getConfigProfiles(),
         snapshot: await this.getSnapshot()
       };
     });
+  }
+
+  async completeSetup({ profileId = "beginner-paper-learning", liveAcknowledgement = "" } = {}) {
+    const applyResult = await this.applyConfigProfile(profileId || "beginner-paper-learning", { liveAcknowledgement });
+    const checks = await this.runSetupChecks();
+    return {
+      completed: applyResult.writeVerified === true && checks.ok === true,
+      completedAt: nowIso(),
+      projectRoot: this.projectRoot,
+      envPath: applyResult.envPath,
+      profileId: applyResult.profile?.id || profileId || "beginner-paper-learning",
+      apply: applyResult,
+      checks
+    };
   }
 
   async getSafeEnvStatus() {

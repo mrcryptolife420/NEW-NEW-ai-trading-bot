@@ -68,6 +68,64 @@ export async function registerRuntimeMutationTests({
     assert.equal(result.dashboard.overview.reused, true);
   });
 
+  await runCheck("bot manager applies GUI trade profiles to env and marks exact active profile", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-apply-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=demo_spot\nPAPER_EXECUTION_VENUE=binance_demo_spot\nBINANCE_API_BASE_URL=https://demo-api.binance.com\nBINANCE_FUTURES_API_BASE_URL=https://demo-fapi.binance.com\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = {
+      envPath,
+      botMode: "paper",
+      profile: { id: "paper-safe" },
+      paperModeProfile: "sim",
+      paperExecutionVenue: "internal"
+    };
+    manager.ensureBotReady = async () => {};
+    manager.stopUnlocked = async () => ({});
+    manager.reinitializeBot = async () => {};
+    manager.getSnapshot = async () => ({ manager: { currentMode: "paper" }, dashboard: {} });
+
+    const result = await manager.applyConfigProfile("paper-neural-learning");
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.writeVerified, true);
+    assert.match(written, /PAPER_MODE_PROFILE=learn/);
+    assert.match(written, /NEURAL_SELF_TUNING_ENABLED=true/);
+    assert.match(written, /BINANCE_API_BASE_URL=\n/);
+    assert.match(written, /BINANCE_FUTURES_API_BASE_URL=\n/);
+
+    const activeProfiles = (await manager.getConfigProfiles()).profiles.filter((profile) => profile.active);
+    assert.deepEqual(activeProfiles.map((profile) => profile.id), ["paper-neural-learning"]);
+  });
+
+  await runCheck("setup complete writes beginner profile and returns checks", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-setup-complete-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=demo_spot\nPAPER_EXECUTION_VENUE=binance_demo_spot\nBINANCE_API_BASE_URL=https://demo-api.binance.com\nBINANCE_FUTURES_API_BASE_URL=https://demo-fapi.binance.com\n", "utf8");
+    await fs.mkdir(path.join(projectRoot, "src", "dashboard", "public"), { recursive: true });
+    await fs.writeFile(path.join(projectRoot, "src", "dashboard", "public", "index.html"), "", "utf8");
+    await fs.writeFile(path.join(projectRoot, "src", "dashboard", "server.js"), "", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = {
+      envPath,
+      botMode: "paper",
+      profile: { id: "paper-safe" },
+      paperModeProfile: "sim",
+      paperExecutionVenue: "internal"
+    };
+    manager.ensureBotReady = async () => {};
+    manager.stopUnlocked = async () => ({});
+    manager.reinitializeBot = async () => {};
+    manager.getSnapshot = async () => ({ manager: { currentMode: "paper" }, dashboard: {} });
+
+    const result = await manager.completeSetup({ profileId: "beginner-paper-learning" });
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.completed, true);
+    assert.equal(result.checks.ok, true);
+    assert.match(written, /CONFIG_PROFILE=paper-learning/);
+    assert.match(written, /PAPER_EXPLORATION_ENABLED=true/);
+    assert.match(written, /BINANCE_API_BASE_URL=\n/);
+  });
+
   await runCheck("bootstrap warnings initialize runtime service state lazily", async () => {
     const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-bootstrap-warning-"));
     const bot = new TradingBot({ config: makeConfig({ runtimeDir }), logger: { info() {}, warn() {}, error() {}, debug() {} } });

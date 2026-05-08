@@ -246,13 +246,10 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendJson(response, 200, await manager.runSetupChecks());
   }
   if (url.pathname === "/api/setup/complete") {
-    return sendJson(response, 200, {
-      completed: true,
-      completedAt: new Date().toISOString(),
-      projectRoot: manager.projectRoot,
-      envPath: manager.config?.envPath || path.join(manager.projectRoot, ".env"),
-      profileId: body.profileId || null
-    });
+    return sendJson(response, 200, await manager.completeSetup({
+      profileId: body.profileId || "beginner-paper-learning",
+      liveAcknowledgement: body.liveAcknowledgement || ""
+    }));
   }
   if (url.pathname === "/api/setup/reset") {
     return sendJson(response, 200, { completed: false, resetAt: new Date().toISOString() });

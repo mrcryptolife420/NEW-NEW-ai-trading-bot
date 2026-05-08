@@ -727,6 +727,29 @@ async function applyProfile(profile) {
     ]
   });
   await fetchProfiles();
+  if (elements.setupWizardPanel && !elements.setupWizardPanel.hidden) {
+    renderSetupWizard({ diagnostics: latestDiagnostics, checks: null });
+  }
+}
+
+async function completeSetup(profileId = "beginner-paper-learning") {
+  renderProfilePreview({
+    profile: { label: "Setup wizard", mode: "paper" },
+    updates: {},
+    warnings: ["Setup wordt afgerond. Het gekozen profiel wordt naar .env geschreven en daarna gecontroleerd."]
+  });
+  const result = await mutateAndRefresh("/api/setup/complete", { profileId });
+  renderProfilePreview({
+    ...(result.apply || {}),
+    profile: result.apply?.profile || { label: "Setup wizard", mode: "paper" },
+    warnings: [
+      result.completed ? "Setup afgerond en schrijfcontrole geslaagd." : "Setup afgerond met waarschuwingen. Bekijk checks hieronder.",
+      ...(result.apply?.warnings || [])
+    ]
+  });
+  await fetchProfiles();
+  latestDiagnostics = await fetchDiagnostics();
+  renderSetupWizard({ diagnostics: latestDiagnostics, checks: result.checks });
 }
 
 function renderProfiles(payload = latestProfiles) {
@@ -743,7 +766,14 @@ function renderProfiles(payload = latestProfiles) {
     current.mode === "live" ? "warning" : "positive"
   );
   replaceChildren(elements.profileList, arr(latestProfiles.profiles).map((profile) => {
-    const card = makeNode("article", { className: `profile-card ${profile.mode === "live" ? "warning" : profile.active ? "positive" : "neutral"}` });
+    const card = makeNode("article", {
+      className: `profile-card ${profile.mode === "live" ? "warning" : profile.active ? "positive" : "neutral"}`,
+      attrs: {
+        role: "button",
+        tabindex: "0",
+        title: `${profile.label} toepassen`
+      }
+    });
     const textNode = makeNode("div", { className: "profile-text" });
     textNode.append(
       makeNode("h3", { text: profile.label }),
@@ -758,16 +788,29 @@ function renderProfiles(payload = latestProfiles) {
     const actions = makeNode("div", { className: "profile-actions" });
     const previewBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Preview" });
     const applyBtn = makeNode("button", { className: `ghost ghost-small ${profile.mode === "live" ? "warn" : ""}`.trim(), type: "button", text: profile.active ? "Opnieuw toepassen" : "Toepassen" });
-    previewBtn.addEventListener("click", () => previewProfile(profile.id).catch((error) => {
-      renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
-    }));
-    applyBtn.addEventListener("click", () => {
+    const applyCurrentProfile = () => {
       applyBtn.disabled = true;
       applyProfile(profile).catch((error) => {
-      renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
+        renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
       }).finally(() => {
         applyBtn.disabled = false;
       });
+    };
+    previewBtn.addEventListener("click", (event) => {
+      event.stopPropagation?.();
+      previewProfile(profile.id).catch((error) => {
+      renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
+      });
+    });
+    applyBtn.addEventListener("click", (event) => {
+      event.stopPropagation?.();
+      applyCurrentProfile();
+    });
+    card.addEventListener("click", applyCurrentProfile);
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault?.();
+      applyCurrentProfile();
     });
     actions.append(previewBtn, applyBtn);
     card.append(textNode, actions);
@@ -778,24 +821,36 @@ function renderProfiles(payload = latestProfiles) {
 function renderSetupWizard({ diagnostics = latestDiagnostics, checks = null } = {}) {
   if (!elements.setupWizardPanel) return;
   elements.setupWizardPanel.hidden = false;
+  const activeProfile = arr(latestProfiles?.profiles).find((profile) => profile.active);
   const rows = [
     makeCard({ title: "1. Project en .env", detail: compactJoin([
       diagnostics?.projectRoot ? `project ${diagnostics.projectRoot}` : "project onbekend",
       diagnostics?.envPath ? `.env ${diagnostics.envPath}` : null,
       diagnostics?.envWritable === false ? "niet schrijfbaar" : "schrijfbaar"
     ]), tone: diagnostics?.envWritable === false ? "negative" : "positive" }, "detail-card"),
-    makeCard({ title: "2. Profiel", detail: "Kies Safe simulation, Beginner paper learning, Binance demo spot, Neural paper learning of Neural demo spot via de profile cards hierboven." }, "detail-card"),
+    makeCard({
+      title: "2. Profiel",
+      detail: activeProfile
+        ? `Actief: ${activeProfile.label}. Klik een profielkaart om deze direct naar .env te schrijven.`
+        : "Klik een profielkaart of gebruik de knoppen hieronder om direct naar .env te schrijven."
+    }, "detail-card"),
     makeCard({ title: "3. Checks", detail: checks ? `ok=${checks.ok}` : "Nog niet uitgevoerd.", tone: checks?.ok === false ? "negative" : checks?.ok ? "positive" : "neutral" }, "detail-card"),
     makeCard({ title: "4. Doctor en paper cycle", detail: "Gebruik Doctor of Run paper cycle wanneer de bot niet running is.", tone: "neutral" }, "detail-card")
   ];
   const actions = makeNode("div", { className: "profile-actions" });
+  const beginnerBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Beginner toepassen" });
+  const neuralBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Neural paper toepassen" });
+  const completeBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Setup afronden" });
   const checksBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Run checks" });
   const doctorBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Doctor" });
   const cycleBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Run paper cycle" });
+  beginnerBtn.addEventListener("click", () => completeSetup("beginner-paper-learning").catch((error) => renderProfilePreview({ profile: { label: "Beginner setup" }, warnings: [error.message] })));
+  neuralBtn.addEventListener("click", () => completeSetup("paper-neural-learning").catch((error) => renderProfilePreview({ profile: { label: "Neural setup" }, warnings: [error.message] })));
+  completeBtn.addEventListener("click", () => completeSetup(activeProfile?.id || "beginner-paper-learning").catch((error) => renderProfilePreview({ profile: { label: "Setup afronden" }, warnings: [error.message] })));
   checksBtn.addEventListener("click", () => api("/api/setup/run-checks", { method: "POST" }).then((result) => renderSetupWizard({ diagnostics, checks: result })).catch((error) => renderProfilePreview({ profile: { label: "Setup checks" }, warnings: [error.message] })));
   doctorBtn.addEventListener("click", () => api("/api/doctor").then(() => renderProfilePreview({ profile: { label: "Doctor" }, updates: {}, warnings: ["Doctor afgerond. Bekijk Health voor details."] })).catch((error) => renderProfilePreview({ profile: { label: "Doctor" }, warnings: [error.message] })));
   cycleBtn.addEventListener("click", () => mutateAndRefresh("/api/cycle").catch((error) => renderProfilePreview({ profile: { label: "Paper cycle" }, warnings: [error.message] })));
-  actions.append(checksBtn, doctorBtn, cycleBtn);
+  actions.append(beginnerBtn, neuralBtn, completeBtn, checksBtn, doctorBtn, cycleBtn);
   replaceChildren(elements.setupWizardPanel, [...rows, actions]);
 }
 

@@ -526,6 +526,12 @@ button.warn,
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.profile-card:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.9);
+  outline-offset: 2px;
 }
 
 .profile-text {
