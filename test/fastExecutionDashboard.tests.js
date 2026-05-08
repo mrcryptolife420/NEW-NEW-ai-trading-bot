@@ -38,6 +38,7 @@ export function registerFastExecutionDashboardTests({ runCheck, assert }) {
     assert.equal(summary.panels.tradeDebug.blockedEntries.length, 1);
     assert.equal(summary.panels.fastExecution.hotSymbols[0].symbol, "BTCUSDT");
     assert.equal(summary.panels.fastExecution.nearThreshold[0].band, "within_2pct");
+    assert.equal(summary.panels.tradeDebug.filters.symbol, true);
   });
 
   runCheck("fast execution dashboard command palette marks risky actions as disabled or confirmed", () => {
@@ -48,6 +49,8 @@ export function registerFastExecutionDashboardTests({ runCheck, assert }) {
     assert.equal(liveFast.confirmationRequired, true);
     assert.equal(liveFast.enabled, false);
     assert.equal(reconcile.confirmationRequired, true);
+    assert.equal(summary.commandPalette.audit.auditIdReturnedAfterAction, true);
+    assert.equal(summary.commandPalette.audit.everyActionLogged, true);
     assert.equal(summary.forbiddenActions.includes("override_exchange_freeze"), true);
   });
 

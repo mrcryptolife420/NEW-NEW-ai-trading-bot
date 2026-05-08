@@ -67,11 +67,17 @@ export function buildFastExecutionDashboardSummary({ snapshot = {}, config = {},
           "stop_bot",
           "run_one_cycle",
           "refresh_analysis",
+          "run_market_scan",
           "force_reconcile",
+          "mark_position_reviewed",
           "acknowledge_alert",
           "resolve_alert",
+          "pause_new_entries",
+          "resume_new_entries",
           "disable_fast_execution",
-          "enable_paper_fast_execution"
+          "enable_paper_fast_execution",
+          "enable_probe_only",
+          "disable_probe_only"
         ]
       },
       fastExecution: {
@@ -97,7 +103,12 @@ export function buildFastExecutionDashboardSummary({ snapshot = {}, config = {},
         blockedEntries: blockedEntries.slice(0, 20),
         fastQueueItems: arr(queue.items).slice(0, 20),
         executionIntents,
-        rootBlockers: blockedEntries.map((item) => item.rootBlocker || item.blockedReason).filter(Boolean).slice(0, 20)
+        rootBlockers: blockedEntries.map((item) => item.rootBlocker || item.blockedReason).filter(Boolean).slice(0, 20),
+        filters: {
+          symbol: true,
+          blocker: true,
+          mode: true
+        }
       },
       alerts: {
         available: true,
@@ -137,16 +148,30 @@ export function buildFastExecutionDashboardSummary({ snapshot = {}, config = {},
         action("stop_bot"),
         action("run_one_cycle"),
         action("refresh_analysis"),
+        action("run_market_scan"),
         action("force_reconcile", { confirmationRequired: true, safetyImpact: "reconcile_only" }),
+        action("mark_position_reviewed"),
         action("acknowledge_alert"),
         action("resolve_alert"),
         action("pause_new_entries", { confirmationRequired: true, safetyImpact: "stricter" }),
         action("resume_new_entries", { confirmationRequired: true, safetyImpact: "entry_permissioning" }),
         action("disable_fast_execution", { safetyImpact: "stricter" }),
         action("enable_paper_fast_execution", { confirmationRequired: true, safetyImpact: "paper_only" }),
+        action("enable_probe_only", { confirmationRequired: true, safetyImpact: "paper_learning_only" }),
+        action("disable_probe_only", { confirmationRequired: true, safetyImpact: "paper_learning_only" }),
+        action("switch_to_live", { liveImpact: true, confirmationRequired: true, safetyImpact: "requires_live_ack", enabled: false }),
         action("enable_live_fast_execution", { liveImpact: true, confirmationRequired: true, safetyImpact: "requires_canary_review", enabled: false }),
+        action("approve_neural_model_promotion", { liveImpact: true, confirmationRequired: true, safetyImpact: "requires_model_governance", enabled: false }),
+        action("rollback_model", { liveImpact: true, confirmationRequired: true, safetyImpact: "stricter_or_recovery", enabled: false }),
+        action("change_risk_limits", { liveImpact: true, confirmationRequired: true, safetyImpact: "risk_config_change", enabled: false }),
+        action("change_max_exposure", { liveImpact: true, confirmationRequired: true, safetyImpact: "risk_config_change", enabled: false }),
+        action("change_api_mode", { liveImpact: true, confirmationRequired: true, safetyImpact: "exchange_config_change", enabled: false }),
         action("panic_flatten_plan", { liveImpact: true, confirmationRequired: true, safetyImpact: "dry_run_plan" })
-      ]
+      ],
+      audit: {
+        auditIdReturnedAfterAction: true,
+        everyActionLogged: true
+      }
     },
     forbiddenActions: [
       "force_buy_without_risk_verdict",

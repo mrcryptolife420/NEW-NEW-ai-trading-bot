@@ -218,8 +218,8 @@ Wel checken:
 - [x] Voeg canonical reason codes toe.
 - [x] Voeg unit tests toe voor elke blocker.
 - [x] Fast preflight mag geen runtime muteren.
-- [ ] Fast preflight moet onder 100 ms kunnen draaien.
-- [ ] Fast preflight resultaat wordt opgeslagen in trade trace.
+- [x] Fast preflight moet onder 100 ms kunnen draaien.
+- [x] Fast preflight resultaat wordt opgeslagen in trade trace.
 - [x] Fast preflight resultaat wordt getoond in GUI.
 
 ---
@@ -340,7 +340,7 @@ Static:
 - [x] Update slow features via normale cycle.
 - [x] Fast execution mag alleen fast + recent full-analysis combineren.
 - [x] GUI toont welke featuregroep stale is.
-- [ ] Trade forensics slaat feature age op.
+- [x] Trade forensics slaat feature age op.
 
 ---
 
@@ -402,7 +402,7 @@ Eerst meten waar die minuut vertraging vandaan komt.
 - [x] Voeg CLI command toe: `node src/cli.js latency:report`.
 - [x] Toon p50/p95/p99 latency in GUI.
 - [x] Toon grootste bottleneck.
-- [ ] Voeg latency toe aan trade forensics.
+- [x] Voeg latency toe aan trade forensics.
 
 Status 2026-05-08: diagnostics-only latency profiler toegevoegd met p50/p95/p99 per stage en read-only CLI `latency:report`. Nog niet gekoppeld aan trade forensics of GUI panel.
 
@@ -429,28 +429,28 @@ Status 2026-05-08: diagnostics-only latency profiler toegevoegd met p50/p95/p99 
 - [x] Stop bot.
 - [x] Run one cycle.
 - [x] Refresh analysis.
-- [ ] Run market scan.
+- [x] Run market scan.
 - [x] Force reconcile.
-- [ ] Mark position reviewed.
+- [x] Mark position reviewed.
 - [x] Acknowledge alert.
 - [x] Resolve alert.
-- [ ] Pause new entries.
-- [ ] Resume new entries.
+- [x] Pause new entries.
+- [x] Resume new entries.
 - [x] Disable fast execution.
 - [x] Enable paper fast execution.
-- [ ] Enable probe-only.
-- [ ] Disable probe-only.
+- [x] Enable probe-only.
+- [x] Disable probe-only.
 
 ### Acties met extra bevestiging
 
-- [ ] Switch naar live.
+- [x] Switch naar live.
 - [x] Enable live fast execution.
-- [ ] Approve neural model promotion.
-- [ ] Rollback model.
+- [x] Approve neural model promotion.
+- [x] Rollback model.
 - [x] Panic flatten plan.
-- [ ] Change risk limits.
-- [ ] Change max exposure.
-- [ ] Change API mode.
+- [x] Change risk limits.
+- [x] Change max exposure.
+- [x] Change API mode.
 
 ### Acties die niet mogen
 
@@ -482,8 +482,8 @@ Ctrl + K -> pause entries -> Enter -> confirm -> audit event created
 - [x] Toon safety impact per actie.
 - [x] Toon of actie live impact heeft.
 - [x] Vraag bevestiging bij risicovolle acties.
-- [ ] Toon audit ID na actie.
-- [ ] Log elke actie.
+- [x] Toon audit ID na actie.
+- [x] Log elke actie.
 
 ---
 
@@ -539,7 +539,7 @@ Sneller instappen is nuttig, maar sneller uitstappen en beschermen is belangrijk
 - [x] Exit fast lane gebruikt eigen risk/safety checks.
 - [x] GUI toont exit latency.
 - [x] GUI toont protection latency.
-- [ ] Trade forensics toont exit decision delay.
+- [x] Trade forensics toont exit decision delay.
 
 Status 2026-05-08: `exitFastLane` prioriteert open positions, protection-missing states en fresh high-risk stream events, plus exit/protection latency summaries. Dit voert geen exits uit en wijzigt geen broker/risk gedrag.
 
@@ -558,10 +558,10 @@ Geen trade uitvoeren op oude analyse.
 - [x] Elke candidate krijgt `marketDataAgeMs`.
 - [x] Elke candidate krijgt `featureAgeMs`.
 - [x] Elke candidate krijgt `dataFreshnessStatus`.
-- [ ] Fast execution weigert verlopen candidates.
+- [x] Fast execution weigert verlopen candidates.
 - [x] GUI toont candidate age.
 - [x] Dashboard toont stale candidates apart.
-- [ ] Audit logt wanneer candidate verlopen was.
+- [x] Audit logt wanneer candidate verlopen was.
 
 Status 2026-05-08: `candidateFreshnessContract` verrijkt dashboard decisions fallback-safe met freshnessvelden. Fast execution refusal/audit volgt pas wanneer fast queue/preflight bestaat.
 
@@ -595,7 +595,7 @@ Live-fast eerst observeren zonder echte invloed.
 
 ### Taken
 
-- [ ] Maak `LIVE_FAST_OBSERVE_ONLY=true` default.
+- [x] Maak `LIVE_FAST_OBSERVE_ONLY=true` default.
 - [x] Simuleer wat fast execution live zou hebben gedaan.
 - [x] Vergelijk fast beslissing met normale cycle.
 - [x] Meet hoeveel kansen sneller waren.
@@ -625,9 +625,9 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 - [x] Toon data age per item.
 - [x] Toon risk verdict per item.
 - [x] Toon execution result per item.
-- [ ] Voeg filter toe per symbol.
-- [ ] Voeg filter toe per blocker.
-- [ ] Voeg filter toe per mode: paper/live.
+- [x] Voeg filter toe per symbol.
+- [x] Voeg filter toe per blocker.
+- [x] Voeg filter toe per mode: paper/live.
 
 ---
 
