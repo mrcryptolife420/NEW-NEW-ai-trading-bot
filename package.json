@@ -29,6 +29,8 @@
     "backtest": "node src/cli.js backtest",
     "backtest:walkforward": "node src/cli.js backtest:walkforward",
     "dashboard": "node src/cli.js dashboard",
+    "desktop:start": "cd desktop && npm start",
+    "desktop:dist": "cd desktop && npm run dist",
     "service:windows": ".\\Start-BotService.cmd",
     "install:windows": ".\\Install-Windows11.cmd",
     "test": "node test/run.js",

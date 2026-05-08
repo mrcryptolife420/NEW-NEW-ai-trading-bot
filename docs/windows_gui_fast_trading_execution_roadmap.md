@@ -31,24 +31,26 @@ Later kan Tauri eventueel als lichtere app worden onderzocht.
 
 ### Taken
 
-- [ ] Maak nieuwe map: `desktop/`.
-- [ ] Voeg Electron toe als desktop wrapper.
-- [ ] Maak `desktop/package.json`.
-- [ ] Maak `desktop/main.js`.
-- [ ] Open lokale dashboard URL in de app.
-- [ ] Voeg Windows tray icon toe.
-- [ ] Toon tray status: `stopped`, `running`, `paper`, `live`, `blocked`.
-- [ ] Voeg Windows notifications toe voor critical alerts.
-- [ ] Voeg optie toe om dashboard te openen vanuit tray.
-- [ ] Voeg optie toe om bot veilig te starten vanuit tray.
-- [ ] Voeg optie toe om bot veilig te stoppen vanuit tray.
-- [ ] Voeg Windows installer toe via `electron-builder`.
-- [ ] Voeg desktop shortcut toe.
-- [ ] Voeg start menu shortcut toe.
-- [ ] Voeg optie toe om bot service-status te tonen.
-- [ ] Toon pad naar `.env`.
-- [ ] Toon pad naar runtime data.
-- [ ] Toon of GUI verbonden is met de lokale bot API.
+- [x] Maak nieuwe map: `desktop/`.
+- [x] Voeg Electron toe als desktop wrapper.
+- [x] Maak `desktop/package.json`.
+- [x] Maak `desktop/main.js`.
+- [x] Open lokale dashboard URL in de app.
+- [x] Voeg Windows tray icon toe.
+- [x] Toon tray status: `stopped`, `running`, `paper`, `live`, `blocked`.
+- [x] Voeg Windows notifications toe voor critical alerts.
+- [x] Voeg optie toe om dashboard te openen vanuit tray.
+- [x] Voeg optie toe om bot veilig te starten vanuit tray.
+- [x] Voeg optie toe om bot veilig te stoppen vanuit tray.
+- [x] Voeg Windows installer toe via `electron-builder`.
+- [x] Voeg desktop shortcut toe.
+- [x] Voeg start menu shortcut toe.
+- [x] Voeg optie toe om bot service-status te tonen.
+- [x] Toon pad naar `.env`.
+- [x] Toon pad naar runtime data.
+- [x] Toon of GUI verbonden is met de lokale bot API.
+
+Status 2026-05-08: desktop shell toegevoegd als veilige dashboard wrapper. `GET /api/gui/status` levert tray/status/safety/path/freshness metadata. Desktop start/stop gebruikt bestaande dashboard API en voegt geen trading bypass toe.
 
 ### GUI-schermen
 
@@ -65,15 +67,15 @@ Later kan Tauri eventueel als lichtere app worden onderzocht.
 
 ### GUI-regels
 
-- [ ] Live mode krijgt altijd duidelijke rode waarschuwing.
-- [ ] Live acties vragen extra bevestiging.
-- [ ] Geen knop maken die risk checks overslaat.
-- [ ] Geen `force market buy now` knop zonder risk verdict.
-- [ ] Geen knop die exchange freeze negeert.
-- [ ] Geen knop die reconcile warnings negeert.
-- [ ] GUI toont altijd of data vers of stale is.
-- [ ] GUI toont altijd of exchange protection actief is.
-- [ ] GUI toont altijd of bot in paper of live staat.
+- [x] Live mode krijgt altijd duidelijke rode waarschuwing.
+- [x] Live acties vragen extra bevestiging.
+- [x] Geen knop maken die risk checks overslaat.
+- [x] Geen `force market buy now` knop zonder risk verdict.
+- [x] Geen knop die exchange freeze negeert.
+- [x] Geen knop die reconcile warnings negeert.
+- [x] GUI toont altijd of data vers of stale is.
+- [x] GUI toont altijd of exchange protection actief is.
+- [x] GUI toont altijd of bot in paper of live staat.
 
 ---
 
@@ -500,9 +502,9 @@ REST_DEPTH_FALLBACK_MIN_MS=60000
 
 Taken:
 
-- [ ] Maak paper-fast profiel.
-- [ ] Maak live-fast profiel nog niet standaard.
-- [ ] Voeg waarschuwing toe dat live-fast apart goedgekeurd moet worden.
+- [x] Maak paper-fast profiel.
+- [x] Maak live-fast profiel nog niet standaard.
+- [x] Voeg waarschuwing toe dat live-fast apart goedgekeurd moet worden.
 - [ ] GUI kan profiel tonen.
 - [ ] GUI kan profiel niet blind toepassen zonder preview.
 
@@ -647,11 +649,11 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Sprint 1: Windows GUI basis
 
-- [ ] Electron desktop shell.
-- [ ] GUI status endpoint.
-- [ ] Bot start/stop knoppen.
-- [ ] Service status tonen.
-- [ ] Alerts tonen.
+- [x] Electron desktop shell.
+- [x] GUI status endpoint.
+- [x] Bot start/stop knoppen.
+- [x] Service status tonen.
+- [x] Alerts tonen.
 - [ ] Logs tonen.
 
 ### Sprint 2: Latency meten
@@ -701,7 +703,7 @@ Niet meteen live sneller maken.
 
 Eerst:
 
-- [ ] Windows GUI basis.
+- [x] Windows GUI basis.
 - [ ] Latency profiler.
 - [ ] Candidate freshness.
 - [ ] Stream freshness.

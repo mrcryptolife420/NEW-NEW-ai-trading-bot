@@ -199,6 +199,7 @@ import { registerAutoReconcileCoordinatorTests } from "./autoReconcileCoordinato
 import { registerPostReconcileEntryLimitsTests } from "./postReconcileEntryLimits.tests.js";
 import { registerTradingQualityUpgradeTests } from "./tradingQualityUpgrade.tests.js";
 import { registerTradingPathHealthTests } from "./tradingPathHealth.tests.js";
+import { registerWindowsGuiStatusTests } from "./windowsGuiStatus.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
@@ -32658,6 +32659,11 @@ await registerTradingPathHealthTests({
   fs,
   os,
   runCli
+});
+
+await registerWindowsGuiStatusTests({
+  runCheck,
+  assert
 });
 
 await registerFeatureActivationGovernorTests({

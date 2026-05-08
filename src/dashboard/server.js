@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import { BotManager } from "../runtime/botManager.js";
+import { buildWindowsGuiStatus } from "./guiStatus.js";
 
 const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -131,6 +132,16 @@ async function handleApi(request, response, manager) {
       riskLocks: ops.riskLocks || null,
       topRejections: ops.topRejections || []
     });
+  }
+  if (request.method === "GET" && url.pathname === "/api/gui/status") {
+    const snapshot = await manager.getSnapshot();
+    const readiness = await manager.getOperationalReadiness();
+    return sendJson(response, 200, buildWindowsGuiStatus({
+      snapshot,
+      readiness,
+      config: manager.config || {},
+      projectRoot: manager.projectRoot || process.cwd()
+    }));
   }
   if (request.method === "GET" && url.pathname === "/api/readiness") {
     const readiness = await manager.getOperationalReadiness();
