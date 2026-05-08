@@ -151,7 +151,10 @@ function resolveRuntimeDir(env = {}, projectRoot = process.cwd()) {
 }
 
 export async function loadConfig(projectRoot = process.cwd()) {
-  const envPath = path.join(projectRoot, ".env");
+  const configuredEnvPath = `${process.env.CODEX_BOT_ENV_PATH || ""}`.trim();
+  const envPath = configuredEnvPath
+    ? (path.isAbsolute(configuredEnvPath) ? configuredEnvPath : path.resolve(projectRoot, configuredEnvPath))
+    : path.join(projectRoot, ".env");
   let fileEnv = {};
   try {
     const content = await fs.readFile(envPath, "utf8");

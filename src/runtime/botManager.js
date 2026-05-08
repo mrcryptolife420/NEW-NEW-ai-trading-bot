@@ -609,6 +609,8 @@ export class BotManager {
         projectRoot: this.projectRoot,
         runtimeDir: current.runtimeDir || null,
         historyDir: current.historyDir || null,
+        configSource: process.env.CODEX_BOT_ENV_PATH ? "user_env_path" : "project_env",
+        buildCommit: process.env.BUILD_COMMIT || "local",
         liveAcknowledged: current.liveTradingAcknowledged === "I_UNDERSTAND_LIVE_TRADING_RISK"
       },
       profiles: TRADE_PROFILE_CATALOG.map((profile) => ({
@@ -729,12 +731,14 @@ export class BotManager {
       }
     };
     const envWritable = await fs.access(path.dirname(envPath), fsConstants.W_OK).then(() => true).catch(() => false);
-    return {
-      packaged: false,
-      botRoot: this.projectRoot,
-      projectRoot: this.projectRoot,
-      envPath,
-      envExists: await check(envPath),
+      return {
+        packaged: false,
+        botRoot: this.projectRoot,
+        projectRoot: this.projectRoot,
+        envPath,
+        configSource: process.env.CODEX_BOT_ENV_PATH ? "user_env_path" : "project_env",
+        buildCommit: process.env.BUILD_COMMIT || "local",
+        envExists: await check(envPath),
       envWritable,
       runtimeDir: this.config?.runtimeDir || null,
       historyDir: this.config?.historyDir || null,

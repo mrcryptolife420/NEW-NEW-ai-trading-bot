@@ -39,13 +39,17 @@ export function parseEnvText(content = "") {
 }
 
 export async function ensureEnvFile(projectRoot) {
-  const envPath = path.join(projectRoot, ".env");
+  const configuredEnvPath = `${process.env.CODEX_BOT_ENV_PATH || ""}`.trim();
+  const envPath = configuredEnvPath
+    ? (path.isAbsolute(configuredEnvPath) ? configuredEnvPath : path.resolve(projectRoot, configuredEnvPath))
+    : path.join(projectRoot, ".env");
   try {
     await fs.access(envPath);
     return envPath;
   } catch {
     const examplePath = path.join(projectRoot, ".env.example");
     const content = await fs.readFile(examplePath, "utf8");
+    await fs.mkdir(path.dirname(envPath), { recursive: true });
     await fs.writeFile(envPath, content, "utf8");
     return envPath;
   }

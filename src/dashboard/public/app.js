@@ -28,6 +28,7 @@ function createElements(doc) {
     actionList: q("#actionList"),
     quickActionsList: q("#quickActionsList"),
     configCurrentBadge: q("#configCurrentBadge"),
+    configStatusPanel: q("#configStatusPanel"),
     profileList: q("#profileList"),
     profilePreview: q("#profilePreview"),
     setupWizardPanel: q("#setupWizardPanel"),
@@ -698,6 +699,20 @@ function renderProfilePreview(preview) {
   ].filter((line) => line != null).join("\n");
 }
 
+function renderConfigStatus(payload = latestProfiles) {
+  if (!elements.configStatusPanel || !payload) return;
+  const current = payload.current || {};
+  const activeProfile = arr(payload.profiles).find((profile) => profile.active);
+  const liveLocked = current.mode === "live" && current.liveAcknowledged !== true;
+  replaceChildren(elements.configStatusPanel, [
+    makeCard({ title: "Actief profiel", detail: activeProfile?.label || "Geen exact profiel actief", tone: activeProfile ? "positive" : "warning" }, "detail-card"),
+    makeCard({ title: "Mode", detail: compactJoin([titleize(current.mode || "paper"), current.paperExecutionVenue || "internal"]), tone: current.mode === "live" ? "warning" : "positive" }, "detail-card"),
+    makeCard({ title: "Live slot", detail: liveLocked ? "Live niet bevestigd" : current.mode === "live" ? "Live bevestigd" : "Paper veilig actief", tone: liveLocked ? "negative" : current.mode === "live" ? "warning" : "positive" }, "detail-card"),
+    makeCard({ title: "Config", detail: compactJoin([current.configSource === "user_env_path" ? "AppData .env" : "project .env", current.envPath || ".env onbekend"]), tone: "neutral" }, "detail-card"),
+    makeCard({ title: "Build", detail: compactJoin([current.buildCommit || "local", current.configProfile || "default"]), tone: "neutral" }, "detail-card")
+  ]);
+}
+
 async function previewProfile(profileId) {
   const preview = await api("/api/config/profile/preview", { method: "POST", body: { profileId } });
   renderProfilePreview(preview);
@@ -756,6 +771,7 @@ function renderProfiles(payload = latestProfiles) {
   latestProfiles = payload || latestProfiles;
   if (!elements.profileList || !latestProfiles) return;
   const current = latestProfiles.current || {};
+  renderConfigStatus(latestProfiles);
   setBadge(
     elements.configCurrentBadge,
     compactJoin([

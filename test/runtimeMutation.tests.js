@@ -97,6 +97,43 @@ export async function registerRuntimeMutationTests({
     assert.deepEqual(activeProfiles.map((profile) => profile.id), ["paper-neural-learning"]);
   });
 
+  await runCheck("bot manager honors user writable CODEX_BOT_ENV_PATH", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-project-env-root-"));
+    const configDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-user-env-"));
+    const userEnvPath = path.join(configDir, ".env");
+    await fs.writeFile(path.join(projectRoot, ".env.example"), "BOT_MODE=paper\n", "utf8");
+    await fs.writeFile(userEnvPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=sim\nPAPER_EXECUTION_VENUE=internal\n", "utf8");
+    const previous = process.env.CODEX_BOT_ENV_PATH;
+    process.env.CODEX_BOT_ENV_PATH = userEnvPath;
+    try {
+      const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+      manager.config = {
+        envPath: userEnvPath,
+        botMode: "paper",
+        profile: { id: "paper-safe" },
+        paperModeProfile: "sim",
+        paperExecutionVenue: "internal"
+      };
+      manager.ensureBotReady = async () => {};
+      manager.stopUnlocked = async () => ({});
+      manager.reinitializeBot = async () => {};
+      manager.getSnapshot = async () => ({ manager: { currentMode: "paper" }, dashboard: {} });
+
+      const result = await manager.applyConfigProfile("beginner-paper-learning");
+      const projectEnv = await fs.readFile(path.join(projectRoot, ".env.example"), "utf8");
+      const userEnv = await fs.readFile(userEnvPath, "utf8");
+      assert.equal(result.envPath, userEnvPath);
+      assert.match(userEnv, /CONFIG_PROFILE=paper-learning/);
+      assert.equal(projectEnv, "BOT_MODE=paper\n");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.CODEX_BOT_ENV_PATH;
+      } else {
+        process.env.CODEX_BOT_ENV_PATH = previous;
+      }
+    }
+  });
+
   await runCheck("setup complete writes beginner profile and returns checks", async () => {
     const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-setup-complete-"));
     const envPath = path.join(projectRoot, ".env");

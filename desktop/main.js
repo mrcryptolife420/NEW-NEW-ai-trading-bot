@@ -14,6 +14,8 @@ let embeddedDashboard = null;
 let lastStartupError = null;
 const logDir = path.join(app.getPath("appData"), "Codex AI Trading Bot", "logs");
 const logPath = path.join(logDir, "desktop-main.log");
+const userConfigDir = path.join(app.getPath("appData"), "Codex AI Trading Bot", "config");
+const userEnvPath = path.join(userConfigDir, ".env");
 
 function writeLog(message, details = {}) {
   fs.mkdirSync(logDir, { recursive: true });
@@ -28,9 +30,30 @@ function resolveBotRoot() {
   return path.resolve(app.getAppPath(), "..");
 }
 
+function ensureUserEnvFile(botRoot = resolveBotRoot()) {
+  fs.mkdirSync(userConfigDir, { recursive: true });
+  if (!fs.existsSync(userEnvPath)) {
+    const bundledEnvPath = path.join(botRoot, ".env");
+    const exampleEnvPath = path.join(botRoot, ".env.example");
+    const sourcePath = fs.existsSync(bundledEnvPath) ? bundledEnvPath : exampleEnvPath;
+    fs.copyFileSync(sourcePath, userEnvPath);
+    writeLog("desktop_user_env_created", { userEnvPath, sourcePath });
+  }
+  process.env.CODEX_BOT_ENV_PATH = userEnvPath;
+  return userEnvPath;
+}
+
 function buildDesktopDiagnostics(botRoot = resolveBotRoot()) {
+  const packageJsonPath = path.join(botRoot, "package.json");
+  let botPackage = {};
+  try {
+    botPackage = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+  } catch {}
   return {
     packaged: app.isPackaged,
+    desktopVersion: app.getVersion(),
+    buildCommit: process.env.BUILD_COMMIT || "local",
+    botPackageVersion: botPackage.version || null,
     appPath: app.getAppPath(),
     resourcesPath: process.resourcesPath,
     botRoot,
@@ -39,7 +62,9 @@ function buildDesktopDiagnostics(botRoot = resolveBotRoot()) {
     serverExists: fs.existsSync(path.join(botRoot, "src", "dashboard", "server.js")),
     publicIndexExists: fs.existsSync(path.join(botRoot, "src", "dashboard", "public", "index.html")),
     publicAppExists: fs.existsSync(path.join(botRoot, "src", "dashboard", "public", "app.js")),
-    envPath: path.join(botRoot, ".env"),
+    envPath: process.env.CODEX_BOT_ENV_PATH || path.join(botRoot, ".env"),
+    bundledEnvPath: path.join(botRoot, ".env"),
+    userConfigDir,
     logPath
   };
 }
@@ -69,6 +94,8 @@ function loadErrorPage(error) {
 async function startEmbeddedDashboard() {
   if (process.env.DASHBOARD_URL) return null;
   const botRoot = resolveBotRoot();
+  const envPath = app.isPackaged ? ensureUserEnvFile(botRoot) : path.join(botRoot, ".env");
+  process.env.CODEX_BOT_ENV_PATH = envPath;
   writeLog("desktop_startup", buildDesktopDiagnostics(botRoot));
   const serverPath = path.join(botRoot, "src", "dashboard", "server.js");
   const { startDashboardServer } = await import(pathToFileURL(serverPath).href);
@@ -159,6 +186,7 @@ function updateTrayMenu(status = {}) {
     { label: "Open dashboard in browser", click: () => shell.openExternal(dashboardUrl) },
     { label: "Open logs", click: () => shell.openPath(logPath) },
     { label: "Open active .env", click: () => shell.openPath(buildDesktopDiagnostics().envPath) },
+    { label: "Open config folder", click: () => shell.openPath(userConfigDir) },
     { type: "separator" },
     { label: "Start bot safely", click: () => postDashboardAction("/api/start").catch(() => {}) },
     { label: "Stop bot safely", click: () => postDashboardAction("/api/stop").catch(() => {}) },
