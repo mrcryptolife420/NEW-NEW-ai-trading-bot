@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+.env.bak*
+.env.tmp
+diagnostics-*.zip
 *.pem
 *.key
 *.p12
@@ -15,6 +18,7 @@ data/
 # Dependencies
 node_modules/
 desktop/dist/
+desktop/dist-new*/
 
 # OS/editor/local agent state
 .DS_Store

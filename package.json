@@ -31,12 +31,18 @@
     "dashboard": "node src/cli.js dashboard",
     "desktop:start": "cd desktop && npm start",
     "desktop:dist": "cd desktop && npm run dist",
+    "desktop:dist:fresh": "cd desktop && npm run dist:fresh",
     "service:windows": ".\\Start-BotService.cmd",
     "install:windows": ".\\Install-Windows11.cmd",
     "test": "node test/run.js",
+    "test:unit": "node test/run.js --unit",
+    "test:integration": "node test/run.js --integration",
+    "test:safety": "node test/run.js --safety",
+    "test:desktop": "cd desktop && npm run diagnose",
     "lint": "eslint src test scripts --max-warnings=0",
     "format:check": "prettier --check package.json package-lock.json eslint.config.js .prettierrc.json",
-    "coverage": "c8 node test/run.js"
+    "coverage": "c8 node test/run.js",
+    "qa": "npm run lint && npm run format:check && npm run test && npm run coverage && node src/cli.js feature:audit && node src/cli.js rest:audit"
   },
   "dependencies": {
     "zod": "^4.3.6"

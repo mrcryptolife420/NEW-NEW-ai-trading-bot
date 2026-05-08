@@ -18,6 +18,7 @@ function createElements(doc) {
     paperBtn: q("#paperBtn"),
     liveBtn: q("#liveBtn"),
     refreshBtn: q("#refreshBtn"),
+    setupWizardBtn: q("#setupWizardBtn"),
     decisionSearch: q("#decisionSearch"),
     decisionAllowedOnly: q("#decisionAllowedOnly"),
     decisionMeta: q("#decisionMeta"),
@@ -29,6 +30,7 @@ function createElements(doc) {
     configCurrentBadge: q("#configCurrentBadge"),
     profileList: q("#profileList"),
     profilePreview: q("#profilePreview"),
+    setupWizardPanel: q("#setupWizardPanel"),
     focusList: q("#focusList"),
     positionsList: q("#positionsList"),
     recentTradesList: q("#recentTradesList"),
@@ -53,6 +55,7 @@ let showAllDecisions = readStoredBoolean(STORAGE_KEYS.showAllDecisions, false);
 let lastSnapshotReceivedAt = null;
 let latestActionResult = null;
 let latestProfiles = null;
+let latestDiagnostics = null;
 const renderFallbackSections = new Set();
 
 function makeNode(tag, { className = "", text = "", attrs = {} } = {}) {
@@ -678,10 +681,18 @@ function renderProfilePreview(preview) {
     return;
   }
   const rows = Object.entries(preview.updates || {}).map(([key, value]) => `${key}=${value}`);
+  const beforeAfter = preview.before || preview.after
+    ? Object.keys(preview.updates || {}).map((key) => `${key}: ${preview.before?.[key] ?? "(unset)"} -> ${preview.after?.[key] ?? preview.updates?.[key] ?? ""}`)
+    : [];
   elements.profilePreview.textContent = [
     `${preview.profile?.label || "Profile"} (${preview.profile?.mode || "paper"})`,
     preview.profile?.description || null,
+    preview.envPath ? `envPath: ${preview.envPath}` : null,
+    preview.writeVerified != null ? `writeVerified: ${preview.writeVerified}` : null,
+    preview.backupPath ? `backup: ${preview.backupPath}` : null,
     ...(preview.warnings || []),
+    beforeAfter.length ? "\nDiff:" : null,
+    ...beforeAfter,
     "",
     ...rows
   ].filter((line) => line != null).join("\n");
@@ -698,7 +709,8 @@ async function applyProfile(profile) {
     const acknowledgement = window.prompt?.("Typ exact I_UNDERSTAND_LIVE_TRADING_RISK om live mode te configureren.") || "";
     body.liveAcknowledgement = acknowledgement;
   }
-  await mutateAndRefresh("/api/config/profile/apply", body);
+  const result = await mutateAndRefresh("/api/config/profile/apply", body);
+  renderProfilePreview(result);
   await fetchProfiles();
 }
 
@@ -723,6 +735,7 @@ function renderProfiles(payload = latestProfiles) {
       makeNode("p", { text: profile.description }),
       makeTagList([
         makeTag(profile.mode === "live" ? "Live gated" : "Paper/demo"),
+        profile.neural ? makeTag(`Neural ${profile.neural}`) : null,
         profile.active ? makeTag("Actief", "tag positive") : null,
         profile.requiresLiveAcknowledgement ? makeTag("Ack vereist", "tag warning") : null
       ])
@@ -733,13 +746,48 @@ function renderProfiles(payload = latestProfiles) {
     previewBtn.addEventListener("click", () => previewProfile(profile.id).catch((error) => {
       renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
     }));
-    applyBtn.addEventListener("click", () => applyProfile(profile).catch((error) => {
+    applyBtn.addEventListener("click", () => {
+      applyBtn.disabled = true;
+      applyProfile(profile).catch((error) => {
       renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
-    }));
+      }).finally(() => {
+        applyBtn.disabled = false;
+      });
+    });
     actions.append(previewBtn, applyBtn);
     card.append(textNode, actions);
     return card;
   }));
+}
+
+function renderSetupWizard({ diagnostics = latestDiagnostics, checks = null } = {}) {
+  if (!elements.setupWizardPanel) return;
+  elements.setupWizardPanel.hidden = false;
+  const rows = [
+    makeCard({ title: "1. Project en .env", detail: compactJoin([
+      diagnostics?.projectRoot ? `project ${diagnostics.projectRoot}` : "project onbekend",
+      diagnostics?.envPath ? `.env ${diagnostics.envPath}` : null,
+      diagnostics?.envWritable === false ? "niet schrijfbaar" : "schrijfbaar"
+    ]), tone: diagnostics?.envWritable === false ? "negative" : "positive" }, "detail-card"),
+    makeCard({ title: "2. Profiel", detail: "Kies Safe simulation, Beginner paper learning, Binance demo spot, Neural paper learning of Neural demo spot via de profile cards hierboven." }, "detail-card"),
+    makeCard({ title: "3. Checks", detail: checks ? `ok=${checks.ok}` : "Nog niet uitgevoerd.", tone: checks?.ok === false ? "negative" : checks?.ok ? "positive" : "neutral" }, "detail-card"),
+    makeCard({ title: "4. Doctor en paper cycle", detail: "Gebruik Doctor of Run paper cycle wanneer de bot niet running is.", tone: "neutral" }, "detail-card")
+  ];
+  const actions = makeNode("div", { className: "profile-actions" });
+  const checksBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Run checks" });
+  const doctorBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Doctor" });
+  const cycleBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Run paper cycle" });
+  checksBtn.addEventListener("click", () => api("/api/setup/run-checks", { method: "POST" }).then((result) => renderSetupWizard({ diagnostics, checks: result })).catch((error) => renderProfilePreview({ profile: { label: "Setup checks" }, warnings: [error.message] })));
+  doctorBtn.addEventListener("click", () => api("/api/doctor").then(() => renderProfilePreview({ profile: { label: "Doctor" }, updates: {}, warnings: ["Doctor afgerond. Bekijk Health voor details."] })).catch((error) => renderProfilePreview({ profile: { label: "Doctor" }, warnings: [error.message] })));
+  cycleBtn.addEventListener("click", () => mutateAndRefresh("/api/cycle").catch((error) => renderProfilePreview({ profile: { label: "Paper cycle" }, warnings: [error.message] })));
+  actions.append(checksBtn, doctorBtn, cycleBtn);
+  replaceChildren(elements.setupWizardPanel, [...rows, actions]);
+}
+
+async function fetchDiagnostics() {
+  latestDiagnostics = await api("/api/gui/diagnostics");
+  renderSetupWizard({ diagnostics: latestDiagnostics });
+  return latestDiagnostics;
 }
 
 async function fetchProfiles() {
@@ -1687,6 +1735,7 @@ async function mutateAndRefresh(path, body = {}) {
     }
     await fetchSnapshot();
     if (path.startsWith("/api/config/")) await fetchProfiles();
+    return response;
   } catch (error) {
     console.error?.("dashboard_mutation_failed", error);
     if (elements.controlHint) {
@@ -1699,6 +1748,7 @@ async function mutateAndRefresh(path, body = {}) {
 
 function bindUi() {
   elements.refreshBtn?.addEventListener?.("click", () => fetchSnapshot().catch((error) => showDashboardRenderIssue("refresh", error)));
+  elements.setupWizardBtn?.addEventListener?.("click", () => fetchDiagnostics().catch((error) => renderProfilePreview({ profile: { label: "Setup wizard" }, warnings: [error.message] })));
   elements.startBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/start"));
   elements.stopBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/stop"));
   elements.paperBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/mode", { mode: "paper" }));
@@ -1724,6 +1774,7 @@ function initDashboard() {
   bindUi();
   fetchSnapshot().catch((error) => showDashboardRenderIssue("bootstrap", error));
   fetchProfiles().catch((error) => showDashboardRenderIssue("profiles", error));
+  fetchDiagnostics().catch(() => {});
   if (typeof window !== "undefined" && window?.setInterval) {
     window.setInterval(() => {
       fetchSnapshot().catch((error) => showDashboardRenderIssue("poll", error));
@@ -1811,6 +1862,7 @@ function createFakeDashboardDocument() {
     "paperBtn",
     "liveBtn",
     "refreshBtn",
+    "setupWizardBtn",
     "decisionSearch",
     "decisionAllowedOnly",
     "decisionMeta",
@@ -1822,6 +1874,7 @@ function createFakeDashboardDocument() {
     "configCurrentBadge",
     "profileList",
     "profilePreview",
+    "setupWizardPanel",
     "focusList",
     "positionsList",
     "recentTradesList",

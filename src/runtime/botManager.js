@@ -1,5 +1,8 @@
 ﻿import { loadConfig } from "../config/index.js";
-import { ensureEnvFile, updateEnvFile } from "../config/envFile.js";
+import fs from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
+import path from "node:path";
+import { ensureEnvFile, parseEnvText, readEnvFile, updateEnvFile } from "../config/envFile.js";
 import { TRADE_PROFILE_CATALOG, buildTradeProfilePreview } from "../config/tradeProfiles.js";
 import { nowIso } from "../utils/time.js";
 import { TradingBot } from "./tradingBot.js";
@@ -598,6 +601,10 @@ export class BotManager {
         configProfile: current.profile?.id || null,
         paperModeProfile: current.paperModeProfile || "learn",
         paperExecutionVenue: current.paperExecutionVenue || "internal",
+        envPath: current.envPath || path.join(this.projectRoot, ".env"),
+        projectRoot: this.projectRoot,
+        runtimeDir: current.runtimeDir || null,
+        historyDir: current.historyDir || null,
         liveAcknowledged: current.liveTradingAcknowledged === "I_UNDERSTAND_LIVE_TRADING_RISK"
       },
       profiles: TRADE_PROFILE_CATALOG.map((profile) => ({
@@ -605,6 +612,7 @@ export class BotManager {
         label: profile.label,
         mode: profile.mode,
         description: profile.description,
+        neural: profile.env.NEURAL_SELF_TUNING_ENABLED === "true" ? "full paper-only" : profile.mode === "live" ? "observe only" : "safe partial",
         requiresLiveAcknowledgement: profile.requiresLiveAcknowledgement === true,
         active: (profile.env.BOT_MODE || "paper") === (current.botMode || "paper")
           && (!profile.env.PAPER_MODE_PROFILE || profile.env.PAPER_MODE_PROFILE === current.paperModeProfile)
@@ -639,7 +647,7 @@ export class BotManager {
       const wasRunning = this.runState === "running";
       const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
       await this.stopUnlocked("config_profile_apply");
-      await updateEnvFile(envPath, updates);
+      const writeResult = await updateEnvFile(envPath, updates);
       await this.reinitializeBot();
       await this.bot.refreshAnalysis?.();
       this.lastModeSwitchAt = nowIso();
@@ -653,10 +661,78 @@ export class BotManager {
       return {
         applied: true,
         profile: preview.profile,
+        projectRoot: this.projectRoot,
+        envPath,
+        updates: writeResult.updates,
+        before: writeResult.before,
+        after: writeResult.after,
+        backupPath: writeResult.backupPath,
+        writeVerified: writeResult.writeVerified,
+        mismatches: writeResult.mismatches,
         restarted: wasRunning && nextMode !== "live",
         snapshot: await this.getSnapshot()
       };
     });
+  }
+
+  async getSafeEnvStatus() {
+    await this.ensureBotReady({ allowClosed: true });
+    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const values = parseEnvText(await readEnvFile(envPath));
+    const safeKeys = [
+      "BOT_MODE",
+      "CONFIG_PROFILE",
+      "CONFIG_CAPABILITY_BUNDLES",
+      "PAPER_MODE_PROFILE",
+      "PAPER_EXECUTION_VENUE",
+      "BINANCE_API_BASE_URL",
+      "BINANCE_FUTURES_API_BASE_URL",
+      "NEURAL_SELF_TUNING_ENABLED",
+      "NEURAL_SELF_TUNING_PAPER_ONLY",
+      "NEURAL_CONTINUOUS_LEARNING_ENABLED",
+      "NEURAL_LIVE_AUTONOMY_ENABLED"
+    ];
+    return {
+      envPath,
+      projectRoot: this.projectRoot,
+      safeValues: Object.fromEntries(safeKeys.map((key) => [key, values[key] ?? ""])),
+      redacted: Object.keys(values).filter((key) => /SECRET|KEY|TOKEN/i.test(key))
+    };
+  }
+
+  async getGuiDiagnostics({ dashboardUrl = null } = {}) {
+    await this.ensureBotReady({ allowClosed: true });
+    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const check = async (filePath) => {
+      try {
+        await fs.access(filePath);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const envWritable = await fs.access(path.dirname(envPath), fsConstants.W_OK).then(() => true).catch(() => false);
+    return {
+      packaged: false,
+      botRoot: this.projectRoot,
+      projectRoot: this.projectRoot,
+      envPath,
+      envExists: await check(envPath),
+      envWritable,
+      runtimeDir: this.config?.runtimeDir || null,
+      historyDir: this.config?.historyDir || null,
+      dashboardPublicExists: await check(path.join(this.projectRoot, "src", "dashboard", "public", "index.html")),
+      serverPathExists: await check(path.join(this.projectRoot, "src", "dashboard", "server.js")),
+      dashboardUrl: dashboardUrl || `http://127.0.0.1:${this.config?.dashboardPort || 3011}`
+    };
+  }
+
+  async runSetupChecks() {
+    const diagnostics = await this.getGuiDiagnostics();
+    return {
+      ok: diagnostics.envExists && diagnostics.envWritable && diagnostics.dashboardPublicExists && diagnostics.serverPathExists,
+      checks: diagnostics
+    };
   }
 
   buildOperationalReadiness(snapshot) {

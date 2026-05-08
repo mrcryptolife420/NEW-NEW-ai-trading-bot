@@ -171,6 +171,14 @@ async function handleApi(request, response, manager, eventBus = null) {
       config: manager.config || {}
     }));
   }
+  if (request.method === "GET" && url.pathname === "/api/gui/diagnostics") {
+    return sendJson(response, 200, await manager.getGuiDiagnostics({
+      dashboardUrl: `http://127.0.0.1:${manager.config?.dashboardPort || 3011}`
+    }));
+  }
+  if (request.method === "GET" && url.pathname === "/api/config/env") {
+    return sendJson(response, 200, await manager.getSafeEnvStatus());
+  }
   if (request.method === "GET" && url.pathname === "/api/config/profiles") {
     return sendJson(response, 200, manager.getConfigProfiles());
   }
@@ -233,6 +241,21 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendJson(response, 200, await manager.applyConfigProfile(body.profileId, {
       liveAcknowledgement: body.liveAcknowledgement || ""
     }));
+  }
+  if (url.pathname === "/api/setup/run-checks") {
+    return sendJson(response, 200, await manager.runSetupChecks());
+  }
+  if (url.pathname === "/api/setup/complete") {
+    return sendJson(response, 200, {
+      completed: true,
+      completedAt: new Date().toISOString(),
+      projectRoot: manager.projectRoot,
+      envPath: manager.config?.envPath || path.join(manager.projectRoot, ".env"),
+      profileId: body.profileId || null
+    });
+  }
+  if (url.pathname === "/api/setup/reset") {
+    return sendJson(response, 200, { completed: false, resetAt: new Date().toISOString() });
   }
   if (url.pathname === "/api/alerts/ack") {
     return sendJson(response, 200, await manager.acknowledgeAlert(body.id, body.acknowledged !== false, body.note || null));

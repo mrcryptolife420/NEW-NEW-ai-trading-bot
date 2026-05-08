@@ -11,6 +11,14 @@ let mainWindow = null;
 let tray = null;
 let lastCriticalCount = 0;
 let embeddedDashboard = null;
+let lastStartupError = null;
+const logDir = path.join(app.getPath("appData"), "Codex AI Trading Bot", "logs");
+const logPath = path.join(logDir, "desktop-main.log");
+
+function writeLog(message, details = {}) {
+  fs.mkdirSync(logDir, { recursive: true });
+  fs.appendFileSync(logPath, `${new Date().toISOString()} ${message} ${JSON.stringify(details)}\n`, "utf8");
+}
 
 function resolveBotRoot() {
   const packagedRoot = path.join(process.resourcesPath || "", "bot");
@@ -20,9 +28,48 @@ function resolveBotRoot() {
   return path.resolve(app.getAppPath(), "..");
 }
 
+function buildDesktopDiagnostics(botRoot = resolveBotRoot()) {
+  return {
+    packaged: app.isPackaged,
+    appPath: app.getAppPath(),
+    resourcesPath: process.resourcesPath,
+    botRoot,
+    dashboardUrl,
+    serverPath: path.join(botRoot, "src", "dashboard", "server.js"),
+    serverExists: fs.existsSync(path.join(botRoot, "src", "dashboard", "server.js")),
+    publicIndexExists: fs.existsSync(path.join(botRoot, "src", "dashboard", "public", "index.html")),
+    publicAppExists: fs.existsSync(path.join(botRoot, "src", "dashboard", "public", "app.js")),
+    envPath: path.join(botRoot, ".env"),
+    logPath
+  };
+}
+
+async function waitForDashboard(timeoutMs = 15000) {
+  const startedAt = Date.now();
+  let lastError = null;
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const response = await fetch(new URL("/api/health", dashboardUrl));
+      if (response.ok) return true;
+      lastError = new Error(`health_${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw lastError || new Error("dashboard_not_ready");
+}
+
+function loadErrorPage(error) {
+  const diagnostics = buildDesktopDiagnostics();
+  const escape = (value) => `${value ?? ""}`.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[char]));
+  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`<!doctype html><html><body style="font-family:Segoe UI,sans-serif;background:#081019;color:#edf4ff;padding:24px"><h1>Dashboard kon niet starten</h1><p>${escape(error?.message || "unknown error")}</p><pre style="white-space:pre-wrap;background:#111b28;padding:12px">${escape(error?.stack || "")}</pre><pre style="white-space:pre-wrap;background:#111b28;padding:12px">${escape(JSON.stringify(diagnostics, null, 2))}</pre><button onclick="location.reload()">Retry</button></body></html>`)}`);
+}
+
 async function startEmbeddedDashboard() {
   if (process.env.DASHBOARD_URL) return null;
   const botRoot = resolveBotRoot();
+  writeLog("desktop_startup", buildDesktopDiagnostics(botRoot));
   const serverPath = path.join(botRoot, "src", "dashboard", "server.js");
   const { startDashboardServer } = await import(pathToFileURL(serverPath).href);
   const logger = {
@@ -51,7 +98,14 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadURL(dashboardUrl);
+  mainWindow.webContents.on("did-fail-load", (_event, code, description) => writeLog("did_fail_load", { code, description, dashboardUrl }));
+  mainWindow.webContents.on("console-message", (_event, level, message) => writeLog("renderer_console", { level, message }));
+  mainWindow.webContents.on("render-process-gone", (_event, details) => writeLog("render_process_gone", details));
+  if (lastStartupError) {
+    loadErrorPage(lastStartupError);
+  } else {
+    mainWindow.loadURL(dashboardUrl);
+  }
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
@@ -103,6 +157,8 @@ function updateTrayMenu(status = {}) {
     { label: `Status: ${label}`, enabled: false },
     { label: "Open dashboard", click: showWindow },
     { label: "Open dashboard in browser", click: () => shell.openExternal(dashboardUrl) },
+    { label: "Open logs", click: () => shell.openPath(logPath) },
+    { label: "Open active .env", click: () => shell.openPath(buildDesktopDiagnostics().envPath) },
     { type: "separator" },
     { label: "Start bot safely", click: () => postDashboardAction("/api/start").catch(() => {}) },
     { label: "Stop bot safely", click: () => postDashboardAction("/api/stop").catch(() => {}) },
@@ -126,9 +182,17 @@ async function pollStatus() {
 
 app.whenReady().then(async () => {
   embeddedDashboard = await startEmbeddedDashboard().catch((error) => {
+    lastStartupError = error;
+    writeLog("embedded_dashboard_start_failed", { message: error.message, stack: error.stack, diagnostics: buildDesktopDiagnostics() });
     console.error("embedded_dashboard_start_failed", error);
     return null;
   });
+  if (!lastStartupError) {
+    await waitForDashboard().catch((error) => {
+      lastStartupError = error;
+      writeLog("dashboard_wait_failed", { message: error.message, stack: error.stack });
+    });
+  }
   tray = new Tray(nativeImage.createEmpty());
   updateTrayMenu({ connected: false, trayStatus: "stopped", mode: "unknown" });
   tray.on("click", showWindow);

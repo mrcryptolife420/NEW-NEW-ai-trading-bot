@@ -1,12 +1,19 @@
 {
   "name": "binance-ai-trading-bot-desktop",
   "version": "0.1.0",
+  "description": "Desktop shell for the Codex AI Trading Bot dashboard and local bot runtime.",
+  "author": "mrcryptolife420",
   "private": true,
   "type": "module",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win"
+    "start:debug": "set DESKTOP_DEBUG=1&& electron .",
+    "dist": "electron-builder --win",
+    "dist:fresh": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$out='dist-new-'+(Get-Date -Format yyyyMMdd-HHmmss); if (-not $env:BUILD_COMMIT) { $env:BUILD_COMMIT='local' }; npx electron-builder --win --config.directories.output=$out\"",
+    "dist:dir": "electron-builder --win --dir",
+    "clean": "node scripts/clean-desktop-dist.mjs",
+    "diagnose": "node scripts/desktop-diagnose.mjs"
   },
   "dependencies": {},
   "devDependencies": {
@@ -42,7 +49,7 @@
     ],
     "win": {
       "target": "nsis",
-      "artifactName": "${productName}-${version}-Setup.${ext}"
+      "artifactName": "${productName}-${version}-${env.BUILD_COMMIT}-Setup.${ext}"
     },
     "nsis": {
       "oneClick": false,
