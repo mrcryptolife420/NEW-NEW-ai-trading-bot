@@ -598,6 +598,8 @@ export async function loadConfig(projectRoot = process.cwd()) {
     fastExecutionMaxSignalsPerMinute: parseNumber(env.FAST_EXECUTION_MAX_SIGNALS_PER_MINUTE, DEFAULTS.fastExecutionMaxSignalsPerMinute),
     fastExecutionMinDataFreshnessMs: parseNumber(env.FAST_EXECUTION_MIN_DATA_FRESHNESS_MS, DEFAULTS.fastExecutionMinDataFreshnessMs),
     fastExecutionCandidateTtlMs: parseNumber(env.FAST_EXECUTION_CANDIDATE_TTL_MS, DEFAULTS.fastExecutionCandidateTtlMs),
+    hotSymbolMax: parseNumber(env.HOT_SYMBOL_MAX, DEFAULTS.hotSymbolMax),
+    nearThresholdWatchTtlMs: parseNumber(env.NEAR_THRESHOLD_WATCH_TTL_MS, DEFAULTS.nearThresholdWatchTtlMs),
     fastExecutionRequireLocalBook: parseBoolean(env.FAST_EXECUTION_REQUIRE_LOCAL_BOOK, DEFAULTS.fastExecutionRequireLocalBook),
     fastExecutionBlockOnReconcileWarning: parseBoolean(env.FAST_EXECUTION_BLOCK_ON_RECONCILE_WARNING, DEFAULTS.fastExecutionBlockOnReconcileWarning),
     fastExecutionBlockOnUnresolvedIntent: parseBoolean(env.FAST_EXECUTION_BLOCK_ON_UNRESOLVED_INTENT, DEFAULTS.fastExecutionBlockOnUnresolvedIntent),

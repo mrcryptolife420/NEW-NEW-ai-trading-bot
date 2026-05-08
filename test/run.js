@@ -204,6 +204,7 @@ import { registerLatencyProfilerTests } from "./latencyProfiler.tests.js";
 import { registerCandidateFreshnessContractTests } from "./candidateFreshnessContract.tests.js";
 import { registerFastExecutionCoreTests } from "./fastExecutionCore.tests.js";
 import { registerWindowsFastDataFoundationsTests } from "./windowsFastDataFoundations.tests.js";
+import { registerNearThresholdWatchlistTests } from "./nearThresholdWatchlist.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
 import { registerStopLimitStuckTests } from "./stopLimitStuck.tests.js";
 import { registerStopLimitGapTests } from "./stopLimitGap.tests.js";
@@ -32686,6 +32687,11 @@ await registerFastExecutionCoreTests({
 });
 
 await registerWindowsFastDataFoundationsTests({
+  runCheck,
+  assert
+});
+
+await registerNearThresholdWatchlistTests({
   runCheck,
   assert
 });

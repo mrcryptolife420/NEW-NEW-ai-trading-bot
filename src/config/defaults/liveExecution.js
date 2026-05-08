@@ -73,6 +73,8 @@ export const liveExecutionDefaults = {
   "fastExecutionMaxSignalsPerMinute": 3,
   "fastExecutionMinDataFreshnessMs": 1500,
   "fastExecutionCandidateTtlMs": 5000,
+  "hotSymbolMax": 12,
+  "nearThresholdWatchTtlMs": 120000,
   "fastExecutionRequireLocalBook": true,
   "fastExecutionBlockOnReconcileWarning": true,
   "fastExecutionBlockOnUnresolvedIntent": true,

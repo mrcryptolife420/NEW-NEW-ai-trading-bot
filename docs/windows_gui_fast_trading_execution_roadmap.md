@@ -280,8 +280,10 @@ Niet alle coins even zwaar verwerken. De bot moet sneller reageren op symbols wa
 - [x] Beperk hot symbols via `HOT_SYMBOL_MAX=12`.
 - [x] Toon hot symbols in GUI.
 - [x] Toon waarom een symbool hot is.
-- [ ] Laat hot symbols vaker fast feature updates krijgen.
+- [x] Laat hot symbols vaker fast feature updates krijgen.
 - [ ] Laat normale cycle nog steeds alle symbols periodiek checken.
+
+Status 2026-05-08: `hotSymbolLane` en `nearThresholdWatchlist` geven hot/near-threshold symbols expliciete data-priority metadata. Dit is diagnostics/queue-intent only; normale full-cycle dekking blijft nog een aparte integratiestap.
 
 ---
 
@@ -565,13 +567,15 @@ De bot moet extra opletten op setups die bijna klaar zijn.
 
 ### Taken
 
-- [ ] Track candidates binnen 2% van threshold.
-- [ ] Track candidates binnen 5% van threshold.
-- [ ] Geef near-threshold symbols hogere data priority.
-- [ ] Toon near-threshold candidates in GUI.
-- [ ] Trigger fast preflight zodra threshold crossed wordt.
-- [ ] Log threshold cross event.
-- [ ] Laat near-threshold lijst automatisch verlopen.
+- [x] Track candidates binnen 2% van threshold.
+- [x] Track candidates binnen 5% van threshold.
+- [x] Geef near-threshold symbols hogere data priority.
+- [x] Toon near-threshold candidates in GUI.
+- [x] Trigger fast preflight zodra threshold crossed wordt.
+- [x] Log threshold cross event.
+- [x] Laat near-threshold lijst automatisch verlopen.
+
+Status 2026-05-08: `nearThresholdWatchlist` bouwt een expiring watchlist, detecteert threshold-cross events en levert alleen een safe queue trigger voor bestaande fast preflight/queue checks. Geen live execution behavior gewijzigd.
 
 ---
 
@@ -630,7 +634,7 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 - [ ] Fast blocked reasons.
 - [ ] Average fast latency.
 - [ ] p95 fast latency.
-- [ ] Stream freshness.
+- [x] Stream freshness.
 - [ ] Hot symbols.
 - [ ] Near-threshold symbols.
 - [ ] One-click disable fast execution.
