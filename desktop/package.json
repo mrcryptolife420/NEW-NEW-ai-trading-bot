@@ -20,6 +20,26 @@
       "main.js",
       "preload.js"
     ],
+    "extraResources": [
+      {
+        "from": "..",
+        "to": "bot",
+        "filter": [
+          "src/**",
+          "scripts/**",
+          "config/**",
+          ".env.example",
+          "package.json",
+          "package-lock.json",
+          "node_modules/**",
+          "!node_modules/.cache/**",
+          "!data/**",
+          "!tmp/**",
+          "!logs/**",
+          "!.env"
+        ]
+      }
+    ],
     "win": {
       "target": "nsis",
       "artifactName": "${productName}-${version}-Setup.${ext}"

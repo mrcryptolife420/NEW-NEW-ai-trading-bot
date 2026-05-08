@@ -1,9 +1,11 @@
 ﻿import { loadConfig } from "../config/index.js";
 import { ensureEnvFile, updateEnvFile } from "../config/envFile.js";
+import { TRADE_PROFILE_CATALOG, buildTradeProfilePreview } from "../config/tradeProfiles.js";
 import { nowIso } from "../utils/time.js";
 import { TradingBot } from "./tradingBot.js";
 import { createBotLifecycleState, setBotLifecycleActivity, transitionBotLifecycle } from "./botLifecycleStateMachine.js";
 import { buildApiEnvelope, computeOperationalReadiness } from "./operationalTruth.js";
+import { buildMissionControlSummary } from "../ops/missionControl.js";
 
 function summarizeError(error) {
   return {
@@ -588,6 +590,75 @@ export class BotManager {
     });
   }
 
+  getConfigProfiles() {
+    const current = this.config || {};
+    return {
+      current: {
+        mode: current.botMode || "paper",
+        configProfile: current.profile?.id || null,
+        paperModeProfile: current.paperModeProfile || "learn",
+        paperExecutionVenue: current.paperExecutionVenue || "internal",
+        liveAcknowledged: current.liveTradingAcknowledged === "I_UNDERSTAND_LIVE_TRADING_RISK"
+      },
+      profiles: TRADE_PROFILE_CATALOG.map((profile) => ({
+        id: profile.id,
+        label: profile.label,
+        mode: profile.mode,
+        description: profile.description,
+        requiresLiveAcknowledgement: profile.requiresLiveAcknowledgement === true,
+        active: (profile.env.BOT_MODE || "paper") === (current.botMode || "paper")
+          && (!profile.env.PAPER_MODE_PROFILE || profile.env.PAPER_MODE_PROFILE === current.paperModeProfile)
+          && (!profile.env.CONFIG_PROFILE || profile.env.CONFIG_PROFILE === current.profile?.id)
+      }))
+    };
+  }
+
+  async previewConfigProfile(profileId) {
+    await this.ensureBotReady({ allowClosed: true });
+    return buildTradeProfilePreview({ profileId, currentConfig: this.config || {} });
+  }
+
+  async applyConfigProfile(profileId, { liveAcknowledgement = "" } = {}) {
+    return this.withLock(async () => {
+      await this.ensureBotReady({ allowClosed: true });
+      const preview = buildTradeProfilePreview({ profileId, currentConfig: this.config || {} });
+      const updates = { ...preview.updates };
+      const nextMode = updates.BOT_MODE || "paper";
+      if (nextMode === "live") {
+        if (liveAcknowledgement !== "I_UNDERSTAND_LIVE_TRADING_RISK") {
+          throw new Error("Live profiel vereist exacte bevestiging: I_UNDERSTAND_LIVE_TRADING_RISK.");
+        }
+        updates.LIVE_TRADING_ACKNOWLEDGED = liveAcknowledgement;
+        assertLiveModeGuardrails({
+          ...this.config,
+          botMode: "live",
+          paperExecutionVenue: updates.PAPER_EXECUTION_VENUE || this.config?.paperExecutionVenue,
+          liveTradingAcknowledged: liveAcknowledgement
+        });
+      }
+      const wasRunning = this.runState === "running";
+      const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
+      await this.stopUnlocked("config_profile_apply");
+      await updateEnvFile(envPath, updates);
+      await this.reinitializeBot();
+      await this.bot.refreshAnalysis?.();
+      this.lastModeSwitchAt = nowIso();
+      if (wasRunning && nextMode !== "live") {
+        this.stopRequested = false;
+        this.stopReason = null;
+        this.transitionLifecycle("running", { activity: "idle", reason: "config_profile_restart" });
+        this.lastStartAt = nowIso();
+        this.loopPromise = this.runLoop();
+      }
+      return {
+        applied: true,
+        profile: preview.profile,
+        restarted: wasRunning && nextMode !== "live",
+        snapshot: await this.getSnapshot()
+      };
+    });
+  }
+
   buildOperationalReadiness(snapshot) {
     const mode = snapshot?.manager?.currentMode || this.config?.botMode || "paper";
     return computeOperationalReadiness({
@@ -614,6 +685,15 @@ export class BotManager {
 
   async getOperationalReadiness() {
     return this.buildOperationalReadiness(await this.getSnapshot());
+  }
+
+  async getMissionControl() {
+    const snapshot = await this.getSnapshot({ allowClosedBot: true });
+    return buildMissionControlSummary({
+      snapshot,
+      config: this.config || {},
+      readiness: this.buildOperationalReadiness(snapshot)
+    });
   }
 
   async getStatus() {

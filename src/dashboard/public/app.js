@@ -26,6 +26,9 @@ function createElements(doc) {
     attentionList: q("#attentionList"),
     actionList: q("#actionList"),
     quickActionsList: q("#quickActionsList"),
+    configCurrentBadge: q("#configCurrentBadge"),
+    profileList: q("#profileList"),
+    profilePreview: q("#profilePreview"),
     focusList: q("#focusList"),
     positionsList: q("#positionsList"),
     recentTradesList: q("#recentTradesList"),
@@ -49,6 +52,7 @@ let allowedOnly = false;
 let showAllDecisions = readStoredBoolean(STORAGE_KEYS.showAllDecisions, false);
 let lastSnapshotReceivedAt = null;
 let latestActionResult = null;
+let latestProfiles = null;
 const renderFallbackSections = new Set();
 
 function makeNode(tag, { className = "", text = "", attrs = {} } = {}) {
@@ -665,6 +669,85 @@ function renderAttention(snapshot) {
     : [{ title: "Geen open operator tasks", detail: "Alleen blijven monitoren.", tone: "positive" }];
   replaceChildren(elements.attentionList, attention.map((item) => makeCard(item)));
   replaceChildren(elements.actionList, actions.map((item) => makeCard(item)));
+}
+
+function renderProfilePreview(preview) {
+  if (!elements.profilePreview) return;
+  if (!preview) {
+    elements.profilePreview.textContent = "Selecteer een profiel om de exacte .env wijzigingen te bekijken.";
+    return;
+  }
+  const rows = Object.entries(preview.updates || {}).map(([key, value]) => `${key}=${value}`);
+  elements.profilePreview.textContent = [
+    `${preview.profile?.label || "Profile"} (${preview.profile?.mode || "paper"})`,
+    preview.profile?.description || null,
+    ...(preview.warnings || []),
+    "",
+    ...rows
+  ].filter((line) => line != null).join("\n");
+}
+
+async function previewProfile(profileId) {
+  const preview = await api("/api/config/profile/preview", { method: "POST", body: { profileId } });
+  renderProfilePreview(preview);
+}
+
+async function applyProfile(profile) {
+  const body = { profileId: profile.id };
+  if (profile.mode === "live") {
+    const acknowledgement = window.prompt?.("Typ exact I_UNDERSTAND_LIVE_TRADING_RISK om live mode te configureren.") || "";
+    body.liveAcknowledgement = acknowledgement;
+  }
+  await mutateAndRefresh("/api/config/profile/apply", body);
+  await fetchProfiles();
+}
+
+function renderProfiles(payload = latestProfiles) {
+  latestProfiles = payload || latestProfiles;
+  if (!elements.profileList || !latestProfiles) return;
+  const current = latestProfiles.current || {};
+  setBadge(
+    elements.configCurrentBadge,
+    compactJoin([
+      titleize(current.mode || "paper"),
+      current.configProfile ? titleize(current.configProfile) : null,
+      current.paperModeProfile ? `paper ${titleize(current.paperModeProfile)}` : null
+    ]),
+    current.mode === "live" ? "warning" : "positive"
+  );
+  replaceChildren(elements.profileList, arr(latestProfiles.profiles).map((profile) => {
+    const card = makeNode("article", { className: `profile-card ${profile.mode === "live" ? "warning" : profile.active ? "positive" : "neutral"}` });
+    const textNode = makeNode("div", { className: "profile-text" });
+    textNode.append(
+      makeNode("h3", { text: profile.label }),
+      makeNode("p", { text: profile.description }),
+      makeTagList([
+        makeTag(profile.mode === "live" ? "Live gated" : "Paper/demo"),
+        profile.active ? makeTag("Actief", "tag positive") : null,
+        profile.requiresLiveAcknowledgement ? makeTag("Ack vereist", "tag warning") : null
+      ])
+    );
+    const actions = makeNode("div", { className: "profile-actions" });
+    const previewBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Preview" });
+    const applyBtn = makeNode("button", { className: `ghost ghost-small ${profile.mode === "live" ? "warn" : ""}`.trim(), type: "button", text: profile.active ? "Opnieuw toepassen" : "Toepassen" });
+    previewBtn.addEventListener("click", () => previewProfile(profile.id).catch((error) => {
+      renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
+    }));
+    applyBtn.addEventListener("click", () => applyProfile(profile).catch((error) => {
+      renderProfilePreview({ profile, updates: {}, warnings: [error.message] });
+    }));
+    actions.append(previewBtn, applyBtn);
+    card.append(textNode, actions);
+    return card;
+  }));
+}
+
+async function fetchProfiles() {
+  try {
+    renderProfiles(await api("/api/config/profiles"));
+  } catch (error) {
+    if (elements.profilePreview) elements.profilePreview.textContent = `Config laden mislukt: ${error.message}`;
+  }
 }
 
 function renderFocus(snapshot) {
@@ -1418,6 +1501,7 @@ function render(snapshot) {
   safeRenderSection("hero", () => renderHero(snapshot));
   safeRenderSection("overview", () => renderOverview(snapshot));
   safeRenderSection("attention", () => renderAttention(snapshot));
+  safeRenderSection("profiles", () => renderProfiles());
   safeRenderSection("quickActions", () => renderQuickActions(snapshot));
   safeRenderSection("focus", () => renderFocus(snapshot));
   safeRenderSection("positions", () => renderPositions(snapshot));
@@ -1602,6 +1686,7 @@ async function mutateAndRefresh(path, body = {}) {
         : "Actie uitgevoerd. Snapshot vernieuwd.";
     }
     await fetchSnapshot();
+    if (path.startsWith("/api/config/")) await fetchProfiles();
   } catch (error) {
     console.error?.("dashboard_mutation_failed", error);
     if (elements.controlHint) {
@@ -1638,6 +1723,7 @@ function initDashboard() {
   elements = createElements(activeDocument);
   bindUi();
   fetchSnapshot().catch((error) => showDashboardRenderIssue("bootstrap", error));
+  fetchProfiles().catch((error) => showDashboardRenderIssue("profiles", error));
   if (typeof window !== "undefined" && window?.setInterval) {
     window.setInterval(() => {
       fetchSnapshot().catch((error) => showDashboardRenderIssue("poll", error));
@@ -1733,6 +1819,9 @@ function createFakeDashboardDocument() {
     "attentionList",
     "actionList",
     "quickActionsList",
+    "configCurrentBadge",
+    "profileList",
+    "profilePreview",
     "focusList",
     "positionsList",
     "recentTradesList",

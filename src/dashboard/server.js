@@ -5,6 +5,8 @@ import { BotManager } from "../runtime/botManager.js";
 import { buildWindowsGuiStatus } from "./guiStatus.js";
 import { DashboardEventBus } from "./eventBus.js";
 import { buildFastExecutionDashboardSummary } from "./fastExecutionDashboard.js";
+import { buildPrometheusMetrics } from "../ops/metricsExporter.js";
+import { buildAccountProfileStatus } from "../accounts/accountProfileRegistry.js";
 
 const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -124,6 +126,16 @@ async function handleApi(request, response, manager, eventBus = null) {
   if (request.method === "GET" && url.pathname === "/api/snapshot") {
     return sendJson(response, 200, await manager.getSnapshot());
   }
+  if (request.method === "GET" && url.pathname === "/metrics") {
+    if (!manager.config?.metricsEnabled) return sendJson(response, 404, { error: "Metrics disabled" });
+    const snapshot = await manager.getSnapshot();
+    response.writeHead(200, { "Content-Type": "text/plain; version=0.0.4; charset=utf-8", "Cache-Control": "no-store" });
+    response.end(buildPrometheusMetrics({ ...snapshot, mode: manager.config?.botMode, exchangeProvider: manager.config?.exchangeProvider }));
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/api/accounts") {
+    return sendJson(response, 200, { active: manager.config?.accountProfile || "paper", profiles: buildAccountProfileStatus() });
+  }
   if (request.method === "GET" && url.pathname === "/api/health") {
     const snapshot = await manager.getSnapshot();
     const readiness = await manager.getOperationalReadiness();
@@ -159,9 +171,15 @@ async function handleApi(request, response, manager, eventBus = null) {
       config: manager.config || {}
     }));
   }
+  if (request.method === "GET" && url.pathname === "/api/config/profiles") {
+    return sendJson(response, 200, manager.getConfigProfiles());
+  }
   if (request.method === "GET" && url.pathname === "/api/readiness") {
     const readiness = await manager.getOperationalReadiness();
     return sendJson(response, readiness.ok ? 200 : 503, readiness);
+  }
+  if (request.method === "GET" && url.pathname === "/api/mission-control") {
+    return sendJson(response, 200, await manager.getMissionControl());
   }
   if (request.method === "GET" && url.pathname === "/api/status") {
     return sendJson(response, 200, await manager.getStatus());
@@ -207,6 +225,14 @@ async function handleApi(request, response, manager, eventBus = null) {
   }
   if (url.pathname === "/api/mode") {
     return sendJson(response, 200, await manager.setMode(body.mode));
+  }
+  if (url.pathname === "/api/config/profile/preview") {
+    return sendJson(response, 200, await manager.previewConfigProfile(body.profileId));
+  }
+  if (url.pathname === "/api/config/profile/apply") {
+    return sendJson(response, 200, await manager.applyConfigProfile(body.profileId, {
+      liveAcknowledgement: body.liveAcknowledgement || ""
+    }));
   }
   if (url.pathname === "/api/alerts/ack") {
     return sendJson(response, 200, await manager.acknowledgeAlert(body.id, body.acknowledged !== false, body.note || null));

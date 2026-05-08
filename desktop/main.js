@@ -1,13 +1,40 @@
 import { app, BrowserWindow, Menu, Notification, Tray, nativeImage, shell } from "electron";
+import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const DEFAULT_DASHBOARD_URL = "http://127.0.0.1:3011";
-const dashboardUrl = process.env.DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
-const statusUrl = new URL("/api/gui/status", dashboardUrl).toString();
+let dashboardUrl = process.env.DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
+let statusUrl = new URL("/api/gui/status", dashboardUrl).toString();
 
 let mainWindow = null;
 let tray = null;
 let lastCriticalCount = 0;
+let embeddedDashboard = null;
+
+function resolveBotRoot() {
+  const packagedRoot = path.join(process.resourcesPath || "", "bot");
+  if (app.isPackaged && fs.existsSync(path.join(packagedRoot, "src", "cli.js"))) {
+    return packagedRoot;
+  }
+  return path.resolve(app.getAppPath(), "..");
+}
+
+async function startEmbeddedDashboard() {
+  if (process.env.DASHBOARD_URL) return null;
+  const botRoot = resolveBotRoot();
+  const serverPath = path.join(botRoot, "src", "dashboard", "server.js");
+  const { startDashboardServer } = await import(pathToFileURL(serverPath).href);
+  const logger = {
+    info: (...args) => console.log("[dashboard]", ...args),
+    warn: (...args) => console.warn("[dashboard]", ...args),
+    error: (...args) => console.error("[dashboard]", ...args)
+  };
+  const instance = await startDashboardServer({ projectRoot: botRoot, logger });
+  dashboardUrl = instance.url || dashboardUrl;
+  statusUrl = new URL("/api/gui/status", dashboardUrl).toString();
+  return instance;
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -97,7 +124,11 @@ async function pollStatus() {
   lastCriticalCount = criticalCount;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  embeddedDashboard = await startEmbeddedDashboard().catch((error) => {
+    console.error("embedded_dashboard_start_failed", error);
+    return null;
+  });
   tray = new Tray(nativeImage.createEmpty());
   updateTrayMenu({ connected: false, trayStatus: "stopped", mode: "unknown" });
   tray.on("click", showWindow);
@@ -112,3 +143,9 @@ app.on("window-all-closed", (event) => {
 });
 
 app.on("activate", showWindow);
+
+app.on("before-quit", async () => {
+  if (embeddedDashboard?.shutdown) {
+    await embeddedDashboard.shutdown().catch(() => {});
+  }
+});
