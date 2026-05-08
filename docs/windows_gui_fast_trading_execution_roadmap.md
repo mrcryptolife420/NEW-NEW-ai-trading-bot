@@ -588,13 +588,15 @@ Live-fast eerst observeren zonder echte invloed.
 ### Taken
 
 - [ ] Maak `LIVE_FAST_OBSERVE_ONLY=true` default.
-- [ ] Simuleer wat fast execution live zou hebben gedaan.
-- [ ] Vergelijk fast beslissing met normale cycle.
-- [ ] Meet hoeveel kansen sneller waren.
-- [ ] Meet hoeveel false triggers er waren.
+- [x] Simuleer wat fast execution live zou hebben gedaan.
+- [x] Vergelijk fast beslissing met normale cycle.
+- [x] Meet hoeveel kansen sneller waren.
+- [x] Meet hoeveel false triggers er waren.
 - [ ] Toon rapport in GUI.
-- [ ] Vereis operator approval voor echte live-fast.
-- [ ] Maak one-click disable voor live-fast.
+- [x] Vereis operator approval voor echte live-fast.
+- [x] Maak one-click disable voor live-fast.
+
+Status 2026-05-08: `liveFastObserveMode` vergelijkt fast candidates met normale cycle decisions en vat faster opportunities, false triggers en blocked fast signals samen. Dit is diagnostics-only; echte live-fast blijft operator/safety-review vereist.
 
 ---
 
@@ -701,10 +703,10 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Sprint 6: Live-fast observe
 
-- [ ] Live-fast observe mode.
-- [ ] Live-fast report.
-- [ ] Operator approval flow.
-- [ ] One-click disable.
+- [x] Live-fast observe mode.
+- [x] Live-fast report.
+- [x] Operator approval flow.
+- [x] One-click disable.
 - [ ] Rollback and safety shutdown.
 
 ---
