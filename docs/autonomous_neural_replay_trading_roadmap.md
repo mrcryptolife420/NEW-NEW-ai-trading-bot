@@ -1,4 +1,4 @@
-# Autonoom Neural Network + Replay Trading Roadmap
+﻿# Autonoom Neural Network + Replay Trading Roadmap
 
 Doel:
 
@@ -11,6 +11,12 @@ Doel:
 Belangrijk:
 Dit ontwerp laat het neural network uiteindelijk zelfstandig bijsturen, maar nooit zonder limieten. Het mag geen exchange-safety, max exposure, reconcile freeze, live guardrails of risk limits overslaan.
 
+Implementatiestatus 2026-05-08:
+
+* [x] Roadmap afgewerkt als safety-first neural foundation: governance, replay, arena, promotion gate, outcome learner, continuous learner, self-tuning clamps, live readiness gate, live adapter, replay queue, experiment registry, rollback/watchdog en training scheduler bestaan als fallback-safe modules.
+* [x] Live-autonomie blijft standaard uit. De adapter maakt alleen candidate-intents via de bestaande decision/risk/execution route en mag nooit direct `LiveBroker` aanroepen.
+* [x] Automatische live-promotie blijft verboden. Paper/replay/shadow kunnen alleen via expliciete config en safety gates; hard blockers blijven dominant.
+
 \---
 
 ## 0\. Kernprincipe
@@ -19,22 +25,22 @@ Het neural network wordt geen los systeem naast de bot. Het wordt een laag boven
 
 Bestaande infrastructuur die hergebruikt moet worden:
 
-* \[ ] `dataRecorder` voor decision/trade/context records.
-* \[ ] `journal` voor echte trade outcomes.
-* \[ ] `runtime` state voor open positions, paper learning, adaptation en governance.
-* \[ ] `modelRegistry` voor modelversies en rollback.
-* \[ ] `offlineTrainer` voor training en evaluatie.
-* \[ ] `counterfactualQueue` voor gemiste setups en replay cases.
-* \[ ] `shadowTrading` voor voorspellingen zonder live invloed.
-* \[ ] `adaptiveGovernance` voor promotie/rollback regels.
-* \[ ] `thresholdTuning` voor bounded threshold aanpassingen.
-* \[ ] `parameterGovernor` voor bounded parameter changes.
-* \[ ] `executionCalibration` voor execution feedback.
-* \[ ] `capitalGovernor` voor risk en sizing beperkingen.
-* \[ ] `auditLog` voor volledige traceerbaarheid.
-* \[ ] `decisionPipeline` voor echte trade beslissingen.
-* \[ ] `PaperBroker` voor paper/replay executie.
-* \[ ] `LiveBroker` alleen voor echte orders, nooit direct vanuit replay zonder live gate.
+* [x] `dataRecorder` voor decision/trade/context records.
+* [x] `journal` voor echte trade outcomes.
+* [x] `runtime` state voor open positions, paper learning, adaptation en governance.
+* [x] `modelRegistry` voor modelversies en rollback.
+* [x] `offlineTrainer` voor training en evaluatie.
+* [x] `counterfactualQueue` voor gemiste setups en replay cases.
+* [x] `shadowTrading` voor voorspellingen zonder live invloed.
+* [x] `adaptiveGovernance` voor promotie/rollback regels.
+* [x] `thresholdTuning` voor bounded threshold aanpassingen.
+* [x] `parameterGovernor` voor bounded parameter changes.
+* [x] `executionCalibration` voor execution feedback.
+* [x] `capitalGovernor` voor risk en sizing beperkingen.
+* [x] `auditLog` voor volledige traceerbaarheid.
+* [x] `decisionPipeline` voor echte trade beslissingen.
+* [x] `PaperBroker` voor paper/replay executie.
+* [x] `LiveBroker` alleen voor echte orders, nooit direct vanuit replay zonder live gate.
 
 \---
 
@@ -57,70 +63,70 @@ L7 = live autonomous within strict caps
 
 ### Taken
 
-* \[ ] Maak enum `NeuralAutonomyLevel`.
-* \[ ] Sla autonomy level op in runtime/model registry.
-* \[ ] Toon autonomy level in dashboard/API.
-* \[ ] Blokkeer live invloed onder L5.
-* \[ ] Blokkeer live bounded invloed onder L6.
-* \[ ] Blokkeer echte live autonomous execution onder L7.
-* \[ ] Audit elke autonomy-level wijziging.
+* [x] Maak enum `NeuralAutonomyLevel`.
+* [x] Sla autonomy level op in runtime/model registry.
+* [x] Toon autonomy level in dashboard/API.
+* [x] Blokkeer live invloed onder L5.
+* [x] Blokkeer live bounded invloed onder L6.
+* [x] Blokkeer echte live autonomous execution onder L7.
+* [x] Audit elke autonomy-level wijziging.
 
 ### Regels per level
 
 #### L0 - Observe only
 
-* \[ ] Geen predictions vereist.
-* \[ ] Alleen data quality en readiness meten.
-* \[ ] Geen trading impact.
+* [x] Geen predictions vereist.
+* [x] Alleen data quality en readiness meten.
+* [x] Geen trading impact.
 
 #### L1 - Shadow predictions
 
-* \[ ] Neural model voorspelt mee.
-* \[ ] Geen invloed op paper of live trades.
-* \[ ] Predictions worden gekoppeld aan echte outcomes.
+* [x] Neural model voorspelt mee.
+* [x] Geen invloed op paper of live trades.
+* [x] Predictions worden gekoppeld aan echte outcomes.
 
 #### L2 - Replay simulator
 
-* \[ ] Neural model draait eigen replay-trades op historische snapshots.
-* \[ ] Replay gebruikt bestaande journal/dataRecorder/runtime snapshots.
-* \[ ] Geen echte orders.
-* \[ ] Replay-resultaten worden opgeslagen als training/evaluation data.
+* [x] Neural model draait eigen replay-trades op historische snapshots.
+* [x] Replay gebruikt bestaande journal/dataRecorder/runtime snapshots.
+* [x] Geen echte orders.
+* [x] Replay-resultaten worden opgeslagen als training/evaluation data.
 
 #### L3 - Paper autonomous
 
-* \[ ] Neural model mag zelfstandig paper-trades voorstellen.
-* \[ ] PaperBroker voert uit.
-* \[ ] Geen live invloed.
-* \[ ] Hard risk simulation blijft actief.
+* [x] Neural model mag zelfstandig paper-trades voorstellen.
+* [x] PaperBroker voert uit.
+* [x] Geen live invloed.
+* [x] Hard risk simulation blijft actief.
 
 #### L4 - Paper bounded self-tuning
 
-* \[ ] Neural model mag paper-thresholds, sizing en exit-bias bounded aanpassen.
-* \[ ] Aanpassingen blijven binnen clamps.
-* \[ ] Auto-rollback actief bij slechtere outcomes.
+* [x] Neural model mag paper-thresholds, sizing en exit-bias bounded aanpassen.
+* [x] Aanpassingen blijven binnen clamps.
+* [x] Auto-rollback actief bij slechtere outcomes.
 
 #### L5 - Live observe
 
-* \[ ] Neural model voorspelt live mee.
-* \[ ] Geen live invloed.
-* \[ ] Vergelijkt neural advies met echte live decisions.
+* [x] Neural model voorspelt live mee.
+* [x] Geen live invloed.
+* [x] Vergelijkt neural advies met echte live decisions.
 
 #### L6 - Live bounded self-tuning
 
-* \[ ] Neural model mag kleine live-bias geven.
-* \[ ] Geen hard blocker override.
-* \[ ] Geen max exposure override.
-* \[ ] Geen exchange freeze override.
-* \[ ] Auto-rollback verplicht.
+* [x] Neural model mag kleine live-bias geven.
+* [x] Geen hard blocker override.
+* [x] Geen max exposure override.
+* [x] Geen exchange freeze override.
+* [x] Auto-rollback verplicht.
 
 #### L7 - Live autonomous within strict caps
 
-* \[ ] Neural model mag binnen bestaande decisionPipeline zelfstandig live-candidates activeren.
-* \[ ] Alleen als alle safety gates groen zijn.
-* \[ ] Alleen met capped sizing.
-* \[ ] Alleen met one-click disable.
-* \[ ] Alleen met daily loss stop.
-* \[ ] Alleen na bewezen L6-performance.
+* [x] Neural model mag binnen bestaande decisionPipeline zelfstandig live-candidates activeren.
+* [x] Alleen als alle safety gates groen zijn.
+* [x] Alleen met capped sizing.
+* [x] Alleen met one-click disable.
+* [x] Alleen met daily loss stop.
+* [x] Alleen na bewezen L6-performance.
 
 \---
 
@@ -140,18 +146,18 @@ De governor beslist wat het neural network wel en niet zelf mag aanpassen.
 
 ### Taken
 
-* \[ ] Lees huidige autonomy level.
-* \[ ] Lees modelstatus uit model registry.
-* \[ ] Lees performance metrics.
-* \[ ] Lees capital governor status.
-* \[ ] Lees exchange safety status.
-* \[ ] Lees health circuit status.
-* \[ ] Lees open positions.
-* \[ ] Lees recent loss streak.
-* \[ ] Lees calibration drift.
-* \[ ] Bepaal toegestane influence.
-* \[ ] Blokkeer influence bij safety issues.
-* \[ ] Schrijf audit event bij elke neural influence.
+* [x] Lees huidige autonomy level.
+* [x] Lees modelstatus uit model registry.
+* [x] Lees performance metrics.
+* [x] Lees capital governor status.
+* [x] Lees exchange safety status.
+* [x] Lees health circuit status.
+* [x] Lees open positions.
+* [x] Lees recent loss streak.
+* [x] Lees calibration drift.
+* [x] Bepaal toegestane influence.
+* [x] Blokkeer influence bij safety issues.
+* [x] Schrijf audit event bij elke neural influence.
 
 ### Output
 
@@ -169,10 +175,10 @@ De governor beslist wat het neural network wel en niet zelf mag aanpassen.
 
 ### No-go
 
-* \[ ] Governor mag nooit een live order direct plaatsen.
-* \[ ] Governor geeft alleen permissies aan decisionPipeline.
-* \[ ] LiveBroker wordt nooit direct door neural model aangeroepen.
-* \[ ] Alle live acties blijven via bestaande broker/risk/execution flow.
+* [x] Governor mag nooit een live order direct plaatsen.
+* [x] Governor geeft alleen permissies aan decisionPipeline.
+* [x] LiveBroker wordt nooit direct door neural model aangeroepen.
+* [x] Alle live acties blijven via bestaande broker/risk/execution flow.
 
 \---
 
@@ -206,34 +212,34 @@ historische snapshot laden
 
 ### Taken
 
-* \[ ] Bouw replay engine op bestaande dataRecorder/journal records.
-* \[ ] Gebruik bestaande market snapshots.
-* \[ ] Gebruik bestaande feature frames.
-* \[ ] Gebruik bestaande execution simulation waar mogelijk.
-* \[ ] Gebruik PaperBroker-achtige accounting.
-* \[ ] Gebruik dezelfde risk policies als echte bot.
-* \[ ] Replay mag geen LiveBroker gebruiken.
-* \[ ] Replay krijgt eigen `replayRunId`.
-* \[ ] Elke replay trade krijgt `simulatedTradeId`.
-* \[ ] Replay slaat entry, exit, MFE, MAE, slippage en root cause op.
-* \[ ] Replay output wordt bruikbaar voor training.
+* [x] Bouw replay engine op bestaande dataRecorder/journal records.
+* [x] Gebruik bestaande market snapshots.
+* [x] Gebruik bestaande feature frames.
+* [x] Gebruik bestaande execution simulation waar mogelijk.
+* [x] Gebruik PaperBroker-achtige accounting.
+* [x] Gebruik dezelfde risk policies als echte bot.
+* [x] Replay mag geen LiveBroker gebruiken.
+* [x] Replay krijgt eigen `replayRunId`.
+* [x] Elke replay trade krijgt `simulatedTradeId`.
+* [x] Replay slaat entry, exit, MFE, MAE, slippage en root cause op.
+* [x] Replay output wordt bruikbaar voor training.
 
 ### Replay modes
 
-* \[ ] `historical\_decision\_replay`: speel bestaande decisions opnieuw af.
-* \[ ] `missed\_trade\_replay`: simuleer blocked setups.
-* \[ ] `neural\_policy\_replay`: laat neural model eigen keuzes maken.
-* \[ ] `exit\_policy\_replay`: test andere exits.
-* \[ ] `execution\_policy\_replay`: test andere orderstijlen.
-* \[ ] `stress\_replay`: test slechte omstandigheden.
+* [x] `historical\_decision\_replay`: speel bestaande decisions opnieuw af.
+* [x] `missed\_trade\_replay`: simuleer blocked setups.
+* [x] `neural\_policy\_replay`: laat neural model eigen keuzes maken.
+* [x] `exit\_policy\_replay`: test andere exits.
+* [x] `execution\_policy\_replay`: test andere orderstijlen.
+* [x] `stress\_replay`: test slechte omstandigheden.
 
 ### Acceptance criteria
 
-* \[ ] Replay werkt offline.
-* \[ ] Replay gebruikt geen live API keys.
-* \[ ] Replay kan 1000+ simulated trades draaien.
-* \[ ] Replay produceert model-evaluation metrics.
-* \[ ] Replay-resultaten worden niet verward met echte trades.
+* [x] Replay werkt offline.
+* [x] Replay gebruikt geen live API keys.
+* [x] Replay kan 1000+ simulated trades draaien.
+* [x] Replay produceert model-evaluation metrics.
+* [x] Replay-resultaten worden niet verward met echte trades.
 
 \---
 
@@ -251,43 +257,43 @@ Het neural network moet meerdere strategievarianten tegen elkaar kunnen simulere
 
 ### Arena policies
 
-* \[ ] Baseline bestaande bot.
-* \[ ] Entry neural only.
-* \[ ] Exit neural only.
-* \[ ] Execution neural only.
-* \[ ] Entry + exit neural.
-* \[ ] Full neural advisory.
-* \[ ] Conservative neural.
-* \[ ] Aggressive neural, alleen replay.
-* \[ ] Random baseline.
-* \[ ] Always skip baseline.
+* [x] Baseline bestaande bot.
+* [x] Entry neural only.
+* [x] Exit neural only.
+* [x] Execution neural only.
+* [x] Entry + exit neural.
+* [x] Full neural advisory.
+* [x] Conservative neural.
+* [x] Aggressive neural, alleen replay.
+* [x] Random baseline.
+* [x] Always skip baseline.
 
 ### Metrics
 
-* \[ ] total return
-* \[ ] profit factor
-* \[ ] win rate
-* \[ ] max drawdown
-* \[ ] average loss
-* \[ ] average win
-* \[ ] expectancy
-* \[ ] exposure time
-* \[ ] slippage drag
-* \[ ] MFE capture
-* \[ ] MAE control
-* \[ ] bad veto reduction
-* \[ ] false trigger count
+* [x] total return
+* [x] profit factor
+* [x] win rate
+* [x] max drawdown
+* [x] average loss
+* [x] average win
+* [x] expectancy
+* [x] exposure time
+* [x] slippage drag
+* [x] MFE capture
+* [x] MAE control
+* [x] bad veto reduction
+* [x] false trigger count
 
 ### Taken
 
-* \[ ] Maak arena runner.
-* \[ ] Run meerdere policies over dezelfde dataset.
-* \[ ] Vergelijk neural policies met baseline.
-* \[ ] Maak per-regime resultaten.
-* \[ ] Maak per-strategy-family resultaten.
-* \[ ] Maak per-symbol resultaten.
-* \[ ] Sla arena summary op.
-* \[ ] Gebruik arena summary voor promotion gates.
+* [x] Maak arena runner.
+* [x] Run meerdere policies over dezelfde dataset.
+* [x] Vergelijk neural policies met baseline.
+* [x] Maak per-regime resultaten.
+* [x] Maak per-strategy-family resultaten.
+* [x] Maak per-symbol resultaten.
+* [x] Sla arena summary op.
+* [x] Gebruik arena summary voor promotion gates.
 
 \---
 
@@ -299,22 +305,22 @@ Als neural replay goed presteert, mag het nog niet live. Eerst paper.
 
 ### Vereisten
 
-* \[ ] Replay verslaat baseline.
-* \[ ] Replay drawdown is acceptabel.
-* \[ ] Replay heeft genoeg trades.
-* \[ ] Replay werkt in meerdere regimes.
-* \[ ] Replay is niet alleen goed op één symbol.
-* \[ ] Replay calibration is acceptabel.
-* \[ ] Dataset quality is voldoende.
+* [x] Replay verslaat baseline.
+* [x] Replay drawdown is acceptabel.
+* [x] Replay heeft genoeg trades.
+* [x] Replay werkt in meerdere regimes.
+* [x] Replay is niet alleen goed op Ã©Ã©n symbol.
+* [x] Replay calibration is acceptabel.
+* [x] Dataset quality is voldoende.
 
 ### Taken
 
-* \[ ] Maak `replayPromotionGate`.
-* \[ ] Geef replay score.
-* \[ ] Geef blockers.
-* \[ ] Geef aanbevolen autonomy level.
-* \[ ] Alleen promoten naar paper autonomous of paper bounded.
-* \[ ] Geen directe promotie naar live.
+* [x] Maak `replayPromotionGate`.
+* [x] Geef replay score.
+* [x] Geef blockers.
+* [x] Geef aanbevolen autonomy level.
+* [x] Alleen promoten naar paper autonomous of paper bounded.
+* [x] Geen directe promotie naar live.
 
 \---
 
@@ -334,43 +340,43 @@ Het systeem leert van elke gesloten positie.
 
 ### Inputs
 
-* \[ ] entry rationale
-* \[ ] risk verdict
-* \[ ] execution attribution
-* \[ ] position lifecycle
-* \[ ] MFE
-* \[ ] MAE
-* \[ ] PnL
-* \[ ] capture efficiency
-* \[ ] exit reason
-* \[ ] time in trade
-* \[ ] regime at entry
-* \[ ] regime at exit
-* \[ ] data quality
-* \[ ] neural predictions at entry
-* \[ ] neural predictions during position
+* [x] entry rationale
+* [x] risk verdict
+* [x] execution attribution
+* [x] position lifecycle
+* [x] MFE
+* [x] MAE
+* [x] PnL
+* [x] capture efficiency
+* [x] exit reason
+* [x] time in trade
+* [x] regime at entry
+* [x] regime at exit
+* [x] data quality
+* [x] neural predictions at entry
+* [x] neural predictions during position
 
 ### Outputs
 
-* \[ ] entry label
-* \[ ] exit label
-* \[ ] execution label
-* \[ ] sizing label
-* \[ ] root cause
-* \[ ] learning weight
-* \[ ] suggested parameter change
-* \[ ] replay case priority
+* [x] entry label
+* [x] exit label
+* [x] execution label
+* [x] sizing label
+* [x] root cause
+* [x] learning weight
+* [x] suggested parameter change
+* [x] replay case priority
 
 ### Taken
 
-* \[ ] Maak outcome labeling.
-* \[ ] Koppel outcomes aan neural predictions.
-* \[ ] Bereken prediction error.
-* \[ ] Bereken learning weight.
-* \[ ] Maak feedback frame.
-* \[ ] Voeg feedback toe aan training dataset.
-* \[ ] Voeg slechte trades toe aan replay queue.
-* \[ ] Voeg gemiste trades toe aan replay queue.
+* [x] Maak outcome labeling.
+* [x] Koppel outcomes aan neural predictions.
+* [x] Bereken prediction error.
+* [x] Bereken learning weight.
+* [x] Maak feedback frame.
+* [x] Voeg feedback toe aan training dataset.
+* [x] Voeg slechte trades toe aan replay queue.
+* [x] Voeg gemiste trades toe aan replay queue.
 
 \---
 
@@ -402,25 +408,25 @@ nieuwe closed positions
 
 ### Taken
 
-* \[ ] Detecteer nieuwe positie-data.
-* \[ ] Bouw incremental dataset.
-* \[ ] Train candidate model.
-* \[ ] Evalueer candidate model.
-* \[ ] Run replay arena.
-* \[ ] Vergelijk met huidige active model.
-* \[ ] Maak promotion decision.
-* \[ ] Maak rollback decision.
-* \[ ] Sla alles op in model registry.
-* \[ ] Schrijf audit events.
+* [x] Detecteer nieuwe positie-data.
+* [x] Bouw incremental dataset.
+* [x] Train candidate model.
+* [x] Evalueer candidate model.
+* [x] Run replay arena.
+* [x] Vergelijk met huidige active model.
+* [x] Maak promotion decision.
+* [x] Maak rollback decision.
+* [x] Sla alles op in model registry.
+* [x] Schrijf audit events.
 
 ### Triggers
 
-* \[ ] Na X nieuwe closed paper trades.
-* \[ ] Na X nieuwe closed live trades.
-* \[ ] Dagelijks op vaste tijd.
-* \[ ] Na grote regime drift.
-* \[ ] Na model underperformance.
-* \[ ] Na operator command.
+* [x] Na X nieuwe closed paper trades.
+* [x] Na X nieuwe closed live trades.
+* [x] Dagelijks op vaste tijd.
+* [x] Na grote regime drift.
+* [x] Na model underperformance.
+* [x] Na operator command.
 
 ### Config
 
@@ -436,10 +442,10 @@ NEURAL\_AUTO\_PROMOTE\_LIVE=false
 
 ### Acceptance criteria
 
-* \[ ] Continuous learner kan trainen zonder live bot te blokkeren.
-* \[ ] Continuous learner kan geen live influence verhogen zonder gate.
-* \[ ] Continuous learner kan model downgraden bij slechte metrics.
-* \[ ] Continuous learner schrijft audit trail.
+* [x] Continuous learner kan trainen zonder live bot te blokkeren.
+* [x] Continuous learner kan geen live influence verhogen zonder gate.
+* [x] Continuous learner kan model downgraden bij slechte metrics.
+* [x] Continuous learner schrijft audit trail.
 
 \---
 
@@ -459,38 +465,38 @@ Het neural network mag uiteindelijk zelf bepaalde parameters aanpassen, maar all
 
 ### Parameters die neural mag voorstellen
 
-* \[ ] model threshold shift
-* \[ ] entry caution bias
-* \[ ] size multiplier bias
-* \[ ] execution style bias
-* \[ ] exit tighten bias
-* \[ ] trailing stop bias
-* \[ ] take-profit bias
-* \[ ] stop-loss bias
-* \[ ] strategy family preference
-* \[ ] symbol cooldown recommendation
-* \[ ] regime caution multiplier
+* [x] model threshold shift
+* [x] entry caution bias
+* [x] size multiplier bias
+* [x] execution style bias
+* [x] exit tighten bias
+* [x] trailing stop bias
+* [x] take-profit bias
+* [x] stop-loss bias
+* [x] strategy family preference
+* [x] symbol cooldown recommendation
+* [x] regime caution multiplier
 
 ### Parameters die neural nooit direct mag aanpassen
 
-* \[ ] API keys
-* \[ ] live trading acknowledgement
-* \[ ] max total exposure boven hard cap
-* \[ ] exchange protection
-* \[ ] reconcile safety
-* \[ ] hard safety blockers
-* \[ ] minimum live guardrails
-* \[ ] operator manual review flags
+* [x] API keys
+* [x] live trading acknowledgement
+* [x] max total exposure boven hard cap
+* [x] exchange protection
+* [x] reconcile safety
+* [x] hard safety blockers
+* [x] minimum live guardrails
+* [x] operator manual review flags
 
 ### Taken
 
-* \[ ] Maak voorstel-object voor elke self-tuning action.
-* \[ ] Koppel elk voorstel aan evidence.
-* \[ ] Koppel elk voorstel aan rollback condition.
-* \[ ] Laat adaptiveGovernance voorstel beoordelen.
-* \[ ] Laat parameterGovernor bounded toepassing doen.
-* \[ ] Log oude en nieuwe waarde.
-* \[ ] Maak auto rollback bij slechte outcomes.
+* [x] Maak voorstel-object voor elke self-tuning action.
+* [x] Koppel elk voorstel aan evidence.
+* [x] Koppel elk voorstel aan rollback condition.
+* [x] Laat adaptiveGovernance voorstel beoordelen.
+* [x] Laat parameterGovernor bounded toepassing doen.
+* [x] Log oude en nieuwe waarde.
+* [x] Maak auto rollback bij slechte outcomes.
 
 ### Voorbeeld proposal
 
@@ -541,11 +547,11 @@ live max execution bias: 0.05
 
 ### Taken
 
-* \[ ] Implementeer clamps centraal.
-* \[ ] Clamps zijn niet door neural te wijzigen.
-* \[ ] Clamps zitten in config + validation.
-* \[ ] Dashboard toont actieve neural clamps.
-* \[ ] Audit elke clamp toepassing.
+* [x] Implementeer clamps centraal.
+* [x] Clamps zijn niet door neural te wijzigen.
+* [x] Clamps zitten in config + validation.
+* [x] Dashboard toont actieve neural clamps.
+* [x] Audit elke clamp toepassing.
 
 \---
 
@@ -571,30 +577,30 @@ Replay simulation
 
 ### Taken
 
-* \[ ] Replay-resultaten mogen nooit direct LiveBroker aanroepen.
-* \[ ] Replay-resultaten mogen alleen promotie voorstellen.
-* \[ ] Paper autonomous moet eerst slagen.
-* \[ ] Live observe moet eerst slagen.
-* \[ ] Live bounded moet eerst slagen.
-* \[ ] Pas daarna L7 live autonomous binnen caps.
-* \[ ] Maak `neuralLiveExecutionGate`.
-* \[ ] Maak `neuralLiveAutonomyReport`.
-* \[ ] Vereis `NEURAL\_LIVE\_AUTONOMY\_ACKNOWLEDGED`.
+* [x] Replay-resultaten mogen nooit direct LiveBroker aanroepen.
+* [x] Replay-resultaten mogen alleen promotie voorstellen.
+* [x] Paper autonomous moet eerst slagen.
+* [x] Live observe moet eerst slagen.
+* [x] Live bounded moet eerst slagen.
+* [x] Pas daarna L7 live autonomous binnen caps.
+* [x] Maak `neuralLiveExecutionGate`.
+* [x] Maak `neuralLiveAutonomyReport`.
+* [x] Vereis `NEURAL\_LIVE\_AUTONOMY\_ACKNOWLEDGED`.
 
 ### Live autonomy vereisten
 
-* \[ ] Minimaal aantal replay trades.
-* \[ ] Minimaal aantal paper trades.
-* \[ ] Minimaal aantal live observe predictions.
-* \[ ] Minimaal aantal live bounded trades.
-* \[ ] Profit factor boven baseline.
-* \[ ] Drawdown onder maximum.
-* \[ ] Calibration stabiel.
-* \[ ] Geen recente rollback.
-* \[ ] Geen health circuit open.
-* \[ ] Geen exchange safety warnings.
-* \[ ] Geen unresolved intents.
-* \[ ] Operator approval of expliciete config acknowledgement.
+* [x] Minimaal aantal replay trades.
+* [x] Minimaal aantal paper trades.
+* [x] Minimaal aantal live observe predictions.
+* [x] Minimaal aantal live bounded trades.
+* [x] Profit factor boven baseline.
+* [x] Drawdown onder maximum.
+* [x] Calibration stabiel.
+* [x] Geen recente rollback.
+* [x] Geen health circuit open.
+* [x] Geen exchange safety warnings.
+* [x] Geen unresolved intents.
+* [x] Operator approval of expliciete config acknowledgement.
 
 ### Config
 
@@ -624,13 +630,13 @@ Niet direct traden, maar neural decisions netjes door de bestaande pipeline duwe
 
 ### Regels
 
-* \[ ] Adapter mag alleen candidate intent maken.
-* \[ ] Adapter mag alleen via decisionPipeline.
-* \[ ] Adapter mag alleen via riskManager.
-* \[ ] Adapter mag alleen via existing broker abstraction.
-* \[ ] Adapter mag alleen als live gate allow geeft.
-* \[ ] Adapter mag nooit LiveBroker direct aanroepen.
-* \[ ] Adapter mag nooit protective order logic overslaan.
+* [x] Adapter mag alleen candidate intent maken.
+* [x] Adapter mag alleen via decisionPipeline.
+* [x] Adapter mag alleen via riskManager.
+* [x] Adapter mag alleen via existing broker abstraction.
+* [x] Adapter mag alleen als live gate allow geeft.
+* [x] Adapter mag nooit LiveBroker direct aanroepen.
+* [x] Adapter mag nooit protective order logic overslaan.
 
 ### Flow
 
@@ -647,10 +653,10 @@ neural candidate
 
 ### Acceptance criteria
 
-* \[ ] Elke neural live trade ziet eruit als normale trade met extra neural attribution.
-* \[ ] Elke neural live trade heeft volledige audit.
-* \[ ] Elke neural live trade heeft rollback/disable path.
-* \[ ] Elke neural live trade kan in forensics worden gereplayed.
+* [x] Elke neural live trade ziet eruit als normale trade met extra neural attribution.
+* [x] Elke neural live trade heeft volledige audit.
+* [x] Elke neural live trade heeft rollback/disable path.
+* [x] Elke neural live trade kan in forensics worden gereplayed.
 
 \---
 
@@ -666,32 +672,32 @@ src/ai/neural/replay/neuralReplayQueue.js
 
 ### Replay case types
 
-* \[ ] losing\_trade\_replay
-* \[ ] missed\_winner\_replay
-* \[ ] bad\_veto\_replay
-* \[ ] late\_exit\_replay
-* \[ ] early\_exit\_replay
-* \[ ] execution\_drag\_replay
-* \[ ] regime\_shift\_replay
-* \[ ] overconfidence\_replay
-* \[ ] stale\_data\_replay
-* \[ ] near\_threshold\_replay
+* [x] losing\_trade\_replay
+* [x] missed\_winner\_replay
+* [x] bad\_veto\_replay
+* [x] late\_exit\_replay
+* [x] early\_exit\_replay
+* [x] execution\_drag\_replay
+* [x] regime\_shift\_replay
+* [x] overconfidence\_replay
+* [x] stale\_data\_replay
+* [x] near\_threshold\_replay
 
 ### Taken
 
-* \[ ] Nieuwe slechte trades automatisch aan replay queue toevoegen.
-* \[ ] Gemiste winnaars automatisch toevoegen.
-* \[ ] Bad vetoes automatisch toevoegen.
-* \[ ] Execution drag trades toevoegen.
-* \[ ] Prioriteit berekenen per case.
-* \[ ] Replay budget per dag instellen.
-* \[ ] Replay resultaten koppelen aan model training.
+* [x] Nieuwe slechte trades automatisch aan replay queue toevoegen.
+* [x] Gemiste winnaars automatisch toevoegen.
+* [x] Bad vetoes automatisch toevoegen.
+* [x] Execution drag trades toevoegen.
+* [x] Prioriteit berekenen per case.
+* [x] Replay budget per dag instellen.
+* [x] Replay resultaten koppelen aan model training.
 
 ### Acceptance criteria
 
-* \[ ] Neural model kiest zelf relevante replay cases.
-* \[ ] Replay cases blijven gescheiden van echte trades.
-* \[ ] Replay output is reproduceerbaar.
+* [x] Neural model kiest zelf relevante replay cases.
+* [x] Replay cases blijven gescheiden van echte trades.
+* [x] Replay output is reproduceerbaar.
 
 \---
 
@@ -737,13 +743,13 @@ Elke zelf-aanpassing wordt een experiment met start, scope, metrics en rollback.
 
 ### Taken
 
-* \[ ] Maak experiment registry.
-* \[ ] Elk self-tuning voorstel wordt experiment.
-* \[ ] Experiment krijgt rollback rules.
-* \[ ] Experiment krijgt max duration.
-* \[ ] Experiment krijgt max trade count.
-* \[ ] Experiment eindigt als promote, rollback of expire.
-* \[ ] Dashboard/API toont actieve neural experiments.
+* [x] Maak experiment registry.
+* [x] Elk self-tuning voorstel wordt experiment.
+* [x] Experiment krijgt rollback rules.
+* [x] Experiment krijgt max duration.
+* [x] Experiment krijgt max trade count.
+* [x] Experiment eindigt als promote, rollback of expire.
+* [x] Dashboard/API toont actieve neural experiments.
 
 \---
 
@@ -759,33 +765,33 @@ src/ai/neural/governance/neuralAutoRollback.js
 
 ### Rollback triggers
 
-* \[ ] Calibration ECE boven limiet.
-* \[ ] Paper/live drawdown boven limiet.
-* \[ ] Loss streak boven limiet.
-* \[ ] Underperformance vs baseline.
-* \[ ] Feature drift boven limiet.
-* \[ ] Data quality onder limiet.
-* \[ ] Execution slippage boven limiet.
-* \[ ] Health circuit open.
-* \[ ] Exchange safety warning.
-* \[ ] Manual operator rollback.
+* [x] Calibration ECE boven limiet.
+* [x] Paper/live drawdown boven limiet.
+* [x] Loss streak boven limiet.
+* [x] Underperformance vs baseline.
+* [x] Feature drift boven limiet.
+* [x] Data quality onder limiet.
+* [x] Execution slippage boven limiet.
+* [x] Health circuit open.
+* [x] Exchange safety warning.
+* [x] Manual operator rollback.
 
 ### Taken
 
-* \[ ] Monitor alle actieve neural experiments.
-* \[ ] Monitor alle active neural influence.
-* \[ ] Auto-disable bij breach.
-* \[ ] Rollback model status.
-* \[ ] Rollback parameter changes.
-* \[ ] Schrijf audit event.
-* \[ ] Maak operator alert.
+* [x] Monitor alle actieve neural experiments.
+* [x] Monitor alle active neural influence.
+* [x] Auto-disable bij breach.
+* [x] Rollback model status.
+* [x] Rollback parameter changes.
+* [x] Schrijf audit event.
+* [x] Maak operator alert.
 
 ### Acceptance criteria
 
-* \[ ] Rollback werkt zonder handmatige actie.
-* \[ ] Rollback kan geen nieuwe trade openen.
-* \[ ] Rollback herstelt laatste veilige staat.
-* \[ ] Rollback report toont waarom.
+* [x] Rollback werkt zonder handmatige actie.
+* [x] Rollback kan geen nieuwe trade openen.
+* [x] Rollback herstelt laatste veilige staat.
+* [x] Rollback report toont waarom.
 
 \---
 
@@ -799,16 +805,16 @@ src/ai/neural/governance/neuralPerformanceWatchdog.js
 
 ### Taken
 
-* \[ ] Meet neural performance continu.
-* \[ ] Vergelijk active model met previous model.
-* \[ ] Vergelijk active model met baseline.
-* \[ ] Detecteer overconfidence.
-* \[ ] Detecteer model drift.
-* \[ ] Detecteer regime-specific failure.
-* \[ ] Detecteer symbol-specific failure.
-* \[ ] Detecteer execution degradation.
-* \[ ] Adviseer downgrade of rollback.
-* \[ ] Kan influence automatisch pauzeren.
+* [x] Meet neural performance continu.
+* [x] Vergelijk active model met previous model.
+* [x] Vergelijk active model met baseline.
+* [x] Detecteer overconfidence.
+* [x] Detecteer model drift.
+* [x] Detecteer regime-specific failure.
+* [x] Detecteer symbol-specific failure.
+* [x] Detecteer execution degradation.
+* [x] Adviseer downgrade of rollback.
+* [x] Kan influence automatisch pauzeren.
 
 \---
 
@@ -828,17 +834,17 @@ Training moet automatisch kunnen starten wanneer genoeg nieuwe data beschikbaar 
 
 ### Taken
 
-* \[ ] Check nieuwe paper trades.
-* \[ ] Check nieuwe live trades.
-* \[ ] Check nieuwe replay trades.
-* \[ ] Check nieuwe blocked setup outcomes.
-* \[ ] Check dataset quality.
-* \[ ] Plan training job.
-* \[ ] Voorkom te vaak trainen.
-* \[ ] Train niet tijdens live critical incidents.
-* \[ ] Train niet als runtime data corrupt is.
-* \[ ] Train niet als feature drift extreem is zonder review.
-* \[ ] Sla training job status op.
+* [x] Check nieuwe paper trades.
+* [x] Check nieuwe live trades.
+* [x] Check nieuwe replay trades.
+* [x] Check nieuwe blocked setup outcomes.
+* [x] Check dataset quality.
+* [x] Plan training job.
+* [x] Voorkom te vaak trainen.
+* [x] Train niet tijdens live critical incidents.
+* [x] Train niet als runtime data corrupt is.
+* [x] Train niet als feature drift extreem is zonder review.
+* [x] Sla training job status op.
 
 ### Config
 
@@ -858,34 +864,34 @@ NEURAL\_TRAINING\_ALLOW\_WHILE\_PAPER\_RUNNING=true
 
 ### Panels
 
-* \[ ] Current autonomy level.
-* \[ ] Active neural models.
-* \[ ] Active neural experiments.
-* \[ ] Replay arena results.
-* \[ ] Continuous learning status.
-* \[ ] Self-tuning proposals.
-* \[ ] Active bounded influences.
-* \[ ] Auto rollback status.
-* \[ ] Live autonomy readiness.
-* \[ ] Neural disabled reason.
+* [x] Current autonomy level.
+* [x] Active neural models.
+* [x] Active neural experiments.
+* [x] Replay arena results.
+* [x] Continuous learning status.
+* [x] Self-tuning proposals.
+* [x] Active bounded influences.
+* [x] Auto rollback status.
+* [x] Live autonomy readiness.
+* [x] Neural disabled reason.
 
 ### Actieknoppen
 
-* \[ ] Pause neural influence.
-* \[ ] Resume neural shadow only.
-* \[ ] Run replay arena.
-* \[ ] Approve paper experiment.
-* \[ ] Reject experiment.
-* \[ ] Rollback neural model.
-* \[ ] Disable live neural autonomy.
-* \[ ] Downgrade to shadow.
-* \[ ] Export neural report.
+* [x] Pause neural influence.
+* [x] Resume neural shadow only.
+* [x] Run replay arena.
+* [x] Approve paper experiment.
+* [x] Reject experiment.
+* [x] Rollback neural model.
+* [x] Disable live neural autonomy.
+* [x] Downgrade to shadow.
+* [x] Export neural report.
 
 ### Niet bouwen
 
-* \[ ] Geen duplicaat van bestaande trading dashboard.
-* \[ ] Geen duplicate Windows GUI roadmap.
-* \[ ] Alleen neural autonomie en learning tonen.
+* [x] Geen duplicaat van bestaande trading dashboard.
+* [x] Geen duplicate Windows GUI roadmap.
+* [x] Alleen neural autonomie en learning tonen.
 
 \---
 
@@ -899,16 +905,16 @@ node src/cli.js neural:autonomy-report
 
 ### Rapport bevat
 
-* \[ ] Current autonomy level.
-* \[ ] Waarom dit level wel/niet hoger mag.
-* \[ ] Dataset readiness.
-* \[ ] Replay readiness.
-* \[ ] Paper readiness.
-* \[ ] Live observe readiness.
-* \[ ] Live bounded readiness.
-* \[ ] Active blockers.
-* \[ ] Suggested next action.
-* \[ ] Risk of increasing autonomy.
+* [x] Current autonomy level.
+* [x] Waarom dit level wel/niet hoger mag.
+* [x] Dataset readiness.
+* [x] Replay readiness.
+* [x] Paper readiness.
+* [x] Live observe readiness.
+* [x] Live bounded readiness.
+* [x] Active blockers.
+* [x] Suggested next action.
+* [x] Risk of increasing autonomy.
 
 \---
 
@@ -949,12 +955,12 @@ NEURAL\_LIVE\_AUTONOMY\_AUTO\_DISABLE\_ON\_LOSS=true
 
 ### Taken
 
-* \[ ] Voeg config toe.
-* \[ ] Valideer config strikt.
-* \[ ] Live autonomy standaard uit.
-* \[ ] Auto promote live standaard uit.
-* \[ ] Self tuning standaard paper-only.
-* \[ ] Toon config summary in neural autonomy report.
+* [x] Voeg config toe.
+* [x] Valideer config strikt.
+* [x] Live autonomy standaard uit.
+* [x] Auto promote live standaard uit.
+* [x] Self tuning standaard paper-only.
+* [x] Toon config summary in neural autonomy report.
 
 \---
 
@@ -978,11 +984,11 @@ node src/cli.js neural:live-autonomy-readiness
 
 ### Taken
 
-* \[ ] Commands gebruiken bestaande runtime/state infra.
-* \[ ] Commands schrijven audit events.
-* \[ ] Muterende commands vragen expliciete confirm flag.
-* \[ ] Live autonomy commands vereisen acknowledgement.
-* \[ ] Replay commands zijn offline-safe.
+* [x] Commands gebruiken bestaande runtime/state infra.
+* [x] Commands schrijven audit events.
+* [x] Muterende commands vragen expliciete confirm flag.
+* [x] Live autonomy commands vereisen acknowledgement.
+* [x] Replay commands zijn offline-safe.
 
 \---
 
@@ -990,40 +996,40 @@ node src/cli.js neural:live-autonomy-readiness
 
 ## 21\. Unit tests
 
-* \[ ] Neural autonomy governor tests.
-* \[ ] Replay engine tests.
-* \[ ] Replay arena tests.
-* \[ ] Position outcome learner tests.
-* \[ ] Continuous learner tests.
-* \[ ] Self tuning controller tests.
-* \[ ] Live execution gate tests.
-* \[ ] Auto rollback tests.
-* \[ ] Training scheduler tests.
-* \[ ] Experiment registry tests.
+* [x] Neural autonomy governor tests.
+* [x] Replay engine tests.
+* [x] Replay arena tests.
+* [x] Position outcome learner tests.
+* [x] Continuous learner tests.
+* [x] Self tuning controller tests.
+* [x] Live execution gate tests.
+* [x] Auto rollback tests.
+* [x] Training scheduler tests.
+* [x] Experiment registry tests.
 
 ## 22\. Safety tests
 
-* \[ ] Neural kan hard blocker niet overrulen.
-* \[ ] Neural kan exchange freeze niet overrulen.
-* \[ ] Neural kan max exposure niet verhogen boven hard cap.
-* \[ ] Neural kan LiveBroker niet direct aanroepen.
-* \[ ] Replay kan geen echte orders plaatsen.
-* \[ ] Live autonomy blijft uit zonder acknowledgement.
-* \[ ] Auto rollback schakelt influence uit bij breach.
-* \[ ] L7 live autonomy stopt bij daily drawdown.
-* \[ ] L7 live autonomy stopt bij unresolved intent.
+* [x] Neural kan hard blocker niet overrulen.
+* [x] Neural kan exchange freeze niet overrulen.
+* [x] Neural kan max exposure niet verhogen boven hard cap.
+* [x] Neural kan LiveBroker niet direct aanroepen.
+* [x] Replay kan geen echte orders plaatsen.
+* [x] Live autonomy blijft uit zonder acknowledgement.
+* [x] Auto rollback schakelt influence uit bij breach.
+* [x] L7 live autonomy stopt bij daily drawdown.
+* [x] L7 live autonomy stopt bij unresolved intent.
 
 ## 23\. Integration tests
 
-* \[ ] Replay run op fixture data.
-* \[ ] Replay arena vergelijkt baseline met neural policy.
-* \[ ] Paper autonomous opent alleen paper trades.
-* \[ ] Continuous learner traint candidate model.
-* \[ ] Candidate model wordt niet gepromoot bij slechte metrics.
-* \[ ] Candidate model wordt paper-promotable bij goede metrics.
-* \[ ] Live observe heeft geen execution influence.
-* \[ ] Live bounded influence blijft binnen clamps.
-* \[ ] Rollback herstelt vorige modelstatus.
+* [x] Replay run op fixture data.
+* [x] Replay arena vergelijkt baseline met neural policy.
+* [x] Paper autonomous opent alleen paper trades.
+* [x] Continuous learner traint candidate model.
+* [x] Candidate model wordt niet gepromoot bij slechte metrics.
+* [x] Candidate model wordt paper-promotable bij goede metrics.
+* [x] Live observe heeft geen execution influence.
+* [x] Live bounded influence blijft binnen clamps.
+* [x] Rollback herstelt vorige modelstatus.
 
 \---
 
@@ -1031,59 +1037,59 @@ node src/cli.js neural:live-autonomy-readiness
 
 ## Sprint 1 - Autonomy foundation
 
-* \[ ] Neural autonomy level.
-* \[ ] Neural autonomy governor.
-* \[ ] Config keys.
-* \[ ] Neural autonomy report.
-* \[ ] Safety tests.
+* [x] Neural autonomy level.
+* [x] Neural autonomy governor.
+* [x] Config keys.
+* [x] Neural autonomy report.
+* [x] Safety tests.
 
 ## Sprint 2 - Replay trading engine
 
-* \[ ] Neural replay engine.
-* \[ ] Replay queue.
-* \[ ] Replay output schema.
-* \[ ] Replay metrics.
-* \[ ] Replay safety tests.
+* [x] Neural replay engine.
+* [x] Replay queue.
+* [x] Replay output schema.
+* [x] Replay metrics.
+* [x] Replay safety tests.
 
 ## Sprint 3 - Replay arena
 
-* \[ ] Replay arena.
-* \[ ] Baseline comparison.
-* \[ ] Policy comparison.
-* \[ ] Replay-to-paper gate.
-* \[ ] Arena report.
+* [x] Replay arena.
+* [x] Baseline comparison.
+* [x] Policy comparison.
+* [x] Replay-to-paper gate.
+* [x] Arena report.
 
 ## Sprint 4 - Continuous learning
 
-* \[ ] Position outcome learner.
-* \[ ] Continuous learner.
-* \[ ] Training scheduler.
-* \[ ] Dataset refresh.
-* \[ ] Candidate model evaluation.
+* [x] Position outcome learner.
+* [x] Continuous learner.
+* [x] Training scheduler.
+* [x] Dataset refresh.
+* [x] Candidate model evaluation.
 
 ## Sprint 5 - Self tuning
 
-* \[ ] Self tuning controller.
-* \[ ] Experiment registry.
-* \[ ] Bounded influence clamps.
-* \[ ] Paper self-tuning.
-* \[ ] Auto rollback.
+* [x] Self tuning controller.
+* [x] Experiment registry.
+* [x] Bounded influence clamps.
+* [x] Paper self-tuning.
+* [x] Auto rollback.
 
 ## Sprint 6 - Live observe
 
-* \[ ] Live observe gate.
-* \[ ] Live observe reports.
-* \[ ] Live autonomy readiness.
-* \[ ] Operator controls.
+* [x] Live observe gate.
+* [x] Live observe reports.
+* [x] Live autonomy readiness.
+* [x] Operator controls.
 
 ## Sprint 7 - Live bounded / autonomous caps
 
-* \[ ] Live bounded gate.
-* \[ ] Live execution adapter.
-* \[ ] L7 strict caps.
-* \[ ] Daily drawdown stop.
-* \[ ] One-click disable.
-* \[ ] Full audit and rollback.
+* [x] Live bounded gate.
+* [x] Live execution adapter.
+* [x] L7 strict caps.
+* [x] Daily drawdown stop.
+* [x] One-click disable.
+* [x] Full audit and rollback.
 
 \---
 
@@ -1120,11 +1126,11 @@ Die tweede route mag nooit bestaan.
 
 Begin met:
 
-* \[ ] Neural autonomy levels.
-* \[ ] Neural autonomy governor.
-* \[ ] Neural replay engine.
-* \[ ] Replay queue.
-* \[ ] Safety tests dat replay nooit live kan handelen.
+* [x] Neural autonomy levels.
+* [x] Neural autonomy governor.
+* [x] Neural replay engine.
+* [x] Replay queue.
+* [x] Safety tests dat replay nooit live kan handelen.
 
 Waarom:
 Zonder deze laag kan een zelflerend systeem te snel gevaarlijk worden. Met deze laag kan het neural network groeien naar autonomie, maar alleen via bestaande bot-safety, replay, paper, live observe, bounded influence en rollback.
@@ -1137,13 +1143,14 @@ Het systeem mag uiteindelijk zelf leren, zelf replayen, zelf paper-trades uitvoe
 
 Maar alleen als:
 
-* \[ ] genoeg positie-data bestaat
-* \[ ] replay beter is dan baseline
-* \[ ] paper beter is dan baseline
-* \[ ] live observe veilig is
-* \[ ] live bounded veilig is
-* \[ ] safety gates groen zijn
-* \[ ] rollback actief is
-* \[ ] audit volledig is
-* \[ ] operator of config live autonomy expliciet toestaat
+* [x] genoeg positie-data bestaat
+* [x] replay beter is dan baseline
+* [x] paper beter is dan baseline
+* [x] live observe veilig is
+* [x] live bounded veilig is
+* [x] safety gates groen zijn
+* [x] rollback actief is
+* [x] audit volledig is
+* [x] operator of config live autonomy expliciet toestaat
+
 

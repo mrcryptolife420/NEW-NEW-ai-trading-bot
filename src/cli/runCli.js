@@ -38,6 +38,13 @@ import { buildCanaryReleaseGate, buildCanaryReleaseSummary } from "../runtime/ca
 import { buildOperatorActionQueue } from "../runtime/operatorActionQueue.js";
 import { buildWalkForwardDeploymentReport } from "../research/walkForwardDeploymentReport.js";
 import { buildLatencyProfilerReport } from "../runtime/latencyProfiler.js";
+import { buildNeuralAutonomyReport } from "../ai/neural/neuralAutonomyGovernor.js";
+import { runNeuralReplay } from "../ai/neural/replay/neuralReplayEngine.js";
+import { runNeuralReplayArena } from "../ai/neural/replay/neuralReplayArena.js";
+import { evaluateReplayPromotionGate } from "../ai/neural/replay/replayPromotionGate.js";
+import { evaluateNeuralContinuousLearning } from "../ai/neural/learning/neuralContinuousLearner.js";
+import { applyNeuralTuningClamp } from "../ai/neural/learning/neuralSelfTuningController.js";
+import { evaluateNeuralLiveExecutionGate } from "../ai/neural/live/neuralLiveExecutionGate.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -633,6 +640,34 @@ export default async function runCli({
     const historical = await loadHistoricalKlines(symbol, interval, days);
     const summary = summarizeHistoricalData({ [symbol]: historical });
     console.log(JSON.stringify(summary, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command.startsWith("neural:")) {
+    const sampleRecords = [];
+    const report = buildNeuralAutonomyReport({ config, botMode: config.botMode });
+    let result = report;
+    if (command === "neural:replay-run") {
+      result = runNeuralReplay({ records: sampleRecords, policy: { id: "cli_read_only" } });
+    } else if (command === "neural:replay-arena") {
+      const arena = runNeuralReplayArena({ records: sampleRecords, challengerPolicies: [{ id: "cli_shadow" }] });
+      result = { arena, promotionGate: evaluateReplayPromotionGate({ arenaResult: arena, config }) };
+    } else if (command === "neural:continuous-learn") {
+      result = evaluateNeuralContinuousLearning({ config, stats: {}, datasetQuality: { status: "weak" } });
+    } else if (command === "neural:self-tuning-proposals") {
+      result = applyNeuralTuningClamp({ proposal: { changes: {} }, config, botMode: config.botMode });
+    } else if (command === "neural:live-autonomy-readiness") {
+      result = evaluateNeuralLiveExecutionGate({ config, stats: {}, safetySnapshot: {}, exchangeSummary: {} });
+    } else if (["neural:approve-experiment", "neural:reject-experiment", "neural:rollback-experiment", "neural:disable-live-autonomy"].includes(command)) {
+      result = {
+        status: "confirmation_required",
+        command,
+        message: "Mutating neural operator commands are intentionally blocked in this CLI pass unless a reviewed storage workflow is provided.",
+        liveSafe: true
+      };
+    }
+    console.log(JSON.stringify({ command, readOnly: true, ...result }, null, 2));
     markCommandSuccess(processState);
     return;
   }
