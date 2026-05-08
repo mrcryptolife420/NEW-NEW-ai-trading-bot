@@ -1,4 +1,5 @@
 import { buildPaperEvidenceSpine } from "../runtime/paperEvidenceSpine.js";
+import { buildVetoReplayCoverage } from "../runtime/vetoReplayCoverage.js";
 
 const REQUIRED_ANALYTICS_TABLES = [
   "trades",
@@ -129,8 +130,16 @@ export function buildPaperAnalyticsReadModelSummary({ db = null, status = null, 
       ORDER BY sample_size DESC, confidence DESC
       LIMIT ?
     `, [cappedLimit]);
+  const replayTraces = !tableExists(db, "replay_traces")
+    ? { rows: [], error: null }
+    : safeAll(db, `
+      SELECT id, symbol, at, status, json
+      FROM replay_traces
+      ORDER BY COALESCE(at, '') DESC, id DESC
+      LIMIT ?
+    `, [cappedLimit]);
 
-  for (const result of [decisions, blockers, trades, auditVetoes, scorecards]) {
+  for (const result of [decisions, blockers, trades, auditVetoes, scorecards, replayTraces]) {
     if (result.error) warnings.push(result.error);
   }
 
@@ -147,6 +156,31 @@ export function buildPaperAnalyticsReadModelSummary({ db = null, status = null, 
     acc[label] = (acc[label] || 0) + 1;
     return acc;
   }, {});
+  const vetoOutcomeRecords = auditVetoes.rows.map((row) => {
+    const record = parseJson(row.json, {});
+    const outcome = record.vetoOutcome || record;
+    return {
+      observationId: outcome.observationId || record.observationId || record.decisionId || row.type,
+      decisionId: record.decisionId || outcome.decisionId || null,
+      symbol: record.symbol || outcome.symbol || null,
+      label: outcome.label || record.label || record.outcome || "unknown_veto",
+      outcome: outcome.label || record.label || record.outcome || "unknown_veto",
+      confidence: safeNumber(outcome.confidence ?? record.confidence, 0.2),
+      blocker: record.blocker || record.rootBlocker || null,
+      reasons: record.reasons || []
+    };
+  });
+  const paperEvidenceSpine = buildPaperEvidenceSpine({
+    decisions: normalizedDecisions,
+    trades: normalizedTrades,
+    limit: cappedLimit
+  });
+  const vetoReplayCoverage = buildVetoReplayCoverage({
+    decisions: normalizedDecisions,
+    outcomeRecords: vetoOutcomeRecords,
+    replayTraces: replayTraces.rows,
+    limit: cappedLimit
+  });
 
   const queryStatus = missingTables.length
     ? "degraded"
@@ -182,11 +216,8 @@ export function buildPaperAnalyticsReadModelSummary({ db = null, status = null, 
       expectancyPct: safeNumber(row.expectancyPct, 0),
       confidence: safeNumber(row.confidence, 0)
     })),
-    paperEvidenceSpineSummary: buildPaperEvidenceSpine({
-      decisions: normalizedDecisions,
-      trades: normalizedTrades,
-      limit: cappedLimit
-    }).summary,
+    paperEvidenceSpineSummary: paperEvidenceSpine.summary,
+    vetoReplayCoverageSummary: vetoReplayCoverage,
     counts: {
       paperCandidates: decisions.rows.length,
       blockerTimelines: blockers.rows.length,

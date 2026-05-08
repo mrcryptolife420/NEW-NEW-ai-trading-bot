@@ -420,6 +420,26 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.readModel?.paperAnalyticsReadmodelSummary?.paperEvidenceSpineSummary,
       { status: "empty", count: 0, packets: [], byState: {}, bySetupType: {}, byRootBlocker: {}, paperOnly: true, diagnosticsOnly: true, liveBehaviorChanged: false }
     ),
+    vetoReplayCoverageSummary: objectOrFallback(
+      source.vetoReplayCoverageSummary ||
+        source.learningAnalytics?.vetoReplayCoverageSummary ||
+        source.paperLearning?.vetoReplayCoverageSummary ||
+        source.paperAnalyticsReadmodelSummary?.vetoReplayCoverageSummary ||
+        source.readModel?.paperAnalyticsReadmodelSummary?.vetoReplayCoverageSummary,
+      {
+        status: "empty",
+        outcomeCount: 0,
+        replayTraceCount: 0,
+        coverageStatus: "missing",
+        vetoOutcomeSummary: { status: "empty", count: 0, counts: {} },
+        replayTraceSummary: { count: 0, byStatus: {}, traces: [] },
+        replayPackQueue: [],
+        paperOnly: true,
+        diagnosticsOnly: true,
+        liveBehaviorChanged: false,
+        hardSafetyRelaxationAllowed: false
+      }
+    ),
     candidateOutcomeSummary: objectOrFallback(
       source.candidateOutcomeSummary ||
         source.learningAnalytics?.candidateOutcomeSummary ||

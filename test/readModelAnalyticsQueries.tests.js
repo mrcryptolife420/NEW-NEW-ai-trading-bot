@@ -14,6 +14,7 @@ function createAnalyticsDb() {
     CREATE TABLE blockers (reason TEXT, symbol TEXT);
     CREATE TABLE audit_events (type TEXT, at TEXT, json TEXT NOT NULL);
     CREATE TABLE scorecards (strategy_id TEXT, strategy_family TEXT, regime TEXT, session TEXT, status TEXT, sample_size INTEGER, expectancy_pct REAL, confidence REAL, json TEXT NOT NULL);
+    CREATE TABLE replay_traces (id TEXT, symbol TEXT, at TEXT, status TEXT, json TEXT NOT NULL);
   `);
   return db;
 }
@@ -65,6 +66,13 @@ export async function registerReadModelAnalyticsQueriesTests({ runCheck, assert 
     );
     db.prepare("INSERT INTO blockers(reason, symbol) VALUES (?, ?)").run("model_confidence_too_low", "ETHUSDT");
     db.prepare("INSERT INTO audit_events(type, at, json) VALUES (?, ?, ?)").run("veto_outcome", "2026-05-06T10:05:00.000Z", JSON.stringify({ vetoOutcome: { label: "bad_veto" } }));
+    db.prepare("INSERT INTO replay_traces(id, symbol, at, status, json) VALUES (?, ?, ?, ?, ?)").run(
+      "r1",
+      "BTCUSDT",
+      "2026-05-06T10:10:00.000Z",
+      "ready",
+      JSON.stringify({ packType: "bad_veto", decisionId: "d1" })
+    );
     db.prepare("INSERT INTO scorecards(strategy_id, strategy_family, regime, session, status, sample_size, expectancy_pct, confidence, json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
       "breakout_retest",
       "breakout",
@@ -86,6 +94,9 @@ export async function registerReadModelAnalyticsQueriesTests({ runCheck, assert 
     assert.equal(summary.paperEvidenceSpineSummary.status, "ready");
     assert.equal(summary.paperEvidenceSpineSummary.count, 1);
     assert.equal(summary.paperEvidenceSpineSummary.paperOnly, true);
+    assert.equal(summary.vetoReplayCoverageSummary.outcomeCount, 1);
+    assert.equal(summary.vetoReplayCoverageSummary.replayTraceCount, 1);
+    assert.equal(summary.vetoReplayCoverageSummary.coverageStatus, "covered");
     db.close();
   });
 
@@ -120,6 +131,7 @@ export async function registerReadModelAnalyticsQueriesTests({ runCheck, assert 
 
     assert.equal(fallback.paperAnalyticsReadmodelSummary.status, "unavailable");
     assert.equal(fallback.paperEvidenceSpineSummary.status, "empty");
+    assert.equal(fallback.vetoReplayCoverageSummary.coverageStatus, "missing");
     assert.equal(normalized.paperAnalyticsReadmodelSummary.paperTrades.length, 1);
     assert.doesNotThrow(() => JSON.stringify(normalized.paperAnalyticsReadmodelSummary));
   });

@@ -20,6 +20,8 @@ node_modules/
 Thumbs.db
 .vscode/
 .idea/
+.lean-ctx/
+.obsidian/
 .claude/settings.local.json
 
 # Logs, reports, temp files
