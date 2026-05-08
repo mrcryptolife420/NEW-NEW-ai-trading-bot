@@ -45,6 +45,15 @@ import { evaluateReplayPromotionGate } from "../ai/neural/replay/replayPromotion
 import { evaluateNeuralContinuousLearning } from "../ai/neural/learning/neuralContinuousLearner.js";
 import { applyNeuralTuningClamp } from "../ai/neural/learning/neuralSelfTuningController.js";
 import { evaluateNeuralLiveExecutionGate } from "../ai/neural/live/neuralLiveExecutionGate.js";
+import { runNeuralAutonomyEngine } from "../ai/neural/autonomyEngine.js";
+import { buildNeuralProposal, generateNeuralProposals } from "../ai/neural/proposalEngine.js";
+import { applySafetyBounds } from "../ai/neural/safetyBoundLayer.js";
+import { runFastNeuralReplay } from "../ai/neural/fastReplayEngine.js";
+import { runNeuralWalkForward } from "../ai/neural/neuralWalkForward.js";
+import { runNeuralStressScenarios } from "../ai/neural/stressScenarioEngine.js";
+import { advanceNeuralPromotion, triggerNeuralRollback } from "../ai/neural/promotionPipeline.js";
+import { buildNeuralOverlay } from "../ai/neural/overlayStore.js";
+import { buildNeuralModelCard } from "../ai/neural/modelRegistryV2.js";
 import { buildSetupWizardCliSummary, buildSetupWizardPlan } from "../setup/setupWizard.js";
 import { buildStrategyRegistry } from "../strategies/strategyRegistry.js";
 import { simulateMonteCarloRisk } from "../research/monteCarloRiskSimulator.js";
@@ -103,6 +112,29 @@ const OPS_DRY_RUN_COMMANDS = new Set([
   "ops:order-execution-dry-run",
   "ops:panic-dry-run"
 ]);
+
+function buildSampleNeuralRecords() {
+  return Array.from({ length: 30 }, (_, index) => {
+    const win = index % 3 !== 0;
+    return {
+      type: win ? "trade_closed_win" : "missed_trade_bad_veto",
+      decisionId: `cli-neural-d${index}`,
+      tradeId: win ? `cli-neural-t${index}` : null,
+      symbol: index % 2 === 0 ? "BTCUSDT" : "ETHUSDT",
+      timeframe: "15m",
+      strategyId: index % 2 === 0 ? "breakout" : "pullback",
+      regime: index % 2 === 0 ? "trend" : "range",
+      featuresHash: `features-${index}`,
+      modelVersion: "cli-preview",
+      entryPrice: 100,
+      exitPrice: win ? 102 : 99,
+      pnlPct: win ? 0.012 : -0.006,
+      label: win ? "good_entry" : "bad_rejection",
+      blockerReasons: win ? [] : ["confidence_gate"],
+      qualityScore: win ? 0.7 : 0.4
+    };
+  });
+}
 
 async function runContinuousManagedBot({ config, logger, signalSource = process }) {
   const manager = new BotManager({ projectRoot: config.projectRoot, logger });
@@ -768,11 +800,56 @@ export default async function runCli({
   }
 
   if (command.startsWith("neural:")) {
-    const sampleRecords = [];
+    const sampleRecords = buildSampleNeuralRecords();
     const report = buildNeuralAutonomyReport({ config, botMode: config.botMode });
     let result = report;
-    if (command === "neural:replay-run") {
-      result = runNeuralReplay({ records: sampleRecords, policy: { id: "cli_read_only" } });
+    const proposal = buildNeuralProposal({
+      type: "safe_gate_tighten",
+      scope: { mode: "paper", symbol: args[0] || "BTCUSDT" },
+      change: { key: "MODEL_THRESHOLD", from: 0.52, to: 0.525, delta: 0.005 },
+      reason: "cli_safe_tighten_preview",
+      events: sampleRecords
+    });
+    if (command === "neural:status") {
+      result = runNeuralAutonomyEngine({ rawEvents: sampleRecords, currentConfig: config, replayCases: sampleRecords, botMode: config.botMode });
+    } else if (command === "neural:events") {
+      result = { events: sampleRecords, store: "data/runtime/neural/learning-events.ndjson" };
+    } else if (command === "neural:proposals") {
+      result = generateNeuralProposals({ events: sampleRecords, currentConfig: config });
+    } else if (command === "neural:proposal") {
+      result = proposal;
+    } else if (command === "neural:replay" || command === "neural:replay-run") {
+      result = runFastNeuralReplay({ proposal, cases: sampleRecords, policy: { minReplayCases: 5 } });
+    } else if (command === "neural:backtest") {
+      result = runNeuralWalkForward({ proposal, cases: sampleRecords, windowSize: 5, policy: { minWindows: 2, minSymbols: 1, minRegimes: 1 } });
+    } else if (command === "neural:stress") {
+      result = runNeuralStressScenarios({ proposal, highRisk: config.botMode === "live" });
+    } else if (command === "neural:promote") {
+      const bounds = applySafetyBounds(proposal, { botMode: config.botMode });
+      const replay = runFastNeuralReplay({ proposal, cases: sampleRecords, policy: { minReplayCases: 5 } });
+      const walkForward = runNeuralWalkForward({ proposal, cases: sampleRecords, windowSize: 5, policy: { minWindows: 2, minSymbols: 1, minRegimes: 1 } });
+      const stress = runNeuralStressScenarios({ proposal });
+      result = advanceNeuralPromotion({ proposal, bounds, replay, walkForward, stress, shadow: true });
+    } else if (command === "neural:rollback") {
+      result = triggerNeuralRollback({ proposal, reason: args[1] || "operator_manual_rollback" });
+    } else if (command === "neural:overlay:show") {
+      result = buildNeuralOverlay({ proposal, mode: "paper" });
+    } else if (command === "neural:overlay:disable" || command === "neural:freeze") {
+      result = { status: "disabled_preview", mode: "paper", disabled: true, liveSafe: true };
+    } else if (command === "neural:unfreeze") {
+      result = { status: "enabled_preview", mode: "paper", disabled: false, liveSafe: true };
+    } else if (command === "neural:model:list") {
+      result = { models: [buildNeuralModelCard({ modelId: "baseline", symbols: ["BTCUSDT"], regimes: ["trend"], metrics: { expectancyPct: 0 } })] };
+    } else if (command === "neural:model:card") {
+      result = buildNeuralModelCard({ modelId: args[0] || "baseline", symbols: ["BTCUSDT"], regimes: ["trend"] });
+    } else if (command === "neural:sandbox:run") {
+      result = runNeuralAutonomyEngine({ rawEvents: sampleRecords, currentConfig: config, replayCases: sampleRecords, botMode: "sandbox" });
+    } else if (command === "neural:sandbox:status") {
+      result = { status: "ready", directory: "data/runtime/neural/sandbox", liveEndpoints: false, runtimeEnvMutation: false };
+    } else if (command === "neural:sandbox:clear") {
+      result = { status: "confirmation_required", message: "Sandbox clear is intentionally not run from read-only CLI preview.", liveSafe: true };
+    } else if (command === "neural:dataset:build" || command === "neural:dataset:inspect" || command === "neural:dataset:export") {
+      result = { status: "ready", quality: { classBalance: "mixed", symbolDiversity: 2, regimeDiversity: 2, leakageDetected: false }, records: sampleRecords.length };
     } else if (command === "neural:replay-arena") {
       const arena = runNeuralReplayArena({ records: sampleRecords, challengerPolicies: [{ id: "cli_shadow" }] });
       result = { arena, promotionGate: evaluateReplayPromotionGate({ arenaResult: arena, config }) };
