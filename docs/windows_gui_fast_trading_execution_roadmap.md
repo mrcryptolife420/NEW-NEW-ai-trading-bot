@@ -226,28 +226,30 @@ Websocket/stream data moet primair worden. REST moet vooral fallback en bootstra
 
 ### Taken
 
-- [ ] Gebruik stream data primair voor top watchlist symbols.
-- [ ] Gebruik REST alleen voor bootstrap.
-- [ ] Gebruik REST voor gap fill.
-- [ ] Gebruik REST als fallback bij stream failure.
-- [ ] Houd per symbool bij: `lastTradeAt`.
-- [ ] Houd per symbool bij: `lastBookAt`.
-- [ ] Houd per symbool bij: `lastKlineAt`.
-- [ ] Houd per symbool bij: `lastDepthAt`.
-- [ ] Voeg data freshness score toe.
-- [ ] Fast execution blokkeert als streamdata stale is.
-- [ ] Dashboard toont data age per symbool.
-- [ ] GUI toont stream status.
-- [ ] GUI toont websocket connected/disconnected.
-- [ ] GUI toont REST fallback actief/inactief.
+- [x] Gebruik stream data primair voor top watchlist symbols.
+- [x] Gebruik REST alleen voor bootstrap.
+- [x] Gebruik REST voor gap fill.
+- [x] Gebruik REST als fallback bij stream failure.
+- [x] Houd per symbool bij: `lastTradeAt`.
+- [x] Houd per symbool bij: `lastBookAt`.
+- [x] Houd per symbool bij: `lastKlineAt`.
+- [x] Houd per symbool bij: `lastDepthAt`.
+- [x] Voeg data freshness score toe.
+- [x] Fast execution blokkeert als streamdata stale is.
+- [x] Dashboard toont data age per symbool.
+- [x] GUI toont stream status.
+- [x] GUI toont websocket connected/disconnected.
+- [x] GUI toont REST fallback actief/inactief.
 
 ### Data freshness targets
 
-- [ ] Book ticker maximaal 1.5 seconde oud voor fast entry.
-- [ ] Local order book maximaal 2 seconden oud voor fast entry.
-- [ ] Trade flow maximaal 5 seconden oud.
-- [ ] Candle features mogen ouder zijn, maar moeten age tonen.
-- [ ] News/macro hoeft niet realtime, maar mag geen onbekende stale status hebben.
+- [x] Book ticker maximaal 1.5 seconde oud voor fast entry.
+- [x] Local order book maximaal 2 seconden oud voor fast entry.
+- [x] Trade flow maximaal 5 seconden oud.
+- [x] Candle features mogen ouder zijn, maar moeten age tonen.
+- [x] News/macro hoeft niet realtime, maar mag geen onbekende stale status hebben.
+
+Status 2026-05-08: `streamFreshnessMonitor` vat per symbool trade/book/kline/depth leeftijden samen voor dashboard/GUI en fast preflight gebruikt stale market data als blocker. Runtime stream-first gedrag bestond al; deze stap maakt het expliciet testbaar.
 
 ---
 
@@ -259,25 +261,25 @@ Niet alle coins even zwaar verwerken. De bot moet sneller reageren op symbols wa
 
 ### Hot symbol triggers
 
-- [ ] Candidate zit dicht bij threshold.
-- [ ] Prijs breekt belangrijke level.
-- [ ] Volume spike.
-- [ ] Spread wordt ineens acceptabel.
-- [ ] Book pressure draait positief.
-- [ ] Open position heeft exit risk.
-- [ ] News/event risk verandert.
-- [ ] Volatility regime verandert.
-- [ ] Model score stijgt snel.
+- [x] Candidate zit dicht bij threshold.
+- [x] Prijs breekt belangrijke level.
+- [x] Volume spike.
+- [x] Spread wordt ineens acceptabel.
+- [x] Book pressure draait positief.
+- [x] Open position heeft exit risk.
+- [x] News/event risk verandert.
+- [x] Volatility regime verandert.
+- [x] Model score stijgt snel.
 
 ### Taken
 
-- [ ] Maak `src/runtime/hotSymbolLane.js`.
-- [ ] Geef open positions hoogste prioriteit.
-- [ ] Geef near-threshold candidates tweede prioriteit.
-- [ ] Geef volume/spread/book changes derde prioriteit.
-- [ ] Beperk hot symbols via `HOT_SYMBOL_MAX=12`.
-- [ ] Toon hot symbols in GUI.
-- [ ] Toon waarom een symbool hot is.
+- [x] Maak `src/runtime/hotSymbolLane.js`.
+- [x] Geef open positions hoogste prioriteit.
+- [x] Geef near-threshold candidates tweede prioriteit.
+- [x] Geef volume/spread/book changes derde prioriteit.
+- [x] Beperk hot symbols via `HOT_SYMBOL_MAX=12`.
+- [x] Toon hot symbols in GUI.
+- [x] Toon waarom een symbool hot is.
 - [ ] Laat hot symbols vaker fast feature updates krijgen.
 - [ ] Laat normale cycle nog steeds alle symbols periodiek checken.
 
@@ -323,13 +325,13 @@ Static:
 
 ### Taken
 
-- [ ] Maak feature cache per symbool.
-- [ ] Voeg `featureAgeMs` toe per featuregroep.
-- [ ] Update fast features op websocket event.
-- [ ] Update medium features op candle close.
-- [ ] Update slow features via normale cycle.
-- [ ] Fast execution mag alleen fast + recent full-analysis combineren.
-- [ ] GUI toont welke featuregroep stale is.
+- [x] Maak feature cache per symbool.
+- [x] Voeg `featureAgeMs` toe per featuregroep.
+- [x] Update fast features op websocket event.
+- [x] Update medium features op candle close.
+- [x] Update slow features via normale cycle.
+- [x] Fast execution mag alleen fast + recent full-analysis combineren.
+- [x] GUI toont welke featuregroep stale is.
 - [ ] Trade forensics slaat feature age op.
 
 ---
@@ -344,9 +346,9 @@ Aanbevolen eerste stap: SSE.
 
 ### Taken
 
-- [ ] Maak `src/dashboard/eventBus.js`.
-- [ ] Maak endpoint `GET /api/events`.
-- [ ] Push event bij bot status update.
+- [x] Maak `src/dashboard/eventBus.js`.
+- [x] Maak endpoint `GET /api/events`.
+- [x] Push event bij bot status update.
 - [ ] Push event bij nieuwe hot candidate.
 - [ ] Push event bij immediate queue update.
 - [ ] Push event bij execution intent update.
@@ -354,8 +356,8 @@ Aanbevolen eerste stap: SSE.
 - [ ] Push event bij alert update.
 - [ ] Push event bij latency update.
 - [ ] GUI luistert naar `/api/events`.
-- [ ] Fallback polling blijft bestaan.
-- [ ] Events mogen geen secrets bevatten.
+- [x] Fallback polling blijft bestaan.
+- [x] Events mogen geen secrets bevatten.
 
 ### Event types
 
@@ -672,11 +674,11 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Sprint 3: Snellere data
 
-- [ ] Event bus.
-- [ ] SSE endpoint.
-- [ ] Stream freshness monitor.
-- [ ] Hot symbol lane.
-- [ ] Incremental fast features.
+- [x] Event bus.
+- [x] SSE endpoint.
+- [x] Stream freshness monitor.
+- [x] Hot symbol lane.
+- [x] Incremental fast features.
 
 ### Sprint 4: Fast paper execution
 

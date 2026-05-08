@@ -3,6 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import { BotManager } from "../runtime/botManager.js";
 import { buildWindowsGuiStatus } from "./guiStatus.js";
+import { DashboardEventBus } from "./eventBus.js";
 
 const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -109,8 +110,15 @@ async function serveStatic(publicDir, requestPath, response) {
   }
 }
 
-async function handleApi(request, response, manager) {
+async function handleApi(request, response, manager, eventBus = null) {
   const url = new URL(request.url, "http://127.0.0.1");
+
+  if (request.method === "GET" && url.pathname === "/api/events") {
+    const unsubscribe = eventBus.subscribe(response);
+    eventBus.publish("heartbeat", { status: "connected" });
+    request.on("close", unsubscribe);
+    return;
+  }
 
   if (request.method === "GET" && url.pathname === "/api/snapshot") {
     return sendJson(response, 200, await manager.getSnapshot());
@@ -171,10 +179,14 @@ async function handleApi(request, response, manager) {
   const body = await readRequestBody(request);
 
   if (url.pathname === "/api/start") {
-    return sendJson(response, 200, await manager.start());
+    const result = await manager.start();
+    eventBus?.publish("bot_status", { action: "start", result });
+    return sendJson(response, 200, result);
   }
   if (url.pathname === "/api/stop") {
-    return sendJson(response, 200, await manager.stop("dashboard_stop"));
+    const result = await manager.stop("dashboard_stop");
+    eventBus?.publish("bot_status", { action: "stop", result });
+    return sendJson(response, 200, result);
   }
   if (url.pathname === "/api/refresh") {
     return sendJson(response, 200, await manager.refreshAnalysis());
@@ -244,6 +256,7 @@ export async function startDashboardServer({
 } = {}) {
   const manager = new BotManager({ projectRoot, logger });
   const initial = await manager.init();
+  const eventBus = new DashboardEventBus();
   const publicDir = path.join(projectRoot, "src", "dashboard", "public");
   const sharedDir = path.join(projectRoot, "src", "shared");
   const listenPort = port ?? initial.manager.dashboardPort ?? 3011;
@@ -252,7 +265,7 @@ export async function startDashboardServer({
     try {
       const url = new URL(request.url, "http://127.0.0.1");
       if (url.pathname.startsWith("/api/")) {
-        await handleApi(request, response, manager);
+        await handleApi(request, response, manager, eventBus);
         return;
       }
       if (url.pathname.startsWith("/shared/")) {
@@ -313,6 +326,7 @@ export async function startDashboardServer({
   return {
     server,
     manager,
+    eventBus,
     port: resolvedPort,
     url: dashboardUrl,
     shutdown,
