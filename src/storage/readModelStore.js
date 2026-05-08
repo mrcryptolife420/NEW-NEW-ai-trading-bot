@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { StateStore } from "./stateStore.js";
 import { AuditLogStore } from "./auditLogStore.js";
 import { buildStrategyEvidenceScorecards } from "../runtime/strategyEvidenceScorecard.js";
@@ -10,6 +10,36 @@ import { ensureDir } from "../utils/fs.js";
 import { buildPaperAnalyticsReadModelSummary } from "./readModelAnalyticsQueries.js";
 
 const READ_MODEL_SCHEMA_VERSION = 1;
+const require = createRequire(import.meta.url);
+let DatabaseSyncClass = null;
+let databaseSyncLoadError = null;
+
+function buildSqliteUnavailableError(error) {
+  const unavailable = new Error(`SQLite read model unavailable: ${error?.message || "node:sqlite is not available in this runtime"}`);
+  unavailable.code = "READ_MODEL_SQLITE_UNAVAILABLE";
+  unavailable.cause = error;
+  return unavailable;
+}
+
+function resolveDatabaseSync() {
+  if (DatabaseSyncClass) return DatabaseSyncClass;
+  if (databaseSyncLoadError) throw databaseSyncLoadError;
+  if (process.env.CODEX_DISABLE_NODE_SQLITE === "1") {
+    databaseSyncLoadError = buildSqliteUnavailableError(new Error("node:sqlite disabled by CODEX_DISABLE_NODE_SQLITE"));
+    throw databaseSyncLoadError;
+  }
+  try {
+    ({ DatabaseSync: DatabaseSyncClass } = require("node:sqlite"));
+    return DatabaseSyncClass;
+  } catch (error) {
+    databaseSyncLoadError = buildSqliteUnavailableError(error);
+    throw databaseSyncLoadError;
+  }
+}
+
+function isReadModelSqliteUnavailable(error) {
+  return error?.code === "READ_MODEL_SQLITE_UNAVAILABLE" || error?.cause?.code === "ERR_UNKNOWN_BUILTIN_MODULE";
+}
 
 function json(value) {
   return JSON.stringify(value ?? null);
@@ -114,6 +144,7 @@ export class ReadModelStore {
     this.busyRetryCount = Math.max(0, Number(busyRetryCount || 0));
     this.busyRetryMs = Math.max(10, Number(busyRetryMs || 80));
     this.db = null;
+    this.unavailable = null;
   }
 
   async init({ recreateCorrupt = true } = {}) {
@@ -125,6 +156,22 @@ export class ReadModelStore {
         return;
       } catch (error) {
         this.close();
+        if (isReadModelSqliteUnavailable(error)) {
+          this.unavailable = {
+            status: "unavailable",
+            source: "sqlite_read_model",
+            dbPath: this.dbPath,
+            error: error.message,
+            warnings: ["node_sqlite_unavailable"],
+            fallbackAvailable: true,
+            sourceOfTruth: "json_ndjson"
+          };
+          this.logger?.warn?.("SQLite read model unavailable; continuing with JSON/NDJSON source-of-truth fallback", {
+            dbPath: this.dbPath,
+            error: error.message
+          });
+          return;
+        }
         if (isSqliteBusy(error)) {
           if (attempt < this.busyRetryCount) {
             await sleep(this.busyRetryMs * (attempt + 1));
@@ -149,6 +196,7 @@ export class ReadModelStore {
 
   open() {
     if (!this.db) {
+      const DatabaseSync = resolveDatabaseSync();
       this.db = new DatabaseSync(this.dbPath);
       this.db.exec("PRAGMA busy_timeout = 5000;");
       this.db.exec("PRAGMA journal_mode = WAL;");
@@ -162,6 +210,28 @@ export class ReadModelStore {
       this.db.close();
       this.db = null;
     }
+  }
+
+  unavailableStatus(extra = {}) {
+    const base = this.unavailable || {
+      status: "unavailable",
+      source: "sqlite_read_model",
+      dbPath: this.dbPath,
+      error: "SQLite read model has not been initialized",
+      warnings: ["readmodel_db_unavailable"],
+      fallbackAvailable: true,
+      sourceOfTruth: "json_ndjson"
+    };
+    return {
+      ...base,
+      ...extra,
+      tables: {},
+      paperAnalyticsReadmodelSummary: buildPaperAnalyticsReadModelSummary({
+        db: null,
+        status: base,
+        limit: extra.limit || 20
+      })
+    };
   }
 
   ensureSchema() {
@@ -298,6 +368,7 @@ export class ReadModelStore {
   }
 
   rebuild({ journal = {}, auditEvents = [], replayTraces = [], at = new Date().toISOString() } = {}) {
+    if (this.unavailable) return this.unavailableStatus();
     const db = this.open();
     this.resetSchema();
     db.exec("BEGIN");
@@ -469,6 +540,7 @@ export class ReadModelStore {
 
   async rebuildFromSources({ stateStore = null, auditStore = null } = {}) {
     await this.init();
+    if (this.unavailable) return this.unavailableStatus();
     const store = stateStore || new StateStore(this.runtimeDir);
     const journal = await store.loadJournal();
     const effectiveAuditStore = auditStore || new AuditLogStore(this.runtimeDir);
@@ -477,6 +549,7 @@ export class ReadModelStore {
   }
 
   refreshFromJournalSnapshot({ journal = {}, at = new Date().toISOString() } = {}) {
+    if (this.unavailable) return this.unavailableStatus();
     const db = this.open();
     this.ensureSchema();
     db.exec("BEGIN");
@@ -620,6 +693,7 @@ export class ReadModelStore {
   }
 
   status() {
+    if (this.unavailable) return this.unavailableStatus();
     const db = this.open();
     this.ensureSchema();
     const metaRows = db.prepare("SELECT key, value FROM meta").all();
@@ -653,6 +727,19 @@ export class ReadModelStore {
   }
 
   dashboardSummary({ limit = 8 } = {}) {
+    if (this.unavailable) {
+      return this.unavailableStatus({
+        limit,
+        topBlockers: [],
+        topScorecards: [],
+        latestReplay: null,
+        replayCoverageGate: buildReplayCoverageGate(null),
+        requestBudget: { status: "unavailable", warnings: ["readmodel_db_unavailable"] },
+        operatorRunbooks: [],
+        strategyLifecycleDiagnostics: {},
+        tradingImprovementDiagnostics: buildTradingImprovementDiagnostics({ readModel: {} })
+      });
+    }
     const db = this.open();
     this.ensureSchema();
     const status = this.status();
@@ -710,6 +797,21 @@ export class ReadModelStore {
   }
 
   requestBudgetSummary({ limit = 8 } = {}) {
+    if (this.unavailable) {
+      return {
+        status: "unavailable",
+        latestAt: null,
+        latestWeight1m: null,
+        pressureLevel: "unknown",
+        rateLimitEvents: 0,
+        topCallers: [],
+        criticalCallers: [],
+        callerGroups: [],
+        incidents: [],
+        recommendedActions: [],
+        warnings: ["readmodel_db_unavailable"]
+      };
+    }
     const db = this.open();
     this.ensureSchema();
     const rows = db.prepare(`
@@ -872,6 +974,16 @@ export class ReadModelStore {
   }
 
   readDecisionTrace(decisionId) {
+    if (this.unavailable) {
+      return {
+        status: "unavailable",
+        decisionId,
+        decision: null,
+        blockers: [],
+        auditEvents: [],
+        warnings: ["readmodel_db_unavailable"]
+      };
+    }
     const db = this.open();
     this.ensureSchema();
     const decision = db.prepare("SELECT * FROM decisions WHERE id = ?").get(decisionId) || null;
@@ -888,6 +1000,15 @@ export class ReadModelStore {
   }
 
   readCycleTrace(cycleId) {
+    if (this.unavailable) {
+      return {
+        status: "unavailable",
+        cycleId,
+        decisionIds: [],
+        auditEvents: [],
+        warnings: ["readmodel_db_unavailable"]
+      };
+    }
     const db = this.open();
     this.ensureSchema();
     const auditEvents = db.prepare("SELECT * FROM audit_events WHERE cycle_id = ? ORDER BY COALESCE(at, '') ASC").all(cycleId);
@@ -903,6 +1024,16 @@ export class ReadModelStore {
 
   readSymbolTrace(symbol, { limit = 100 } = {}) {
     const normalized = `${symbol || ""}`.toUpperCase();
+    if (this.unavailable) {
+      return {
+        status: "unavailable",
+        symbol: normalized,
+        trades: [],
+        decisions: [],
+        auditEvents: [],
+        warnings: ["readmodel_db_unavailable"]
+      };
+    }
     const db = this.open();
     this.ensureSchema();
     const auditEvents = db.prepare("SELECT * FROM audit_events WHERE symbol = ? ORDER BY COALESCE(at, '') DESC LIMIT ?").all(normalized, limit);
@@ -919,6 +1050,7 @@ export class ReadModelStore {
   }
 
   upsertReplayTrace(trace = {}) {
+    if (this.unavailable) return null;
     const db = this.open();
     this.ensureSchema();
     const id = safeString(trace.id || trace.replayId, `replay:${Date.now()}`);
