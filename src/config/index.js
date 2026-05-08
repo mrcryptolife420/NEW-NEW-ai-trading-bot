@@ -596,6 +596,8 @@ export async function loadConfig(projectRoot = process.cwd()) {
     fastExecutionEnabled: parseBoolean(env.FAST_EXECUTION_ENABLED, DEFAULTS.fastExecutionEnabled),
     fastExecutionPaperOnly: parseBoolean(env.FAST_EXECUTION_PAPER_ONLY, DEFAULTS.fastExecutionPaperOnly),
     fastExecutionMaxSignalsPerMinute: parseNumber(env.FAST_EXECUTION_MAX_SIGNALS_PER_MINUTE, DEFAULTS.fastExecutionMaxSignalsPerMinute),
+    fastExecutionMaxSignalsPerSymbolPerDay: parseNumber(env.FAST_EXECUTION_MAX_SIGNALS_PER_SYMBOL_PER_DAY, DEFAULTS.fastExecutionMaxSignalsPerSymbolPerDay),
+    fastExecutionCooldownMs: parseNumber(env.FAST_EXECUTION_COOLDOWN_MS, DEFAULTS.fastExecutionCooldownMs),
     fastExecutionMinDataFreshnessMs: parseNumber(env.FAST_EXECUTION_MIN_DATA_FRESHNESS_MS, DEFAULTS.fastExecutionMinDataFreshnessMs),
     fastExecutionCandidateTtlMs: parseNumber(env.FAST_EXECUTION_CANDIDATE_TTL_MS, DEFAULTS.fastExecutionCandidateTtlMs),
     hotSymbolMax: parseNumber(env.HOT_SYMBOL_MAX, DEFAULTS.hotSymbolMax),

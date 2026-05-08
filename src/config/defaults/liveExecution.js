@@ -71,6 +71,8 @@ export const liveExecutionDefaults = {
   "fastExecutionEnabled": false,
   "fastExecutionPaperOnly": true,
   "fastExecutionMaxSignalsPerMinute": 3,
+  "fastExecutionMaxSignalsPerSymbolPerDay": 2,
+  "fastExecutionCooldownMs": 30000,
   "fastExecutionMinDataFreshnessMs": 1500,
   "fastExecutionCandidateTtlMs": 5000,
   "hotSymbolMax": 12,

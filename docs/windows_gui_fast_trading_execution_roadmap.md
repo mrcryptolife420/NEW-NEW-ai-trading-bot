@@ -116,6 +116,8 @@ Nieuwe stream data
 - [x] Voeg `FAST_EXECUTION_ENABLED=false` toe als default.
 - [x] Voeg `FAST_EXECUTION_PAPER_ONLY=true` toe als default.
 - [x] Voeg `FAST_EXECUTION_MAX_SIGNALS_PER_MINUTE=3` toe.
+- [x] Voeg `FAST_EXECUTION_MAX_SIGNALS_PER_SYMBOL_PER_DAY=2` toe.
+- [x] Voeg `FAST_EXECUTION_COOLDOWN_MS=30000` toe.
 - [x] Voeg `FAST_EXECUTION_MIN_DATA_FRESHNESS_MS=1500` toe.
 - [x] Voeg `FAST_EXECUTION_CANDIDATE_TTL_MS=5000` toe.
 - [x] Voeg `FAST_EXECUTION_REQUIRE_LOCAL_BOOK=true` toe.
@@ -651,15 +653,17 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Taken
 
-- [ ] Hard cap op fast entries per minuut.
-- [ ] Hard cap op fast entries per symbol per dag.
-- [ ] Cooldown na failed fast entry.
-- [ ] Cooldown na slippage spike.
-- [ ] Cooldown na stale data event.
-- [ ] Cooldown na ambiguous order intent.
-- [ ] Fast execution stopt automatisch bij health circuit open.
-- [ ] Fast execution stopt automatisch bij exchange safety warning.
-- [ ] Fast execution stopt automatisch bij request weight pressure.
+- [x] Hard cap op fast entries per minuut.
+- [x] Hard cap op fast entries per symbol per dag.
+- [x] Cooldown na failed fast entry.
+- [x] Cooldown na slippage spike.
+- [x] Cooldown na stale data event.
+- [x] Cooldown na ambiguous order intent.
+- [x] Fast execution stopt automatisch bij health circuit open.
+- [x] Fast execution stopt automatisch bij exchange safety warning.
+- [x] Fast execution stopt automatisch bij request weight pressure.
+
+Status 2026-05-08: `fastExecutionSafetyGovernor` voegt rate caps, per-symbol daglimieten, cooldowns en hard-stop condities toe als pure strenger-wordende gate. Geen live-relief of broker-calls.
 
 ---
 
