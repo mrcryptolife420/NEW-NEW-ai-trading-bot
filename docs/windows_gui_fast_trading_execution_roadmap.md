@@ -109,10 +109,10 @@ Nieuwe stream data
 
 ### Taken
 
-- [ ] Maak `FastSignalTriggerService`.
-- [ ] Laat normale trading cycle bestaan voor volledige analyse.
-- [ ] Laat fast execution alleen reageren op verse streamdata.
-- [ ] Laat fast execution alleen werken op recent geanalyseerde candidates.
+- [x] Maak `FastSignalTriggerService`.
+- [x] Laat normale trading cycle bestaan voor volledige analyse.
+- [x] Laat fast execution alleen reageren op verse streamdata.
+- [x] Laat fast execution alleen werken op recent geanalyseerde candidates.
 - [x] Voeg `FAST_EXECUTION_ENABLED=false` toe als default.
 - [x] Voeg `FAST_EXECUTION_PAPER_ONLY=true` toe als default.
 - [x] Voeg `FAST_EXECUTION_MAX_SIGNALS_PER_MINUTE=3` toe.
@@ -128,7 +128,7 @@ Nieuwe stream data
 
 - [x] Geen open positie op hetzelfde symbool.
 - [x] Max open positions niet overschreden.
-- [ ] Max exposure niet overschreden.
+- [x] Max exposure niet overschreden.
 - [x] Spread onder maximum.
 - [x] Order book data vers.
 - [x] Risk verdict positief.
@@ -136,9 +136,11 @@ Nieuwe stream data
 - [x] Geen unresolved execution intent.
 - [x] Geen health circuit open.
 - [x] Geen manual review vereist.
-- [ ] Geen live guardrail fail.
+- [x] Geen live guardrail fail.
 
 Status 2026-05-08: fast execution defaults en pure preflight checks bestaan. Nog geen broker/execution-koppeling; live blijft zonder impact.
+
+Status 2026-05-08 update: `FastSignalTriggerService` verbindt threshold-cross, candidate freshness, fast preflight, safety governor en immediate queue als pure paper-safe triggerflow. Live blijft geblokkeerd wanneer `FAST_EXECUTION_PAPER_ONLY=true`.
 
 ---
 
@@ -155,7 +157,7 @@ Wanneer een setup klaar is, moet hij niet wachten op de volgende volledige cycle
 - [x] Queue item verloopt na 3 tot 5 seconden.
 - [x] Deduplicate queue items per symbool.
 - [x] Blokkeer queue item als er al een unresolved execution intent bestaat.
-- [ ] Log elk queue item als audit event.
+- [x] Log elk queue item als audit event.
 - [x] Toon queue in GUI.
 - [x] Toon waarom queue item niet uitgevoerd werd.
 - [x] Toon latency per queue item.
@@ -698,9 +700,9 @@ Status 2026-05-08: `fastExecutionSafetyGovernor` voegt rate caps, per-symbol dag
 
 - [x] Immediate entry queue.
 - [x] Fast preflight risk.
-- [ ] Fast execution paper-only.
+- [x] Fast execution paper-only.
 - [x] Fast execution GUI panel.
-- [ ] Fast execution audit trail.
+- [x] Fast execution audit trail.
 
 ### Sprint 5: Exit fast lane
 

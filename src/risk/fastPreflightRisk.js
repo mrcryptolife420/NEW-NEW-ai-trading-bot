@@ -32,6 +32,9 @@ export function runFastPreflightRisk({
   const reasonCodes = [];
   const symbol = `${candidate.symbol || ""}`.toUpperCase();
   const maxOpenPositions = Math.max(1, finite(config.maxOpenPositions, 1));
+  const maxTotalExposureFraction = Math.max(0, finite(config.maxTotalExposureFraction, 1));
+  const currentExposureFraction = finite(candidate.currentExposureFraction ?? riskVerdict.currentExposureFraction, 0);
+  const proposedExposureFraction = finite(candidate.proposedExposureFraction ?? riskVerdict.proposedExposureFraction, 0);
   const maxSpreadBps = Math.max(0, finite(config.maxSpreadBps, 9999));
   const marketDataAgeMs = finite(candidate.marketDataAgeMs ?? marketSnapshot.marketDataAgeMs, 0);
   const maxMarketDataAgeMs = Math.max(1, finite(config.fastExecutionMinDataFreshnessMs, 1500));
@@ -40,12 +43,14 @@ export function runFastPreflightRisk({
   if (!symbol) reasonCodes.push("missing_symbol");
   if (arr(openPositions).some((position) => `${position.symbol || ""}`.toUpperCase() === symbol)) reasonCodes.push("duplicate_symbol_position");
   if (arr(openPositions).length >= maxOpenPositions) reasonCodes.push("max_open_positions_reached");
+  if (maxTotalExposureFraction > 0 && currentExposureFraction + proposedExposureFraction > maxTotalExposureFraction) reasonCodes.push("max_exposure_exceeded");
   if (spreadBps > maxSpreadBps) reasonCodes.push("spread_too_high");
   if (marketDataAgeMs > maxMarketDataAgeMs || candidate.dataFreshnessStatus === "stale" || candidate.expired === true) reasonCodes.push("market_data_stale");
   if (riskVerdict.allow === false || candidate.allow === false) reasonCodes.push("risk_verdict_blocked");
   if (exchangeSafety.entryBlocked === true || exchangeSafety.status === "blocked" || exchangeSafety.exchangeTruthFreeze === true) reasonCodes.push("exchange_safety_blocked");
   if (hasUnresolvedIntent(unresolvedIntents, symbol)) reasonCodes.push("unresolved_execution_intent");
   if (health.circuitOpen === true || health.status === "blocked") reasonCodes.push("health_circuit_open");
+  if (candidate.liveGuardrailFail === true || riskVerdict.liveGuardrailFail === true || riskVerdict.liveAllowed === false) reasonCodes.push("live_guardrail_fail");
   if (["observe_only", "maintenance", "stopped", "protect_only"].includes(`${operatorMode || ""}`.toLowerCase())) reasonCodes.push("operator_mode_blocks_entries");
   if (candidate.manualReviewRequired === true || riskVerdict.manualReviewRequired === true) reasonCodes.push("manual_review_required");
 
