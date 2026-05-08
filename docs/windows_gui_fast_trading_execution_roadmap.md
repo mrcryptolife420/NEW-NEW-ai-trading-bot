@@ -111,28 +111,30 @@ Nieuwe stream data
 - [ ] Laat normale trading cycle bestaan voor volledige analyse.
 - [ ] Laat fast execution alleen reageren op verse streamdata.
 - [ ] Laat fast execution alleen werken op recent geanalyseerde candidates.
-- [ ] Voeg `FAST_EXECUTION_ENABLED=false` toe als default.
-- [ ] Voeg `FAST_EXECUTION_PAPER_ONLY=true` toe als default.
-- [ ] Voeg `FAST_EXECUTION_MAX_SIGNALS_PER_MINUTE=3` toe.
-- [ ] Voeg `FAST_EXECUTION_MIN_DATA_FRESHNESS_MS=1500` toe.
-- [ ] Voeg `FAST_EXECUTION_CANDIDATE_TTL_MS=5000` toe.
-- [ ] Voeg `FAST_EXECUTION_REQUIRE_LOCAL_BOOK=true` toe.
-- [ ] Voeg `FAST_EXECUTION_BLOCK_ON_RECONCILE_WARNING=true` toe.
-- [ ] Voeg `FAST_EXECUTION_BLOCK_ON_UNRESOLVED_INTENT=true` toe.
+- [x] Voeg `FAST_EXECUTION_ENABLED=false` toe als default.
+- [x] Voeg `FAST_EXECUTION_PAPER_ONLY=true` toe als default.
+- [x] Voeg `FAST_EXECUTION_MAX_SIGNALS_PER_MINUTE=3` toe.
+- [x] Voeg `FAST_EXECUTION_MIN_DATA_FRESHNESS_MS=1500` toe.
+- [x] Voeg `FAST_EXECUTION_CANDIDATE_TTL_MS=5000` toe.
+- [x] Voeg `FAST_EXECUTION_REQUIRE_LOCAL_BOOK=true` toe.
+- [x] Voeg `FAST_EXECUTION_BLOCK_ON_RECONCILE_WARNING=true` toe.
+- [x] Voeg `FAST_EXECUTION_BLOCK_ON_UNRESOLVED_INTENT=true` toe.
 
 ### Verplichte checks
 
-- [ ] Geen open positie op hetzelfde symbool.
-- [ ] Max open positions niet overschreden.
+- [x] Geen open positie op hetzelfde symbool.
+- [x] Max open positions niet overschreden.
 - [ ] Max exposure niet overschreden.
-- [ ] Spread onder maximum.
-- [ ] Order book data vers.
-- [ ] Risk verdict positief.
-- [ ] Exchange safety oké.
-- [ ] Geen unresolved execution intent.
-- [ ] Geen health circuit open.
-- [ ] Geen manual review vereist.
+- [x] Spread onder maximum.
+- [x] Order book data vers.
+- [x] Risk verdict positief.
+- [x] Exchange safety oké.
+- [x] Geen unresolved execution intent.
+- [x] Geen health circuit open.
+- [x] Geen manual review vereist.
 - [ ] Geen live guardrail fail.
+
+Status 2026-05-08: fast execution defaults en pure preflight checks bestaan. Nog geen broker/execution-koppeling; live blijft zonder impact.
 
 ---
 
@@ -144,18 +146,18 @@ Wanneer een setup klaar is, moet hij niet wachten op de volgende volledige cycle
 
 ### Taken
 
-- [ ] Maak `src/runtime/immediateEntryQueue.js`.
-- [ ] Queue item bevat `symbol`, `candidateId`, `createdAt`, `expiresAt`.
-- [ ] Queue item verloopt na 3 tot 5 seconden.
-- [ ] Deduplicate queue items per symbool.
-- [ ] Blokkeer queue item als er al een unresolved execution intent bestaat.
+- [x] Maak `src/runtime/immediateEntryQueue.js`.
+- [x] Queue item bevat `symbol`, `candidateId`, `createdAt`, `expiresAt`.
+- [x] Queue item verloopt na 3 tot 5 seconden.
+- [x] Deduplicate queue items per symbool.
+- [x] Blokkeer queue item als er al een unresolved execution intent bestaat.
 - [ ] Log elk queue item als audit event.
 - [ ] Toon queue in GUI.
-- [ ] Toon waarom queue item niet uitgevoerd werd.
-- [ ] Toon latency per queue item.
-- [ ] Voeg tests toe voor duplicate prevention.
-- [ ] Voeg tests toe voor expired candidate blocking.
-- [ ] Voeg tests toe voor safety blockers.
+- [x] Toon waarom queue item niet uitgevoerd werd.
+- [x] Toon latency per queue item.
+- [x] Voeg tests toe voor duplicate prevention.
+- [x] Voeg tests toe voor expired candidate blocking.
+- [x] Voeg tests toe voor safety blockers.
 
 ### Voorbeeld queue item
 
@@ -205,11 +207,11 @@ Wel checken:
 
 ### Taken
 
-- [ ] Maak `src/risk/fastPreflightRisk.js`.
-- [ ] Return altijd `{ allow, reasonCodes, latencyMs }`.
-- [ ] Voeg canonical reason codes toe.
-- [ ] Voeg unit tests toe voor elke blocker.
-- [ ] Fast preflight mag geen runtime muteren.
+- [x] Maak `src/risk/fastPreflightRisk.js`.
+- [x] Return altijd `{ allow, reasonCodes, latencyMs }`.
+- [x] Voeg canonical reason codes toe.
+- [x] Voeg unit tests toe voor elke blocker.
+- [x] Fast preflight mag geen runtime muteren.
 - [ ] Fast preflight moet onder 100 ms kunnen draaien.
 - [ ] Fast preflight resultaat wordt opgeslagen in trade trace.
 - [ ] Fast preflight resultaat wordt getoond in GUI.
@@ -678,8 +680,8 @@ Je wil meteen zien waarom bot niet of te laat handelt.
 
 ### Sprint 4: Fast paper execution
 
-- [ ] Immediate entry queue.
-- [ ] Fast preflight risk.
+- [x] Immediate entry queue.
+- [x] Fast preflight risk.
 - [ ] Fast execution paper-only.
 - [ ] Fast execution GUI panel.
 - [ ] Fast execution audit trail.
