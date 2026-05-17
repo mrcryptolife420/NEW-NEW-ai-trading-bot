@@ -135,20 +135,20 @@ Strategy / AI / Signal
   -> Telemetry / dashboard / audit log
 ```
 
-- [ ] Zoek alle directe order callsites:
+- [x] Zoek alle directe order callsites:
 
 ```bash
-grep -R "createOrder\|placeOrder\|submitOrder\|orderList\|LiveBroker" src test scripts
+npm run debug:order-routing
 ```
 
-- [ ] Label elke callsite als:
+- [x] Label elke callsite als:
   - `PAPER_SAFE`
   - `DEMO_SAFE`
   - `LIVE_GATED`
   - `DIAGNOSTIC_ONLY`
   - `TEST_ONLY`
   - `UNSAFE`
-- [ ] Laat CI falen bij `UNSAFE`.
+- [x] Laat CI falen bij `UNSAFE`.
 - [ ] Voeg runtime guard toe: in `botMode !== "live"` mag geen echte private exchange order-call plaatsvinden.
 - [ ] Voeg metadata toe aan elke order/fill:
   - `botMode`

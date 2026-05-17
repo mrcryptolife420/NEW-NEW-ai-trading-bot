@@ -14,7 +14,7 @@ credentials/
 
 # Local runtime data and generated state
 data/
-runtime/
+/runtime/
 
 # Dependencies
 node_modules/

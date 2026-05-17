@@ -73,6 +73,9 @@ jobs:
       - name: Run REST audit
         run: node src/cli.js rest:audit
 
+      - name: Run order-routing audit
+        run: npm run debug:order-routing
+
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         if: always()

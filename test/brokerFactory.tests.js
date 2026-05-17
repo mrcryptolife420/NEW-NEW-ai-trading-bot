@@ -1,5 +1,6 @@
 import { resolveBrokerSelection } from "../src/execution/brokerFactory.js";
 import { buildLivePreflight } from "../src/runtime/livePreflight.js";
+import { classifyOrderCallsite, scanOrderRoutingCallsites } from "../src/runtime/orderRoutingAudit.js";
 
 export async function registerBrokerFactoryTests({ runCheck, assert }) {
   await runCheck("broker factory resolves paper internal, demo spot and live safety matrix", async () => {
@@ -62,5 +63,20 @@ export async function registerBrokerFactoryTests({ runCheck, assert }) {
     assert.equal(ready.status, "ready");
     assert.equal(ready.productionEvidence.apiPermissions.canTrade, true);
     assert.equal(ready.productionEvidence.protectiveOrderTruth.freezeEntries, false);
+  });
+
+  await runCheck("order routing audit classifies direct order callsites without unsafe paths", async () => {
+    assert.equal(classifyOrderCallsite({ file: "src/execution/liveBroker.js", snippet: "await this.client.placeOrder({})" }), "LIVE_GATED");
+    assert.equal(classifyOrderCallsite({ file: "src/execution/demoPaperBroker.js", snippet: "export class DemoPaperBroker extends LiveBroker" }), "DEMO_SAFE");
+    assert.equal(classifyOrderCallsite({ file: "src/exchange/adapters/paper/PaperExchangeAdapter.js", snippet: "async placeOrder(order) {" }), "PAPER_SAFE");
+    assert.equal(classifyOrderCallsite({ file: "test/liveBroker.tests.js", snippet: "await client.placeOrder({})" }), "TEST_ONLY");
+    assert.equal(classifyOrderCallsite({ file: "src/random/worker.js", snippet: "await client.placeOrder({})" }), "UNSAFE");
+
+    const audit = await scanOrderRoutingCallsites({ projectRoot: process.cwd() });
+    assert.equal(audit.status, "ready");
+    assert.equal(audit.unsafeCount, 0);
+    assert.ok(audit.callsiteCount > 0);
+    assert.ok(audit.classificationCounts.LIVE_GATED > 0);
+    assert.ok(audit.classificationCounts.TEST_ONLY > 0);
   });
 }

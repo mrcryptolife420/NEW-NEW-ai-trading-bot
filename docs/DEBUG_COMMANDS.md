@@ -15,6 +15,7 @@ Dashboard and live-preflight contract checks:
 ```powershell
 npm run debug:api-contracts
 npm run debug:dashboard-dom
+npm run debug:order-routing
 npm run smoke:dashboard
 node src/cli.js live:preflight
 ```
