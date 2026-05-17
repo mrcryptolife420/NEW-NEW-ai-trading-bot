@@ -173,7 +173,12 @@ async function listJavaScriptFiles(rootDir) {
   const results = [];
   const entries = await fs.readdir(rootDir, { withFileTypes: true }).catch(() => []);
   for (const entry of entries) {
-    if (["node_modules", ".git", "data", "logs"].includes(entry.name)) {
+    if (
+      ["node_modules", ".git", "data", "logs", "coverage", ".next"].includes(entry.name) ||
+      /^dist(?:-|$)/i.test(entry.name) ||
+      /^dist-new(?:-|$)/i.test(entry.name) ||
+      /^win-unpacked$/i.test(entry.name)
+    ) {
       continue;
     }
     const fullPath = path.join(rootDir, entry.name);

@@ -23,6 +23,14 @@ function idOf(record = {}) {
   return text(record.decisionId || record.candidateId || record.tradeId || record.id, null);
 }
 
+function firstText(values = [], fallback = null) {
+  for (const value of values) {
+    const normalized = text(value, null);
+    if (normalized) return normalized;
+  }
+  return fallback;
+}
+
 function resolveSetupType(source = {}) {
   return text(
     source.setupType ||
@@ -80,13 +88,24 @@ export function buildPaperEvidencePacket({
     strategySummary
   });
   const state = resolveState({ decision: mergedDecision, candidate: mergedCandidate, trade });
-  const rootBlocker = text(
-    mergedDecision.rootBlocker ||
-      mergedDecision.primaryRootBlocker ||
-      mergedDecision.blockedReason ||
-      mergedDecision.blocker,
-    null
-  );
+  const reasonFallback = arr(mergedDecision.reasons || mergedCandidate.reasons || mergedDecision.reasonCodes)
+    .map((item) => (typeof item === "string" ? item : item?.code || item?.reason))
+    .find(Boolean);
+  const rootBlocker = firstText([
+    mergedDecision.rootBlocker,
+    mergedDecision.primaryRootBlocker,
+    mergedDecision.blockedReason,
+    mergedDecision.blocker,
+    reasonFallback
+  ], null);
+  const symbol = firstText([
+    mergedDecision.symbol,
+    mergedCandidate.symbol,
+    mergedDecision.candidate?.symbol,
+    mergedDecision.signalDecision?.symbol,
+    mergedDecision.trade?.symbol,
+    trade?.symbol
+  ], null);
   const packet = {
     packetId: [
       "paper_evidence",
@@ -95,7 +114,7 @@ export function buildPaperEvidencePacket({
     decisionId: text(mergedDecision.decisionId, null),
     candidateId: text(mergedCandidate.candidateId || mergedCandidate.id, null),
     tradeId: text(trade?.id || trade?.tradeId, null),
-    symbol: text(mergedDecision.symbol || mergedCandidate.symbol || trade?.symbol, null),
+    symbol,
     setupType: learningEvidence.setupType || mergedDecision.setupType || "unknown_setup",
     state,
     rootBlocker,
@@ -197,11 +216,22 @@ export function summarizePaperEvidenceSpine(packets = []) {
     bySetupType,
     byRootBlocker,
     missingLinks,
-    topReplayCandidates: items
+    topReplayCandidates: [...new Map(items
       .map((item) => item.replayPriority)
       .filter(Boolean)
       .sort((left, right) => safeNumber(right.priority, 0) - safeNumber(left.priority, 0))
-      .slice(0, 5),
+      .map((item) => [
+        [
+          item.packType || "unknown",
+          item.reason || "unknown",
+          item.scope || "unknown",
+          arr(item.sampleIds).join("|")
+        ].join(":"),
+        {
+          ...item,
+          sampleIds: [...new Set(arr(item.sampleIds).filter(Boolean))]
+        }
+      ])).values()].slice(0, 5),
     packets: items.slice(0, 40),
     paperOnly: true,
     diagnosticsOnly: true,

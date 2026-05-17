@@ -102,8 +102,22 @@ export async function registerFeatureAuditTests({ runCheck, assert, fs, os }) {
     }
     assert.equal(audit.features.find((item) => item.id === "net_edge_gate").activationStage, "diagnostics_only");
     assert.equal(audit.features.find((item) => item.id === "net_edge_gate").paperModeIntegration, "not_required");
+    assert.equal(audit.features.find((item) => item.id === "net_edge_gate").reviewDossier.liveDefault, "blocked_until_explicit_review");
+    assert.equal(audit.features.find((item) => item.id === "net_edge_gate").reviewDossier.liveBlockDefault, true);
+    assert.equal(audit.features.find((item) => item.id === "net_edge_gate").reviewDossier.paperEvidence.source, "paperEvidenceSpine");
+    assert.equal(audit.features.find((item) => item.id === "net_edge_gate").reviewDossier.replayCoverage.source, "replay_traces");
+    assert.equal(audit.features.find((item) => item.id === "net_edge_gate").reviewDossier.dashboardVisibility.required, true);
+    assert.ok(audit.findings.find((item) => item.id === "net_edge_gate").reviewDossier.evidenceRequired.includes("replay_trace_coverage_ready"));
+    for (const id of ["dynamic_exit_levels", "exit_intelligence_v2", "breakout_retest", "net_edge_gate"]) {
+      const feature = audit.features.find((item) => item.id === id);
+      assert.equal(feature.reviewDossier.liveBlockDefault, true);
+      assert.equal(feature.reviewDossier.paperEvidence.required, true);
+      assert.equal(feature.reviewDossier.replayCoverage.required, true);
+      assert.ok(feature.reviewDossier.rollbackCondition.includes(id));
+    }
     assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").activationStage, "paper_only");
     assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").paperModeIntegration, "paper_only");
+    assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").reviewDossier.paperOnlyDefault, true);
     assert.equal(audit.features.find((item) => item.id === "net_edge_gate").priority, "P1");
     assert.equal(audit.features.find((item) => item.id === "dynamic_exit_levels").priority, "P3");
     assert.equal(audit.features.find((item) => item.id === "indicator_feature_registry").priority, "P3");
@@ -116,14 +130,16 @@ export async function registerFeatureAuditTests({ runCheck, assert, fs, os }) {
       "ENABLE_LIQUIDATION_MAGNET_CONTEXT=true",
       "ENABLE_PRICE_ACTION_STRUCTURE=true",
       "ENABLE_STRATEGY_ROUTER=true",
-      "ENABLE_TRAILING_PROTECTION=true"
+      "ENABLE_TRAILING_PROTECTION=true",
+      "CANARY_TRADING_ENABLED=false"
     ].join("\n"));
     await writeFile(fs, path.join(root, "test/featureFlagHygiene.tests.js"), [
       "enableCvdConfirmation",
       "enableLiquidationMagnetContext",
       "enablePriceActionStructure",
       "enableStrategyRouter",
-      "enableTrailingProtection"
+      "enableTrailingProtection",
+      "canaryTradingEnabled"
     ].join("\n"));
     const audit = await buildFeatureAudit({
       projectRoot: root,
@@ -132,7 +148,8 @@ export async function registerFeatureAuditTests({ runCheck, assert, fs, os }) {
         enableLiquidationMagnetContext: true,
         enablePriceActionStructure: true,
         enableStrategyRouter: true,
-        enableTrailingProtection: true
+        enableTrailingProtection: true,
+        canaryTradingEnabled: false
       }
     });
     for (const key of [
@@ -140,14 +157,34 @@ export async function registerFeatureAuditTests({ runCheck, assert, fs, os }) {
       "enableLiquidationMagnetContext",
       "enablePriceActionStructure",
       "enableStrategyRouter",
-      "enableTrailingProtection"
+      "enableTrailingProtection",
+      "canaryTradingEnabled"
     ]) {
       const flag = audit.flags.find((item) => item.key === key);
       assert.ok(flag.classifications.includes("documented_config_only"));
       assert.equal(flag.classifications.includes("config_only"), false);
-      assert.equal(flag.auditStatus, "documented_config_placeholder");
+      assert.ok(["documented_config_placeholder", "documented_canary_orchestration_flag"].includes(flag.auditStatus));
       assert.ok(flag.note.length > 20);
       assert.ok(flag.nextSafeAction.length > 10);
     }
+  });
+
+  await runCheck("feature audit ignores generated desktop build directories", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "feature-audit-generated-"));
+    await writeFile(fs, path.join(root, ".env.example"), "ENABLE_NET_EDGE_GATE=false\n");
+    await writeFile(fs, path.join(root, "src/runtime/netEdgeGate.js"), "export function buildNetEdgeGate() {}\n");
+    await writeFile(fs, path.join(root, "src/runtime/decisionSupportDiagnostics.js"), "buildNetEdgeGate();\n");
+    await writeFile(fs, path.join(root, "test/decisionSupportFoundation.tests.js"), "buildNetEdgeGate();\n");
+    await writeFile(
+      fs,
+      path.join(root, "desktop/dist-new-20260508-214435/win-unpacked/resources/bot/src/runtime/netEdgeGate.js"),
+      "enableNetEdgeGate; buildNetEdgeGate();\n"
+    );
+    const audit = await buildFeatureAudit({
+      projectRoot: root,
+      config: { enableNetEdgeGate: false }
+    });
+    const flag = audit.flags.find((item) => item.key === "enableNetEdgeGate");
+    assert.equal(flag.referencedIn.some((item) => item.includes("desktop/dist-new")), false);
   });
 }

@@ -9,9 +9,7 @@ import { ExitIntelligence } from "../ai/exitIntelligence.js";
 import { MetaDecisionGate } from "../ai/metaDecisionGate.js";
 import { BinanceClient, normalizeKlines } from "../binance/client.js";
 import { buildSymbolRules } from "../binance/symbolFilters.js";
-import { LiveBroker } from "../execution/liveBroker.js";
-import { PaperBroker } from "../execution/paperBroker.js";
-import { DemoPaperBroker } from "../execution/demoPaperBroker.js";
+import { createBroker, resolveBrokerSelection } from "../execution/brokerFactory.js";
 import { ExecutionEngine } from "../execution/executionEngine.js";
 import { NewsService } from "../news/newsService.js";
 import { BinanceAnnouncementService } from "../events/binanceAnnouncementService.js";
@@ -128,6 +126,7 @@ import {
 import { buildOperatorActionResult } from "./operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "./tradingImprovementDiagnostics.js";
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "./restBudgetGovernor.js";
+import { REST_BAN_ENTRY_BLOCK_REASON, buildRestBanPauseSummary } from "./restBanPause.js";
 import { buildStreamHealthEvidence } from "./streamHealthEvidence.js";
 import { buildFeatureAudit } from "./featureAudit.js";
 import {
@@ -9243,7 +9242,7 @@ export class TradingBot {
       onRequestWeightUpdate: (update) => this.recordRequestWeightBudgetEvent("binance_client", update?.state, update?.event),
       logger: this.logger
     });
-    this.risk = new RiskManager(config);
+    this.risk = new RiskManager(config, this.logger);
     this.health = new HealthMonitor(config, this.logger);
     this.driftMonitor = new DriftMonitor(config, this.logger);
     this.selfHeal = new SelfHealManager(config, this.logger);
@@ -10973,11 +10972,14 @@ export class TradingBot {
     }
 
     const demoPaperExecution = usesDemoPaperExecution(this.config);
-    this.broker = this.config.botMode === "live"
-      ? new LiveBroker({ client: this.client, config: this.config, logger: this.logger, symbolRules: this.symbolRules, stream: this.stream })
-      : demoPaperExecution
-        ? new DemoPaperBroker({ client: this.client, config: this.config, logger: this.logger, symbolRules: this.symbolRules, stream: this.stream })
-        : new PaperBroker(this.config, this.logger);
+    this.broker = createBroker({
+      config: this.config,
+      logger: this.logger,
+      client: this.client,
+      symbolRules: this.symbolRules,
+      stream: this.stream
+    });
+    this.runtime.brokerDiagnostics = resolveBrokerSelection(this.config);
 
     let brokerDoctor = null;
     if (this.config.botMode === "live" || demoPaperExecution) {
@@ -22879,6 +22881,68 @@ export class TradingBot {
       this.runtime.postReconcileProbation.lastCycleAt = cycleAt;
     }
     this.updateSafetyState({ now: new Date(cycleAt), candidateSummaries: arr(this.runtime.latestDecisions) });
+    const applyRestBanPause = (requestWeight, source) => {
+      const pause = buildRestBanPauseSummary(requestWeight, { at: cycleAt });
+      if (!pause.active) return null;
+      this.runtime.requestWeight = pause.requestWeight;
+      this.runtime.entryBlockedReasons = [
+        ...new Set([...arr(this.runtime.entryBlockedReasons), REST_BAN_ENTRY_BLOCK_REASON, "api_degradation_blocks_entries"])
+      ];
+      this.runtime.ops = {
+        ...(this.runtime.ops || {}),
+        apiDegradationSummary: {
+          ...(this.runtime.ops?.apiDegradationSummary || {}),
+          ...pause.apiDegradationSummary
+        }
+      };
+      this.runtime.lastCycleAt = cycleAt;
+      this.runtime.lastAnalysisAt = cycleAt;
+      this.runtime.lastAnalysisError = REST_BAN_ENTRY_BLOCK_REASON;
+      this.runtime.lastAnalysisPause = {
+        at: cycleAt,
+        reason: REST_BAN_ENTRY_BLOCK_REASON,
+        source,
+        nextRetryAt: pause.nextRetryAt,
+        nextSafeAction: pause.nextSafeAction
+      };
+      this.runtime.nextCycleAt = pause.nextRetryAt || this.runtime.nextCycleAt || null;
+      this.runtime.service = {
+        ...(this.runtime.service || {}),
+        ...pause.service
+      };
+      this.logger.warn("Skipping cycle while Binance REST ban is active", {
+        banUntil: pause.requestWeight.banUntil,
+        banUntilIso: pause.nextRetryAt,
+        usedWeight1m: pause.requestWeight.usedWeight1m,
+        nextSafeAction: pause.nextSafeAction
+      });
+      this.recordEvent(REST_BAN_ENTRY_BLOCK_REASON, {
+        banUntil: pause.requestWeight.banUntil,
+        banUntilIso: pause.nextRetryAt,
+        usedWeight1m: pause.requestWeight.usedWeight1m,
+        lastRequest: pause.requestWeight.lastRequest || null,
+        source,
+        nextSafeAction: pause.nextSafeAction
+      });
+      return {
+        cycleAt,
+        entryAttempt: {
+          status: "blocked",
+          reason: REST_BAN_ENTRY_BLOCK_REASON,
+          nextRetryAt: pause.nextRetryAt,
+          nextSafeAction: pause.nextSafeAction
+        },
+        openedPosition: null,
+        candidates: []
+      };
+    };
+    const preSyncRateLimitPause = applyRestBanPause(
+      this.client?.getRateLimitState ? this.client.getRateLimitState() : this.runtime.requestWeight,
+      "cycle_start_pre_sync"
+    );
+    if (preSyncRateLimitPause) {
+      return preSyncRateLimitPause;
+    }
     try {
       await this.client.syncServerTime();
     } catch (error) {
@@ -22886,33 +22950,9 @@ export class TradingBot {
       this.recordEvent("clock_sync_refresh_failed", { error: error.message });
     }
     this.recordRequestWeightBudgetEvent("cycle_start");
-    if (this.runtime.requestWeight?.banActive) {
-      this.logger.error("Skipping cycle while Binance REST ban is active", {
-        banUntil: this.runtime.requestWeight.banUntil,
-        usedWeight1m: this.runtime.requestWeight.usedWeight1m
-      });
-      this.recordEvent("binance_rest_ban_active", {
-        banUntil: this.runtime.requestWeight.banUntil,
-        usedWeight1m: this.runtime.requestWeight.usedWeight1m,
-        lastRequest: this.runtime.requestWeight.lastRequest || null
-      });
-      this.runtime.lastCycleAt = cycleAt;
-      this.runtime.lastAnalysisAt = cycleAt;
-      this.runtime.lastAnalysisError = "binance_rest_ban_active";
-      this.runtime.service = {
-        ...(this.runtime.service || {}),
-        lastHeartbeatAt: cycleAt,
-        watchdogStatus: "paused_rate_limit_ban"
-      };
-      return {
-        cycleAt,
-        entryAttempt: {
-          status: "blocked",
-          reason: "binance_rest_ban_active"
-        },
-        openedPosition: null,
-        candidates: []
-      };
+    const activeRateLimitPause = applyRestBanPause(this.runtime.requestWeight, "cycle_start_budget_event");
+    if (activeRateLimitPause) {
+      return activeRateLimitPause;
     }
     const driftIssues = this.health.enforceClockDrift(this.client, this.runtime);
     const markedPrices = await this.manageOpenPositions();

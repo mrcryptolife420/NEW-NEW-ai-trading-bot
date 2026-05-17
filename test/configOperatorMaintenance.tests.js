@@ -217,6 +217,58 @@ export async function registerConfigOperatorMaintenanceTests({
     assert.equal(output.unresolved, 1);
   });
 
+  await runCheck("status CLI prints compact summary by default and preserves full payload on request", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "status-cli-"));
+    const fakeStatus = {
+      mode: "paper",
+      overview: { mode: "paper", equity: 1000, quoteFree: 900, openPositions: 1, lastCycleAt: "2026-05-17T10:00:00.000Z" },
+      openPositions: [{ symbol: "BTCUSDT" }],
+      topDecisions: [{ symbol: "ETHUSDT", score: { probability: 0.42 }, decision: { threshold: 0.55, reasons: ["model_confidence_too_low"] } }],
+      ops: { signalFlow: { generated: 1, blocked: 1, topRejectionReasons: ["model_confidence_too_low"] } },
+      report: { large: true },
+      modelWeights: [{ name: "feature", weight: 1 }]
+    };
+    const lines = [];
+    const previousLog = console.log;
+    console.log = (line) => lines.push(line);
+    const botFactory = () => ({
+      async init() {},
+      async getStatus() {
+        return fakeStatus;
+      },
+      async close() {}
+    });
+    try {
+      await runCli({
+        command: "status",
+        args: [],
+        config: { runtimeDir: root, projectRoot: root },
+        logger: { info() {}, warn() {}, error() {}, debug() {} },
+        botFactory,
+        processState: { exitCode: undefined }
+      });
+      await runCli({
+        command: "status",
+        args: ["--full"],
+        config: { runtimeDir: root, projectRoot: root },
+        logger: { info() {}, warn() {}, error() {}, debug() {} },
+        botFactory,
+        processState: { exitCode: undefined }
+      });
+    } finally {
+      console.log = previousLog;
+    }
+    const compact = JSON.parse(lines[0]);
+    const full = JSON.parse(lines[1]);
+    assert.equal(compact.compact, true);
+    assert.equal(compact.mode, "paper");
+    assert.equal(compact.topDecisions.length, 1);
+    assert.equal(compact.report, undefined);
+    assert.equal(compact.payload, undefined);
+    assert.deepEqual(full.report, { large: true });
+    assert.deepEqual(full.modelWeights, [{ name: "feature", weight: 1 }]);
+  });
+
   await runCheck("production ops readiness blocks unresolved intents and exposes safe CLI commands", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "production-ops-"));
     const runtimeDir = path.join(root, "runtime");

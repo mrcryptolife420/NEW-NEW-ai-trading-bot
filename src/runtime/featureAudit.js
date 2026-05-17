@@ -2,6 +2,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const SKIP_DIRS = new Set([".git", "node_modules", "data", "dist", "coverage", ".next"]);
+
+function shouldSkipAuditDir(name = "") {
+  return SKIP_DIRS.has(name) ||
+    /^dist(?:-|$)/i.test(name) ||
+    /^dist-new(?:-|$)/i.test(name) ||
+    /^win-unpacked$/i.test(name);
+}
 const ENV_KEY_OVERRIDES = {
   enableOnChainLiteContext: "ENABLE_ONCHAIN_LITE_CONTEXT"
 };
@@ -31,6 +38,11 @@ const DOCUMENTED_CONFIG_ONLY_FLAGS = {
     status: "documented_config_placeholder",
     note: "Trailing protection is governed by exit/trailing parameters and exchange protection state rather than this umbrella flag.",
     nextSafeAction: "deprecate_or_wire_to_exit_policy_after_live_safety_review"
+  },
+  canaryTradingEnabled: {
+    status: "documented_canary_orchestration_flag",
+    note: "Canary releases are governed by canaryReleaseGate and featureActivationGovernor; this global flag remains disabled until a reviewed operator/storage workflow wires it.",
+    nextSafeAction: "keep_disabled_until_canary_operator_workflow_is_reviewed"
   }
 };
 
@@ -299,7 +311,7 @@ async function walkFiles(root, current = root, files = []) {
     return files;
   }
   for (const entry of entries) {
-    if (SKIP_DIRS.has(entry.name)) {
+    if (shouldSkipAuditDir(entry.name)) {
       continue;
     }
     const fullPath = path.join(current, entry.name);
@@ -490,6 +502,43 @@ function buildConfigStatus(flags = []) {
   };
 }
 
+function buildLiveRiskReviewDossier(feature = {}) {
+  if (!feature.liveBehaviorPolicy?.includes("Live") && !feature.classifications?.includes("live_risk_review_needed")) {
+    return null;
+  }
+  return {
+    status: "review_required",
+    diagnosticsOnly: true,
+    paperOnlyDefault: feature.activationStage === "paper_only" || feature.paperModeIntegration === "paper_only",
+    liveDefault: "blocked_until_explicit_review",
+    liveBlockDefault: true,
+    paperEvidence: {
+      required: true,
+      source: "paperEvidenceSpine",
+      status: "required_before_live_review"
+    },
+    replayCoverage: {
+      required: true,
+      source: "replay_traces",
+      status: "required_before_live_review"
+    },
+    dashboardVisibility: {
+      required: true,
+      expectedRefs: feature.missingDashboardFields || [],
+      status: feature.missingDashboardFields?.length ? "operator_surface_required" : "ready"
+    },
+    evidenceRequired: [
+      "paper_evidence_spine_ready",
+      "replay_trace_coverage_ready",
+      "dashboard_operator_visibility_ready",
+      "rollback_condition_documented"
+    ],
+    testsRequired: feature.testsToAdd?.length ? feature.testsToAdd : feature.testRefs,
+    rollbackCondition: `${feature.id}_live_disabled_or_reverted_on_quality_drift_or_operator_review`,
+    liveBehaviorPolicy: feature.liveBehaviorPolicy
+  };
+}
+
 export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd() } = {}) {
   const entries = await buildSourceIndex(projectRoot);
   const envKeys = await readEnvExampleKeys(projectRoot);
@@ -555,7 +604,7 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
       currentValue: config[key],
       envPresent: envKeys.has(camelToEnvKey(key))
     }));
-    features.push({
+    const feature = {
       id: definition.id,
       flags: featureFlags,
       classifications,
@@ -578,7 +627,9 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
       dashboardRefs,
       docs,
       note: definition.note || null
-    });
+    };
+    feature.reviewDossier = buildLiveRiskReviewDossier(feature);
+    features.push(feature);
   }
 
   const counts = {};
@@ -599,6 +650,7 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
     findings: incompleteFeatures.map((feature) => ({
       id: feature.id,
       classifications: feature.classifications,
+      reviewDossier: feature.reviewDossier,
       note: feature.note,
       nextSafeAction: feature.classifications.includes("module_exists_but_unused")
         ? "wire_module_into_diagnostics_or_remove_flag_in_future_patch"

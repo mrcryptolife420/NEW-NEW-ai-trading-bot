@@ -17,7 +17,7 @@ import {
 } from "../runtime/learningAnalytics.js";
 import { buildIncidentReport, summarizeIncidentReports, writeIncidentReport } from "../runtime/incidentReport.js";
 import { buildPanicFlattenPlan } from "../runtime/panicFlattenPlan.js";
-import { buildRecorderAuditSummary, buildStorageAuditSummary } from "../storage/storageAudit.js";
+import { buildRecorderAuditSummary, buildStorageAuditSummary, buildStorageRetentionReport } from "../storage/storageAudit.js";
 import { buildReplayPackManifest } from "../runtime/replayPackManifest.js";
 import {
   buildAutoReconcilePlan,
@@ -34,6 +34,8 @@ import {
   buildTradingPathHealth,
   normalizeDashboardFreshness
 } from "../runtime/tradingPathHealth.js";
+import { buildNoTradeTimeline, summarizeNoTradeTimelines } from "../runtime/noTradeTimeline.js";
+import { buildRuntimeLivenessSummary } from "../runtime/runtimeLiveness.js";
 import { buildCanaryReleaseGate, buildCanaryReleaseSummary } from "../runtime/canaryReleaseGate.js";
 import { buildOperatorActionQueue } from "../runtime/operatorActionQueue.js";
 import { buildWalkForwardDeploymentReport } from "../research/walkForwardDeploymentReport.js";
@@ -68,6 +70,7 @@ import { routeNotification } from "../ops/notificationRouter.js";
 import { translateOperatorReason } from "../ops/operatorLanguage.js";
 import { buildAccountingExport } from "../reporting/accountingExport.js";
 import { buildLocalOnlyPrivacySummary } from "../runtime/localOnlyPrivacy.js";
+import { buildLivePreflight } from "../runtime/livePreflight.js";
 import { analyzePaperLiveDifference } from "../runtime/paperLiveDifferenceAnalyzer.js";
 import {
   buildConfigDiff,
@@ -93,6 +96,7 @@ import { buildMetricsStatus } from "../ops/metricsExporter.js";
 import { buildMissionControlSummary } from "../ops/missionControl.js";
 import { buildTradingSystemScorecard } from "../reporting/tradingSystemScorecard.js";
 import { createStrategyKillSwitch, resumeStrategyKillSwitch } from "../strategies/strategyKillSwitch.js";
+import { findCommandMetadata, listCommandMetadata } from "./commandRegistry.js";
 
 function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
@@ -112,6 +116,101 @@ const OPS_DRY_RUN_COMMANDS = new Set([
   "ops:order-execution-dry-run",
   "ops:panic-dry-run"
 ]);
+
+function compactDecision(decision = {}) {
+  const strategy = decision.strategy || decision.strategySummary || {};
+  return {
+    symbol: decision.symbol || null,
+    status: decision.status || decision.decision?.status || (decision.decision?.allow ? "allowed" : "blocked"),
+    strategy: typeof strategy === "string"
+      ? strategy
+      : strategy.strategyLabel || strategy.activeStrategy || strategy.id || decision.strategyId || null,
+    probability: decision.probability ?? decision.score?.probability ?? null,
+    threshold: decision.threshold ?? decision.decision?.threshold ?? null,
+    primaryReason: decision.primaryReason ||
+      decision.rootBlocker ||
+      decision.decision?.primaryReason ||
+      decision.decision?.riskVerdict?.primaryRejection?.code ||
+      decision.reasons?.[0] ||
+      decision.decision?.reasons?.[0] ||
+      null
+  };
+}
+
+function summarizeCliStatus(payload = {}) {
+  const status = payload.status || payload;
+  const overview = status.overview || {};
+  const ops = status.ops || {};
+  const signalFlow = status.signalFlow || ops.signalFlow || {};
+  const readiness = status.readiness || ops.readiness || null;
+  const sourceOfTruth = status.sourceOfTruth || null;
+  const readModel = status.readModel || null;
+  const compactStatus = {
+    mode: status.mode || overview.mode || sourceOfTruth?.mode || "paper",
+    lastCycleAt: status.lastCycleAt || overview.lastCycleAt || null,
+    lastAnalysisAt: status.lastAnalysisAt || overview.lastAnalysisAt || null,
+    equity: status.equity ?? overview.equity ?? null,
+    quoteFree: status.quoteFree ?? overview.quoteFree ?? null,
+    openPositions: Array.isArray(status.openPositions) ? status.openPositions.length : overview.openPositions ?? 0,
+    readiness: readiness
+      ? {
+          status: readiness.status || readiness.overallStatus || null,
+          reasons: (readiness.reasons || readiness.blockingReasons || []).slice(0, 8)
+        }
+      : null,
+    health: status.health?.status || status.health?.overallStatus || null,
+    stream: status.stream
+      ? {
+          status: status.stream.status || status.stream.public?.status || null,
+          publicConnected: status.stream.public?.connected ?? status.stream.publicConnected ?? null,
+          lastPublicMessageAt: status.stream.lastPublicMessageAt || status.stream.public?.lastMessageAt || null
+        }
+      : null,
+    signalFlow: {
+      status: signalFlow.status || null,
+      generated: signalFlow.generated ?? signalFlow.generatedCount ?? null,
+      allowed: signalFlow.allowed ?? signalFlow.allowedCount ?? null,
+      blocked: signalFlow.blocked ?? signalFlow.blockedCount ?? null,
+      topRejectionReasons: (signalFlow.topRejectionReasons || signalFlow.rejectionReasons || []).slice(0, 8)
+    },
+    topDecisions: (status.topDecisions || []).slice(0, 6).map(compactDecision),
+    readModel: readModel
+      ? {
+          status: readModel.status || null,
+          rebuiltAt: readModel.rebuiltAt || null,
+          persistenceGaps: readModel.paperAnalyticsReadmodelSummary?.persistenceCoverage?.persistenceGaps || []
+        }
+      : null,
+    nextAction: ops.operatorDeck?.primaryAction ||
+      ops.tradingPathHealth?.recommendedAction ||
+      status.safety?.recommendedAction ||
+      "use_status_full_for_complete_payload"
+  };
+  if (payload.status) {
+    return {
+      contract: payload.contract || null,
+      manager: payload.manager
+        ? {
+            runState: payload.manager.runState || null,
+            lifecycleState: payload.manager.lifecycle?.state || payload.manager.lifecycleState || null,
+            currentMode: payload.manager.currentMode || compactStatus.mode,
+            lastStartAt: payload.manager.lastStartAt || null,
+            lastStopAt: payload.manager.lastStopAt || null,
+            stopReason: payload.manager.stopReason || null,
+            lastError: payload.manager.lastError || null
+          }
+        : null,
+      status: compactStatus,
+      compact: true,
+      fullPayloadHint: "Run status --full for the complete dashboard-derived payload."
+    };
+  }
+  return {
+    ...compactStatus,
+    compact: true,
+    fullPayloadHint: "Run status --full for the complete dashboard-derived payload."
+  };
+}
 
 function buildSampleNeuralRecords() {
   return Array.from({ length: 30 }, (_, index) => {
@@ -271,6 +370,47 @@ export default async function runCli({
   signalSource = process,
   processState = process
 }) {
+  if (command === "help" || command === "--help" || command === "-h") {
+    const commands = listCommandMetadata();
+    console.log([
+      "Usage: node src/cli.js <command> [args]",
+      "",
+      "Common commands:",
+      ...commands.slice(0, 24).map((item) => `  ${item.command.padEnd(24)} ${item.description}`)
+    ].join("\n"));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "commands") {
+    console.log(JSON.stringify({ commands: listCommandMetadata() }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "version") {
+    console.log(JSON.stringify({ name: "binance-ai-trading-bot", version: "0.1.0" }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "config:check") {
+    const metadata = findCommandMetadata(command);
+    console.log(JSON.stringify({
+      status: "ok",
+      command,
+      readOnly: metadata?.readOnly !== false,
+      mode: config.botMode,
+      paperExecutionVenue: config.paperExecutionVenue,
+      runtimeDir: config.runtimeDir,
+      dashboardPort: config.dashboardPort,
+      configHash: config.configHash || null,
+      validation: config.validation || { valid: true, errors: [], warnings: [] }
+    }, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
   if (command === "dashboard") {
     const dashboard = await dashboardFactory({
       projectRoot: config.projectRoot,
@@ -524,16 +664,41 @@ export default async function runCli({
       config,
       now
     });
+    const runtimeLiveness = buildRuntimeLivenessSummary({
+      runtime,
+      manager: runtime.manager || {},
+      config,
+      now
+    });
+    const dashboardFreshness = normalizeDashboardFreshness(dashboardSnapshot, now, config);
+    const noTradeInputs = [
+      ...(Array.isArray(runtime.latestBlockedSetups) ? runtime.latestBlockedSetups : []),
+      ...(Array.isArray(runtime.latestDecisions) ? runtime.latestDecisions : []),
+      ...(Array.isArray(readmodel.paperAnalyticsReadmodelSummary?.paperCandidates) ? readmodel.paperAnalyticsReadmodelSummary.paperCandidates : [])
+    ].slice(0, 20);
+    const noTradeTimelines = noTradeInputs.map((candidate) => buildNoTradeTimeline({
+      candidate,
+      decision: candidate,
+      tradingPathHealth: health,
+      readmodelSummary: readmodel.paperAnalyticsReadmodelSummary || readmodel.readModel?.paperAnalyticsReadmodelSummary || {},
+      dashboardFreshness,
+      now,
+      botMode: config.botMode
+    }));
+    const noTradeTimelineSummary = summarizeNoTradeTimelines(noTradeTimelines);
     console.log(JSON.stringify({
       readOnly: true,
       generatedAt: now,
       health,
+      runtimeLiveness,
       botRunning: health.botRunning,
       lastCycleAt: health.lastCycleAt,
       feedFreshness: feedSummary,
       marketSnapshotFlowDebug: runtime.marketSnapshotFlowDebug || null,
       readmodelFreshness: health.readmodelFreshness,
-      dashboardFreshness: normalizeDashboardFreshness(dashboardSnapshot, now, config),
+      dashboardFreshness,
+      noTradeTimelineSummary,
+      noTradeTimelines: noTradeTimelines.slice(0, 8),
       topDecisionsCount: health.topDecisionsCount,
       entryBlockedReasons: health.blockingReasons,
       staleSources: health.staleSources,
@@ -625,6 +790,23 @@ export default async function runCli({
     return;
   }
 
+  if (command === "live:preflight") {
+    const store = new StateStore(config.runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    const result = buildLivePreflight({
+      config,
+      runtime,
+      doctor: runtime.lastDoctor || runtime.doctor || {},
+      exchangeSummary: runtime.exchangeTruth || runtime.exchangeSafety || {},
+      promotionDossier: runtime.promotionPipeline || runtime.promotionDossier || {},
+      rollbackWatch: runtime.rollbackWatch || {}
+    });
+    console.log(JSON.stringify(result, null, 2));
+    markCommandSuccess(processState);
+    return;
+  }
+
   if (command === "post-reconcile:status") {
     const store = new StateStore(config.runtimeDir);
     await store.init();
@@ -701,9 +883,15 @@ export default async function runCli({
     return;
   }
 
-  if (command === "storage:audit" || command === "recorder:audit" || command === "replay:manifest") {
+  if (command === "storage:audit" || command === "storage:retention" || command === "recorder:audit" || command === "replay:manifest") {
     if (command === "storage:audit") {
       const result = await buildStorageAuditSummary({ runtimeDir: config.runtimeDir });
+      console.log(JSON.stringify(result, null, 2));
+      markCommandSuccess(processState);
+      return;
+    }
+    if (command === "storage:retention") {
+      const result = await buildStorageRetentionReport({ runtimeDir: config.runtimeDir });
       console.log(JSON.stringify(result, null, 2));
       markCommandSuccess(processState);
       return;
@@ -1045,7 +1233,8 @@ export default async function runCli({
     await manager.init({
       command,
       readOnly: managerReadOnly,
-      enableStreams: !managerReadOnly && command !== "scan"
+      enableStreams: !managerReadOnly && command !== "scan",
+      skipInitialAnalysis: command === "status"
     });
     try {
       if (command === "once") {
@@ -1057,7 +1246,7 @@ export default async function runCli({
 
       if (command === "status") {
         const status = await manager.getStatus();
-        console.log(JSON.stringify(status, null, 2));
+        console.log(JSON.stringify(args.includes("--full") ? status : summarizeCliStatus(status), null, 2));
         markCommandSuccess(processState);
         return;
       }
@@ -1127,7 +1316,7 @@ export default async function runCli({
 
     if (command === "status") {
       const status = await bot.getStatus();
-      console.log(JSON.stringify(status, null, 2));
+      console.log(JSON.stringify(args.includes("--full") ? status : summarizeCliStatus(status), null, 2));
       markCommandSuccess(processState);
       return;
     }

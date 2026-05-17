@@ -1,6 +1,8 @@
 import { BinanceClient } from "../src/binance/client.js";
 import { TradingBot } from "../src/runtime/tradingBot.js";
 import { buildRestArchitectureAudit, scanRestCallers } from "../src/runtime/restArchitectureAudit.js";
+import { buildRestBudgetGovernorSummary } from "../src/runtime/restBudgetGovernor.js";
+import { buildMarketScannerUniverse } from "../src/runtime/marketScanner.js";
 
 function makeHeaders(values = {}) {
   const normalized = Object.fromEntries(
@@ -215,9 +217,111 @@ export async function registerBinanceRestArchitectureTests({
 
     const first = await client.getExchangeInfo([], { requestMeta: { caller: "watchlist.exchange_info" } });
     const second = await client.getExchangeInfo([], { requestMeta: { caller: "startup.exchange_info" } });
+    const state = client.getRateLimitState();
 
     assert.equal(attempts, 1);
     assert.deepEqual(first, second);
+    assert.equal(state.topRestCallers["watchlist.exchange_info"].cacheMisses, 1);
+    assert.equal(state.topRestCallers["startup.exchange_info"].cacheHits, 1);
+  });
+
+  await runCheck("exchange info concurrent callers share single in-flight request", async () => {
+    let attempts = 0;
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    const client = new BinanceClient({
+      apiKey: "",
+      apiSecret: "",
+      baseUrl: "https://api.binance.com",
+      fetchImpl: async () => {
+        attempts += 1;
+        await gate;
+        return {
+          ok: true,
+          status: 200,
+          headers: makeHeaders(),
+          async text() {
+            return JSON.stringify({ symbols: [{ symbol: "BTCUSDT" }] });
+          }
+        };
+      }
+    });
+    const first = client.getExchangeInfo([], { requestMeta: { caller: "startup.exchange_info" } });
+    const second = client.getExchangeInfo([], { requestMeta: { caller: "watchlist.exchange_info" } });
+    release();
+    const results = await Promise.all([first, second]);
+    const state = client.getRateLimitState();
+    assert.equal(attempts, 1);
+    assert.deepEqual(results[0], results[1]);
+    assert.equal(state.topRestCallers["startup.exchange_info"].cacheMisses, 1);
+    assert.equal(state.topRestCallers["watchlist.exchange_info"].coalescedCount, 1);
+  });
+
+  await runCheck("scanner universe ticker concurrent callers share single in-flight request", async () => {
+    let tickerCalls = 0;
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    const client = {
+      baseUrl: "https://api.binance.com",
+      cacheEvents: [],
+      noteCacheDiagnostics(event) {
+        this.cacheEvents.push(event);
+      },
+      async getExchangeInfo() {
+        return { symbols: [{ symbol: "BTCUSDT", status: "TRADING", baseAsset: "BTC", quoteAsset: "USDT" }] };
+      },
+      async publicRequest() {
+        tickerCalls += 1;
+        await gate;
+        return [{ symbol: "BTCUSDT", quoteVolume: "1000000", count: 100 }];
+      }
+    };
+    const first = buildMarketScannerUniverse({ client, config: {}, symbols: ["BTCUSDT"] });
+    const second = buildMarketScannerUniverse({ client, config: {}, symbols: ["BTCUSDT"] });
+    release();
+    const results = await Promise.all([first, second]);
+    assert.equal(tickerCalls, 1);
+    assert.equal(results[0].entries[0].symbol, "BTCUSDT");
+    assert.equal(results[1].entries[0].symbol, "BTCUSDT");
+    assert.equal(client.cacheEvents.some((event) => event.type === "cache_miss" && event.cacheKey === "universe_ticker_24hr"), true);
+    assert.equal(client.cacheEvents.some((event) => event.type === "coalesced" && event.cacheKey === "universe_ticker_24hr"), true);
+  });
+
+  await runCheck("futures public context calls are cached and coalesced as read-only market context", async () => {
+    let attempts = 0;
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    const client = new BinanceClient({
+      apiKey: "",
+      apiSecret: "",
+      baseUrl: "https://api.binance.com",
+      futuresPublicCacheMs: 60_000,
+      fetchImpl: async () => {
+        attempts += 1;
+        await gate;
+        return {
+          ok: true,
+          status: 200,
+          headers: makeHeaders(),
+          async text() {
+            return JSON.stringify({ openInterest: "123" });
+          }
+        };
+      }
+    });
+    const first = client.getFuturesOpenInterest("BTCUSDT");
+    const second = client.getFuturesOpenInterest("BTCUSDT");
+    release();
+    const results = await Promise.all([first, second]);
+    const third = await client.getFuturesOpenInterest("BTCUSDT");
+    const state = client.getRateLimitState();
+    const caller = "futures_public:GET /fapi/v1/openInterest";
+
+    assert.equal(attempts, 1);
+    assert.deepEqual(results[0], third);
+    assert.equal(state.topRestCallers[caller].cacheMisses, 1);
+    assert.equal(state.topRestCallers[caller].coalescedCount, 1);
+    assert.equal(state.topRestCallers[caller].cacheHits, 1);
   });
 
   await runCheck("market snapshots can be built from stream candles and local book without REST polling", async () => {
@@ -360,6 +464,64 @@ export async function registerBinanceRestArchitectureTests({
     assert.equal(audit.topRestCallers[0].caller, "spot:GET:/api/v3/klines");
   });
 
+  await runCheck("request budget summary groups hot scanner callers with cache recommendations", async () => {
+    const summary = buildRestBudgetGovernorSummary({
+      rateLimitState: {
+        topRestCallers: {
+          "scanner.deep_book": { count: 3420, weight: 17100, cacheHits: 5, cacheMisses: 5, coalescedCount: 3 },
+          "scanner.universe.ticker_24hr": { count: 114, weight: 9120, cacheHits: 9, cacheMisses: 1, coalescedCount: 4 },
+          "startup.exchange_info": { count: 40, weight: 4720, cacheHits: 2, cacheMisses: 1, coalescedCount: 1 }
+        }
+      },
+      config: { requestWeightWarnThreshold1m: 4800 },
+      streamStatus: { public: { connected: true } }
+    });
+    const deepBook = summary.topCallers.find((item) => item.caller === "scanner.deep_book");
+    const ticker = summary.topCallers.find((item) => item.caller === "scanner.universe.ticker_24hr");
+    const exchangeInfo = summary.topCallers.find((item) => item.caller === "startup.exchange_info");
+    assert.equal(deepBook.restClass, "public_market_depth");
+    assert.equal(deepBook.cacheRecommendation.action, "prefer_local_book_or_cached_book_ticker");
+    assert.equal(deepBook.cacheTelemetry.cacheKey, "market_depth_or_book_ticker");
+    assert.equal(deepBook.cacheTelemetry.coalesceWindowMs, 5000);
+    assert.equal(deepBook.cacheTelemetry.cacheHitRatio, 0.5);
+    assert.equal(deepBook.cacheTelemetry.coalescedCount, 3);
+    assert.equal(deepBook.cacheTelemetry.fallbackReason, "hot_public_depth_rest_suppressed");
+    assert.equal(deepBook.cacheHitRatio, 0.5);
+    assert.equal(deepBook.cacheMisses, 5);
+    assert.equal(deepBook.coalescedCount, 3);
+    assert.equal(deepBook.fallbackReason, "hot_public_depth_rest_suppressed");
+    assert.equal(ticker.cacheRecommendation.action, "coalesce_universe_ticker_scan");
+    assert.equal(exchangeInfo.cacheRecommendation.action, "reuse_exchange_info_cache");
+    assert.ok(summary.cacheTelemetry.some((item) => item.cacheKey === "universe_ticker_24hr"));
+    assert.ok(summary.recommendedActions.some((item) => item.includes("Coalesce universe ticker")));
+  });
+
+  await runCheck("request budget summary converts legacy hot REST callers into actionable cache telemetry", async () => {
+    const summary = buildRestBudgetGovernorSummary({
+      rateLimitState: {
+        topRestCallers: {
+          "scanner.deep_book": { count: 10, weight: 5000 },
+          "futures_public:GET /futures/data/openInterestHist": { count: 7, weight: 7 }
+        }
+      },
+      config: { requestWeightWarnThreshold1m: 4800 },
+      streamStatus: { public: { connected: true } }
+    });
+    const deepBook = summary.topCallers.find((item) => item.caller === "scanner.deep_book");
+    const futures = summary.topCallers.find((item) => item.caller.includes("openInterestHist"));
+    assert.equal(deepBook.cacheTelemetry.cacheHitRatio, 0);
+    assert.equal(deepBook.cacheTelemetry.cacheMisses, 10);
+    assert.equal(deepBook.cacheTelemetry.telemetryStatus, "legacy_rest_observed_without_cache_event");
+    assert.equal(deepBook.cacheHitRatio, 0);
+    assert.equal(deepBook.cacheMisses, 10);
+    assert.equal(deepBook.telemetryStatus, "legacy_rest_observed_without_cache_event");
+    assert.equal(deepBook.fallbackReason, "legacy_rest_without_cache_event");
+    assert.equal(futures.restClass, "public_derivatives_context");
+    assert.equal(futures.cacheTelemetry.cacheKey, "futures_public_context");
+    assert.equal(futures.cacheTelemetry.cacheHitRatio, 0);
+    assert.ok(summary.recommendedActions.some((item) => item.includes("futures-public context")));
+  });
+
   await runCheck("rest architecture static scan classifies code callers", async () => {
     const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-rest-scan-"));
     const srcDir = path.join(projectRoot, "src", "runtime");
@@ -376,5 +538,23 @@ export async function registerBinanceRestArchitectureTests({
     assert.equal(scan.familyCounts.book_ticker, 1);
     assert.equal(scan.familyCounts.exchange_info, 1);
     assert.ok(scan.callers.every((caller) => caller.role === "runtime_call" || caller.role === "reference"));
+  });
+
+  await runCheck("rest architecture static scan ignores generated dist directories", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-rest-scan-dist-"));
+    await fs.mkdir(path.join(projectRoot, "src", "runtime"), { recursive: true });
+    await fs.mkdir(path.join(projectRoot, "src", "dist-new-20260508-214435"), { recursive: true });
+    await fs.writeFile(
+      path.join(projectRoot, "src", "runtime", "scanner.js"),
+      "await client.getKlines(\"BTCUSDT\", \"1m\", 100);\n"
+    );
+    await fs.writeFile(
+      path.join(projectRoot, "src", "dist-new-20260508-214435", "scanner.js"),
+      "await client.getBookTicker(\"BTCUSDT\");\n"
+    );
+    const scan = await scanRestCallers({ projectRoot });
+    assert.equal(scan.familyCounts.klines, 1);
+    assert.equal(scan.familyCounts.book_ticker || 0, 0);
+    assert.equal(scan.callers.some((caller) => caller.file.includes("dist-new")), false);
   });
 }

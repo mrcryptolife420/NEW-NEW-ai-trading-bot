@@ -9,6 +9,8 @@ import { TradingBot } from "./tradingBot.js";
 import { createBotLifecycleState, setBotLifecycleActivity, transitionBotLifecycle } from "./botLifecycleStateMachine.js";
 import { buildApiEnvelope, computeOperationalReadiness } from "./operationalTruth.js";
 import { buildMissionControlSummary } from "../ops/missionControl.js";
+import { buildLivePreflight } from "./livePreflight.js";
+import { buildRuntimeLivenessSummary, touchRuntimeLiveness } from "./runtimeLiveness.js";
 
 function summarizeError(error) {
   return {
@@ -82,7 +84,17 @@ export class BotManager {
     this.stopReason = null;
     this.consecutiveCycleFailures = 0;
     this.botNeedsReinitialize = false;
+    this.liveness = touchRuntimeLiveness({}, { phase: "manager_constructed", status: "idle" });
     this.serial = Promise.resolve();
+  }
+
+  noteLiveness(phase, { status = "running", reason = null, error = null } = {}) {
+    const at = nowIso();
+    this.liveness = touchRuntimeLiveness({ liveness: this.liveness }, { phase, status, reason, error, at });
+    if (this.bot?.runtime) {
+      touchRuntimeLiveness(this.bot.runtime, { phase, status, reason, error, at });
+    }
+    return this.liveness;
   }
 
   syncRunStateFromLifecycle() {
@@ -140,9 +152,13 @@ export class BotManager {
   async init(options = {}) {
     return this.withLock(async () => {
       this.transitionLifecycle("initializing", { activity: "refreshing", reason: "manager_init" });
+      this.noteLiveness("manager_init", { status: "running" });
       await ensureEnvFile(this.projectRoot);
       await this.reinitializeBot(options);
-      await this.bot.refreshAnalysis();
+      if (!options.skipInitialAnalysis) {
+        await this.bot.refreshAnalysis();
+      }
+      this.noteLiveness("manager_ready", { status: "ready" });
       this.transitionLifecycle("ready", { activity: "idle", reason: "manager_init_completed" });
       return this.getSnapshot();
     });
@@ -227,6 +243,11 @@ export class BotManager {
       lastModeSwitchAt: this.lastModeSwitchAt,
       stopReason: this.stopReason || null,
       lastError: publicError(this.lastError),
+      liveness: buildRuntimeLivenessSummary({
+        runtime: this.bot?.runtime || {},
+        manager: { runState: this.runState, liveness: this.liveness, lastError: this.lastError },
+        config: this.config || {}
+      }),
       dashboardPort: this.config.dashboardPort
     };
     const snapshot = buildApiEnvelope({
@@ -249,7 +270,12 @@ export class BotManager {
         runState: this.runState,
         lifecycle: this.lifecycle,
         currentMode: this.config?.botMode || "paper",
-        lastError: publicError(this.lastError)
+        lastError: publicError(this.lastError),
+        liveness: buildRuntimeLivenessSummary({
+          runtime: this.bot?.runtime || {},
+          manager: { runState: this.runState, liveness: this.liveness, lastError: this.lastError },
+          config: this.config || {}
+        })
       },
       status: kind === "status" ? (body.status || null) : null,
       doctor: kind === "doctor" ? (body.doctor || null) : null,
@@ -341,7 +367,9 @@ export class BotManager {
     while (!this.stopRequested) {
       try {
         this.setLifecycleActivity("cycle");
+        this.noteLiveness("cycle_started", { status: "running" });
         const result = await this.bot.runCycle();
+        this.noteLiveness("cycle_completed", { status: "ready" });
         await this.applySelfHealManagerAction(result.selfHeal);
         this.consecutiveCycleFailures = 0;
         if (this.stopReason !== "self_heal_live_positions_open") {
@@ -356,6 +384,7 @@ export class BotManager {
       } catch (error) {
         this.consecutiveCycleFailures += 1;
         this.lastError = summarizeError(error);
+        this.noteLiveness("cycle_failed", { status: "failed", error });
         if (this.lifecycle.state !== "degraded") {
           this.transitionLifecycle("degraded", { activity: "cycle", reason: "cycle_failure" });
         } else {
@@ -366,22 +395,34 @@ export class BotManager {
           consecutiveFailures: this.consecutiveCycleFailures
         });
         if (this.consecutiveCycleFailures >= escalationThreshold) {
-          this.stopRequested = true;
-          this.stopReason = "manager_cycle_failure_escalated";
-          this.logger.error("Manager loop escalated after repeated cycle failures", {
-            threshold: escalationThreshold,
-            consecutiveFailures: this.consecutiveCycleFailures,
-            lastError: error.message
-          });
+          if ((this.config?.botMode || "paper") === "live") {
+            this.stopRequested = true;
+            this.stopReason = "manager_cycle_failure_escalated";
+            this.logger.error("Manager loop escalated after repeated live cycle failures", {
+              threshold: escalationThreshold,
+              consecutiveFailures: this.consecutiveCycleFailures,
+              lastError: error.message
+            });
+          } else {
+            this.stopReason = "paper_cycle_failure_degraded";
+            this.logger.warn?.("Paper manager remains degraded after repeated cycle failures", {
+              threshold: escalationThreshold,
+              consecutiveFailures: this.consecutiveCycleFailures,
+              lastError: error.message
+            });
+          }
         }
       }
       if (this.stopRequested) {
         break;
       }
+      this.noteLiveness("cycle_waiting", { status: "idle" });
       await this.interruptibleDelay(this.config.tradingIntervalSeconds * 1000);
     }
+    this.noteLiveness("manager_stopping", { status: "stopping", reason: this.stopReason || "loop_stop" });
     this.transitionLifecycle("stopping", { activity: "idle", reason: this.stopReason || "loop_stop" });
     this.transitionLifecycle("stopped", { activity: "idle", reason: this.stopReason || "loop_stop" });
+    this.noteLiveness("manager_stopped", { status: "stopped", reason: this.stopReason || "loop_stop" });
     this.lastStopAt = nowIso();
   }
 
@@ -445,6 +486,7 @@ export class BotManager {
       this.stopRequested = false;
       this.stopReason = null;
       this.consecutiveCycleFailures = 0;
+      this.noteLiveness("manager_start_requested", { status: "running" });
       if (this.lifecycle.state === "stopped") {
         this.transitionLifecycle("ready", { activity: "idle", reason: "restart" });
       }
@@ -466,7 +508,9 @@ export class BotManager {
         throw new Error("Stop eerst de doorlopende bot voordat je een losse cyclus draait.");
       }
       this.setLifecycleActivity("cycle");
+      this.noteLiveness("cycle_once_started", { status: "running" });
       const result = await this.bot.runCycle();
+      this.noteLiveness("cycle_once_completed", { status: "ready" });
       const selfHealAction = await this.applySelfHealManagerAction(result.selfHeal);
       this.consecutiveCycleFailures = 0;
       if (!["paper_switch_blocked_open_positions"].includes(selfHealAction || "") && !this.lastError?.message) {
@@ -646,6 +690,7 @@ export class BotManager {
           ...this.config,
           botMode: "live",
           paperExecutionVenue: updates.PAPER_EXECUTION_VENUE || this.config?.paperExecutionVenue,
+          binanceApiBaseUrl: updates.BINANCE_API_BASE_URL ?? this.config?.binanceApiBaseUrl,
           liveTradingAcknowledged: liveAcknowledgement
         });
       }
@@ -822,6 +867,28 @@ export class BotManager {
         lastError: publicError(this.lastError)
       },
       doctor
+    });
+  }
+
+  async getLivePreflight() {
+    await this.ensureBotReady();
+    const runtime = this.bot?.runtime || {};
+    const preflight = buildLivePreflight({
+      config: this.config || {},
+      runtime,
+      doctor: runtime.lastDoctor || runtime.doctor || {},
+      exchangeSummary: runtime.exchangeTruth || runtime.exchangeSafety || {},
+      promotionDossier: runtime.promotionPipeline || runtime.promotionDossier || {},
+      rollbackWatch: runtime.rollbackWatch || {}
+    });
+    return this.buildApiEnvelope("live_preflight", {
+      manager: {
+        runState: this.runState,
+        lifecycle: this.lifecycle,
+        currentMode: this.config?.botMode || "paper",
+        lastError: publicError(this.lastError)
+      },
+      preflight
     });
   }
 

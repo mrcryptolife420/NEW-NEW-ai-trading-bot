@@ -102,4 +102,34 @@ export async function registerPaperEvidenceSpineTests({ runCheck, assert }) {
     assert.equal(fallback.paperEvidenceSpineSummary.status, "empty");
     assertFiniteTree(assert, summary);
   });
+
+  await runCheck("paper evidence spine deduplicates replay candidates and falls back to nested evidence", async () => {
+    const packets = [
+      buildPaperEvidencePacket({
+        decision: {
+          id: "d4",
+          signalDecision: { symbol: "BNBUSDT" },
+          reasons: ["quality_quorum_degraded"],
+          approved: false,
+          setupType: "trend_continuation"
+        }
+      }),
+      buildPaperEvidencePacket({
+        decision: {
+          id: "d4",
+          signalDecision: { symbol: "BNBUSDT" },
+          reasons: ["quality_quorum_degraded"],
+          approved: false,
+          setupType: "trend_continuation"
+        }
+      })
+    ];
+    packets[0].replayPriority = { priority: 70, packType: "regime_confusion", reason: "unknown", scope: "trend", sampleIds: ["d4", "d4"] };
+    packets[1].replayPriority = { priority: 70, packType: "regime_confusion", reason: "unknown", scope: "trend", sampleIds: ["d4", "d4"] };
+    const summary = summarizePaperEvidenceSpine(packets);
+    assert.equal(packets[0].symbol, "BNBUSDT");
+    assert.equal(packets[0].rootBlocker, "quality_quorum_degraded");
+    assert.equal(summary.topReplayCandidates.length, 1);
+    assert.deepEqual(summary.topReplayCandidates[0].sampleIds, ["d4"]);
+  });
 }
