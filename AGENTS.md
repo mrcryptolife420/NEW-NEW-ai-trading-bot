@@ -948,6 +948,12 @@ For paper-trading tasks specifically, “done” additionally means:
 
 \- a working path or exact blocker is proven with code evidence
 
+\## Roadmap completion rule
+
+When a roadmap Markdown file in `docs/` has been fully executed and verified, move it to `docs/voltooid/`.
+
+Keep active roadmap files in `docs/`; keep completed roadmap files only in `docs/voltooid/` so future work does not duplicate completed plans.
+
 
 
 \---
