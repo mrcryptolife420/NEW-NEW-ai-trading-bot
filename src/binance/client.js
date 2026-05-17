@@ -200,6 +200,10 @@ function normalizeBaseUrl(baseUrl, apiPrefix = "") {
   return trimmed.replace(new RegExp(`/${normalizedPrefix}$`, "i"), "");
 }
 
+function isDemoSpotBaseUrl(baseUrl = "") {
+  return `${baseUrl || ""}`.toLowerCase().includes("demo-api.binance.com");
+}
+
 export class BinanceClient {
   constructor({
     apiKey,
@@ -217,7 +221,9 @@ export class BinanceClient {
     futuresPublicCacheMs = 30_000,
     requestWeightBackoffMaxMs = 60_000,
     requestWeightWarnThreshold1m = 4800,
-    onRequestWeightUpdate = null
+    onRequestWeightUpdate = null,
+    botMode = "live",
+    paperExecutionVenue = "internal"
   }) {
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
@@ -236,6 +242,8 @@ export class BinanceClient {
     this.requestWeightBackoffMaxMs = Math.max(1_000, Number(requestWeightBackoffMaxMs || 60_000));
     this.requestWeightWarnThreshold1m = Math.max(100, Number(requestWeightWarnThreshold1m || 4800));
     this.onRequestWeightUpdate = typeof onRequestWeightUpdate === "function" ? onRequestWeightUpdate : null;
+    this.botMode = `${botMode || "live"}`.trim().toLowerCase();
+    this.paperExecutionVenue = `${paperExecutionVenue || "internal"}`.trim().toLowerCase();
     this.clockState = {
       offsetMs: 0,
       estimatedDriftMs: Number.POSITIVE_INFINITY,
@@ -271,6 +279,36 @@ export class BinanceClient {
       topRestCallers: {}
     };
     this.maxRetries = 3;
+  }
+
+  assertPrivateOrderMutationAllowed(action, params = {}) {
+    if (this.botMode === "live") {
+      return;
+    }
+    const demoPaperSpot = this.botMode === "paper"
+      && this.paperExecutionVenue === "binance_demo_spot"
+      && isDemoSpotBaseUrl(this.baseUrl);
+    if (demoPaperSpot) {
+      return;
+    }
+    const error = new Error(
+      `Blocked Binance private order mutation ${action} while botMode=${this.botMode || "unknown"} and paperExecutionVenue=${this.paperExecutionVenue || "unknown"}.`
+    );
+    error.code = "PRIVATE_ORDER_MUTATION_BLOCKED";
+    error.blockedReason = "non_live_private_order_mutation";
+    error.botMode = this.botMode;
+    error.paperExecutionVenue = this.paperExecutionVenue;
+    error.baseUrl = this.baseUrl;
+    error.action = action;
+    error.symbol = params?.symbol || null;
+    this.logger?.warn?.("Blocked Binance private order mutation outside live/demo order mode", {
+      action,
+      botMode: this.botMode,
+      paperExecutionVenue: this.paperExecutionVenue,
+      baseUrl: this.baseUrl,
+      symbol: params?.symbol || null
+    });
+    throw error;
   }
 
   emitRequestWeightUpdate(event = {}) {
@@ -980,30 +1018,37 @@ export class BinanceClient {
   }
 
   async placeOrder(params) {
+    this.assertPrivateOrderMutationAllowed("placeOrder", params);
     return this.signedRequest("POST", "/api/v3/order", params);
   }
 
   async placeOrderListOco(params) {
+    this.assertPrivateOrderMutationAllowed("placeOrderListOco", params);
     return this.signedRequest("POST", "/api/v3/orderList/oco", params);
   }
 
   async cancelOrder(symbol, params) {
+    this.assertPrivateOrderMutationAllowed("cancelOrder", { symbol, ...params });
     return this.signedRequest("DELETE", "/api/v3/order", { symbol, ...params });
   }
 
   async cancelOrderList(params) {
+    this.assertPrivateOrderMutationAllowed("cancelOrderList", params);
     return this.signedRequest("DELETE", "/api/v3/orderList", params);
   }
 
   async cancelAllOpenOrders(symbol) {
+    this.assertPrivateOrderMutationAllowed("cancelAllOpenOrders", { symbol });
     return this.signedRequest("DELETE", "/api/v3/openOrders", { symbol });
   }
 
   async cancelReplaceOrder(params) {
+    this.assertPrivateOrderMutationAllowed("cancelReplaceOrder", params);
     return this.signedRequest("POST", "/api/v3/order/cancelReplace", params);
   }
 
   async amendOrderKeepPriority(params) {
+    this.assertPrivateOrderMutationAllowed("amendOrderKeepPriority", params);
     return this.signedRequest("PUT", "/api/v3/order/amend/keepPriority", params);
   }
 

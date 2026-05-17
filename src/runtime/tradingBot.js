@@ -9240,6 +9240,8 @@ export class TradingBot {
       requestWeightBackoffMaxMs: config.requestWeightBackoffMaxMs,
       requestWeightWarnThreshold1m: config.requestWeightWarnThreshold1m,
       onRequestWeightUpdate: (update) => this.recordRequestWeightBudgetEvent("binance_client", update?.state, update?.event),
+      botMode: config.botMode,
+      paperExecutionVenue: config.paperExecutionVenue,
       logger: this.logger
     });
     this.risk = new RiskManager(config, this.logger);

@@ -128,6 +128,77 @@ export async function registerBinanceRestArchitectureTests({
     assert.ok(state.topRestCallers["test.request_weight"].weight >= 2);
   });
 
+  await runCheck("binance client blocks private order mutations in internal paper mode before REST", async () => {
+    let fetchCalls = 0;
+    const warnings = [];
+    const client = new BinanceClient({
+      apiKey: "key",
+      apiSecret: "secret",
+      baseUrl: "https://api.binance.com",
+      botMode: "paper",
+      paperExecutionVenue: "internal",
+      logger: {
+        warn(message, ctx) {
+          warnings.push({ message, ctx });
+        }
+      },
+      fetchImpl: async () => {
+        fetchCalls += 1;
+        return {
+          ok: true,
+          status: 200,
+          headers: makeHeaders(),
+          async text() {
+            return JSON.stringify({ orderId: 1 });
+          }
+        };
+      }
+    });
+
+    await assert.rejects(
+      () => client.placeOrder({ symbol: "BTCUSDT", side: "BUY", type: "MARKET", quantity: "0.01" }),
+      (error) => {
+        assert.equal(error.code, "PRIVATE_ORDER_MUTATION_BLOCKED");
+        assert.equal(error.blockedReason, "non_live_private_order_mutation");
+        assert.equal(error.botMode, "paper");
+        assert.equal(error.paperExecutionVenue, "internal");
+        assert.equal(error.symbol, "BTCUSDT");
+        return true;
+      }
+    );
+    assert.equal(fetchCalls, 0);
+    assert.equal(warnings.length, 1);
+    assert.equal(warnings[0].ctx.action, "placeOrder");
+  });
+
+  await runCheck("binance client allows private order mutations only for paper demo spot endpoint", async () => {
+    let fetchCalls = 0;
+    const client = new BinanceClient({
+      apiKey: "key",
+      apiSecret: "secret",
+      baseUrl: "https://demo-api.binance.com",
+      botMode: "paper",
+      paperExecutionVenue: "binance_demo_spot",
+      fetchImpl: async (url, init) => {
+        fetchCalls += 1;
+        assert.equal(init.method, "POST");
+        assert.ok(url.includes("/api/v3/order"));
+        return {
+          ok: true,
+          status: 200,
+          headers: makeHeaders(),
+          async text() {
+            return JSON.stringify({ orderId: 7, status: "FILLED" });
+          }
+        };
+      }
+    });
+
+    const response = await client.placeOrder({ symbol: "BTCUSDT", side: "BUY", type: "MARKET", quantity: "0.01" });
+    assert.equal(response.orderId, 7);
+    assert.equal(fetchCalls, 1);
+  });
+
   await runCheck("binance client emits request-weight update callbacks", async () => {
     const updates = [];
     const client = new BinanceClient({

@@ -149,7 +149,8 @@ npm run debug:order-routing
   - `TEST_ONLY`
   - `UNSAFE`
 - [x] Laat CI falen bij `UNSAFE`.
-- [ ] Voeg runtime guard toe: in `botMode !== "live"` mag geen echte private exchange order-call plaatsvinden.
+- [x] Voeg runtime guard toe: in `botMode !== "live"` mag geen echte private exchange order-call plaatsvinden.
+  Guard staat in `BinanceClient`: paper-internal blokkeert muterende private order endpoints vóór REST; paper demo spot is alleen toegestaan op `https://demo-api.binance.com`.
 - [ ] Voeg metadata toe aan elke order/fill:
   - `botMode`
   - `paperModeProfile`
