@@ -10,6 +10,7 @@ export function registerFastSignalTriggerServiceTests({ runCheck, assert }) {
         fastExecutionPaperOnly: true,
         fastExecutionCandidateTtlMs: 5000,
         fastExecutionMinDataFreshnessMs: 1500,
+        fastExecutionLatencyBudgetMs: 250,
         maxOpenPositions: 5,
         maxTotalExposureFraction: 1,
         maxSpreadBps: 10,
@@ -23,6 +24,7 @@ export function registerFastSignalTriggerServiceTests({ runCheck, assert }) {
         probability: 0.71,
         threshold: 0.7,
         marketUpdatedAt: "2026-05-08T09:59:59.500Z",
+        featuresHash: "features-fast",
         currentExposureFraction: 0.1,
         proposedExposureFraction: 0.05,
         spreadBps: 4
@@ -32,6 +34,10 @@ export function registerFastSignalTriggerServiceTests({ runCheck, assert }) {
     });
     assert.equal(result.status, "queued");
     assert.equal(result.queue.length, 1);
+    assert.equal(result.queueItem.source, "near_threshold_cross");
+    assert.equal(result.queueItem.latencyBudgetMs, 250);
+    assert.equal(result.queueItem.traceContext.featuresHash, "features-fast");
+    assert.equal(result.queueItem.traceContext.dataFreshnessStatus, "fresh");
     assert.equal(result.auditEvent.type, "fast_signal_trigger");
     assert.equal(result.liveBehaviorChanged, false);
   });

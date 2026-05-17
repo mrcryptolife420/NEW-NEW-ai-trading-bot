@@ -12,6 +12,27 @@ function upper(value) {
   return `${value || ""}`.trim().toUpperCase();
 }
 
+function finite(value, fallback = null) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function buildTraceContext(candidate = {}, marketSnapshot = {}, preflight = {}, safety = {}) {
+  return {
+    marketDataAgeMs: finite(candidate.candidateFreshness?.marketDataAgeMs ?? candidate.marketDataAgeMs ?? marketSnapshot.marketDataAgeMs),
+    featureAgeMs: finite(candidate.candidateFreshness?.featureAgeMs ?? candidate.featureAgeMs),
+    dataFreshnessStatus: candidate.candidateFreshness?.dataFreshnessStatus || candidate.dataFreshnessStatus || "unknown",
+    probability: finite(candidate.probability),
+    threshold: finite(candidate.threshold),
+    expectedNetEdgePct: finite(candidate.expectedNetEdgePct ?? candidate.netEdgePct ?? candidate.edgePct),
+    spreadBps: finite(candidate.spreadBps ?? marketSnapshot.spreadBps),
+    featuresHash: candidate.featuresHash || candidate.featureHash || null,
+    configHash: candidate.configHash || null,
+    preflightLatencyMs: finite(preflight.latencyMs, 0),
+    safetyStatus: safety.status || null
+  };
+}
+
 export function evaluateFastSignalTrigger({
   config = {},
   candidate = {},
@@ -74,7 +95,9 @@ export function evaluateFastSignalTrigger({
       source: queueTrigger.queueItem?.source || "fast_signal_trigger",
       now,
       ttlMs: config.fastExecutionCandidateTtlMs,
-      requiredChecks: queueTrigger.queueItem?.requiredChecks
+      requiredChecks: queueTrigger.queueItem?.requiredChecks,
+      traceContext: buildTraceContext(freshCandidate, marketSnapshot, preflight, safety),
+      latencyBudgetMs: config.fastExecutionLatencyBudgetMs
     })
     : null;
   const enqueueResult = queueItem

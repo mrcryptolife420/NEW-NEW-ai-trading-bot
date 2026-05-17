@@ -1,7 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { getTradeProfile } from "../config/tradeProfiles.js";
+import { updateEnvFile } from "../config/envFile.js";
 
 const LIVE_ACK = "I_UNDERSTAND_LIVE_TRADING_RISK";
+const MODE_PROFILE = {
+  paper: "beginner-paper-learning",
+  demo: "paper-demo-spot",
+  "live-observe": "paper-safe-simulation",
+  live: "guarded-live-template"
+};
 
 function redact(value = "") {
   return value ? "[REDACTED]" : "";
@@ -9,28 +17,34 @@ function redact(value = "") {
 
 export function buildSetupWizardPlan({ answers = {}, existingEnv = "", projectRoot = process.cwd() } = {}) {
   const mode = ["paper", "demo", "live-observe", "live"].includes(answers.mode) ? answers.mode : "paper";
-  const botMode = mode === "live" ? "live" : "paper";
-  const needsKey = ["demo", "live-observe", "live"].includes(mode);
   const liveConfirmed = mode !== "live" || answers.liveAcknowledgement === LIVE_ACK;
+  const profileId = answers.profileId || MODE_PROFILE[mode] || MODE_PROFILE.paper;
+  const profile = getTradeProfile(profileId) || getTradeProfile(MODE_PROFILE.paper);
   const env = {
-    BOT_MODE: botMode,
+    ...(profile?.env || {}),
     OPERATOR_MODE: mode === "live-observe" ? "observe_only" : "active",
-    PAPER_EXECUTION_VENUE: mode === "demo" ? "binance_demo_spot" : "internal",
     ENABLE_EXCHANGE_PROTECTION: "true",
     NEURAL_LIVE_AUTONOMY_ENABLED: "false",
     LIVE_FAST_OBSERVE_ONLY: "true",
     DASHBOARD_PORT: String(Number(answers.dashboardPort) || 3011),
     RUNTIME_DIR: answers.runtimeDir || "./data/runtime"
   };
-  if (needsKey) {
+  if (answers.binanceApiKey || answers.binanceApiSecret || mode === "live") {
     env.BINANCE_API_KEY = answers.binanceApiKey || "";
     env.BINANCE_API_SECRET = answers.binanceApiSecret || "";
   }
   if (mode === "live") {
     env.LIVE_TRADING_ACKNOWLEDGED = liveConfirmed ? LIVE_ACK : "";
+  } else {
+    env.LIVE_TRADING_ACKNOWLEDGED = "";
   }
   return {
     mode,
+    profile: {
+      id: profile?.id || profileId,
+      label: profile?.label || profileId,
+      mode: profile?.mode || env.BOT_MODE || "paper"
+    },
     safeToWrite: mode !== "live" || liveConfirmed,
     backupRequired: Boolean(existingEnv),
     env,
@@ -51,20 +65,9 @@ export async function writeSetupWizardEnv({ plan, projectRoot = process.cwd() } 
     return { status: "blocked", reason: "live_requires_explicit_ack" };
   }
   const envPath = path.join(projectRoot, ".env");
-  let backupPath = null;
-  try {
-    const existing = await fs.readFile(envPath, "utf8");
-    if (existing) {
-      backupPath = `${envPath}.bak.${Date.now()}`;
-      await fs.writeFile(backupPath, existing, "utf8");
-    }
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
-  }
-  const body = Object.entries(plan.env).map(([key, value]) => `${key}=${value}`).join("\n") + "\n";
   await fs.mkdir(path.dirname(envPath), { recursive: true });
-  await fs.writeFile(envPath, body, "utf8");
-  return { status: "written", envPath, backupPath };
+  const writeResult = await updateEnvFile(envPath, plan.env || {});
+  return { status: "written", ...writeResult };
 }
 
 export function buildSetupWizardCliSummary(plan = {}) {

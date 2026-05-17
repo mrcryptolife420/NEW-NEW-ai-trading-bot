@@ -68,6 +68,91 @@ export async function registerRuntimeMutationTests({
     assert.equal(result.dashboard.overview.reused, true);
   });
 
+  await runCheck("paper manager stays degraded instead of stopping after repeated cycle failures", async () => {
+    const warnings = [];
+    const errors = [];
+    const manager = new BotManager({
+      projectRoot: process.cwd(),
+      logger: {
+        warn(message, meta) { warnings.push({ message, meta }); },
+        error(message, meta) { errors.push({ message, meta }); }
+      }
+    });
+    manager.config = {
+      botMode: "paper",
+      managerCycleFailureEscalationThreshold: 3,
+      tradingIntervalSeconds: 0
+    };
+    manager.bot = {
+      runtime: {},
+      async runCycle() {
+        throw new Error("feed down");
+      }
+    };
+    manager.interruptibleDelay = async () => {
+      if (manager.consecutiveCycleFailures >= 4) {
+        manager.stopRequested = true;
+        manager.stopReason = "test_stop";
+      }
+    };
+
+    await manager.runLoop();
+    assert.equal(manager.consecutiveCycleFailures, 4);
+    assert.equal(manager.stopReason, "test_stop");
+    assert.equal(errors.some((entry) => entry.message === "Manager loop escalated after repeated live cycle failures"), false);
+    assert.equal(warnings.some((entry) => entry.message === "Paper manager remains degraded after repeated cycle failures"), true);
+    assert.equal(manager.liveness.currentPhase, "manager_stopped");
+    assert.equal(manager.bot.runtime.liveness.history.some((entry) => entry.phase === "cycle_failed"), true);
+  });
+
+  await runCheck("bot manager liveness distinguishes running process from stale cycle", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", tradingIntervalSeconds: 60 };
+    manager.runState = "running";
+    const now = new Date().toISOString();
+    manager.bot = {
+      runtime: {
+        lastCycleAt: "2026-01-01T00:00:00.000Z",
+        liveness: {
+          lastHeartbeatAt: now,
+          currentPhase: "cycle_waiting",
+          history: [{ at: now, phase: "cycle_waiting", status: "idle" }]
+        }
+      }
+    };
+    const snapshot = manager.buildApiEnvelope("status", {});
+    assert.equal(snapshot.manager.liveness.status, "heartbeat_active_cycle_stale");
+    assert.equal(snapshot.manager.liveness.brokenPhase, "cycle_completion");
+  });
+
+  await runCheck("live manager still stops after repeated cycle failures", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    let attempts = 0;
+    manager.config = {
+      botMode: "live",
+      managerCycleFailureEscalationThreshold: 3,
+      tradingIntervalSeconds: 0
+    };
+    manager.bot = {
+      async runCycle() {
+        attempts += 1;
+        throw new Error("exchange unavailable");
+      }
+    };
+    manager.interruptibleDelay = async () => {};
+
+    await manager.runLoop();
+    assert.equal(attempts, 3);
+    assert.equal(manager.stopReason, "manager_cycle_failure_escalated");
+  });
+
+  await runCheck("start everything script waits for canonical running state", async () => {
+    const script = await fs.readFile(path.join(process.cwd(), "Start-Everything.cmd"), "utf8");
+    assert.match(script, /Content-Type'='application\/json'/);
+    assert.match(script, /runState -eq 'running'/);
+    assert.doesNotMatch(script, /runState -eq 'run'/);
+  });
+
   await runCheck("bot manager applies GUI trade profiles to env and marks exact active profile", async () => {
     const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-apply-"));
     const envPath = path.join(projectRoot, ".env");
@@ -132,6 +217,34 @@ export async function registerRuntimeMutationTests({
         process.env.CODEX_BOT_ENV_PATH = previous;
       }
     }
+  });
+
+  await runCheck("bot manager applies guarded live profile after demo paper by validating updated endpoint", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-live-profile-apply-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-learning\nPAPER_MODE_PROFILE=demo_spot\nPAPER_EXECUTION_VENUE=binance_demo_spot\nBINANCE_API_BASE_URL=https://demo-api.binance.com\nBINANCE_FUTURES_API_BASE_URL=https://demo-fapi.binance.com\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = {
+      envPath,
+      botMode: "paper",
+      profile: { id: "paper-learning" },
+      paperModeProfile: "demo_spot",
+      paperExecutionVenue: "binance_demo_spot",
+      binanceApiBaseUrl: "https://demo-api.binance.com"
+    };
+    manager.ensureBotReady = async () => {};
+    manager.stopUnlocked = async () => ({});
+    manager.reinitializeBot = async () => {};
+    manager.getSnapshot = async () => ({ manager: { currentMode: "live" }, dashboard: {} });
+
+    const result = await manager.applyConfigProfile("guarded-live-template", {
+      liveAcknowledgement: "I_UNDERSTAND_LIVE_TRADING_RISK"
+    });
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.writeVerified, true);
+    assert.match(written, /BOT_MODE=live/);
+    assert.match(written, /PAPER_EXECUTION_VENUE=internal/);
+    assert.match(written, /BINANCE_API_BASE_URL=\n/);
   });
 
   await runCheck("setup complete writes beginner profile and returns checks", async () => {

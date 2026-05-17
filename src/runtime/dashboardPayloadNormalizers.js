@@ -97,6 +97,10 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       }
     ),
     storageAuditSummary: objectOrFallback(source.storageAuditSummary || source.dataIntegrity?.storageAuditSummary, { status: "unavailable" }),
+    storageRetentionSummary: objectOrFallback(
+      source.storageRetentionSummary || source.dataIntegrity?.storageRetentionSummary || source.ops?.storageRetentionSummary,
+      { status: "unavailable", totalBytes: 0, fileCount: 0, retentionWarnings: [], readOnly: true, autoDelete: false }
+    ),
     recorderIntegritySummary: objectOrFallback(source.recorderIntegritySummary || source.dataIntegrity?.recorderIntegritySummary, { status: "unavailable", issues: [] }),
     dataFreshnessSummary: objectOrFallback(source.dataFreshnessSummary || source.dataIntegrity?.dataFreshnessSummary, { status: "unknown", staleSources: [] }),
     dataQualityScoreSummary: objectOrFallback(
@@ -250,6 +254,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
         source.learningAnalytics?.modelConfidenceRootCauseSummary ||
         source.paperLearning?.modelConfidenceRootCauseSummary,
       { status: "empty", count: 0, byDriver: {}, diagnosticsOnly: true, liveBehaviorChanged: false }
+    ),
+    noTradeTimelineSummary: objectOrFallback(
+      source.noTradeTimelineSummary ||
+        source.decisionDiagnostics?.noTradeTimelineSummary ||
+        source.learningAnalytics?.noTradeTimelineSummary ||
+        source.paperLearning?.noTradeTimelineSummary,
+      { status: "empty", count: 0, byStage: {}, top: [], diagnosticsOnly: true, liveBehaviorChanged: false }
     ),
     paperStrategyCohortSummary: objectOrFallback(
       source.paperStrategyCohortSummary ||

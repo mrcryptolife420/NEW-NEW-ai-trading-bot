@@ -11,16 +11,34 @@ function arr(value) {
   return Array.isArray(value) ? value : [];
 }
 
-export function buildImmediateEntryQueueItem({ symbol, candidateId = null, source = "stream_threshold_cross", now = new Date().toISOString(), ttlMs = 5000, requiredChecks = [] } = {}) {
+export function buildImmediateEntryQueueItem({
+  symbol,
+  candidateId = null,
+  source = "stream_threshold_cross",
+  now = new Date().toISOString(),
+  ttlMs = 5000,
+  requiredChecks = [],
+  traceContext = {},
+  latencyBudgetMs = null
+} = {}) {
   const normalizedSymbol = `${symbol || ""}`.trim().toUpperCase();
   const nowMs = ts(now) ?? Date.now();
+  const normalizedTtlMs = Math.max(1, Number(ttlMs) || 5000);
+  const normalizedLatencyBudgetMs = Number.isFinite(Number(latencyBudgetMs)) && Number(latencyBudgetMs) > 0
+    ? Number(latencyBudgetMs)
+    : null;
   return {
     id: `fast-entry-${normalizedSymbol || "UNKNOWN"}-${iso(nowMs)}`,
     symbol: normalizedSymbol,
     candidateId: candidateId || normalizedSymbol || null,
     source,
     createdAt: iso(nowMs),
-    expiresAt: iso(nowMs + Math.max(1, Number(ttlMs) || 5000)),
+    expiresAt: iso(nowMs + normalizedTtlMs),
+    preflightDeadlineAt: normalizedLatencyBudgetMs
+      ? iso(nowMs + Math.min(normalizedTtlMs, normalizedLatencyBudgetMs))
+      : null,
+    latencyBudgetMs: normalizedLatencyBudgetMs,
+    traceContext: traceContext && typeof traceContext === "object" ? traceContext : {},
     requiredChecks: requiredChecks.length
       ? requiredChecks
       : ["fresh_market_data", "risk_verdict", "exposure_limit", "exchange_safety", "execution_budget"],
@@ -66,6 +84,10 @@ export function summarizeImmediateEntryQueue({ queue = [], now = new Date().toIS
   return {
     status: items.length ? "active" : "empty",
     size: items.filter((item) => !item.expired).length,
+    expiredCount: items.filter((item) => item.expired).length,
+    latency: {
+      maxQueueLatencyMs: items.reduce((max, item) => Math.max(max, item.latencyMs), 0)
+    },
     items,
     diagnosticsOnly: true,
     liveBehaviorChanged: false

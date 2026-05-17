@@ -15,12 +15,15 @@ export function registerFastExecutionTraceTests({ runCheck, assert }) {
       trigger: { status: "queued", reasonCodes: [] },
       preflight: { allow: true, latencyMs: 44, reasonCodes: [] },
       featureCache: { groups: { fast: { ageMs: 200 }, medium: { ageMs: 900 } } },
-      latency: { streamToSignalMs: 120, signalToRiskMs: 44, riskToIntentMs: 22, biggestBottleneck: "stream_to_signal" },
+      latency: { streamToSignalMs: 120, signalToRiskMs: 44, riskToIntentMs: 22, targetMs: 250, biggestBottleneck: "stream_to_signal" },
       exitFastLane: { exitDecisionDelayMs: 250 }
     });
     assert.equal(trace.preflight.under100ms, true);
+    assert.equal(trace.orderIntentReady, true);
     assert.equal(trace.featureAge.fast.ageMs, 200);
     assert.equal(trace.latency.biggestBottleneck, "stream_to_signal");
+    assert.equal(trace.latency.totalLatencyMs, 230);
+    assert.equal(trace.latencyBudget.withinBudget, true);
     assert.equal(trace.exitDecisionDelayMs, 250);
     assert.equal(trace.liveBehaviorChanged, false);
   });
@@ -34,6 +37,7 @@ export function registerFastExecutionTraceTests({ runCheck, assert }) {
     assert.equal(trace.candidateExpired, true);
     assert.equal(trace.auditEvent.type, "fast_candidate_expired");
     assert.equal(trace.preflight.under100ms, false);
+    assert.equal(trace.orderIntentReady, false);
   });
 
   runCheck("operator action audit returns audit id without changing live behavior", () => {

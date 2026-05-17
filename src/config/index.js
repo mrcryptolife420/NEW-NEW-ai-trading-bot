@@ -8,6 +8,12 @@ import { ConfigValidationError } from "./errors.js";
 import { applyResolvedConfigProfiles, resolveConfigProfiles } from "./profiles.js";
 import { parseNormalizedConfig } from "./schema.js";
 import { validateConfig } from "./validate.js";
+import {
+  buildStrictEnvParseErrors,
+  collectDuplicateEnvKeys,
+  parseEnumStrict,
+  parseUrlStrict
+} from "./envValidation.js";
 
 import { buildConfigHash } from "./configHash.js";
 import { DEFAULTS } from "./defaults/index.js";
@@ -29,9 +35,14 @@ async function loadAllowedEnvKeys(projectRoot) {
   const envExamplePath = path.join(projectRoot, ".env.example");
   try {
     const content = await fs.readFile(envExamplePath, "utf8");
-    return parseEnvExampleKeys(content);
+    return {
+      keys: parseEnvExampleKeys(content),
+      duplicates: collectDuplicateEnvKeys(content).map(
+        (item) => `.env.example duplicate ${item.key} at lines ${item.firstLine} and ${item.line}`
+      )
+    };
   } catch {
-    return new Set();
+    return { keys: new Set(), duplicates: [] };
   }
 }
 
@@ -61,6 +72,17 @@ function parseEnvContent(content) {
     env[key] = value.replace(/^['"]|['"]$/g, "");
   }
   return env;
+}
+
+function buildExplicitEnvValidationErrors(env = {}, envPath = null, duplicateKeys = []) {
+  const errors = [];
+  parseEnumStrict(env, "BOT_MODE", ["paper", "live"], DEFAULTS.botMode, errors);
+  parseEnumStrict(env, "PAPER_EXECUTION_VENUE", ["internal", "binance_demo_spot"], DEFAULTS.paperExecutionVenue, errors);
+  parseUrlStrict(env, "BINANCE_API_BASE_URL", DEFAULTS.binanceApiBaseUrl, errors);
+  if (env.STRICT_ENV === "true") {
+    errors.push(...duplicateKeys.map((item) => `${envPath}:${item.line} duplicate ${item.key} (first line ${item.firstLine})`));
+  }
+  return errors;
 }
 
 function parseNumber(value, fallback) {
@@ -156,9 +178,10 @@ export async function loadConfig(projectRoot = process.cwd()) {
     ? (path.isAbsolute(configuredEnvPath) ? configuredEnvPath : path.resolve(projectRoot, configuredEnvPath))
     : path.join(projectRoot, ".env");
   let fileEnv = {};
+  let fileEnvContent = "";
   try {
-    const content = await fs.readFile(envPath, "utf8");
-    fileEnv = parseEnvContent(content);
+    fileEnvContent = await fs.readFile(envPath, "utf8");
+    fileEnv = parseEnvContent(fileEnvContent);
   } catch (error) {
     if (error.code !== "ENOENT") {
       throw error;
@@ -169,8 +192,14 @@ export async function loadConfig(projectRoot = process.cwd()) {
     ...fileEnv,
     ...process.env
   };
-  const allowedEnvKeys = await loadAllowedEnvKeys(projectRoot);
+  const envExampleDiagnostics = await loadAllowedEnvKeys(projectRoot);
+  const allowedEnvKeys = envExampleDiagnostics.keys;
   const unknownEnvKeys = detectUnknownConfigKeys(fileEnv, allowedEnvKeys);
+  const duplicateEnvErrors = collectDuplicateEnvKeys(fileEnvContent).map(
+    (item) => `.env duplicate ${item.key} at lines ${item.firstLine} and ${item.line}; the later value would silently win.`
+  );
+  const strictEnvErrors = buildStrictEnvParseErrors({ env, defaults: DEFAULTS, allowedEnvKeys });
+  const explicitEnvErrors = buildExplicitEnvValidationErrors(env, envPath, collectDuplicateEnvKeys(fileEnvContent));
   const resolvedProfiles = resolveConfigProfiles(env);
 
   const botMode = normalizeMode(env.BOT_MODE, DEFAULTS.botMode);
@@ -815,8 +844,15 @@ export async function loadConfig(projectRoot = process.cwd()) {
   const profileAudit = buildConfigProfileAudit(parsedConfig);
   const profileWarnings = profileAudit.findings.filter((item) => item.warning).map((item) => item.message);
   const profileErrors = profileAudit.findings.filter((item) => item.error).map((item) => item.message);
-  if (unknownEnvKeys.length || !validation.valid || profileErrors.length) {
-    const errors = [...validation.errors, ...profileErrors];
+  if (envExampleDiagnostics.duplicates.length || duplicateEnvErrors.length || strictEnvErrors.length || explicitEnvErrors.length || unknownEnvKeys.length || !validation.valid || profileErrors.length) {
+    const errors = [
+      ...envExampleDiagnostics.duplicates,
+      ...duplicateEnvErrors,
+      ...strictEnvErrors,
+      ...explicitEnvErrors,
+      ...validation.errors,
+      ...profileErrors
+    ];
     if (unknownEnvKeys.length) {
       errors.unshift(`Unknown config keys in .env: ${unknownEnvKeys.join(", ")}.`);
     }

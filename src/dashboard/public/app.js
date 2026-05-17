@@ -1834,13 +1834,28 @@ async function mutateAndRefresh(path, body = {}) {
   }
 }
 
+async function requestLiveMode() {
+  const response = await api("/api/live/preflight", { method: "GET" });
+  const preflight = response?.preflight || response;
+  if (preflight.safeToStartLive !== true) {
+    const reasons = arr(preflight.blockingReasons).slice(0, 5).map(humanizeReason).join(", ");
+    throw new Error(`Live preflight blocked: ${reasons || "unknown blocker"}`);
+  }
+  return mutateAndRefresh("/api/mode", { mode: "live" });
+}
+
 function bindUi() {
   elements.refreshBtn?.addEventListener?.("click", () => fetchSnapshot().catch((error) => showDashboardRenderIssue("refresh", error)));
   elements.setupWizardBtn?.addEventListener?.("click", () => fetchDiagnostics().catch((error) => renderProfilePreview({ profile: { label: "Setup wizard" }, warnings: [error.message] })));
   elements.startBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/start"));
   elements.stopBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/stop"));
   elements.paperBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/mode", { mode: "paper" }));
-  elements.liveBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/mode", { mode: "live" }));
+  elements.liveBtn?.addEventListener?.("click", () => requestLiveMode().catch((error) => {
+    console.error?.("dashboard_live_preflight_failed", error);
+    if (elements.controlHint) {
+      elements.controlHint.textContent = error?.message || "Live preflight blocked.";
+    }
+  }));
   elements.decisionSearch?.addEventListener?.("input", (event) => {
     searchQuery = `${event?.target?.value || ""}`.trim().toLowerCase();
     if (latestSnapshot) render(latestSnapshot);

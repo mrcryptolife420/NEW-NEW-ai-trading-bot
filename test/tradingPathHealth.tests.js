@@ -90,6 +90,32 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.equal(health.nextAction, "run_reconcile_plan_or_exchange_safety_status");
   });
 
+  await runCheck("API degradation is prioritized over stale dashboard recovery", async () => {
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } },
+        requestWeight: { banUntil: Date.parse("2026-05-03T12:05:00.000Z") }
+      },
+      dashboardSnapshot: {},
+      feedSummary: { status: "ready", symbolsRequested: 1, symbolsReady: 1, missingSymbols: [], staleSources: [] },
+      apiDegradationSummary: {
+        degradationLevel: "full_outage",
+        blockedActions: ["open_new_entries"],
+        reasons: ["binance_ban_or_418"],
+        nextRetryAt: "2026-05-03T11:55:00.000Z"
+      },
+      readmodelSummary: { status: "ready", rebuiltAt: "2026-05-03T11:58:00.000Z" }
+    });
+    assert.equal(health.nextAction, "wait_for_rest_budget_recovery_and_use_stream_cache_only");
+    assert.equal(health.incidentRecovery.rootCause, "data_pressure");
+    assert.equal(health.incidentRecovery.entriesPaused, true);
+    assert.equal(health.incidentRecovery.nextRetryAt, "2026-05-03T12:05:00.000Z");
+    assert.ok(health.incidentRecovery.staleRetryWarnings.includes("stale_retry_timestamp"));
+  });
+
   await runCheck("dashboard freshness handles fresh stale missing and rebuilt snapshots", async () => {
     const fresh = normalizeDashboardFreshness({ generatedAt: "2026-05-03T11:59:30.000Z" }, now, { dashboardSnapshotStaleMs: 120000 });
     const stale = normalizeDashboardFreshness({ generatedAt: "2026-05-03T11:50:00.000Z" }, now, { dashboardSnapshotStaleMs: 120000 });
@@ -104,6 +130,31 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.equal(stale.staleReason, "dashboard_snapshot_stale");
     assert.equal(missing.staleReason, "dashboard_snapshot_unavailable");
     assert.equal(rebuilt.fresh, true);
+  });
+
+  await runCheck("trading path health flags backend alive when dashboard display is stale", async () => {
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } }
+      },
+      dashboardSnapshot: {},
+      feedSummary: {
+        status: "ready",
+        symbolsRequested: 1,
+        symbolsReady: 1,
+        missingSymbols: [],
+        staleSources: [],
+        lastSuccessfulAggregationAt: "2026-05-03T11:59:30.000Z"
+      },
+      readmodelSummary: { status: "ready", rebuiltAt: "2026-05-03T11:58:00.000Z" }
+    });
+    assert.equal(health.dashboardOperationalTruth.status, "backend_alive_dashboard_stale");
+    assert.equal(health.dashboardOperationalTruth.backendAlive, true);
+    assert.ok(health.dashboardOperationalTruth.staleDisplaySources.includes("dashboard_snapshot_unavailable"));
+    assert.equal(health.dashboardOperationalTruth.nextSafeAction, "restart_dashboard_or_check_frontend_polling");
   });
 
   await runCheck("feed aggregation summary handles fresh partial empty watchlist and REST pressure", async () => {
@@ -129,6 +180,23 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.ok(partial.missingSymbols.includes("ETHUSDT"));
     assert.equal(empty.status, "empty_watchlist");
     assert.ok(budget.staleSources.includes("rest_budget_exhausted"));
+
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } }
+      },
+      dashboardSnapshot: { generatedAt: "2026-05-03T11:59:50.000Z", overview: { lastCycleAt: "2026-05-03T11:59:00.000Z" } },
+      feedSummary: budget,
+      readmodelSummary: { status: "ready", rebuiltAt: "2026-05-03T11:58:00.000Z" }
+    });
+    assert.equal(health.nextAction, "wait_for_rest_budget_recovery_and_use_stream_cache_only");
+    assert.equal(health.incidentRecovery.status, "incident");
+    assert.equal(health.incidentRecovery.rootCause, "data_pressure");
+    assert.ok(health.incidentRecovery.affectedSubsystems.includes("market_data"));
+    assert.equal(health.incidentRecovery.safeNextAction, "wait_for_rest_budget_recovery_and_use_stream_cache_only");
   });
 
   await runCheck("feed aggregation treats stopped one-shot stream disconnect as non-authoritative", async () => {
@@ -386,5 +454,38 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.equal(output.safety, "diagnostic_only_no_entry_unlock");
     assert.equal(output.marketSnapshotFlowDebug.snapshotsReady, 1);
     assert.equal(typeof output.health.status, "string");
+  });
+
+  await runCheck("trading-path debug explains global blockers when no candidates exist", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "trading-path-global-blocker-"));
+    const runtimeDir = path.join(root, "runtime");
+    const store = new StateStore(runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    runtime.lastCycleAt = "2026-05-03T11:40:00.000Z";
+    runtime.latestMarketSnapshots = {};
+    runtime.latestDecisions = [];
+    await store.saveRuntime(runtime);
+    const lines = [];
+    const previousLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+      await runCli({
+        command: "trading-path:debug",
+        args: [],
+        config: { runtimeDir, projectRoot: root, watchlist: ["BTCUSDT"], botMode: "paper" },
+        logger: { info() {}, warn() {}, error() {}, debug() {} },
+        processState: {}
+      });
+    } finally {
+      console.log = previousLog;
+    }
+    const output = JSON.parse(lines[0]);
+    assert.equal(output.readOnly, true);
+    assert.equal(output.noTradeTimelineSummary.count, 1);
+    assert.equal(output.noTradeTimelineSummary.byStage.data, 1);
+    assert.equal(output.noTradeTimelines[0].symbol, "runtime_path");
+    assert.equal(output.noTradeTimelines[0].topBlocker, "no_market_snapshots_ready");
+    assert.ok(output.noTradeTimelines[0].blockingStages.includes("data"));
   });
 }

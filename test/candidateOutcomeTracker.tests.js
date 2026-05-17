@@ -19,6 +19,13 @@ function makeDecision(overrides = {}) {
     strategySummary: { activeStrategy: "trend_following", family: "trend_following" },
     regimeSummary: { regime: "trend" },
     featureQuality: { status: "usable", missing: [] },
+    dataLineage: {
+      marketDataAt: "2026-05-05T00:00:00.000Z",
+      featureDataAt: "2026-05-05T00:00:00.000Z",
+      featuresHash: "features-1",
+      configHash: "config-1",
+      sources: ["binance_rest"]
+    },
     ...overrides
   };
 }
@@ -49,6 +56,31 @@ export async function registerCandidateOutcomeTrackerTests({ runCheck, assert })
     assert.equal(outcome.label, "good_veto");
     assert.equal(outcome.learningEligible, true);
     assert.equal(outcome.relaxationAllowed, false);
+  });
+
+  await runCheck("candidate outcome tracker preserves data lineage quality and learning weight", async () => {
+    const [observation] = buildCandidateOutcomeObservations(makeDecision({
+      candidateFreshness: { dataFreshnessStatus: "fresh", marketDataAgeMs: 500, featureAgeMs: 700 },
+      expectedNetEdgePct: 0.004,
+      spreadBps: 3
+    }));
+    const outcome = labelCandidateOutcome({
+      observation,
+      futureMarketPath: {
+        maxFavorableMovePct: 0.025,
+        maxAdverseMovePct: -0.004,
+        closeReturnPct: 0.012,
+        horizonMinutes: 60
+      }
+    });
+    const summary = summarizeCandidateOutcomes([outcome]);
+    assert.equal(outcome.dataLineage.featuresHash, "features-1");
+    assert.equal(outcome.dataQuality.dataFreshnessStatus, "fresh");
+    assert.equal(outcome.dataQuality.marketDataAgeMs, 500);
+    assert.equal(outcome.learningWeight, 1);
+    assert.equal(summary.lineageCoverage.withFeaturesHash, 1);
+    assert.equal(summary.lineageCoverage.withConfigHash, 1);
+    assert.equal(summary.lineageCoverage.averageLearningWeight, 1);
   });
 
   await runCheck("candidate outcome tracker labels missed winner as bad_veto", async () => {

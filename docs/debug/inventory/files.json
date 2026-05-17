@@ -1,0 +1,6542 @@
+[
+  {
+    "path": ".claude/rules/lean-ctx.md",
+    "size": 1526,
+    "mtimeMs": 1777488009247,
+    "hash": "77a9ad0b9fb1f6c72e22a5aa7810380902cc9765388f68506236514cf72c9936",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": ".claude/settings.local.json",
+    "size": 509,
+    "mtimeMs": 1777132791219,
+    "hash": "1992930980d29effa5ea28c033d6466ca985085183c261f3c94c2ae7ac39ede4",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 24,
+    "largeFileReview": false
+  },
+  {
+    "path": ".cursorrules",
+    "size": 748,
+    "mtimeMs": 1777488009247,
+    "hash": "6fca087a77b4135d6bfdc17fb941cd36d940500609dfcde746843f395f2662dd",
+    "type": "none",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env",
+    "size": 10747,
+    "mtimeMs": 1777919813094,
+    "hash": "d1554717dc4ff5ac1e98c1d392c60f9c105afd3720a7cd0123228d558cf5cc17",
+    "type": "none",
+    "emptyClass": null,
+    "lineCount": 324,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.example",
+    "size": 18733,
+    "mtimeMs": 1778303947111,
+    "hash": "64f727cfb868a4814e422237fcdcb9680a0572cd1668014eca5ef9866115a8e4",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 545,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.paper-unblocked.example",
+    "size": 11477,
+    "mtimeMs": 1778010083751,
+    "hash": "54bfb14ac0970519c0456d5c910453fb930b9a53ade6f1929ec8f5525517dc35",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 330,
+    "largeFileReview": false
+  },
+  {
+    "path": ".gitattributes",
+    "size": 180,
+    "mtimeMs": 1777488009249,
+    "hash": "1053ae194f1ad7ccbe756ec2f6e4b7b41793123db7bcd2c8c445d328767cc213",
+    "type": "none",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".githooks/post-commit",
+    "size": 730,
+    "mtimeMs": 1777488009250,
+    "hash": "7407086c3c8375417b1d91f89e3f1f24b05cefa791682fe07f34a4bf240dffee",
+    "type": "none",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "size": 2678,
+    "mtimeMs": 1778303986659,
+    "hash": "db131dc98f18765007097908ac2ac5f1ed581e00bf2fba84d15a56744f9cb6e5",
+    "type": "yml",
+    "emptyClass": null,
+    "lineCount": 121,
+    "largeFileReview": false
+  },
+  {
+    "path": ".github/workflows/test.yml",
+    "size": 610,
+    "mtimeMs": 1777846256121,
+    "hash": "62c7fa1a596e05e4fcf688a9ee156eec13d703cab8ef92c65eb655057d4531ef",
+    "type": "yml",
+    "emptyClass": null,
+    "lineCount": 38,
+    "largeFileReview": false
+  },
+  {
+    "path": ".gitignore",
+    "size": 820,
+    "mtimeMs": 1778269546360,
+    "hash": "033f74db027db0a05473b59ade264f34f560db270611cce610adfa0fa8f29cfe",
+    "type": "none",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".lean-ctx/graph.db",
+    "size": 237568,
+    "mtimeMs": 1778219388729,
+    "hash": "a75ac9230993c8073b4785118886997bb4781c7cef4b7738220cace0cadd0752",
+    "type": "db",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".lean-ctx/graph.meta.json",
+    "size": 206,
+    "mtimeMs": 1778219388545,
+    "hash": "8b4cbb763471cb48ed53368f1453cf997d5817901d897c805121da1b73cd4f24",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 10,
+    "largeFileReview": false
+  },
+  {
+    "path": ".obsidian/app.json",
+    "size": 2,
+    "mtimeMs": 1778104956949,
+    "hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 1,
+    "largeFileReview": false
+  },
+  {
+    "path": ".obsidian/appearance.json",
+    "size": 2,
+    "mtimeMs": 1778104956950,
+    "hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 1,
+    "largeFileReview": false
+  },
+  {
+    "path": ".obsidian/core-plugins.json",
+    "size": 696,
+    "mtimeMs": 1778104956475,
+    "hash": "763cf20a921fd9955735b278006820b90b207b2fc04d9e79ca648279c7c14276",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 33,
+    "largeFileReview": false
+  },
+  {
+    "path": ".obsidian/graph.json",
+    "size": 511,
+    "mtimeMs": 1778105730523,
+    "hash": "4f29b60e966b1907b5225203c8fe6bb7e91bb7768d0c48616e52bf9b3697c393",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 22,
+    "largeFileReview": false
+  },
+  {
+    "path": ".obsidian/workspace.json",
+    "size": 5838,
+    "mtimeMs": 1778106589711,
+    "hash": "f87783793acef389783441275bab6c6a0f43e025389f2f9ee5fbd0ba1d0189da",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 197,
+    "largeFileReview": false
+  },
+  {
+    "path": ".prettierrc.json",
+    "size": 72,
+    "mtimeMs": 1777845958784,
+    "hash": "3c667d719a7537b34c861ed153912c38b794e882f3aebd6e313de5553fb3f0de",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 6,
+    "largeFileReview": false
+  },
+  {
+    "path": ".vscode/settings.json",
+    "size": 48,
+    "mtimeMs": 1776477312137,
+    "hash": "afd51e325418109580ff257e2aa0de97e5636ae26c94e64570b5ec46c35e8f77",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 3,
+    "largeFileReview": false
+  },
+  {
+    "path": "AGENTS.md",
+    "size": 17591,
+    "mtimeMs": 1778105008323,
+    "hash": "19afe511f4d504db4493e19e4577285a14e784d150425a2153e1cfeef24d6b4a",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1000,
+    "largeFileReview": true
+  },
+  {
+    "path": "ai trading bot/.gitattributes",
+    "size": 66,
+    "mtimeMs": 1777486805761,
+    "hash": "1a1dbe176bc233b499d35a57db7513f2941c99ab9759f177830c9149be99005b",
+    "type": "none",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": "capitalGovernor.js",
+    "size": 1048,
+    "mtimeMs": 1777488009259,
+    "hash": "fe2064c1e6843a51ffa189cc9c624bbfe680dde0a30ff65c8a116eb4f89764e8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 33,
+    "largeFileReview": false
+  },
+  {
+    "path": "CHANGELOG.md",
+    "size": 39877,
+    "mtimeMs": 1777488009252,
+    "hash": "fcf88cd5ca4c5ce70a15548c8c56a4b84bb16ec7cd8c472b2132ea78b19d7377",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 304,
+    "largeFileReview": false
+  },
+  {
+    "path": "config/profiles/binance-demo-spot.env.example",
+    "size": 309,
+    "mtimeMs": 1778303803443,
+    "hash": "a53f42689a85fbd6a253b1b62e3fa49b043892d28957e688f3092d601267ddb6",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 10,
+    "largeFileReview": false
+  },
+  {
+    "path": "config/profiles/live-conservative.env.example",
+    "size": 333,
+    "mtimeMs": 1778303803447,
+    "hash": "a4aca1e3d5d40c5dbce3121f59274b325656d3b1b0edb472463e644bbe4e9dd2",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 14,
+    "largeFileReview": false
+  },
+  {
+    "path": "config/profiles/live-minimal.env.example",
+    "size": 249,
+    "mtimeMs": 1778303803443,
+    "hash": "e64b4ec35b5b5c07f1ba945abf929d101cf7c5377af86c0dc8395f9740eb0837",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 11,
+    "largeFileReview": false
+  },
+  {
+    "path": "config/profiles/paper-fast.env.example",
+    "size": 598,
+    "mtimeMs": 1778225041354,
+    "hash": "d7f3b7c5e797d152178651d2823eb352de6e767d4dcd9af5635946a242d94bea",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 18,
+    "largeFileReview": false
+  },
+  {
+    "path": "config/profiles/paper-learn.env.example",
+    "size": 319,
+    "mtimeMs": 1778303803442,
+    "hash": "953b546bdcbdb79548b8d4274b02a86324613375336dd5bcd46a11525cdbd4ca",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 13,
+    "largeFileReview": false
+  },
+  {
+    "path": "config/profiles/paper-safe.env.example",
+    "size": 252,
+    "mtimeMs": 1778303803442,
+    "hash": "fe019f5abf65d5a7b09f34b8208a15fa26c4ec12fd7d9a0aa69b1e4e3b67a3e1",
+    "type": "example",
+    "emptyClass": null,
+    "lineCount": 11,
+    "largeFileReview": false
+  },
+  {
+    "path": "desktop/main.js",
+    "size": 9441,
+    "mtimeMs": 1778272323530,
+    "hash": "1e70037239ea722b69fc40a75ebda2a43fbd67d518af9f0e1dc5556710643c35",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 244,
+    "largeFileReview": false
+  },
+  {
+    "path": "desktop/package-lock.json",
+    "size": 146181,
+    "mtimeMs": 1778243609453,
+    "hash": "2ccf55f3ae93eae0dc5b3694149b376edd74e00e52eef5cccf9c5bb6855200f7",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 4103,
+    "largeFileReview": true
+  },
+  {
+    "path": "desktop/package.json",
+    "size": 1829,
+    "mtimeMs": 1778269492248,
+    "hash": "242c33da0b36f99521b2ca5a8d5c9692111fb8c3c96bdae3e4cc9be699aa5579",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 63,
+    "largeFileReview": false
+  },
+  {
+    "path": "desktop/preload.js",
+    "size": 160,
+    "mtimeMs": 1778224969007,
+    "hash": "bcc3ebf3fbf8d0ed6a605af7f7a5dd1acbe2d0928189b346b6af332ccc7bd54a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 7,
+    "largeFileReview": false
+  },
+  {
+    "path": "desktop/scripts/clean-desktop-dist.mjs",
+    "size": 614,
+    "mtimeMs": 1778269318114,
+    "hash": "e1fb9bc1b4fae3ab33fbe4e77783afacddf731a71fe28f67c19be5d4a9088c85",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 16,
+    "largeFileReview": false
+  },
+  {
+    "path": "desktop/scripts/desktop-diagnose.mjs",
+    "size": 2584,
+    "mtimeMs": 1778269346311,
+    "hash": "4f09c0dc04b57a1dcdb3da9be402eeb832b8525eba6d7388dd108ca2cb9d6167",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 58,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/advanced_neural_improvements_extra_roadmap.md",
+    "size": 21401,
+    "mtimeMs": 1778247894654,
+    "hash": "fe3d75c0d666f8cb1b7475ed7f7eea58bb57ea38ecaa33eb46a53ad2d512c855",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 985,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/ai-trading-bot-extra-volledige-debug-overhaul-v3-2026-05-09.md",
+    "size": 57419,
+    "mtimeMs": 1778304122183,
+    "hash": "6a08bd733e3808067699f26666809e5e2788304e91eb944a4ca1f2328cbbe3b2",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1752,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/ai-trading-bot-volledige-debug-roadmap-2026-05-08(1).md",
+    "size": 46223,
+    "mtimeMs": 1778303461114,
+    "hash": "136e5579b718b06276d142c171b5fe75a8499b5944372f90147c2cc0d88b22ff",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1743,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/ai-trading-bot-volledige-overhaul-debug-roadmap-2026-05-09(1).md",
+    "size": 41765,
+    "mtimeMs": 1778303441430,
+    "hash": "35af23b49c1330f46058ec8b30619761c211ae81dbdb5f1761dafab1c53113a5",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1186,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/ARCHITECTURE.md",
+    "size": 2255,
+    "mtimeMs": 1777756696099,
+    "hash": "db6bceb8f4c5b65c05c07c237442b94d8c5997019a5614772599b77a25b7432c",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 72,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/autonomous_neural_replay_trading_roadmap.md",
+    "size": 28979,
+    "mtimeMs": 1778242917685,
+    "hash": "310e94450a8d84db96309fadf04a098620bca3697bc0beefef2de95dc0182980",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1157,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/BACKTESTING.md",
+    "size": 1696,
+    "mtimeMs": 1777756696100,
+    "hash": "c30984e4ded8129ce6afce56ed0092448cc8b0a57b8b4b556a47b2b8cce0ef75",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 65,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/BACKTEST_QUALITY.md",
+    "size": 1863,
+    "mtimeMs": 1777866056593,
+    "hash": "15bdb86414b9bb09511f2ab4f3eeac352a883ad2d2e42de2534b0886d9fed25c",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 64,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/CODEX_ADDITIONAL_RECOMMENDATIONS_B24_B31.md",
+    "size": 19360,
+    "mtimeMs": 1777863590534,
+    "hash": "66794f11e71f1f0368eb4bdc54cc370ccda4bc07d87748b51c208e257194bf90",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 422,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/CODEX_CRYPTO_BACKLOG_EXTENSIONS.md",
+    "size": 10948,
+    "mtimeMs": 1777821155910,
+    "hash": "e8ae063081452adb284dc57ccc2ac0d58aeb3491dff3072c822962e1900301fd",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 241,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/CODEX_EXECUTION_PLAN.md",
+    "size": 61217,
+    "mtimeMs": 1778058485885,
+    "hash": "30b93405fba4673c17eb15c43e5d0c9b85ea78f3c88f2f597095db78fd23c0c8",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1362,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/CODEX_NEXT_BUILD_PLAN.md",
+    "size": 42776,
+    "mtimeMs": 1778050752220,
+    "hash": "cfe3ead129c0f54363250ab8f8253208ef1ee1d9897487209e5b0e914fc82812",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1033,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/CODEX_NEXT_BUILD_PLAN_V2.md",
+    "size": 25910,
+    "mtimeMs": 1778058467910,
+    "hash": "4de876ce6e0d0742a263c6d5ba3800bb4697d12a100f474e3b772e859356fd35",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 679,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/DATA_INTEGRITY.md",
+    "size": 4285,
+    "mtimeMs": 1778010083809,
+    "hash": "26cf5cac68a3ef84d41cc62ec3fc0e6956c093a03753f3975dbede8790754203",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 128,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/DEBUG_AUDIT_REPORT.md",
+    "size": 6258,
+    "mtimeMs": 1777821806364,
+    "hash": "b180614d1f0ac299bb58d20b98d8260a958a3e00219d66cbd270b762c768a9ef",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 60,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/DEBUG_COMMANDS.md",
+    "size": 546,
+    "mtimeMs": 1778303986660,
+    "hash": "acfbd08b6788a6616ec9afcf2ba48dfe17864475972db01d8139d1c3e0691e73",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 32,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/DEBUG_OVERHAUL_REPORT.md",
+    "size": 806,
+    "mtimeMs": 1778303986660,
+    "hash": "f28aae8e291b65b0b55bdbc5c0e65c458c4dff99aa3091385731d48eb33bb1f1",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/DEBUG_PLAYBOOK.md",
+    "size": 7496,
+    "mtimeMs": 1777864911976,
+    "hash": "1dfb44b01ae9b21237c10a2febc66530acb86b597bed5ca57714917bebdb515a",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 120,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/desktop_gui_profiles_neural_setup_roadmap.md",
+    "size": 23319,
+    "mtimeMs": 1778269630279,
+    "hash": "488bca5571247459356b3bab99e903cbafdab0cf36f6aa0169a21de6814473bb",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 930,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/DESKTOP_GUI_TROUBLESHOOTING.md",
+    "size": 409,
+    "mtimeMs": 1778269409130,
+    "hash": "2b7d965b0b52f26632eecc173a301b6d51e1c3ecc4b76c80e692f347b6030915",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 12,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/DISASTER_RECOVERY.md",
+    "size": 2051,
+    "mtimeMs": 1778243601879,
+    "hash": "5b00a22f95a12d1cea655e233d6b5f1e232a7f0dcf90325d4691e6d8311374ef",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 67,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/EXCHANGE_SAFETY.md",
+    "size": 3553,
+    "mtimeMs": 1777772903200,
+    "hash": "2ed616ba48f8169c5a70cc1acaa64a372cee85827b2196256c0a5807847f72c5",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 57,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/EXECUTION_SAFETY.md",
+    "size": 1045,
+    "mtimeMs": 1777893919787,
+    "hash": "5ba9217639ab2b8e9007d3c910926a4e9785ee029546fcb0130e17d8c26b3fe0",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/extra_production_ready_trading_bot_roadmap.md",
+    "size": 19279,
+    "mtimeMs": 1778124992802,
+    "hash": "f4c2b6c86b880f61a83f2a0bb1ac68cfa12a5b200a9912eaca1ba39503d75c23",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 759,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/extra_verbeteringen_ai_trading_bot_roadmap.md",
+    "size": 16951,
+    "mtimeMs": 1778247169604,
+    "hash": "7ab219becf88d77fc793a05359e757800ab71caed5328e04766a306d48bf779b",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 741,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/FEATURE_AUDIT.md",
+    "size": 897,
+    "mtimeMs": 1777756696100,
+    "hash": "d2d51071e87522636001d4f22939252f3435b6695e82484767488ed134c4f7c9",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/FEATURE_COMPLETION_PLAN.md",
+    "size": 8864,
+    "mtimeMs": 1778058534837,
+    "hash": "385a2e6a91a675ef9df4865917b1e588a24baa6b3a6c5c1bd7d76282c295c7d3",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 180,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/FEATURE_STATUS.md",
+    "size": 1268,
+    "mtimeMs": 1777488009260,
+    "hash": "74265be0ffcd576d7254970932456188071aa364c71b5394564d4c99f78379d4",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 25,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/IMPLEMENTATION_MATRIX.md",
+    "size": 23536,
+    "mtimeMs": 1778058516294,
+    "hash": "0afebf67658a89a56f6a57a6dd82a6d6e5d6bd557db4799b41bf467f88efce32",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 109,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/INCIDENT_RESPONSE.md",
+    "size": 2543,
+    "mtimeMs": 1777769398491,
+    "hash": "8e408fdfdd02d5a075d564f9b825514fe6256cb279c653de6ab647bab7cddab4",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 52,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/INDICATOR_REGISTRY.md",
+    "size": 2278,
+    "mtimeMs": 1777756696101,
+    "hash": "c2dd1aa83e527f9716384a9b89ed006e658d4e900a495a17030bbf2a822270f4",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/LEARNING_ANALYTICS.md",
+    "size": 2620,
+    "mtimeMs": 1777757945854,
+    "hash": "a3ba2a73b8014a7e84032c00b2527c8dbe06d6da55ac5fa2cffed2503de36f7c",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 95,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/mission_control_risk_intelligence_roadmap.md",
+    "size": 21084,
+    "mtimeMs": 1778244189077,
+    "hash": "04d9556f74faec2e5fb17103e9c42a25292a2ead4eaddf1ea78c73857d6e3367",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 809,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/neural_autonomy_engine_roadmap.md",
+    "size": 30726,
+    "mtimeMs": 1778247691007,
+    "hash": "403c5baa3ddf2da9bfa6aa7215d160cbcdb2c0f8b435b68ebcfd2f7e5512faf3",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 1493,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/NEURAL_PAPER_MODE.md",
+    "size": 367,
+    "mtimeMs": 1778269409130,
+    "hash": "050feef5d30618da62ba1b95b886ca64f62da3ee5339e18fdbf440334984f7fc",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 12,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/neural_safety_debug_autonomy_extensions.md",
+    "size": 19658,
+    "mtimeMs": 1778124801449,
+    "hash": "d56a5891cfdc80502fea2eac1c29453aab7ec4bff5b90d7729346eeaf6333e3f",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 684,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/OPERATOR_COMMANDS.md",
+    "size": 6829,
+    "mtimeMs": 1777850278839,
+    "hash": "d912a871d27bb8a272303cbce65d6bcb27dceca00a302fdaf9cc987a79a7945d",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/paper_demo_mode_wiring_roadmap.md",
+    "size": 13073,
+    "mtimeMs": 1778244521482,
+    "hash": "facea11da04c5e496710967606a5dc7f8df522459279a43345ed137dad730132",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 427,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/PERFORMANCE_LEDGER.md",
+    "size": 1137,
+    "mtimeMs": 1777867801676,
+    "hash": "f69f35c5e284d54ee53da125e731cbbe3f6e8940113734793f8dfd3a5988abf7",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/PROFILE_APPLY_FLOW.md",
+    "size": 402,
+    "mtimeMs": 1778269409130,
+    "hash": "d275e9156120872bdd1204edb199f71dbcd7b7977a45c46ecc67a2cc17789395",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 12,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/PROFILE_MATRIX.md",
+    "size": 862,
+    "mtimeMs": 1778269409129,
+    "hash": "3e13f428d85f6820dd36db2dc30b8355d322eb3ff2b6f9c0092426710f2a7c60",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 13,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/RECOMMENDED_UPDATES.md",
+    "size": 20942,
+    "mtimeMs": 1778224402905,
+    "hash": "c3a19a4a714678f1c9a72b21a1fe059770fef16377c791c9089ef6ef9aab3453",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 811,
+    "largeFileReview": true
+  },
+  {
+    "path": "docs/RELEASE_CHECKLIST.md",
+    "size": 496,
+    "mtimeMs": 1778243601880,
+    "hash": "91f8a3f58d9555fd760f6669afc83211d0cf8ce6f027cb911b98b8091369099c",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 13,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/RELEASE_NOTES.md",
+    "size": 396,
+    "mtimeMs": 1778243601882,
+    "hash": "c28418401fcf5b078b3016fe2567ff8c6146cd1e02055bb947620931d6bd95c7",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 8,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/RISK_MANAGEMENT.md",
+    "size": 1515,
+    "mtimeMs": 1777867010314,
+    "hash": "cf87e9042e4801642656362200af98da0a56b95543c7bf2cf963332514151198",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 25,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/ROLLBACK_PLAN.md",
+    "size": 425,
+    "mtimeMs": 1778243601881,
+    "hash": "229cf6781b3f32664c1f03850009a8f5240bd4f4afa8f03f29d3a65e787d477f",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 18,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/RUNBOOKS.md",
+    "size": 3106,
+    "mtimeMs": 1778243601880,
+    "hash": "af7465996986280db800a6fa1eb91339629bb6d39e14641cff258cb701685a33",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 82,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/safety_kernel_live_unlock_governance_roadmap.md",
+    "size": 20259,
+    "mtimeMs": 1778128165468,
+    "hash": "adfe7201950d6ef4007c7ee34e1c85797654dc25903dd4e420dd6df311381b60",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 776,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/scalability_multi_exchange_policy_observability_roadmap.md",
+    "size": 18699,
+    "mtimeMs": 1778243987037,
+    "hash": "2d50847cd60b72ce80b03db8f80cc9acd3d534343490aad291bb218442ebde07",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 719,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/SETUP_WIZARD.md",
+    "size": 308,
+    "mtimeMs": 1778269409134,
+    "hash": "4e333a88c5468d7ed7404a654e747bdc984d257652ddd621222e320e0654095f",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 10,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/strategy_validation_costs_portfolio_ux_roadmap.md",
+    "size": 21237,
+    "mtimeMs": 1778243723802,
+    "hash": "029d0ee07540fb2b79b5332e22d9366ff7ddd7443b9969e40e244c689394c8ec",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 797,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/TRADINGBOT_DECOMPOSITION_PLAN.md",
+    "size": 1689,
+    "mtimeMs": 1777756696102,
+    "hash": "9dea84e9fa76be49220220ba5f5469cddfdde1d7469fa715368e4403b7a32c72",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 30,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/TRADING_FEATURE_INVENTORY.md",
+    "size": 8682,
+    "mtimeMs": 1777895364431,
+    "hash": "90c02949772a2ea2b7149ab0a940c267645ca8bc6d0d58848a8f8ba550ad9b61",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 68,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/TRADING_PATH_INACTIVE_DEBUG.md",
+    "size": 5688,
+    "mtimeMs": 1777804576721,
+    "hash": "3c0b6d1a9095695e74e74282484fa97980da6d4330ee8dda09eac486796c5e80",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 141,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/TRADING_QUALITY.md",
+    "size": 6637,
+    "mtimeMs": 1777894633764,
+    "hash": "17497f798cad191f78c6593af83e8c9a5404bd9af41d6e34543a49883d4b997e",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 60,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/windows_gui_fast_trading_execution_roadmap.md",
+    "size": 20860,
+    "mtimeMs": 1778230689719,
+    "hash": "bb4073de7aad1e5e5e5b2380cc4c8ce81cea173bd0daabcfd48dd5be82e6d248",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 744,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/WINDOWS_INSTALLER_TEST_PLAN.md",
+    "size": 380,
+    "mtimeMs": 1778269409135,
+    "hash": "92a10269a23730e3ecf467fb60e2051f95affd1f526d86675988caa954ebdc48",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 12,
+    "largeFileReview": false
+  },
+  {
+    "path": "eslint.config.js",
+    "size": 2174,
+    "mtimeMs": 1777845414637,
+    "hash": "21647c13c12ae816555e513a2597cc9b0cdae7d76f02388b10cb8acfe2f32001",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 76,
+    "largeFileReview": false
+  },
+  {
+    "path": "generated-docs/operator-quickstart.json",
+    "size": 28435,
+    "mtimeMs": 1778244190333,
+    "hash": "8d6870b719f48f5116d9a271ed090831024ee072a045553861e18432903083c4",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 843,
+    "largeFileReview": true
+  },
+  {
+    "path": "Install-Windows11.cmd",
+    "size": 95,
+    "mtimeMs": 1777488009253,
+    "hash": "2ef202a348bd36a2752538785807cff3ff91c81139550905014457cf79d9ce16",
+    "type": "cmd",
+    "emptyClass": null,
+    "lineCount": 4,
+    "largeFileReview": false
+  },
+  {
+    "path": "Install-Windows11.ps1",
+    "size": 1846,
+    "mtimeMs": 1777488009253,
+    "hash": "6406b9c4f24120953c8a42679e62fbc66a74d60c84d680494d35ff3bd7227e6b",
+    "type": "ps1",
+    "emptyClass": null,
+    "lineCount": 50,
+    "largeFileReview": false
+  },
+  {
+    "path": "LEAN-CTX.md",
+    "size": 1577,
+    "mtimeMs": 1777488009254,
+    "hash": "a76ed61b3f68a5ba03476f4ef92dc25476ea40d0c699b562b7f8bec0ce9c1df7",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 36,
+    "largeFileReview": false
+  },
+  {
+    "path": "package-lock.json",
+    "size": 49744,
+    "mtimeMs": 1777868214000,
+    "hash": "4863d1b659beceb235468e33d4ed3e8ddcdaa74b6f83987ffeafe35940e47bce",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 1411,
+    "largeFileReview": true
+  },
+  {
+    "path": "package.json",
+    "size": 4096,
+    "mtimeMs": 1778304476296,
+    "hash": "e63f14f32ce5fe45aabae74980bda0d2b644360477a31f2f41bd596118fe7d5b",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 76,
+    "largeFileReview": false
+  },
+  {
+    "path": "PAPER_MODE_LEARNING_ROADMAP.txt",
+    "size": 1643,
+    "mtimeMs": 1777488009255,
+    "hash": "025fe89e2f52cf60eea2112a3696ac2a51e0ff9cc83b270fbadd2477243157ca",
+    "type": "txt",
+    "emptyClass": null,
+    "lineCount": 14,
+    "largeFileReview": false
+  },
+  {
+    "path": "README.md",
+    "size": 27565,
+    "mtimeMs": 1777488009256,
+    "hash": "b6c8ae6152ac1532d144269ff6aee43730eaed5c11f7367940e1d57a1b406061",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 849,
+    "largeFileReview": true
+  },
+  {
+    "path": "Run-BotService.ps1",
+    "size": 3823,
+    "mtimeMs": 1777488009256,
+    "hash": "75f58404f0e1acc3fe858dd060b25695f4d4182a1ba36c0587776ccc9417dfe1",
+    "type": "ps1",
+    "emptyClass": null,
+    "lineCount": 97,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/analyze-dependencies.mjs",
+    "size": 3826,
+    "mtimeMs": 1778304460690,
+    "hash": "f41e855c3a700936c27c2fc87b56b34ca2e84fd7a19b8932f5a08e69cba06be0",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 84,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/backfill-trade-attribution.mjs",
+    "size": 4085,
+    "mtimeMs": 1777488009262,
+    "hash": "e734f0df0571246244dd97f25c1ef61bebc977ba0f519cce1a48f311a0a307f3",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 124,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-api-route-contracts.mjs",
+    "size": 3291,
+    "mtimeMs": 1778304992008,
+    "hash": "99240094e7237c39ac93ab98867bf5ae14015e04c0ff00fa863a995b83677aee",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-critical-files.mjs",
+    "size": 1023,
+    "mtimeMs": 1778303758233,
+    "hash": "e54ef49a933e1809cc9b5ffb638a1d60d51c7ee5c6b9d40ad21a96020beefd2e",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 35,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-dashboard-dom-contract.mjs",
+    "size": 1671,
+    "mtimeMs": 1778304460688,
+    "hash": "f2995da88e0f3a327bae35b2d7c8eef311282dd6dfa4aebc772f68bccb13afac",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 43,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-env-duplicates.mjs",
+    "size": 1188,
+    "mtimeMs": 1778304460687,
+    "hash": "95658835853da4329093380c5287a90f89cb302a1ec2e6458578fbb433efed9b",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-env.mjs",
+    "size": 1248,
+    "mtimeMs": 1778303758237,
+    "hash": "625e556b5b421d3aede0705fef5bc669c51004c9b0cb1ccee4d1cac0932fc196",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-imports.mjs",
+    "size": 1376,
+    "mtimeMs": 1778303947112,
+    "hash": "97f3f5e5c92f4cfd12dd300b8ab377914ee4416dd255814df0bd52f7f8c6d3d4",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 37,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-package-scripts.mjs",
+    "size": 2406,
+    "mtimeMs": 1778304605802,
+    "hash": "3366bc98df2be95c378ceaa60ab2b7c2ccc41b52cf08daa4ef65a3544a9bea94",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 46,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-syntax.mjs",
+    "size": 1112,
+    "mtimeMs": 1778303758238,
+    "hash": "7b01593dcf6b9c1af798ebfe2c46da9f8003af8929465d483a6e6e8c00e89809",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 32,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/generate-debug-inventory.mjs",
+    "size": 6177,
+    "mtimeMs": 1778305125214,
+    "hash": "4d0520cd84d141e5cee559fc73453c2d6c3332e32b64f31b0f8f64ae895ba3c7",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 132,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/scan-secrets.mjs",
+    "size": 3054,
+    "mtimeMs": 1778304888565,
+    "hash": "33b62ed56aff0a3266829afe285242b1d7bed24d95139a6eb06651fbf1189bb3",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 67,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/setup-git-hooks.mjs",
+    "size": 877,
+    "mtimeMs": 1777488009263,
+    "hash": "478cddec14d91b3339fe16161637bf925a80c5c4426711a9f8d1bb02c6141ddd",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 33,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/smoke-cli.mjs",
+    "size": 713,
+    "mtimeMs": 1778304460692,
+    "hash": "e7f0f6ca4fe74217c410ed188c1db9ef99a154661b20c2167fe12a81a4e5ca38",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 29,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/smoke-dashboard.mjs",
+    "size": 3178,
+    "mtimeMs": 1778305008966,
+    "hash": "c7e06152f13e11120105399baf461c696755179fcb11e4bfbbec3716760f0b41",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 69,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/strict-entry-replay.js",
+    "size": 12282,
+    "mtimeMs": 1777488009264,
+    "hash": "8d3cbcaee402f8c80e92921718a171325d1fb8f8f0ffbcc4929721040e13b90f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 294,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/accounts/accountProfileRegistry.js",
+    "size": 1915,
+    "mtimeMs": 1778243819419,
+    "hash": "dab6a7b9048c64cb1bc3c00e84c5b82d5fce40daa5769662226a6402cabdefe4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/adaptiveModel.js",
+    "size": 39350,
+    "mtimeMs": 1777488009266,
+    "hash": "b7f1673f6989142ce1568ea9a0853f08d11f52d966b77fd95ac97c682788ddb2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 923,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/ai/antiOverfitGovernor.js",
+    "size": 3259,
+    "mtimeMs": 1777773972123,
+    "hash": "8d174dc8ccce105316641c0cf668e5243446c78f98c950bd727045922bb53bc8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 76,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/capital/capitalAllocationAI.js",
+    "size": 1539,
+    "mtimeMs": 1778243877347,
+    "hash": "e34008f293b69474c94812c5ab58aa92b7bdcacf3c7cbbf2444d88edf38c7e8a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 36,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/confidenceCalibration.js",
+    "size": 5802,
+    "mtimeMs": 1777849803170,
+    "hash": "bec78d144388c86a08ce7f022602a875dc9cf1dbc0ab847b6e56c2c99f9ae1a5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 193,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/crossTimeframeEncoder.js",
+    "size": 3759,
+    "mtimeMs": 1777488009266,
+    "hash": "ac776c715942ac36a8c9557798e76be3b1c08a8327ba6238c4b97d01ddc342ba",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 95,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/decision/doNothingIntelligence.js",
+    "size": 1119,
+    "mtimeMs": 1778243877348,
+    "hash": "325b8193d1e134e0ed39786dbf0e35f0ed7437d6f19d9c493ef281970170cb30",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 22,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/executionNeuralAdvisor.js",
+    "size": 6352,
+    "mtimeMs": 1777488009267,
+    "hash": "da39afc70226104fe5cacc3acc40c8818af78d9aeaff0efab2a02d067e3f4bf3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 155,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/exitIntelligence.js",
+    "size": 28832,
+    "mtimeMs": 1777488009268,
+    "hash": "8f6e4a9cd79b92ec554b13f9169d5d350e5a0b46d7ddef26989e56b6c2a02877",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 613,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/exitNeuralAdvisor.js",
+    "size": 5973,
+    "mtimeMs": 1777488009269,
+    "hash": "2bc4fde5cc57921a2e29533e14a9ddb404bf4397f28e73b590c61791620d0e26",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 162,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/governance/aiChangeBudget.js",
+    "size": 1165,
+    "mtimeMs": 1778243877350,
+    "hash": "ac1f8dfe0069c6f2e25aa786b7c22aa215af24811398a88b68d8baaba86183cf",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 28,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/metaDecisionGate.js",
+    "size": 35112,
+    "mtimeMs": 1777488009270,
+    "hash": "63ff8d80172a0afa8e80307a704366acde3c869cf71c9e350bec89a0d15c34dc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 774,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/metaNeuralGateModel.js",
+    "size": 5565,
+    "mtimeMs": 1777488009271,
+    "hash": "d74a99ee8ab41e46842a6f48f65772246abfb2e3352b50385bbbead26b767d3b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 160,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/multiAgentCommittee.js",
+    "size": 14661,
+    "mtimeMs": 1777488009272,
+    "hash": "41f68141a50590b0c82302ee1714202c4380326b6bd6e1d2b41cfefa37e896dc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 360,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/autonomyEngine.js",
+    "size": 2928,
+    "mtimeMs": 1778269757417,
+    "hash": "595b30a86bd9c0485f583a6bddff941fc838ba155bdefd829e7562b90f9fa8bd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 43,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/experiments/neuralExperimentRegistry.js",
+    "size": 819,
+    "mtimeMs": 1778242748851,
+    "hash": "68d171821f5548c03fe3e6fe29aee8e3ef408e1649b61e75677f1f43c0c8fa5c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 23,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/fastReplayEngine.js",
+    "size": 2945,
+    "mtimeMs": 1778269462956,
+    "hash": "b7331008992c88f0a362359338cc3c6787dfefbdf29e73d3d1ec89772973d091",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 62,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/governance/neuralAutoRollback.js",
+    "size": 1141,
+    "mtimeMs": 1778242748855,
+    "hash": "a7e23a864564fe97e7bb0444543d0a3f5544b6c16f1315cbb295bf6e4fe489b3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 18,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/governance/neuralPerformanceWatchdog.js",
+    "size": 941,
+    "mtimeMs": 1778242748856,
+    "hash": "ccbdbc825b06771613220991156a757f0acabb5c116ee6da3b04f215a9427a30",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 15,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/learning/learningEventStore.js",
+    "size": 4602,
+    "mtimeMs": 1778269462954,
+    "hash": "ba3448805e3cf14b147496138dbfdf1806b52e86ec722ab83c7d878bb8f51b69",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 109,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/learning/neuralContinuousLearner.js",
+    "size": 1122,
+    "mtimeMs": 1778242708519,
+    "hash": "cd59b233b462d00e1d41721fbf21d80214a9256aba7f30d855ad5bb1120e9853",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/learning/neuralSelfTuningController.js",
+    "size": 1529,
+    "mtimeMs": 1778242708519,
+    "hash": "8abd95f015ce3a0ec7188b9ecc0bd2146a1532bee8ec9c27652233468008d5fb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 36,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/learning/positionOutcomeLearner.js",
+    "size": 1082,
+    "mtimeMs": 1778242708518,
+    "hash": "d5035caf4ef6a5cf85b9154945bfeb894d00b56c21ca05d2a5fa891faddda259",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/live/neuralLiveExecutionAdapter.js",
+    "size": 849,
+    "mtimeMs": 1778242748850,
+    "hash": "8f6da044cb36bff2cca31c7b8ffa4eff376de69aa374783c68217d0e5aec46d4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 27,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/live/neuralLiveExecutionGate.js",
+    "size": 1988,
+    "mtimeMs": 1778242748849,
+    "hash": "1af5c49e67d0300cf05b43118c0f33bbad38e63923d6b15b2c59f2bb868fdda8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/modelRegistryV2.js",
+    "size": 1546,
+    "mtimeMs": 1778269462959,
+    "hash": "5e97140d146df0242db903db167a432c532d52449b4a8590a9df08bca3388429",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 37,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/neuralAutonomyGovernor.js",
+    "size": 3541,
+    "mtimeMs": 1778242708514,
+    "hash": "3436b65b0eb2f6a398f670e084bbc4cdd792840b284b155790caa044b98cc53c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 99,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/neuralSafetyAuditor.js",
+    "size": 1651,
+    "mtimeMs": 1778269462956,
+    "hash": "6a3ae4126481c791864e6c568068fb6d2440bbc6b0ee598d1de2ced3da64c70b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 33,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/neuralWalkForward.js",
+    "size": 2152,
+    "mtimeMs": 1778269462957,
+    "hash": "aabb567fb438158f89eea61acd4ad313f973bfcb7ef87e29748b23bceaf8eefd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 45,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/overlayStore.js",
+    "size": 2134,
+    "mtimeMs": 1778269462958,
+    "hash": "aa8d61cd3bb4d62683e44a4048b76c38238605c228d844a0d91507941ae36ae8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 72,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/promotionPipeline.js",
+    "size": 2740,
+    "mtimeMs": 1778269462958,
+    "hash": "0da2df6e092eff497a7558724d118ccd10e439e30c550d2d1fa0a5b137015bf1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 85,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/proposalEngine.js",
+    "size": 5656,
+    "mtimeMs": 1778269462954,
+    "hash": "665c9b04f4899540943d4cb00983ed26d996d1a5e931a027b7f865d9992c4da8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 141,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/replay/neuralReplayArena.js",
+    "size": 990,
+    "mtimeMs": 1778242708516,
+    "hash": "37a487ae1d2fef5d820bb5b4e7afd6595d93e788b32b256ec164ed07aa2e39b2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/replay/neuralReplayEngine.js",
+    "size": 2365,
+    "mtimeMs": 1778242708515,
+    "hash": "f7133712aebf38d0222cb47b69b61b171fa10c9b85149281ab9afe609b35eac4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 52,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/replay/neuralReplayQueue.js",
+    "size": 1627,
+    "mtimeMs": 1778242708517,
+    "hash": "65600c7cd62582f64890f37c81a0ffca36efd81ac5692f5ac11b0aa30e6665c5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 41,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/replay/replayPromotionGate.js",
+    "size": 1350,
+    "mtimeMs": 1778242708516,
+    "hash": "912835caf1e3c0366d06567164b9f95ca02abca87b67bc799389a246efc6965d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/safetyBoundLayer.js",
+    "size": 3164,
+    "mtimeMs": 1778269462955,
+    "hash": "db2368f0a4a3e7a8c3fcb0d6adf6b5bf0f2d697b10c95efe30974bb68926dc59",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 74,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/stressScenarioEngine.js",
+    "size": 1933,
+    "mtimeMs": 1778269462957,
+    "hash": "a6d4fd34e550674fd0732cf2f926b4ba7d220059809cc90c411fd67663419d68",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 53,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/training/neuralTrainingScheduler.js",
+    "size": 1200,
+    "mtimeMs": 1778242748857,
+    "hash": "92b8fdfc98eb2a5741892b2faa0d4dfbd59f558f82fe901f133bf00203517fec",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 22,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/neural/utils.js",
+    "size": 1199,
+    "mtimeMs": 1778242708513,
+    "hash": "2fdda867899de778f9a7cadb9c58330a575f429b23387872a10d3205447ad7f1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 37,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/onlineModel.js",
+    "size": 13776,
+    "mtimeMs": 1777488009273,
+    "hash": "04ccab853421aedce10a504293adbff3043eb67b147fb3109c3dbbc0e21db2e1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 466,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/parameterGovernor.js",
+    "size": 9407,
+    "mtimeMs": 1777488009274,
+    "hash": "7dd6f1c448c2a880f86d358e4c58f30d95f8462d16ea7380abdf6a0f4d897341",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 242,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/probabilityCalibrator.js",
+    "size": 3407,
+    "mtimeMs": 1777488009275,
+    "hash": "456a0c640c55b703e87a20f7f02c36aebca115610208d41722b402a85500ef83",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 102,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/regimeModel.js",
+    "size": 6374,
+    "mtimeMs": 1777488009276,
+    "hash": "8e2041c360f53738a7747304e35e385f288206bbb84cbd923f4c9349d63ec555",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 167,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/risk/lossPreventionAI.js",
+    "size": 1452,
+    "mtimeMs": 1778243877345,
+    "hash": "37cf1b6aabcdb8072201133df178ea3da388fd840828aff9f7114151ed1b270f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 31,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/rlExecutionPolicy.js",
+    "size": 8493,
+    "mtimeMs": 1777488009276,
+    "hash": "d3f7622411bddff24e7465620988544a8a54cf3ef06d1619eb4dba5a0e0fb29e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 232,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/sequenceChallenger.js",
+    "size": 6185,
+    "mtimeMs": 1777488009277,
+    "hash": "ecbbbb59e7b8cb91d76e9046eb056eb31562039ee1df61cf0098dec937bc3541",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 162,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/strategyAllocationBandit.js",
+    "size": 24027,
+    "mtimeMs": 1777488009278,
+    "hash": "433aa31918f425601eee727bae07c7e884700f8da7b43748d0a88fc250faa4f9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 598,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/strategyAttribution.js",
+    "size": 10720,
+    "mtimeMs": 1777488009279,
+    "hash": "b018b446d3fc5cd57d1a8ac67ebd126454fffeab752da23f56ea708d0e917f61",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 276,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/strategyMetaSelector.js",
+    "size": 10155,
+    "mtimeMs": 1777488009279,
+    "hash": "c4e85f1d275a4c01293ad1a84f1d7423506ac0400fb35dfb36b91bf4319c3893",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 218,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/strategyOptimizer.js",
+    "size": 15205,
+    "mtimeMs": 1777488009280,
+    "hash": "933359d0e7303f0837cc38ccb5f5f139f52c265aa885dd8254c6d1e1905c77d6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 318,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/tinyNeuralNetwork.js",
+    "size": 7251,
+    "mtimeMs": 1777488009280,
+    "hash": "df44dda65f31f07bbd875ece4462e4f953ff3cca3f1b1e06981ac6bfbb66db44",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 178,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/tradeLabeler.js",
+    "size": 1163,
+    "mtimeMs": 1777488009281,
+    "hash": "4f32c5e0f94efcf3fc8851bf32c52a23d7098f0a4b905a99d3933c34251c3d85",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 29,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/transformerChallenger.js",
+    "size": 14835,
+    "mtimeMs": 1777488009281,
+    "hash": "ce55d41bb40659ce732f52bf50dd35d351b3afffd3b8033f83aca30a594b3b6b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 383,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/backtest/backtestIntegrity.js",
+    "size": 3261,
+    "mtimeMs": 1777825896976,
+    "hash": "4c26d62073266a0ac7cdd634cb4eac5b5ad7e0dcd65858984c8d9210744faff2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 56,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/backtest/backtestMetrics.js",
+    "size": 3115,
+    "mtimeMs": 1777825591020,
+    "hash": "6b9d6adf65c300060174b22c48200ce7af1181ada9ad72d7c8cb235a99d0202d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 76,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/binance/client.js",
+    "size": 33121,
+    "mtimeMs": 1777518914406,
+    "hash": "b13daa3df8947c1e6ad9c7ff9e8cbdcd0649c8e09bdc5cbf9206d9cbfe66689f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 938,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/binance/symbolFilters.js",
+    "size": 4171,
+    "mtimeMs": 1777488009283,
+    "hash": "06901d952cf364ea41ebef9fe3736e8523c703d56efcf051ae9db909d138b1b2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 122,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/cli/commandRegistry.js",
+    "size": 6448,
+    "mtimeMs": 1778304460685,
+    "hash": "7c64feba8170656abe4fb4fcca1fb3d7e43cd48ecdb6fb25f71b7094f737a6bb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 52,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/cli/runCli.js",
+    "size": 50095,
+    "mtimeMs": 1778304460686,
+    "hash": "4fb76294810db182c107fb5b0f2755daa3af77cd6b0db803069d49d2771156dd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1244,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/cli.js",
+    "size": 638,
+    "mtimeMs": 1777488009283,
+    "hash": "5b8364ff15865668e334b33bf8b066355900dd91e4c37d06aacb32dd248f6233",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 27,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/configHash.js",
+    "size": 1927,
+    "mtimeMs": 1777772557768,
+    "hash": "74ed6d766b0053d7fed33638f9f6da0cc73ca902929cf37c9ca4701a8862e1a4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 66,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/ai.js",
+    "size": 5873,
+    "mtimeMs": 1778242769202,
+    "hash": "e299f70f83d4c6426b22b3c552ecc66fc2e5d153939c18c062311d6e94e80d0a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 162,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/core.js",
+    "size": 1100,
+    "mtimeMs": 1777766028294,
+    "hash": "1a45ea9b886eb8fc983a5bbf0635095d134bcbd40ac827b7455bb6a29d782fd8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/dashboard.js",
+    "size": 816,
+    "mtimeMs": 1777756832723,
+    "hash": "9a596ed281c339416dffd95f4b7622ec6cd36b1f8a794c54caf99243313c9c3b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 23,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/index.js",
+    "size": 706,
+    "mtimeMs": 1777756832724,
+    "hash": "2b0823a85bf5d6349791da872241a764ec459e2d9b2eea2df43f691a8bfafb8e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 24,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/liveExecution.js",
+    "size": 3876,
+    "mtimeMs": 1778229670339,
+    "hash": "f413959af45f1e5390a3779732f1a7630c0db5b90532ff64dc7613c11031a1dc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 106,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/marketData.js",
+    "size": 3681,
+    "mtimeMs": 1777756832721,
+    "hash": "439bed4de1fc3d1486517571761f01779c5bdc73a13476747b56f83caba1b677",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 110,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/paperLearning.js",
+    "size": 1983,
+    "mtimeMs": 1777756832722,
+    "hash": "cdf9ffb186dfcda561e84229879e1f2be68ebd7414940fce583a9d8192d80988",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 51,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/recorder.js",
+    "size": 236,
+    "mtimeMs": 1777756832723,
+    "hash": "ac8d0c8054d9ab01c49fe9228973a7c67b792c0d48a629a9cebaeff5afee0fa1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 9,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/risk.js",
+    "size": 2575,
+    "mtimeMs": 1777772525542,
+    "hash": "a1add5a490c81791d80e6085c172c845ccdedd8913b17a3999725bd5e82439f9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 78,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/defaults/service.js",
+    "size": 698,
+    "mtimeMs": 1778243950555,
+    "hash": "cca11b64aae920bb85720eb29928185a41af7dc3b93ad7fd06b40374d838a1d7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 23,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/envFile.js",
+    "size": 4793,
+    "mtimeMs": 1778272224276,
+    "hash": "9d27560053467e06a8c56b09268caaa2060342fd1b5396637a624fb055ae7584",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 141,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/envValidation.js",
+    "size": 3687,
+    "mtimeMs": 1778303877078,
+    "hash": "f37e924c374affee9f8bbb3af1901752241355ed8508f17990a71326881ac07d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 99,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/errors.js",
+    "size": 523,
+    "mtimeMs": 1777488009286,
+    "hash": "e030946c4ac526ca20165b989ab7b2b7e7f0584afb06f47b2a04cf94d7c26a71",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 20,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/exchangeCapabilities.js",
+    "size": 2273,
+    "mtimeMs": 1777488009286,
+    "hash": "e312d7a87a6b2911e5cbb20e019d3390d8f15c4be2814b6e9005290b3025bbe8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 71,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/index.js",
+    "size": 73880,
+    "mtimeMs": 1778303956897,
+    "hash": "ce2e60a866a9bcd2c28a1f33197f00d8e879f1e37e721763f105b3d44d60a91d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 874,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/config/mode.js",
+    "size": 1621,
+    "mtimeMs": 1778303758231,
+    "hash": "056aa0a301127816d4cadc690f0d4b3f1620c4f77da2d96908860a8a8697cad2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 40,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/paperModeProfile.js",
+    "size": 1920,
+    "mtimeMs": 1777756882032,
+    "hash": "6cb1fc02ee71e1d8e0a64cc049efa210a1989499a4eaeefd1024b64b14e85bb7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/profileAudit.js",
+    "size": 3742,
+    "mtimeMs": 1777756917481,
+    "hash": "e1c06beb68ce7b5a143bd20ab65e8d1a92375f652dc943da231d54396af0c0c7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 101,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/profiles.js",
+    "size": 3016,
+    "mtimeMs": 1777488009288,
+    "hash": "d9942492d4508400ffb2e335afdf2ff0e621736d74dde7b3784c825caf07a3f0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 99,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/schema.js",
+    "size": 3984,
+    "mtimeMs": 1777691508897,
+    "hash": "da1936a3f2bcbdb4aeb3913b0a93b19c03a8d1d77cc3d3a13ed667e3d87504a0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 130,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/tradeProfiles.js",
+    "size": 6557,
+    "mtimeMs": 1778271932765,
+    "hash": "3c4bb6151fcc192f1394c4d4b53bdeed005db6cb2646a5ca80fb99eb8de35261",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 180,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/validate.js",
+    "size": 41778,
+    "mtimeMs": 1777772541635,
+    "hash": "750d4c8faee0e99f090d2ddd09204bb6670ff5d0f96be9df767acf1f0ddb7a9e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 506,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/eventBus.js",
+    "size": 1837,
+    "mtimeMs": 1778226772884,
+    "hash": "080dbb3b926af637682c168e398807640fac442d2ec94cf9aae5f104d8dcd9e7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 71,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/fastExecutionDashboard.js",
+    "size": 8409,
+    "mtimeMs": 1778230349161,
+    "hash": "28a1bb9e5668b10737792c2d623c0bc36a56b7e36eef0004be045372d7cb4f3e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 186,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/guiStatus.js",
+    "size": 3687,
+    "mtimeMs": 1778224945473,
+    "hash": "bf4007294c7ced2b485d83ee355734c6109262ccfeb8e52b88d7f084b20f960d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 79,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/public/app.js",
+    "size": 99204,
+    "mtimeMs": 1778304983687,
+    "hash": "9966f6dc815d0a02e9f58fbbe492a1720aa8c1b3dcc3962031d7f5b636c1bc51",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 2044,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/dashboard/public/index.html",
+    "size": 7436,
+    "mtimeMs": 1778272268224,
+    "hash": "cddc03c0db5afe8cd661acd33b1514fe62435e05a401d56316586625b43381dd",
+    "type": "html",
+    "emptyClass": null,
+    "lineCount": 191,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/public/styles.css",
+    "size": 11887,
+    "mtimeMs": 1778272298415,
+    "hash": "5de72f43a60123f1ac41059f90f7d31856062a781e0de904e6a8286b0a524d03",
+    "type": "css",
+    "emptyClass": null,
+    "lineCount": 677,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/server.js",
+    "size": 15085,
+    "mtimeMs": 1778304967712,
+    "hash": "4ee3eea27006dcd0ed1a20620086d5349ed901f3ef5728073724396028f8a06b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 394,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/docs/autoDocsGenerator.js",
+    "size": 1031,
+    "mtimeMs": 1778243905072,
+    "hash": "b67f21267168255f4046a620bee48c694b91ef4d8dcfa2ee6bb17ab345c4d0f1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 29,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/events/binanceAnnouncementService.js",
+    "size": 11054,
+    "mtimeMs": 1777488009298,
+    "hash": "edce0271413f20becb45afe5ef042da87897d1a869696fdac5d2b125e03998a6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 339,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/events/calendarService.js",
+    "size": 11834,
+    "mtimeMs": 1777488009299,
+    "hash": "a9b60e1dbcce51b5629ffdc974483573dcc13a51e114d9a78ca3e43dda849f03",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 358,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/exchange/adapters/binance/BinanceExchangeAdapter.js",
+    "size": 2274,
+    "mtimeMs": 1778243819417,
+    "hash": "7a6efdd8804aa61b4f53af05691ce62e5d52ccae1a44b10cc834f1870a8fda68",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 30,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/exchange/adapters/ExchangeAdapter.js",
+    "size": 4707,
+    "mtimeMs": 1778243819413,
+    "hash": "1b3dbe748f97fcc15aea4d3cdc44dd10b2d6400fb18d3ca9b2caed7e27e19628",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 91,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/exchange/adapters/paper/PaperExchangeAdapter.js",
+    "size": 2662,
+    "mtimeMs": 1778243819414,
+    "hash": "07de867c3c487fa498e03cb51b43e1f43ce3bc2e2023e7a37f029ec84d3b830c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/exchange/adapters/synthetic/SyntheticExchangeAdapter.js",
+    "size": 367,
+    "mtimeMs": 1778243819416,
+    "hash": "4317f2f912130d589246e8d1b046e3021a7ad7535856cb8f3e94c84b87b55669",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 11,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/exchange/exchangeCapabilities.js",
+    "size": 618,
+    "mtimeMs": 1778243819418,
+    "hash": "b3eb7ed534c635265ba201af0e2d1b836e836c1d32625f5d606f54aa48a10313",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 10,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/autoReconcileCoordinator.js",
+    "size": 31268,
+    "mtimeMs": 1777775113242,
+    "hash": "7282f155e976a8f11419d6f6a5b2ef55b0e8782dd1cfcea4383ac3c39969ba58",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 743,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/brokerFactory.js",
+    "size": 1700,
+    "mtimeMs": 1778303803423,
+    "hash": "ab68d2840d11e7288e1ac08e7466b5af077d658350b039b1a93526831029c44d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 39,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/brokerRouter.js",
+    "size": 2360,
+    "mtimeMs": 1778243819422,
+    "hash": "2d6e72d177d60c644cbab296945c9855e1cf5f8390e61d0ae5e71b1da4dbb52a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/costModel.js",
+    "size": 1206,
+    "mtimeMs": 1778243574205,
+    "hash": "c1164ea3fab53eb6681db8cc17610c9bfc3fa315756465d60331ea566a60c96f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/demoPaperBroker.js",
+    "size": 2691,
+    "mtimeMs": 1777488009299,
+    "hash": "87f9e92c7580433022b559788044bea0bd16ff43b4850a819224844f9ca43cc5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 99,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/exchangeAdapterContract.js",
+    "size": 4781,
+    "mtimeMs": 1777849377127,
+    "hash": "6b9f994babeed7f77f0e8d75d4049a54119c0da92e4bbcaae25a19e1f40e67e0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 159,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/executionEngine.js",
+    "size": 28265,
+    "mtimeMs": 1777491724412,
+    "hash": "1216925388d5e79e0028046861c1239282feb700efaca5985665b1e4dfa3a3d8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 584,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/executionIntentLedger.js",
+    "size": 8991,
+    "mtimeMs": 1777488009301,
+    "hash": "ece61f9481636f86859f392b6ad1bdb5ff722ef6d7c8044083bd600d1b756d7b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 289,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/executionIntentView.js",
+    "size": 1873,
+    "mtimeMs": 1777757118324,
+    "hash": "a8d32dda98c692a8c158c48680312a86239a9c8f3e5345d862ffef187d3e78a2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 50,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/feeAccounting.js",
+    "size": 4394,
+    "mtimeMs": 1777491621525,
+    "hash": "2c62af027f2b5c8e4a967e360fc4dd22cb1a01ebe2ee6730ac1cbeb656b52875",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 142,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/liveBroker.js",
+    "size": 144655,
+    "mtimeMs": 1777691575022,
+    "hash": "693206fc3197b48496a069a00ae2911e12935fd01828217791029b27a85340b7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 3365,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/execution/liveBrokerReconcile.js",
+    "size": 86779,
+    "mtimeMs": 1777821155940,
+    "hash": "55f53408b5d664d53978480325a647a7c89e2b10dfd5822f1b7daae2a885db11",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 2025,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/execution/liveBrokerRuntime.js",
+    "size": 4710,
+    "mtimeMs": 1777488009304,
+    "hash": "1fe55f05fadc899d295a44385107a262267d2cb0ba5dd866005c0050921a935a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 141,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/microstructureFillSimulator.js",
+    "size": 4146,
+    "mtimeMs": 1777865623684,
+    "hash": "3031130da5b2a355a10c74b4f9f599ecc80a774b1ee254ee926c70c98c1a3adb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 97,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/minNotionalExit.js",
+    "size": 846,
+    "mtimeMs": 1777488009305,
+    "hash": "28cff8ca3c80261097d73c17243f47da6eb3b37944b35dbd9e8fc8891833e9f0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 25,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/orderLifecycleAuditor.js",
+    "size": 8554,
+    "mtimeMs": 1778029807008,
+    "hash": "4cacffb8250391849f402b070703930ea8c2ede89c2f13c9f8f88bc58f2b8b5a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 236,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/orderStyleAdvisor.js",
+    "size": 4801,
+    "mtimeMs": 1777893880687,
+    "hash": "c309402a7b813bcb376af929753d8f83ebad47ee702a62f4130fa6295b4146bb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 122,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/paperBroker.js",
+    "size": 28181,
+    "mtimeMs": 1777691569879,
+    "hash": "b65bd77f9ba0a08e62a3779b288f13831693acc1a289281693c4528d2d183c39",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 667,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/reconcileEvidenceSummary.js",
+    "size": 2606,
+    "mtimeMs": 1777757132930,
+    "hash": "2e795940227cdba2ca5d9e4b1e62acbba33afdcc1295942d7bb380cfba34ef6f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 62,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/stopLimitGap.js",
+    "size": 2992,
+    "mtimeMs": 1777824512867,
+    "hash": "929293ffed91f92b8e6b61025f4c80a147748e5aa1ad0283894b322b2ba9300b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 79,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/stopLimitStuck.js",
+    "size": 4945,
+    "mtimeMs": 1777824204759,
+    "hash": "f3b14460ec530d2e146737dccdd02003ac15aa6f5cfe6b4cdb9dda340c69e94b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 123,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/tradeAnalyticsContext.js",
+    "size": 9737,
+    "mtimeMs": 1777488009306,
+    "hash": "80ed5c91985ef4f58e2e4e39b06a5a938626fa7b9a9ec6ff2dd6223fc1a8a6e7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 245,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/crossExchangeDivergence.js",
+    "size": 8371,
+    "mtimeMs": 1778010083810,
+    "hash": "666578ed7b3f852b2a2d5b05960b315fee5ac041d79b214ec9b57edac4c09606",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 214,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/derivativesContext.js",
+    "size": 5218,
+    "mtimeMs": 1777863590576,
+    "hash": "6859e4f614bd06bbd7fa970a860941e653be228b791131ebc71802a66154acd3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 167,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/derivativesMatrix.js",
+    "size": 2833,
+    "mtimeMs": 1777723487378,
+    "hash": "8a2645888dea1c24cb1577c5c0a812da5336073c9130227e10f3936f5100a14b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 87,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/globalMarketContext.js",
+    "size": 4960,
+    "mtimeMs": 1777488009307,
+    "hash": "b07ac03191274b80755b151c5e339ba8c8c34aa6c83f6c0c6eccb47c910ce6fd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 157,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/historicalDataLoader.js",
+    "size": 7252,
+    "mtimeMs": 1777488009308,
+    "hash": "09a722cf9c749c8d5570353dacc0838dc36325dcecac934e20a082b5b57aaed8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 222,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/leadershipContext.js",
+    "size": 3077,
+    "mtimeMs": 1777723511940,
+    "hash": "1eb800ebef22b36664f0c01cb6ac35d01f8ce1ff8401c550ea123b1d8d842b76",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 84,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/liquidityScore.js",
+    "size": 1014,
+    "mtimeMs": 1778243876467,
+    "hash": "3be343ba4fdf4ba77761f8ae2b5047ee8c1855853c2686f9c06f84c315fc48e2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 11,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/localOrderBook.js",
+    "size": 20105,
+    "mtimeMs": 1777675113202,
+    "hash": "48e70884cc7905ada3aa7e50b091f629de458e83b855f733fad033c8d2531b26",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 548,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/marketProviderHub.js",
+    "size": 8352,
+    "mtimeMs": 1777488009309,
+    "hash": "5e9d5da8672fcd714c2010e50c555ed35d6a8b9dd49072fa032c0686d86b3942",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 223,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/marketSentimentService.js",
+    "size": 7643,
+    "mtimeMs": 1777488009310,
+    "hash": "6c3732ea1afd016009e2cd81b52246f2aa49ef013efc8e414ca8080da9ecf9b6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 203,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/marketStructureService.js",
+    "size": 12707,
+    "mtimeMs": 1777488009311,
+    "hash": "a52a0f489d64ec73d969b516b871b6590e4e770b4c0ab840bad56f42ae7594f5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 342,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/marketWorthTradingScore.js",
+    "size": 1791,
+    "mtimeMs": 1778243836700,
+    "hash": "a89e9368597d96fdf6627592aa1a46e91054c0c481c85558c8a9f2dd8737c1c7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 32,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/onChainLiteService.js",
+    "size": 10212,
+    "mtimeMs": 1777488009311,
+    "hash": "e5c4f6245d9ebb9639c7d4b152c52345e696c9ed76b33b296c552a6f7e1cc377",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 229,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/orderbookDelta.js",
+    "size": 10050,
+    "mtimeMs": 1777672128102,
+    "hash": "fe5bce95556a2aa398eae0adf43dbcc3209c69696a02b17dbcb09f012adc9a1b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 275,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/providers/crossExchangeDivergenceProvider.js",
+    "size": 3082,
+    "mtimeMs": 1777488009313,
+    "hash": "80964fce88299ff1b8265e32e7f7fb19f3a82aa93cd8dd7d927734f8c8ccdccb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 81,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/providers/derivativesContextProvider.js",
+    "size": 6965,
+    "mtimeMs": 1777488009313,
+    "hash": "0948dafb759e79b9ebf20cac64d4ca24e8849092afd62f88548126f74a2b99e6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 192,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/providers/executionFeedbackProvider.js",
+    "size": 1507,
+    "mtimeMs": 1777488009314,
+    "hash": "80b957d4058e5b05be22f89517acb0e254e5fd464676e02c6662bce5e7caa08f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 51,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/providers/macroContextProvider.js",
+    "size": 4165,
+    "mtimeMs": 1777488009315,
+    "hash": "3e0b042c63a60d7334250adc60924edf548bb1d24568fdaa458cddbd5373c88e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 132,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/providers/microstructurePriorProvider.js",
+    "size": 2490,
+    "mtimeMs": 1777488009315,
+    "hash": "71188ee389b8125d6d79e47252734568fdd1071969f8548e76b8af9de6b1a3bb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 66,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/providers/stablecoinFlowProvider.js",
+    "size": 1986,
+    "mtimeMs": 1777488009316,
+    "hash": "3ed905f553e8e8018c09be3e9f2e94ce6c8d3c4a5e1126cc35b867e90ef43aa9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 60,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/referenceVenueService.js",
+    "size": 8681,
+    "mtimeMs": 1777488009317,
+    "hash": "52be443eff08528dd4e5c71dca9485736194b9943f5c6fa3723818c1fa222aa5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 211,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/regimePlaybooks.js",
+    "size": 4801,
+    "mtimeMs": 1778243836701,
+    "hash": "652ffd669daf80c87f7b5ef0624553c1fb205c00c53ccac1de23cb304cdcb906",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/stablecoinRisk.js",
+    "size": 8526,
+    "mtimeMs": 1777895569449,
+    "hash": "210317fa545af4ea76adaa6bb03bf0b2d84726af0a4995617a7e73bbdcf3fae3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 247,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/volatilityService.js",
+    "size": 8191,
+    "mtimeMs": 1777488009317,
+    "hash": "2a27581e7db50b054afd5b19c307100afd63973c72d01a1d790082faf47d7333",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 211,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/market/volumeProfile.js",
+    "size": 5553,
+    "mtimeMs": 1777488009318,
+    "hash": "af851dcffa24f508c6c9ebe6c18efd873e975ed9933f04fd94ef782f05bdce15",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 176,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/models/modelCard.js",
+    "size": 1717,
+    "mtimeMs": 1778243876469,
+    "hash": "219e6ae0dbc4896c7bf63c2f180670ce880832599fcac957395991ddf55d7c0d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 38,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/blockworksProvider.js",
+    "size": 654,
+    "mtimeMs": 1777488009319,
+    "hash": "8ff7e3033dd130c6eec23d14f8e90de6dc70f8d84eea932b1bdf366543efdda7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/coindeskProvider.js",
+    "size": 661,
+    "mtimeMs": 1777488009319,
+    "hash": "1f8e768dcf0cc0d486a118f7ead3051522e92775fe5d14ad059e7cd3f2784b97",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/cointelegraphProvider.js",
+    "size": 674,
+    "mtimeMs": 1777488009320,
+    "hash": "5a4810568c13a05ec46f3650e08c6560e5846a68fa6f2a8de468206772ca0ee4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/decryptProvider.js",
+    "size": 632,
+    "mtimeMs": 1777488009320,
+    "hash": "3cc531ccc94f8b7649cd4f7fa0a538866130aeaab7500afe69361e74607937a8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/eventClassifier.js",
+    "size": 9043,
+    "mtimeMs": 1777488009321,
+    "hash": "39d3abfd701a6c63638545c5b5d95a721112dce8b419ae0e6f91c223b1c8d8a7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 288,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/googleNewsProvider.js",
+    "size": 1087,
+    "mtimeMs": 1777488009321,
+    "hash": "7dbf8db4319beef90efbd68fcb5c2ffff94f40308649404d7a53f272b5d2554d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 36,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/newsService.js",
+    "size": 9100,
+    "mtimeMs": 1777488009322,
+    "hash": "d4fd6b8c2601c4c25102c746e080b5a0b459dae92ce9483006e3d8f47e0cce2c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 263,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/rssFeed.js",
+    "size": 4913,
+    "mtimeMs": 1777488009322,
+    "hash": "ff71d606e3288238392b293e985cc6d20482d351f2f61573e41d7cfc31879130",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 143,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/sentiment.js",
+    "size": 8714,
+    "mtimeMs": 1777488009323,
+    "hash": "b959b4a19353c494bf53470a3ae8967e9cec0d36b21883f27f79eae34244d4a6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 254,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/shockCircuitBreaker.js",
+    "size": 4938,
+    "mtimeMs": 1777893617206,
+    "hash": "8cf5cd0bd38103373a39020e53f52f6226ac35423aa8ebaf788cb90a39b304f1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 130,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/news/sourceReliabilityEngine.js",
+    "size": 1748,
+    "mtimeMs": 1777488009323,
+    "hash": "87975cd3852a61adb41cb89bfe53a4da30334f9206579fcb40b543574d3fd169",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 56,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/botCoach.js",
+    "size": 1656,
+    "mtimeMs": 1778243876465,
+    "hash": "57c0fc4c1249c26c7a0b26ce8b5d2f9ee068c027cb8cc19134ddc6a20e03afc1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 31,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/metricsExporter.js",
+    "size": 1615,
+    "mtimeMs": 1778243876464,
+    "hash": "ad75bf595dc1ca42414b8e022b57ed9892a899db7b69fbe0bf7d0664e94ec77a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 32,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/missionControl.js",
+    "size": 3280,
+    "mtimeMs": 1778243918631,
+    "hash": "423b2ea6abf7f39b2542d18e297bfd6ca311fcdd22211f6e147f68350acfca51",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/notificationRouter.js",
+    "size": 1014,
+    "mtimeMs": 1778243631775,
+    "hash": "d0764756e2198259ac8a76a61d4d706e05b7a4bafe1eb683c6633eda155360ba",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 23,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/operatorLanguage.js",
+    "size": 1211,
+    "mtimeMs": 1778243631780,
+    "hash": "7fba2d5abbdea138eea10502ff127eedc9b29d84472c9ab68a9c130e4cf3bc7c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 30,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/operatorMistakeProtection.js",
+    "size": 1893,
+    "mtimeMs": 1778243918630,
+    "hash": "60a0f8185f07acc344bb595281b59d3cce7327c64096163b76bb750fe3a93ae9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 22,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/operatorNotes.js",
+    "size": 909,
+    "mtimeMs": 1778244309785,
+    "hash": "3cb64cf6746673a9aa3229cee17fb5efef1555a228e25b53583e474cbafd9730",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 23,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/performanceBudget.js",
+    "size": 1098,
+    "mtimeMs": 1778243876466,
+    "hash": "ae299d259b3c3f2dd6be8e1398df004a26d0045823eef4cea3349e3bf995009c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/productionOps.js",
+    "size": 17455,
+    "mtimeMs": 1778243835652,
+    "hash": "f367e9aa06d3fdf639ede9b63f63d71993dd93e7065dbf966e5563fa0caa3c8a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 324,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/reliabilityTargets.js",
+    "size": 1227,
+    "mtimeMs": 1778243876463,
+    "hash": "274d69953160e4af9b5be1546a59e9891daef9b236b03c6d0d2d699b8f650bb5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 18,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/safeDegradation.js",
+    "size": 1465,
+    "mtimeMs": 1778243876467,
+    "hash": "e04cabbaf2203ec3131984cca5c24ffb41186389dea0f9effe559c36fe2259f7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/policy/policyEngine.js",
+    "size": 3021,
+    "mtimeMs": 1778243819421,
+    "hash": "078f1a986b25658ed21417d075f81369d2964af9a4169ba879bc83cfd942f94e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 50,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/portfolio/correlationEngine.js",
+    "size": 1723,
+    "mtimeMs": 1778243574210,
+    "hash": "1ce4223bf53224e180e7ead93280657995aa9604e9c3a69004d2f6eeaf5425b2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 38,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/reporting/accountingExport.js",
+    "size": 1112,
+    "mtimeMs": 1778243631781,
+    "hash": "6970ac2ba13cfc1825d1b12b84e48fd21ec9fbce11046f9c15f59fb65c7cd929",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 25,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/reporting/tradingSystemScorecard.js",
+    "size": 1083,
+    "mtimeMs": 1778243918630,
+    "hash": "1dfa4b1fe5a3d4e0d907ca91c295896da9538d0182d619d5df66f457681dafd6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 22,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/monteCarloRiskSimulator.js",
+    "size": 2190,
+    "mtimeMs": 1778243574204,
+    "hash": "34df2c6aefd88522ea773fa8c5adf3190a287604c2398ac08dc2c3c3ebc43e8c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 52,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/noTradeAnalyzer.js",
+    "size": 1292,
+    "mtimeMs": 1778243574209,
+    "hash": "02b522db83a546950639dce214b1ea1e071595cf7a04ba115ad22cb7e89e3963",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 24,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/realityGapDetector.js",
+    "size": 1517,
+    "mtimeMs": 1778244170915,
+    "hash": "260bfaeb26b59ee0bc285bf1e1135c6e19d731d10c90bfbfdf0a54fddab2bf2b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 28,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/scenarioLab.js",
+    "size": 1776,
+    "mtimeMs": 1778243905070,
+    "hash": "ac36f8a772ef047f5115ffc93a24b067a8957b23ff67deebe2f9e7d3e6536ebf",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 39,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/strategyDsl.js",
+    "size": 10176,
+    "mtimeMs": 1777488009324,
+    "hash": "df86f95486e458262029597d48ff9da5af725281009689dae91764519502578b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 293,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/strategyExperimentRegistry.js",
+    "size": 1105,
+    "mtimeMs": 1778243631779,
+    "hash": "0b8a5484d370fb2b6e78930fdc36c6d6f6a01340028f8f7a525b7275bda03c11",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 29,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/walkForwardDeploymentReport.js",
+    "size": 5214,
+    "mtimeMs": 1777866005986,
+    "hash": "f07891b3d3d345fea725124d651f4f1fa2b6adc2cc5641390b5ffa1aa3d1ac3d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 137,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/research/walkForwardOptimizer.js",
+    "size": 962,
+    "mtimeMs": 1778243574204,
+    "hash": "4db7ac111c70b89d7f08276c80f5bb319cd928463bf235532d9f7845d371677a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/confidenceAdjudication.js",
+    "size": 4606,
+    "mtimeMs": 1777488009325,
+    "hash": "50c19e9c1daa2c7d9c82a165dd15b16b0ef84b520c07ccb3dea9a94a42ad950f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 116,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/dynamicExitLevels.js",
+    "size": 9505,
+    "mtimeMs": 1777691495865,
+    "hash": "ad385592c4e4e2821f7900fbd8de2cb3a3c9dead1af60fbaafb160ad0fc29a7f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 247,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/entryFinalize.js",
+    "size": 5783,
+    "mtimeMs": 1777488009326,
+    "hash": "bfd95bd66ebb39c306fa344fd2e60feddbf0ac90fb20c14355ab2b364c6b213a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 144,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/entryGuards.js",
+    "size": 904,
+    "mtimeMs": 1777488009327,
+    "hash": "58a759db532d31148c44984bb5c8122059bb47825dd439dc3b698802946ab140",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 35,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/entryScoring.js",
+    "size": 1679,
+    "mtimeMs": 1777488009327,
+    "hash": "8dd276c9cd4da27f9fe8dbe8ee7994374f26e76978310ca7e55ee7d98bbad2bf",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 53,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/entrySizing.js",
+    "size": 6794,
+    "mtimeMs": 1777488009328,
+    "hash": "bce50b483603b9adf1ec779fdb5cdce5909b11905b4fd7b0f43aa9527662f0f3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 201,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/exitIntelligenceV2.js",
+    "size": 14825,
+    "mtimeMs": 1777689415437,
+    "hash": "77ce09193eaae2bcfd94c4b9f5d90f37b99803b9e7eab6581cb1072a429e72d8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 350,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/fastExecutionSafetyGovernor.js",
+    "size": 3604,
+    "mtimeMs": 1778229704133,
+    "hash": "3973a4e3171762020b59540a98b0d06b56c32d2611581c4998044a8c6d1f5f12",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 77,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/fastPreflightRisk.js",
+    "size": 3674,
+    "mtimeMs": 1778229995859,
+    "hash": "80feb71004e0ea01184ef9ade724d043e2271aa3fc1972a617f4fdeeb8af21fd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 65,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/neverTradeWhenRules.js",
+    "size": 1742,
+    "mtimeMs": 1778243836709,
+    "hash": "fb65d662655923971c31e099724dcfdd4134026a454d96ba2039c6a57ed90931",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 30,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policies/alphaQualityPolicy.js",
+    "size": 2156,
+    "mtimeMs": 1777488009329,
+    "hash": "e11bd407934ae61ae986850e4a7bc20dd22fab49c27b337fab95e136bd0b3901",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policies/diagnosticsPolicy.js",
+    "size": 11675,
+    "mtimeMs": 1777491669380,
+    "hash": "04a3abcd394c184f3c0876b5a46a96403190a8024ed79435e11e5e1107569703",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 299,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policies/governancePolicy.js",
+    "size": 2777,
+    "mtimeMs": 1777488009331,
+    "hash": "7fba00267821939dbb19157a8b8e4b57136bdd53a4f14964fcf566a1a3d16c35",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 58,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policies/hardSafetyPolicy.js",
+    "size": 2059,
+    "mtimeMs": 1777488009332,
+    "hash": "0b3d0d8ef5e2be293697d8720f899cc4eafb86949e51edd77f9b78f721843c18",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 62,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policies/recoveryProbePolicy.js",
+    "size": 15687,
+    "mtimeMs": 1777585554072,
+    "hash": "5de199494d3b66b84ef5c0895338b6503c8752b2988ae660068c2dee991d00dd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 391,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policies/sizingPolicy.js",
+    "size": 1894,
+    "mtimeMs": 1777488009333,
+    "hash": "80b826db5dde5074fe3ec67247fc1428bb1fe0f7c3bb03ef2cb405f53fb2dacd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policyProfiles.js",
+    "size": 7758,
+    "mtimeMs": 1777488009334,
+    "hash": "7521f8c15f5f8bbe3a6013870765dc271ff100d041e0ff9def70776a94e7c45b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 244,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/portfolioCrowding.js",
+    "size": 4769,
+    "mtimeMs": 1777823244408,
+    "hash": "4cb20002d1aef7e6c3d011f5e9ebb7281b7707f4d7351bb14ee19e602748fa73",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 91,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/portfolioOptimizer.js",
+    "size": 34437,
+    "mtimeMs": 1777488009335,
+    "hash": "44c1c8a15ff4c3946dc3f005934c349b98bfbb6f26419524318078565c499c74",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 802,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/risk/postReconcileEntryLimits.js",
+    "size": 6208,
+    "mtimeMs": 1777772968581,
+    "hash": "da3e97fe5f76e320d1442cdd366c020b589a638ccd8c4259c3ff237121b69b3b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 165,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/reasonCodes.js",
+    "size": 2930,
+    "mtimeMs": 1777491669379,
+    "hash": "6452bfcb5aecbdbcd175c6c4d6648529c3d5dd44349723ac3c8dca3566009367",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 105,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/reasonRegistry.js",
+    "size": 12923,
+    "mtimeMs": 1777772773035,
+    "hash": "56045fde75fb52a250ea4536066ce87ee08cb90977e01d744dc859eca0434187",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 197,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/riskManager.js",
+    "size": 316592,
+    "mtimeMs": 1777772779977,
+    "hash": "3c7faca6929625f95de5fb6367a0c1d2a009c78feda2099a564550fd69cca164",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 6997,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/risk/riskOfRuin.js",
+    "size": 6832,
+    "mtimeMs": 1777866969262,
+    "hash": "65eb2a78df2f656d13976bafd159bdceb620202c76958cab57a29af7077dd424",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 205,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/adaptiveGovernanceService.js",
+    "size": 3509,
+    "mtimeMs": 1777488009340,
+    "hash": "c3a63b31ed9e3ebb07944de673a2480b231c9a84a94e4b80ff5aca63fee2106a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 107,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/adaptiveParameterOptimizer.js",
+    "size": 18607,
+    "mtimeMs": 1777488009341,
+    "hash": "ab7040f490cef8c51f40d282bebcb743d50870bfe8ec0c06e28a20ad3d65bf4f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 473,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/alertSeverity.js",
+    "size": 487,
+    "mtimeMs": 1777766011143,
+    "hash": "1f3a3569386ab470e70c4d4748ec7545e6a09d69d93023ec35cfff4dfeba2653",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 12,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/apiDegradationPlanner.js",
+    "size": 8220,
+    "mtimeMs": 1777864823633,
+    "hash": "1e48fea4bf1bc67e7c37c6ae21dfd56655e5d02c4e9588ef45a8667bcac483ab",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 180,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/auditLogService.js",
+    "size": 3080,
+    "mtimeMs": 1777488009341,
+    "hash": "37980598da14f6372bece1f907962db8fd9f371ec26de36aa57614057c8f07c1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 92,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/backtestExecution.js",
+    "size": 13258,
+    "mtimeMs": 1777488009342,
+    "hash": "32ee52cb650e327e797da7cb06ac10a60524956e540c4defcefd56b83f0e1143",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 340,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/backtestRunner.js",
+    "size": 19317,
+    "mtimeMs": 1777724430427,
+    "hash": "7aeecae7564f511223e1dd143d9b25a94fa3c9cf5d4b331dfcbda213b6485e50",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 452,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/badVetoLearningService.js",
+    "size": 5481,
+    "mtimeMs": 1777488009344,
+    "hash": "0f19885d5fa714fcdf90ca9c9257061a8125b8aa443c5532b8d48052c5847f39",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 141,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/botLifecycleStateMachine.js",
+    "size": 2095,
+    "mtimeMs": 1777488009345,
+    "hash": "74135f69c7f744aa7ee8f6dfd71a6edd16544ffd80fe0ecebb2aadd413ae956a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 71,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/botManager.js",
+    "size": 38372,
+    "mtimeMs": 1778304954603,
+    "hash": "1f81b30092a55d32132e023756b5eb4b3496cd647fb6bb38571864d4226fe824",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1042,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/runtime/botPersonalityMode.js",
+    "size": 2036,
+    "mtimeMs": 1778243836700,
+    "hash": "1f72e851903dc93c4ff0b5605e06271d2d52b8d04ad599aecc8360f554510970",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 28,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/canaryReleaseGate.js",
+    "size": 5463,
+    "mtimeMs": 1777848016681,
+    "hash": "bead3856dfcf249edb46bd0491069a1429311a61c5e3e57efd4ad918a107b279",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 146,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/candidateExplainability.js",
+    "size": 7753,
+    "mtimeMs": 1777865264352,
+    "hash": "d002e9bfde4945f394a7a799e3355506ba1bbc15051d3e1c46357e94a265c911",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 189,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/candidateFreshnessContract.js",
+    "size": 2542,
+    "mtimeMs": 1778225861783,
+    "hash": "00ddcc5e993251b8c8c7d2b3e90e8fafaff0f1bcc1e6a07025d31b6731b24355",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/candidateOutcomeTracker.js",
+    "size": 7353,
+    "mtimeMs": 1778012746440,
+    "hash": "8b9ffa19b579de88b2d9529b7729266b9a649acb19fa9b6bb5fcac23a8b82f61",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 222,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/candidateRanking.js",
+    "size": 2994,
+    "mtimeMs": 1777488009346,
+    "hash": "78c5ea6f135024dcbfe99387ace6fd7dcf52301c9b242d28916198ff5445ea7d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 67,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/capitalGovernor.js",
+    "size": 21691,
+    "mtimeMs": 1777488009347,
+    "hash": "aeb5bb047a32ccf6b65bf21e2fd65c523496737f7ad292706bf15e5c510c7a91",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 507,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/capitalLadder.js",
+    "size": 2544,
+    "mtimeMs": 1777488009348,
+    "hash": "e60140dcc7c2402bc6b7b93d8d4eff18067f5de5af1e00102b5355da9ba0dae2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 70,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/capitalPolicyEngine.js",
+    "size": 4637,
+    "mtimeMs": 1777488009349,
+    "hash": "7f4b54405aa120cf061dd14b57f03a1795ba239b52f683f6db3f7586cce4f5e7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 106,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/cryptoRegimeRouter.js",
+    "size": 11084,
+    "mtimeMs": 1777895314847,
+    "hash": "fbdc48dc561634214a7f06fe25299ce908b165fe49d0cd2b21e3cc8333e8d3f1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 255,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/cycleRunner.js",
+    "size": 1991,
+    "mtimeMs": 1777488009349,
+    "hash": "dc878b4bf2f42dd25627725270700243e5ea4d070539a54a934329dbc6d854fc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 55,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/dashboardEvidenceDrilldown.js",
+    "size": 7554,
+    "mtimeMs": 1778049515804,
+    "hash": "e8727f64a05049664e8d8fc0cf14335d50c0fd9652d59c6144094917098405a5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 183,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/dashboardPayloadNormalizers.js",
+    "size": 25481,
+    "mtimeMs": 1778059783568,
+    "hash": "a622ff98c17dfb3ffb1c43a8332ffb70d4a87accc6dae82fabceebe8a2a6c0a3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 574,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/dashboardSnapshotBuilder.js",
+    "size": 4514,
+    "mtimeMs": 1777488009350,
+    "hash": "4af6a466591e21025c44355ce5e27843370e270ccc41c7f577ba08f7c279a317",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 127,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/dataFreshnessScore.js",
+    "size": 2015,
+    "mtimeMs": 1777767272393,
+    "hash": "091b1196f8b3288521163208d1bec91c586cb7942cc210f4f3676532805ba3f3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 60,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/dataQualityScoreV2.js",
+    "size": 8088,
+    "mtimeMs": 1778014452836,
+    "hash": "57263b92e156ab7cb4c469ceb362d4fbf891f049ae98bec1be28473dfb1711d0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 223,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/dataRecorder.js",
+    "size": 97514,
+    "mtimeMs": 1777491669382,
+    "hash": "0281f71d1e28147ccc00e5fb9c3237ffad005a43c69e8248a3539e66b22ba41a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 2145,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/runtime/datasetQualityGate.js",
+    "size": 1666,
+    "mtimeMs": 1777767272424,
+    "hash": "fd5e6bbce6a8347957b6f6fee24e0217b34c374b86fef333f667bb33ab3558d2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 43,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/decisionContract.js",
+    "size": 3283,
+    "mtimeMs": 1777846918685,
+    "hash": "b0d4c74241bbc12aae527d424809b8bfc2757b2824ac348799758187789c9bbf",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 87,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/decisionInputLineage.js",
+    "size": 6948,
+    "mtimeMs": 1777847703923,
+    "hash": "6cbdfe74d2eb6bb522095a1e0a309b561ca374661b2606342c623badb05380d1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 175,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/decisionPipeline.js",
+    "size": 5210,
+    "mtimeMs": 1777488009352,
+    "hash": "b7f3357311e96699fabf95b604a5e04ed81089763956670b312217037df5219a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 134,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/decisionSupportDiagnostics.js",
+    "size": 10179,
+    "mtimeMs": 1777749450407,
+    "hash": "8b9d2598416bd71c76161b2d4c00c61861c7b2f52f8461137a188feb290224c4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 251,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/divergenceMonitor.js",
+    "size": 4925,
+    "mtimeMs": 1777488009353,
+    "hash": "aac82e033505af9eebd2478a9c9bfdb5415a2b7ec5e898da4330822251841a14",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 120,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/domainEvents.js",
+    "size": 2085,
+    "mtimeMs": 1777488009354,
+    "hash": "fbe74d5e45bef584bd707c8e5b8f23104aa4e2c21d2dda6ea52d09bb75fa58ac",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 56,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/driftMonitor.js",
+    "size": 6540,
+    "mtimeMs": 1777488009355,
+    "hash": "94917e3ff63da7ad7bad6adb38c427a0e3e5da2725abfd8b5fbb6f6bb1e8d07b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 184,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/exchangeSafetyReconciler.js",
+    "size": 28845,
+    "mtimeMs": 1777488009356,
+    "hash": "3a68826594535a89c33aefc71355157d8066c1f2b9b9ea66510ff96a80896340",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 661,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/executionFeedbackLearning.js",
+    "size": 3816,
+    "mtimeMs": 1777488009356,
+    "hash": "31a8de2cfb0a11f43ee1f5cd3d28974bcd039f5fc61362863d110919720de5f1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 92,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/exitFastLane.js",
+    "size": 3863,
+    "mtimeMs": 1778228290872,
+    "hash": "0d3b23e868f48ca7f92d7e7ba8f46dc2e9771a5ce73ea0e4f28c6c3c24e95af2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 96,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/exitQuality.js",
+    "size": 3054,
+    "mtimeMs": 1777757681671,
+    "hash": "96897d7458546fc55f89a5d1beb0b2c8e6359d6d209b47daff5b9ed851b1f5ab",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 64,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/externalFeedRegistry.js",
+    "size": 7103,
+    "mtimeMs": 1777488009357,
+    "hash": "d6deca989b1136b72de773c68d4c535a4c635d1bfe88d09e3b5e870eb08336dc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 174,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/failureLibrary.js",
+    "size": 2620,
+    "mtimeMs": 1777757710898,
+    "hash": "53f042e14ac544e8b24101e8757ed68f06c2c4c0c421f5a3bc0faebc1f1f8fe2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 52,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/fastExecutionTrace.js",
+    "size": 2953,
+    "mtimeMs": 1778230327320,
+    "hash": "367aebdcd7211b31b03cc6b41bd8d2714dd7b8741200ee7795b7ba8495ef1b14",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 81,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/fastPaperExecution.js",
+    "size": 2743,
+    "mtimeMs": 1778230654854,
+    "hash": "01de9a51a7f54a63c02b543e64e35cda4941bffbf6f9e4f0e025687e7ca5df69",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 66,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/fastSignalTriggerService.js",
+    "size": 4062,
+    "mtimeMs": 1778230018692,
+    "hash": "61fb11ed8482507577bbc0ea147a9d160d842567808f433e13b2e4043db41929",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 104,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/featureActivationGovernor.js",
+    "size": 6855,
+    "mtimeMs": 1777823805315,
+    "hash": "3d866a5a235be0f347babfc397e7c987b3037c1ef0eeaadfc019600fed140505",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 170,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/featureAudit.js",
+    "size": 26503,
+    "mtimeMs": 1778056513851,
+    "hash": "134944091634c0c0ed8463fae8faae437b7e86a7f5d30e67dad19ebb9d9382fd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 611,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/featureGovernanceService.js",
+    "size": 3640,
+    "mtimeMs": 1777488009358,
+    "hash": "c79f9abd039458099c289551c56e2c828070e452b7ad96e31ab9228d88bfec84",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 92,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/featureWiringCompletionGate.js",
+    "size": 5264,
+    "mtimeMs": 1778056543129,
+    "hash": "b478e107b28e994b5845342838ad62ec03cde52f5b85df61de0207d0de8f5129",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 154,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/goldenReplayPackGenerator.js",
+    "size": 5153,
+    "mtimeMs": 1778049118609,
+    "hash": "2c92b455d5e78332a18b3403fc9b43b0056ccc86d8a6ac8d7a6bf6ccf935a967",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 150,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/healthMonitor.js",
+    "size": 4338,
+    "mtimeMs": 1777488009358,
+    "hash": "5fb2894715c63bfa6584e79158c1b5011129801f769d573fd98bb0367930b70a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 143,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/hotSymbolLane.js",
+    "size": 2610,
+    "mtimeMs": 1778226817487,
+    "hash": "af78e7efc90566aa176ec96ab33e0b83c5caad7c14ebbc850a622f5c38738670",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 50,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/immediateEntryQueue.js",
+    "size": 3223,
+    "mtimeMs": 1778226210486,
+    "hash": "d9382c3b44af18a3c3ed0e40ff538a1681fd535b8b8daf80770d987a514028ec",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 74,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/incidentReplayLab.js",
+    "size": 10314,
+    "mtimeMs": 1777488009359,
+    "hash": "b507c7bdbb0e71a9edb365e8ecbcb931c1df66b4ed0601a7cbfee6d44d113915",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 237,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/incidentReport.js",
+    "size": 4436,
+    "mtimeMs": 1777767335161,
+    "hash": "66326dcc9fb2284c16a5eb1292596b64f6f513d201094f46802208d3758d909d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 116,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/incrementalFeatureCache.js",
+    "size": 1971,
+    "mtimeMs": 1778226835970,
+    "hash": "fd02b699eab595a4b55220a44d1cc233a6ef507703b91d6a8b797c77a70d4cf2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 62,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/latencyProfiler.js",
+    "size": 3046,
+    "mtimeMs": 1778225572356,
+    "hash": "e1810d25ee46b7cdfcfb1f862912312458d1e412c07d1528b7735125df65abbd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 85,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/learningAnalytics.js",
+    "size": 5614,
+    "mtimeMs": 1777758438092,
+    "hash": "0de828ed9e2d7a5833514a20b963b96ad385fe3400fd66baec2d5b0b422389d2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 134,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/learningEvidencePipeline.js",
+    "size": 5695,
+    "mtimeMs": 1777825253587,
+    "hash": "f21e12264c370bbf8dc359b431cb502f913f536f3e1c8fbe540c50281492c6ed",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 155,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/liveFastObserveMode.js",
+    "size": 3037,
+    "mtimeMs": 1778227994183,
+    "hash": "946c63c64560ba63568c8f28ec546d7ea17fa8bfa126a45eb9c9ec7334f2df9c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 78,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/livePreflight.js",
+    "size": 2319,
+    "mtimeMs": 1778303803423,
+    "hash": "e734cad53e2283b39d194361baa15ff2fe5d9e3216b03a68bb27d26dabe00d3d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/liveReadinessAudit.js",
+    "size": 3060,
+    "mtimeMs": 1777848567363,
+    "hash": "2e3d4f47e45829fbc2395b158d10000d7d65faef4f61e30f11a5f49159bbd294",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 69,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/localOnlyPrivacy.js",
+    "size": 613,
+    "mtimeMs": 1778243631782,
+    "hash": "6ae073194090e57271e92ae5b049b4b2f040de7267b96b28191dfad7c5dae924",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 14,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/marketConditionController.js",
+    "size": 11193,
+    "mtimeMs": 1777488009359,
+    "hash": "730a73d708717a82d628821bd0c8a2d2d1342e0aba21c8711dd0a65feffe1500",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 259,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/marketHistory.js",
+    "size": 21810,
+    "mtimeMs": 1777488009360,
+    "hash": "10f67e93eb673f5fbdad50a194063f33e6257b2d5a02b0fe280a379692dc6ae9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 665,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/marketReplayEngine.js",
+    "size": 11414,
+    "mtimeMs": 1777674286644,
+    "hash": "80777690be7868b9ce41542d929572abf24ef8184afebd8d21465bf4a8b143f0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 329,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/marketScanner.js",
+    "size": 55293,
+    "mtimeMs": 1777648754038,
+    "hash": "b240c17d472b8e453f939d119443d9aa6f98425daa6c9af62ccf94d995264828",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1494,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/runtime/marketSnapshotFlowDebug.js",
+    "size": 6168,
+    "mtimeMs": 1777804196917,
+    "hash": "1dc8350f15f414f6fb688577feb456be3b490d6c559d95ac3d50d1fcc668b4ac",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 148,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/modelConfidenceRootCause.js",
+    "size": 6998,
+    "mtimeMs": 1778030134850,
+    "hash": "6847b44811b5ee7a270808de8f7d127bb29bef7d38ad3bb7815f0bd0a96de25b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 168,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/modelRegistry.js",
+    "size": 13736,
+    "mtimeMs": 1777488009362,
+    "hash": "b8be04b49b302fef3d7d8cd3208fb2f00650611a48f1314bd5d81b0bb1890e2d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 280,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/nearThresholdWatchlist.js",
+    "size": 4917,
+    "mtimeMs": 1778227632002,
+    "hash": "f778bf4929de022ba5c5c631b87dbf53991e9a476eaf0577e3c771e51a395048",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 130,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/netEdgeGate.js",
+    "size": 3830,
+    "mtimeMs": 1777723443139,
+    "hash": "f0eb451c6dcb9cf05ab1f1115ec7272ddad2d959d8ca74fa28bd1f865c6d612c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 103,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/offlineTrainer.js",
+    "size": 175558,
+    "mtimeMs": 1777488009364,
+    "hash": "f10f45a9bf6bb9a308baa9409ec9ccf9f5df0a226d9dfb6d33bc609d259ccb99",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 4133,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/runtime/onlineAdaptationController.js",
+    "size": 14154,
+    "mtimeMs": 1777488009365,
+    "hash": "ca5abed988aff6a4259c4753408c0356767af7d2903740c740195f7c87f747ef",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 337,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operationalTruth.js",
+    "size": 4525,
+    "mtimeMs": 1777534713471,
+    "hash": "cb272b14b4ce7c7d1ad881820f55680c45208b6a1efc1c04a1801622072767bb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 137,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorActionQueue.js",
+    "size": 5779,
+    "mtimeMs": 1777848552442,
+    "hash": "1125bd843b217c178a3edef0f1a78754a5f8cf726446f700337d9444a7afbc64",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 148,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorAlertDispatcher.js",
+    "size": 7227,
+    "mtimeMs": 1777488009366,
+    "hash": "4d544007d6f110fcc6b5128b9ef9f208f2e0992ce7f552fc02eb835c09ac7c85",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 229,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorAlertEngine.js",
+    "size": 10825,
+    "mtimeMs": 1777584583255,
+    "hash": "68bf7fd4979e45e966c7db96dc8889f6948bd8b2ef7b669ffbefa58fe6325322",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 271,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorMode.js",
+    "size": 2072,
+    "mtimeMs": 1777766024036,
+    "hash": "e56a6d2f04a9cb6843994f8d8ce1a6f2a8415f2f18032ea99c6f1dfd145f94a9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 48,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorReviewLabels.js",
+    "size": 6687,
+    "mtimeMs": 1778035717290,
+    "hash": "4533a794237de450de0b8f9098ba246beb83ffbe605e831f6d629a8bed6bcb8b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 213,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorRunbookGenerator.js",
+    "size": 6563,
+    "mtimeMs": 1777648828675,
+    "hash": "0cfc98f04582c5911e139c35b64e38b42dd631eb39d18239d0df251bd3c5d345",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 151,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorWorkflow.js",
+    "size": 4271,
+    "mtimeMs": 1777488009367,
+    "hash": "dda681da588b80ff47d928b762af2f63e5ae0540c243e89ddefcfe299897c18d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 106,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/opportunityCostAnalyzer.js",
+    "size": 7195,
+    "mtimeMs": 1777867370633,
+    "hash": "324ccbc54ea6d807ccfe401e208b2c77071d03c740c68dbe86f64c921c3bdd3f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 173,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/pairHealthMonitor.js",
+    "size": 10009,
+    "mtimeMs": 1777488009368,
+    "hash": "6308845131d9102d6a348668f59c0093f2bd0bb3ffeee64aa69484b17a15a285",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 253,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/panicFlattenPlan.js",
+    "size": 2417,
+    "mtimeMs": 1777766111303,
+    "hash": "93cf5a8dd7f2136a505e7ae2d63d641886831519faa6c025c9a01cd34d2a8d3e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperCandidateLab.js",
+    "size": 6806,
+    "mtimeMs": 1778032951093,
+    "hash": "6a4085b0a9ff610044764f49987b66556f2654dc6e43f86a9ff91592b2d18a79",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 189,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperEvidenceSpine.js",
+    "size": 7170,
+    "mtimeMs": 1778057872471,
+    "hash": "d3d3f9c0d9f1cadfb4ce863f3b7a89d8a4e0b281cbb32f22116ad0b95fa78a2e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 211,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperExitPolicyLab.js",
+    "size": 7371,
+    "mtimeMs": 1778013367784,
+    "hash": "193a64cbaf6f4a0b0244172ed30c5b4eef2b596cef728ac321a7595fc76b71c9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 217,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperLiveDifferenceAnalyzer.js",
+    "size": 818,
+    "mtimeMs": 1778243631783,
+    "hash": "0db0432b55ee98d409d167ca8d511572214400ea4e742699b6a9823bf1c4abd7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 16,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperLiveParity.js",
+    "size": 5963,
+    "mtimeMs": 1777645575645,
+    "hash": "27ebc0c32c2630075102a3dd7bc2cb36e12af3440d60004601747fe35f20b0fc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 151,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperNetEdgeCalibrationWorkbench.js",
+    "size": 9971,
+    "mtimeMs": 1778034265042,
+    "hash": "a3aec21dfabd9b02e6fc5bb4e9cd98ab008eef6d5ff786df6ddb38be087910e2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 243,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperPortfolioAllocatorSimulation.js",
+    "size": 8534,
+    "mtimeMs": 1778013975634,
+    "hash": "2668b5887dd1873216051fa9657b89930ef789cacaaaf61bf7a68eab1897bc19",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 225,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperReplayCoverageAutopilot.js",
+    "size": 5235,
+    "mtimeMs": 1778048069841,
+    "hash": "93337ac807e707f94aa187681c61d15728eca431c57db1630632e2433ff3e010",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 144,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperStrategyCohortScorecard.js",
+    "size": 7981,
+    "mtimeMs": 1778032200314,
+    "hash": "d13208d204759df22bb269eef0363ba6098fce340c245e936194ef737de011ff",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 206,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/paperTradeLifecycleContract.js",
+    "size": 4607,
+    "mtimeMs": 1778011769165,
+    "hash": "63dfbc4a67c5598e2b2b710c6b718574151b26aa8428f067bc7befb5c18a12d5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 137,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/performanceLedger.js",
+    "size": 9718,
+    "mtimeMs": 1777867756359,
+    "hash": "480fecb00e64e7d0ee9e7e8508186ae9895ea1bdebaa1ee6c23291a488753a5c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 235,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/persistenceCoordinator.js",
+    "size": 2223,
+    "mtimeMs": 1777513913755,
+    "hash": "b06b688285ac5e746a352e689c818c6feb871a9fe48b12378c806e6bcf9b58ad",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 70,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/portfolioScenarioStress.js",
+    "size": 6928,
+    "mtimeMs": 1777850203605,
+    "hash": "cae07e1979fdf86ef157668975fd00533c744d314706bb6c35a1c55c943245e2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 182,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/promotionDossier.js",
+    "size": 2553,
+    "mtimeMs": 1777758211847,
+    "hash": "1552c6e7a8e6a3b27571c7191269e59a90baac12f5db7e2d111f3786558e579b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 63,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/regimeConfusion.js",
+    "size": 1901,
+    "mtimeMs": 1777757724463,
+    "hash": "57e137e03ff54b106f28eda708a151bbd10dbadb1e340cf0f6cd94eb12945603",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 43,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/replayChaosLab.js",
+    "size": 11714,
+    "mtimeMs": 1777488009368,
+    "hash": "6e53a4f7d91657b80c9b2a6f42d22d8bbaf95989d17ab9d87e88a157672edc9d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 283,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/replayDeterminism.js",
+    "size": 1835,
+    "mtimeMs": 1777767272362,
+    "hash": "3fe31e96ff6fd75efa6146d39441f1bd977dac35a40fbcdcbef298cb0c26d005",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 51,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/replayLabService.js",
+    "size": 2073,
+    "mtimeMs": 1777488009370,
+    "hash": "b10ee451695aea55d7d6a4b9f8b9f2e33b5fe7c582472d1e7c60a2e4cacfe1c0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 58,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/replayPackManifest.js",
+    "size": 1731,
+    "mtimeMs": 1777767272549,
+    "hash": "605df6f497fea9390f53cf18cc22527ec8997aa89f86607dcabc066823ee6c14",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/replayPackScoring.js",
+    "size": 1754,
+    "mtimeMs": 1777757763297,
+    "hash": "1c995004def76148ec16a582dd4bd5ca72e7fb9d265c0683987e1462317faaf1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 40,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/reportBuilder.js",
+    "size": 87916,
+    "mtimeMs": 1778013381338,
+    "hash": "8b697623fd71b91a75878fb019a4ed7628a44f9f0730f17a4bfdf9fed7f72898",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 2045,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/runtime/researchLab.js",
+    "size": 29798,
+    "mtimeMs": 1777691611381,
+    "hash": "24c1c87286caf511318b7050a9ae6e086bc11612cf2a20e733ed5721692888f9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 653,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/researchRegistry.js",
+    "size": 7305,
+    "mtimeMs": 1777488009371,
+    "hash": "a23785ed09a97ef86c229684c567011a398c71125362ae35bbe5d668c083a40a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 199,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/restArchitectureAudit.js",
+    "size": 8865,
+    "mtimeMs": 1777518730374,
+    "hash": "fa96b94ddae60b90935ddec495966af5b285e870bc7b4a6d84a36fa702a96667",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 244,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/restBudgetGovernor.js",
+    "size": 13285,
+    "mtimeMs": 1777672187979,
+    "hash": "c79cb939cd6eb5fc2564091203f3657ecd0ea46ebdf1e146e4f3dc59e746234d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 372,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/riskOfRuinSimulator.js",
+    "size": 1990,
+    "mtimeMs": 1777723545713,
+    "hash": "21ca60f44dfcde8b1ff3953badedcd52a6845d5e081b791c081278d0b59c2de8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/rollbackWatch.js",
+    "size": 1770,
+    "mtimeMs": 1777757751419,
+    "hash": "c20dc61c8f07c90545553d0778ae3e4e533b13818e1cd96aeca32e23e81a5739",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 38,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/rootBlockerOrchestrator.js",
+    "size": 5417,
+    "mtimeMs": 1777488009372,
+    "hash": "e019b1316f0f16c691e7527e102739ea67f74523143a2b2c8fbddd27cb395c5d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 164,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/rootBlockerStalenessVerifier.js",
+    "size": 12603,
+    "mtimeMs": 1778033668949,
+    "hash": "719a01379bcfb103d9c6d76550b2a1ad25e88bb12d05d4968e3f77bebacdc424",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 311,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/safetySnapshot.js",
+    "size": 3452,
+    "mtimeMs": 1777895300057,
+    "hash": "606b0a1dff8fd2038493bf5a158b9552c990e9ca45f4d118f346f11df02b3505",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 82,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/scanPlanner.js",
+    "size": 8316,
+    "mtimeMs": 1777488009373,
+    "hash": "d6947847730f129614213cbcb42545256150b141055802387d9f3913f2a37f96",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 220,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/selfHealManager.js",
+    "size": 18238,
+    "mtimeMs": 1777488009374,
+    "hash": "e871eeddc5a5efeff630e3fc3bcc7f13dceaf8cb624711eb93856d3d487ff6ab",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 454,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/sessionManager.js",
+    "size": 4935,
+    "mtimeMs": 1777488009374,
+    "hash": "d082758de6f68cf7d0a56f1273af4c26457b429531b4382b02fb3898930ce120",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 133,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/sessionPerformanceProfiler.js",
+    "size": 1557,
+    "mtimeMs": 1778243631773,
+    "hash": "65df180b72685c8dfb05aa17d1c1117d59ed23c6969bb19645e4f3824558c261",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/shadowStrategyTournament.js",
+    "size": 7391,
+    "mtimeMs": 1778035236673,
+    "hash": "05787d7b77945106df7e2acfdf7c137d08cf94991d1b9420eb1e308843551839",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 179,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/signalFlowService.js",
+    "size": 1911,
+    "mtimeMs": 1777488009375,
+    "hash": "d4be82e9a1b131cfb25e6ac6c3791125db55ab7199ed89b041f1c33b15b4ef8a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/stateBackupManager.js",
+    "size": 5040,
+    "mtimeMs": 1777488009375,
+    "hash": "171e8e63dba0b6820685a50e66ce251b1e438f4bc2f757be1b5c0fae5f6c3ac2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 156,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/strategyEvidenceScorecard.js",
+    "size": 6157,
+    "mtimeMs": 1777496016370,
+    "hash": "42631d37d58e96de47a7ce0ecff3a929edc10b8fe804a8a6cd9b442d07ab52b3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 152,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/strategyGenome.js",
+    "size": 4814,
+    "mtimeMs": 1777488009376,
+    "hash": "7f47f99b016c4e806b952bc0a0c12ce6e43abad0de6ec6af1b8496254fcbd1a9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 111,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/strategyLifecycle.js",
+    "size": 103,
+    "mtimeMs": 1777866527211,
+    "hash": "255003caff3ca30cd34a7c7ee863cb30ee051f227ac070e24b8fa975d3f23804",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 5,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/strategyResearchMiner.js",
+    "size": 13247,
+    "mtimeMs": 1777488009376,
+    "hash": "48d3370c906ec4c00ec56b0604cac37b34a49aa783e09dc9c85c716f663aab3f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 306,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/strategyRetirementEngine.js",
+    "size": 21642,
+    "mtimeMs": 1777866524072,
+    "hash": "1cd92814e8e1b4ae11fac8565288d435d7f967e322e7a2ac8641917d63fd2c7f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 513,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/streamCoordinator.js",
+    "size": 59367,
+    "mtimeMs": 1777675119040,
+    "hash": "a0eb5ef27769070180a73c609ebc8f88dbe7168facc64430fbaf25ae437462e4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1635,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/runtime/streamFreshnessMonitor.js",
+    "size": 2373,
+    "mtimeMs": 1778226792255,
+    "hash": "fcc5028fdfce88ef5cab075e8d9a8764e5c2acbb42bda2e1f3425e145c084503",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 63,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/streamHealthEvidence.js",
+    "size": 11266,
+    "mtimeMs": 1778029420669,
+    "hash": "58833e4e9645d9c2e92e3157ac208d5a069ba7498443cf17e9189a9dd519c85d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 265,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/stressLab.js",
+    "size": 3979,
+    "mtimeMs": 1777488009378,
+    "hash": "128ad61e657dd45b9cf8f36fbef0196a883e61784e01312414c1e9b17e504bb8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 109,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/symbolCooldownManager.js",
+    "size": 1178,
+    "mtimeMs": 1778243631774,
+    "hash": "0ce0dc5a1eb977f657c020fcb3ae6c3f2a43f3d98481564431fe58c22b3b025d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 29,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/symbolLifecycleRisk.js",
+    "size": 5831,
+    "mtimeMs": 1777868209545,
+    "hash": "0ff83b9392f00dd2bbd4561ffe07c5cb3269dc6293b51ce6743b427ec05bcd9c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 155,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/symbolQualityDecay.js",
+    "size": 12214,
+    "mtimeMs": 1777894983456,
+    "hash": "bc0d2d0a01d445d1ff168736f5352d2e9a9413a47cc4f5fb9ce5eee190885ce2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 334,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/timeframeConsensus.js",
+    "size": 10273,
+    "mtimeMs": 1777488009379,
+    "hash": "4d055b81505b19f3af698b63cadb2e631e9f9f7ff71f610c97a6c989c269bdd8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 265,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradeAttribution.js",
+    "size": 13651,
+    "mtimeMs": 1777488009379,
+    "hash": "805c7d6644ca995c57446ebc6db932b183072ed0d0fc14a9a5c34a44aae98015",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 364,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradeAutopsy.js",
+    "size": 15899,
+    "mtimeMs": 1777674270576,
+    "hash": "dbe7d4c64fbeca58f50205afa02a9b278618a592c4425bc06cc7cce4f14b1ac0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 344,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradeQualityAnalytics.js",
+    "size": 11881,
+    "mtimeMs": 1777690992841,
+    "hash": "8b15398fdf19644a498bde522b4cdc52921c1152148666fd1545eecb11dfd367",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 264,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradeReplayTimeline.js",
+    "size": 629,
+    "mtimeMs": 1778243905071,
+    "hash": "ab0a46c069f5aac1e1f5ed74ffbee654b31582116049c426ecd789bfbd232b22",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradeThesis.js",
+    "size": 9590,
+    "mtimeMs": 1777773929630,
+    "hash": "0311f0967ee0719c321e86f6090c76160e61e9be872f1a0941f4f501bf42bcae",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 172,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradingBot.js",
+    "size": 1288480,
+    "mtimeMs": 1778304144944,
+    "hash": "2e55a8a0a0dbfd4d8fcfcd661222d5f6dce74aa2b77f9f68c8c40b0230e94e0c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26093,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/runtime/tradingBotDecomposition.js",
+    "size": 2438,
+    "mtimeMs": 1777495885123,
+    "hash": "710f16efbbccf461f2a6b1a0b855565d87509641068c7580ee9f632399685ca2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 64,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradingImprovementDiagnostics.js",
+    "size": 22634,
+    "mtimeMs": 1777666027133,
+    "hash": "4ebf48c5aab7b9069a6f820176c4529cce65383a103b781520b467b21a71f877",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 481,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradingPathHealth.js",
+    "size": 15828,
+    "mtimeMs": 1778010083811,
+    "hash": "ef513a24b17526f4a7b6845463a3fa56a7b9b217d32a20f1a6e5890b7b6dfae3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 362,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/universeScorer.js",
+    "size": 4427,
+    "mtimeMs": 1777488009386,
+    "hash": "2f2b50781b572eadd1e14bebc4f1aa12eacd0c29ca7787ad66383ffe3d14ff51",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 107,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/universeSelector.js",
+    "size": 17582,
+    "mtimeMs": 1777488009387,
+    "hash": "61d7cc2ad22271a9481e0f58264a3ff5bb21abcfe3c94fd6ce416b123e7ef162",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 482,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/vetoOutcome.js",
+    "size": 2202,
+    "mtimeMs": 1777757695091,
+    "hash": "1d9e9a4089bd06666678b5bc887d0e122885bdf8da8aab1ed243f869e0f217d9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 59,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/vetoReplayCoverage.js",
+    "size": 4121,
+    "mtimeMs": 1778059718956,
+    "hash": "1df7caec062a21cd2c36f9c991e9d14b61321cca5cf26110b7ec11cb40812c80",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 122,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/viewMappers.js",
+    "size": 12683,
+    "mtimeMs": 1777488009388,
+    "hash": "b51757ac5e0cbc52c368604506a2f6da89eb4d08102063c90c207f6c722af97d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 313,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/walkForwardBacktest.js",
+    "size": 11741,
+    "mtimeMs": 1777724497105,
+    "hash": "18394119bb1d95a11862f78d7d2501de80255c3137e71293b0c68ca4ba9dbc9c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 345,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/watchlistCoverageBalancer.js",
+    "size": 6600,
+    "mtimeMs": 1778036333277,
+    "hash": "9f07d0de0b73e651682c229ea04625a21474072caccd7d80efe9624dcea20fb2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 185,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/watchlistResolver.js",
+    "size": 15180,
+    "mtimeMs": 1777530752769,
+    "hash": "9034e51fec5afa1895daaf49733e9d08fdbba362d579c51714fe27b8874f95bf",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 435,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/setup/setupWizard.js",
+    "size": 2822,
+    "mtimeMs": 1778243574202,
+    "hash": "9fa59a6eb64f41cdbab911935b492b24c06e0a9e553337ca0843d03d2e3e161b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 78,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/shared/statusTone.js",
+    "size": 563,
+    "mtimeMs": 1777488009389,
+    "hash": "9e46e0770e4083464d15b23b272517c5cccd18ece843171dcaddf10a3bf2ea98",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 32,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/auditLogStore.js",
+    "size": 2164,
+    "mtimeMs": 1777488009390,
+    "hash": "fb4e7c34d241339d04d967575eb0be0c20501294e868c67204bb0d6523d2babe",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 66,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/dataLake.js",
+    "size": 986,
+    "mtimeMs": 1778243905071,
+    "hash": "5a90f4d61ebaa8547eb437ebdce3617cc7b1bb373ac7cdacf47460e3ad781c3b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 15,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/marketHistoryStore.js",
+    "size": 25746,
+    "mtimeMs": 1777488009391,
+    "hash": "55a9a8930a671638ef537969bd07fca49e3c41663d58872725b03d65d518e710",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 743,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/migrations/index.js",
+    "size": 1573,
+    "mtimeMs": 1777767847712,
+    "hash": "004aca1934cffcb63761d78b99e9908728d476a28d69fe5de19301f1388726f6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 53,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/readModelAnalyticsQueries.js",
+    "size": 8288,
+    "mtimeMs": 1778059749905,
+    "hash": "946dc2998f477db295b9bd25280f432592a8cf757a4026f0f1928fced931a9f6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 233,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/readModelStore.js",
+    "size": 41904,
+    "mtimeMs": 1778270006598,
+    "hash": "9efae6391d503334d68cc543da68f8e88f8ba5f114babd0d896482920643f3b2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1102,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/storage/recorderIntegrityAudit.js",
+    "size": 3608,
+    "mtimeMs": 1777767218092,
+    "hash": "cfbb70b91e0d6fde27e481a08905966e6cd8b2a9eafb8a016897983a56c5be96",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 99,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/schemaVersion.js",
+    "size": 1509,
+    "mtimeMs": 1777767649433,
+    "hash": "11b42ebf54ae74f76210d655dcf157d7b22258a4d5d1e323752121aba2861818",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 40,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/stateStore.js",
+    "size": 12538,
+    "mtimeMs": 1778305072769,
+    "hash": "dadf34b97439365eb65bdf016e5e923c3a816450363bdbeb33289a22c6b1baf6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 394,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/storageAudit.js",
+    "size": 2613,
+    "mtimeMs": 1777767218124,
+    "hash": "56ca37225c152ad2276d495d9a3794bd3a2adc5667fc8cb4be8b7191d078b9c2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 65,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategies/pluginInterface.js",
+    "size": 1805,
+    "mtimeMs": 1778243574203,
+    "hash": "e5739123c8aab9f2fb1f1af4893f5ff2e60dd735e12af75ef46f62f1b2866217",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategies/strategyKillSwitch.js",
+    "size": 1485,
+    "mtimeMs": 1778243918629,
+    "hash": "8c561b6ea351c012be7e9310d47014f5d0a3b24bf02f65e9dd8b16f277a56d0e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 27,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategies/strategyRegistry.js",
+    "size": 833,
+    "mtimeMs": 1778243574203,
+    "hash": "d3458213598a778fea626ca6d5464bdcdbe18cc73ef006ebea597aa43caef5a7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 23,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/advancedIndicators.js",
+    "size": 11321,
+    "mtimeMs": 1777773929629,
+    "hash": "8f3224b0fad4d21fd282d38a5a2d341384823948b588eddb8ef8edf7713c429f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 291,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/candidateInsights.js",
+    "size": 11698,
+    "mtimeMs": 1777687464421,
+    "hash": "024ccd3f5396a5c7679c62bbea530ff3e3c4c05b98a63180bf47fc2b481d89ca",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 304,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/exitPlanHints.js",
+    "size": 3137,
+    "mtimeMs": 1777822967084,
+    "hash": "e332c72f978c27e7e83c462a1449bdbd88c8cfbe3b165f03cd7adabdb8e05116",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 76,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/failedBreakoutDetector.js",
+    "size": 3077,
+    "mtimeMs": 1777723465702,
+    "hash": "75255bbb1a78983639e79cd035f23efe7f062626f1d3f65eb1bd49ecfe4fa420",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 82,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/featureGovernance.js",
+    "size": 27964,
+    "mtimeMs": 1777488009393,
+    "hash": "b2b79e0b14e52ceb3fe2d1f160d70aa20dd62966a8efd7270ac97a3449b2cf31",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 665,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/features.js",
+    "size": 29356,
+    "mtimeMs": 1777721111685,
+    "hash": "2d68c33e6d69b35e846968da9df8e8ae306d5a501820b991c59c93ceb4c87d9c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 458,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/indicatorFeatureRegistry.js",
+    "size": 15612,
+    "mtimeMs": 1777688137533,
+    "hash": "f3c7ee73102c1e3fd7e3b1e4dbca7f110b909bb6e35f4a19da2b131aa4b38cd7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 368,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/indicatorRegimeScoring.js",
+    "size": 5722,
+    "mtimeMs": 1777822204263,
+    "hash": "5b360204775d69ba0c64be1c6afa5b0d6eb7f373ff93ad283824761dc5afe291",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 115,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/indicators.js",
+    "size": 44030,
+    "mtimeMs": 1777687395597,
+    "hash": "1a96b604d46d0980c2d45fee16d164b0b54fd4fcee8c9096ab27d5aa5f3b4457",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1033,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/strategy/marketState.js",
+    "size": 1162,
+    "mtimeMs": 1777488009395,
+    "hash": "8914f1c0c7666c798a1764f2d54c942c43b4aeff03590ea6c3029def04a0a4fb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 29,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/setupThesis.js",
+    "size": 8042,
+    "mtimeMs": 1777822599356,
+    "hash": "93670d5488a62f164910a9fe9a05b3187c383397ed1b44e51d4c45c99abd1f71",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 157,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/strategyLifecycleGovernance.js",
+    "size": 5297,
+    "mtimeMs": 1777648817833,
+    "hash": "b0640ff82c905ff243bab9f2c5dd22bb570fe23eb9c84b56006ff9e7e286d476",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 120,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategy/strategyRouter.js",
+    "size": 96537,
+    "mtimeMs": 1777721880665,
+    "hash": "0e4b76e2d9c9f3a261ed2507116fe0a64e6a6778436ef2a5522111e824bc8199",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1788,
+    "largeFileReview": true
+  },
+  {
+    "path": "src/strategy/trendState.js",
+    "size": 6180,
+    "mtimeMs": 1777488009397,
+    "hash": "a649e8709f4e3ffe4b7729b0de84d39fe8a07860d2991ddb9b8e45c1d502081c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 152,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/trading/tradeQualityScore.js",
+    "size": 1192,
+    "mtimeMs": 1778243836710,
+    "hash": "cb646f8501cf7ad81f1f1bdd9086be3ab058f40355fe8b01691d8aa3cd44aa14",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/trading/tradeReceipt.js",
+    "size": 1604,
+    "mtimeMs": 1778243836711,
+    "hash": "85700a63ed815c312b60d65589fa1cd61e8dc164e358c41dee5b8995125a681e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 26,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/async.js",
+    "size": 556,
+    "mtimeMs": 1777488009397,
+    "hash": "35eac7cb514dd9fccdc55629755d90e35033470774058e0d837b4ecf188e1672",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 18,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/fs.js",
+    "size": 2255,
+    "mtimeMs": 1777488009398,
+    "hash": "0e3eb8f85ae0d870a103b659b1c039508ab1ac437c3575b358c3ce311a06c29d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 79,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/logger.js",
+    "size": 1440,
+    "mtimeMs": 1777755240785,
+    "hash": "07b3d3d5748368d698cdf74c69de42377bdb255a2744b0b4073d54d116416463",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 64,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/math.js",
+    "size": 1736,
+    "mtimeMs": 1777488009399,
+    "hash": "d60d36ed9b7589ef474848e17b9614d27f9d9fb8a7ec86cc6d2a2e5c280511f8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 80,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/redactSecrets.js",
+    "size": 1468,
+    "mtimeMs": 1777755196914,
+    "hash": "682a1977d1f667a60807c3758a4090917504df08e341aea8ba2e9e229a4b162e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/requestBudget.js",
+    "size": 4151,
+    "mtimeMs": 1777488009399,
+    "hash": "f0174b134920322c119d1e21c4fea3b88f4beb5bf7e38c1608fdc609f8efc759",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 126,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/safeMath.js",
+    "size": 841,
+    "mtimeMs": 1777775123185,
+    "hash": "8f34dfc5ed0423a1ab67c4a05b692c37c1f3d8765acaf600f9998b08f0fd988e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 23,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/score.js",
+    "size": 791,
+    "mtimeMs": 1778243836699,
+    "hash": "32bfed5d50efc997c35e8ba0ebbfd42d0ca8316f7846a58cdfb7b08e9604c3b4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 24,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/seeded.js",
+    "size": 722,
+    "mtimeMs": 1777767272330,
+    "hash": "3dc953b7a99347736f6950898ba9567b2aa3cba2dea669e90fcf501a03d2a3ba",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/time.js",
+    "size": 887,
+    "mtimeMs": 1777488009399,
+    "hash": "37a9a1382f9086a707f8c155c25b2fd625853a1037f636b3e55c9984e6c51d88",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 37,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/utils/tradingSource.js",
+    "size": 2615,
+    "mtimeMs": 1777488009400,
+    "hash": "89da7f8615d1001c969661ae5e1993b69e311f6811bfe2a6de9a552d8cb6e01b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 75,
+    "largeFileReview": false
+  },
+  {
+    "path": "Start-BotService.cmd",
+    "size": 89,
+    "mtimeMs": 1777488009257,
+    "hash": "96e32cb715c4eaa10c0a56777b50948ceafa8ae38bdc15c2878c6ecdcb7cbac5",
+    "type": "cmd",
+    "emptyClass": null,
+    "lineCount": 4,
+    "largeFileReview": false
+  },
+  {
+    "path": "Start-Dashboard.cmd",
+    "size": 51,
+    "mtimeMs": 1777488009257,
+    "hash": "375a1612746ae284df18dc1a138024c66adc5d3133b897eecdb81c1bc2adadd6",
+    "type": "cmd",
+    "emptyClass": null,
+    "lineCount": 4,
+    "largeFileReview": false
+  },
+  {
+    "path": "Start-Everything.cmd",
+    "size": 5373,
+    "mtimeMs": 1777644953750,
+    "hash": "91e62e017dd66a775755f84c36641017f320f3c3d34b6c498336d77172c1c983",
+    "type": "cmd",
+    "emptyClass": null,
+    "lineCount": 92,
+    "largeFileReview": false
+  },
+  {
+    "path": "strict_after_report.json",
+    "size": 27551774,
+    "mtimeMs": 1776529657859,
+    "hash": "9aa5975e12f4509b292b04546ae8af21e5c1cb116ffb41ea7e7693a91de50ebf",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": "strict_after_report_v2.json",
+    "size": 27544118,
+    "mtimeMs": 1776529657944,
+    "hash": "f16312d27aeffad3edc6275ccbf20a5fd63fc4727a6b4260d48a7910260dc530",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": "strict_after_status_v2.json",
+    "size": 6323792,
+    "mtimeMs": 1776529657973,
+    "hash": "9e5d4476add2cad028f56339f8f3ec44ee3242e816746d79bbc4ba74ee9499e4",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/adaptiveGovernance.tests.js",
+    "size": 2243,
+    "mtimeMs": 1777488009402,
+    "hash": "3fbce17b1e188a6a3267c796071ef252ac4ac19ab82f9779ee1fa731fafafa64",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/apiDegradationPlanner.tests.js",
+    "size": 6577,
+    "mtimeMs": 1777864890753,
+    "hash": "26b28cd8a3af259865f2e9790a94b71359328c56a43665b4709540bbc4930333",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 143,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/auditLog.tests.js",
+    "size": 2432,
+    "mtimeMs": 1777488009403,
+    "hash": "fa5c35613fed3b327c00c9718a6f583d1ddd0e8653e92ed16ec5ad3de691b4fa",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/autoReconcileCoordinator.tests.js",
+    "size": 11883,
+    "mtimeMs": 1777775137208,
+    "hash": "8d1280b1b54b6daa119790185d533299fd5f80671f439959ddb91e4d71b016ba",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 288,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/binanceRestArchitecture.tests.js",
+    "size": 12503,
+    "mtimeMs": 1777518253943,
+    "hash": "fa6f575a6970425f64f0b95e57bd575cf2f14cf81b5c98fa103c6762f4fa3724",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 381,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/botLifecycle.tests.js",
+    "size": 2150,
+    "mtimeMs": 1777488009404,
+    "hash": "49fdacf0a9559740f4b3176e4131f8b07c119fc12f58bfdf7bb5fa193540e895",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 45,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/breakoutRetestStrategy.tests.js",
+    "size": 5747,
+    "mtimeMs": 1777721250759,
+    "hash": "7be788728769f8f272fe4f84796cf027665db82661d17603f6f9635b38d8692f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 176,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/brokerFactory.tests.js",
+    "size": 2743,
+    "mtimeMs": 1778305129288,
+    "hash": "86fe195cf91d21be629f30ea514f58c45e3cb4a23afdbb058beb7616901d9fc9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 63,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/canaryReleaseGate.tests.js",
+    "size": 3968,
+    "mtimeMs": 1777848167638,
+    "hash": "e443d9332a9a76d6e56afdae7ec9ac636caea85d13814e2957f87ff8baeaaead",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 95,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/candidateExplainability.tests.js",
+    "size": 4572,
+    "mtimeMs": 1777865294753,
+    "hash": "d5c4c79556b7c60570dceacb0940d0753526c141ac2903bf97acd31e41e9692d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 102,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/candidateFreshnessContract.tests.js",
+    "size": 2398,
+    "mtimeMs": 1778225878201,
+    "hash": "4e417419d44cfd623a9182ff69a1ce33b1229e3ef27b362a23decdeba796049c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 61,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/candidateOutcomeTracker.tests.js",
+    "size": 5353,
+    "mtimeMs": 1778012786755,
+    "hash": "f082aea8a2eef0342a87fe238731e41dc644484492b00686c92b676db6b7c37a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 143,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/candidateRanking.tests.js",
+    "size": 1809,
+    "mtimeMs": 1777488009404,
+    "hash": "958997c33dd0de5dca46eb788812423a701a101ebf90947330ce270649e5b786",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 37,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/capitalGovernorReliability.tests.js",
+    "size": 10750,
+    "mtimeMs": 1777488009405,
+    "hash": "6bd237b07da6a7b762639e75a180b8fa71c7079129483db3ae1e5823cf07f2b3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 307,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/confidenceCalibration.tests.js",
+    "size": 3439,
+    "mtimeMs": 1777849830021,
+    "hash": "715fb24504379f2e680e796ac03e47eec03fd143df804f1f6da9d8eadefc8f8e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 89,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/configOperatorMaintenance.tests.js",
+    "size": 13560,
+    "mtimeMs": 1778243650947,
+    "hash": "7a9973b77fb8662a405f1c258cf98d3fcfa0053932c514423a2f2253bce24aaa",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 335,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/configSchema.tests.js",
+    "size": 4593,
+    "mtimeMs": 1778304046229,
+    "hash": "fedf8cc08a77299560322463f8ed3d2dc3c239824bc7f2e0e99a7fbc5fec2248",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 111,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/crossExchangeDivergence.tests.js",
+    "size": 5248,
+    "mtimeMs": 1778010083812,
+    "hash": "8e29f906158e8c51f250047b0992e0acac20eb4ced51e3e985e46d82bf4d4b84",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 125,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/cryptoRegimeRouter.tests.js",
+    "size": 5922,
+    "mtimeMs": 1777864268286,
+    "hash": "62a19898bf011825101cbd68ee78815f9e82c3517395f1ee0ac0cb8f3edff990",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 120,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/dashboardEvidenceDrilldown.tests.js",
+    "size": 4431,
+    "mtimeMs": 1778049541489,
+    "hash": "d499d1be16b6977ae7b9c09878dc48f33dcf9a3754962d5f23234ae083459eda",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 99,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/dashboardHealth.tests.js",
+    "size": 11810,
+    "mtimeMs": 1777748795683,
+    "hash": "542bbeca7303a5eabaade0c59aace893f972a512c808898a2ff2afc2f003d689",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 258,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/dashboardSnapshot.tests.js",
+    "size": 11772,
+    "mtimeMs": 1777750677592,
+    "hash": "2abfb3f83da1616b5f8f3700fbdbd51b1b3dcce35255fa07c85e175f20ae976e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 287,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/dataIntegrityMaintenance.tests.js",
+    "size": 12709,
+    "mtimeMs": 1777825911796,
+    "hash": "ea4dbe5fc608b1fb5429a7c0ff940ba8ece10a32f2b611e52f5010743294fa85",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 246,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/dataQualityScoreV2.tests.js",
+    "size": 4480,
+    "mtimeMs": 1778014889121,
+    "hash": "31e25830c81d1e0ca9337dae38d5611eceea52a3659fd1fc49c42c76918279f8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 95,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/decisionInputLineage.tests.js",
+    "size": 4347,
+    "mtimeMs": 1777846953228,
+    "hash": "38ea6fcd069298c7a57f2c08878e2a0000726b9aec032c0b650d454a7ab98215",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 103,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/decisionPipeline.tests.js",
+    "size": 3211,
+    "mtimeMs": 1777488009408,
+    "hash": "a892bff1c57bf0bb2218f7a45660d9907a9f6c859a604ed2ce26b29c1cb6c4a2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 100,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/decisionSupportFoundation.tests.js",
+    "size": 7958,
+    "mtimeMs": 1777749526649,
+    "hash": "3d6ca58b4cbd772f05ba2e4d9129cdda21b4322ad725d2072226d7bcb4ff7063",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 205,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/dynamicExitLevels.tests.js",
+    "size": 4236,
+    "mtimeMs": 1777691715801,
+    "hash": "edd32a9de75ba52be87b8f92f03c8117f0abaab030947add090e9ea98f49966a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 120,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/execution/exchangeAdapterContract.tests.js",
+    "size": 5837,
+    "mtimeMs": 1777849414041,
+    "hash": "1df13290932f081e08ca5cc96bbad27e65a56be1764fb34627b97ceefcf96202",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 144,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/executionFeedbackLearning.tests.js",
+    "size": 2703,
+    "mtimeMs": 1777488009409,
+    "hash": "66ec5982a9962b28f68260c226fdfae178ad8a00a399a779dd10a0f7523f4b1a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 85,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/executionIntentLedger.tests.js",
+    "size": 1454,
+    "mtimeMs": 1777488009409,
+    "hash": "804d26dabc9281b4b65e2e2905c28d54edd8ebd8f1c81b1355940418b00f72c4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 45,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/executionSafetyFilters.tests.js",
+    "size": 5448,
+    "mtimeMs": 1777824936011,
+    "hash": "a7d91d88db2cd113444a07d3172cb1ecda8396ba69dee66285ef7e144773af24",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 138,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/exitFastLane.tests.js",
+    "size": 2970,
+    "mtimeMs": 1778228312728,
+    "hash": "a04a37f62a898f5c6787542543e897810b227e47e688aeb39e354b7afb00074e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 70,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/exitIntelligenceV2.tests.js",
+    "size": 6678,
+    "mtimeMs": 1777689779392,
+    "hash": "f57bbc4d6ae038f5e07a9ea797254565a46738b225179bc649cebe043f54527d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 193,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/exitRegretDiagnostics.tests.js",
+    "size": 5264,
+    "mtimeMs": 1777674320582,
+    "hash": "79330a88b7df02e5ba757bf81cf910213bc02d38908e2f461c35f64eb6600202",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 157,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fastExecutionCore.tests.js",
+    "size": 3432,
+    "mtimeMs": 1778226253065,
+    "hash": "b2195af2088944e5dc4ae3664024746672725f58008e1b0531e7d5013154dabc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 78,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fastExecutionDashboard.tests.js",
+    "size": 3254,
+    "mtimeMs": 1778230358649,
+    "hash": "3536cb772d8ded3fd6904b3510672eb1664bfd5d05dd14c6aed0184c6940cac5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 65,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fastExecutionSafetyGovernor.tests.js",
+    "size": 3314,
+    "mtimeMs": 1778229726366,
+    "hash": "94361f74ca5b3431368f4400b882ac46e7c2b6342dee78bc37412696e5e3451c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 72,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fastExecutionTrace.tests.js",
+    "size": 2248,
+    "mtimeMs": 1778230374433,
+    "hash": "081055bbbb002b73ff21a1b4934933a25fc960ffec7d6f69a58edd4a9460ce68",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 51,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fastPaperExecution.tests.js",
+    "size": 2872,
+    "mtimeMs": 1778230675075,
+    "hash": "f94f5dd4b93e7f0d2b27d061153bd6301048dc7655e74ef0fab4456fb67c00f5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 64,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fastSignalTriggerService.tests.js",
+    "size": 3302,
+    "mtimeMs": 1778230042985,
+    "hash": "5775f080780e645849fc2d057b7bef4f72dec1707185d6f4824625ff82b93798",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 83,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/featureActivationGovernor.tests.js",
+    "size": 7485,
+    "mtimeMs": 1777823841522,
+    "hash": "4c72c9fee96eb62063c1317b46f10b2af3064a1e240df11ef372997acc63958d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 156,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/featureAudit.tests.js",
+    "size": 8536,
+    "mtimeMs": 1778056591795,
+    "hash": "b5d2f6b49dbf7e018fca2dce114082f89b88c96f204dad4a7f5e0610e130715f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 154,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/featureFlagHygiene.tests.js",
+    "size": 1717,
+    "mtimeMs": 1777751779634,
+    "hash": "59a521d515aaddc221d23c8d4049aba3014cb5a6715921cea3e546457c938d41",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 51,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/featureGovernance.tests.js",
+    "size": 1516,
+    "mtimeMs": 1777488009410,
+    "hash": "593c00e0420b31a510e3686d97129f201be2f3cffdfbea8076061bd323b84da9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 43,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/featureWiringCompletionGate.tests.js",
+    "size": 4851,
+    "mtimeMs": 1778056608296,
+    "hash": "4bfdfd66fb5a0ed13e459fddd39f2569f6aeb516befecfcc4aea3056579ee4e5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 133,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/demo-paper-hard-inventory-conflict.json",
+    "size": 1718,
+    "mtimeMs": 1777488009411,
+    "hash": "94be9ebfeaf9fadfa889b2e357253544443ad627b2e62ec22169ce78630aa6f0",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 53,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/replay/exchange-truth-freeze.json",
+    "size": 411,
+    "mtimeMs": 1777516361726,
+    "hash": "7834675d36225040e5dc38f78ebb143f9a78afc70adda023a5e17620ea9100af",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/replay/fee-accounting-mismatch.json",
+    "size": 407,
+    "mtimeMs": 1777516332210,
+    "hash": "1a1a1b2298dc4e9ac8664429228b096b0f532ac8d08abd1f1bc56e4b71ec0295",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/replay/hard-safety-block.json",
+    "size": 428,
+    "mtimeMs": 1777515003721,
+    "hash": "ef76b329cd78b494340ad3963007e12670debbd235947f47b04a06ff21a9ac85",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/replay/meta-confidence-current-blockers.json",
+    "size": 720,
+    "mtimeMs": 1777645634597,
+    "hash": "e8c2c004030badfc1fd5fe9ea73ec9bcf8010bba91acedd590d54885df9a4e01",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 24,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/replay/paper-probe-soft-block.json",
+    "size": 430,
+    "mtimeMs": 1777515010303,
+    "hash": "cabc70ce6a3359db8aad1aadfeb73e1bfb6f2091a9dcb2e12983d6df680d304a",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 18,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/replay/range-grid-late-exit.json",
+    "size": 395,
+    "mtimeMs": 1777516354800,
+    "hash": "1c1dda0f30c9bc7162dcaa8de8cb9eee5ce5bed691fa4600c53ebb4d6783f74e",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/fixtures/replay/rest-ban-pause.json",
+    "size": 405,
+    "mtimeMs": 1777516346666,
+    "hash": "541115a1abfb1a45d8a8236ae5d6edd8fc2fe8e0057d7a2197ed14c8ed3a500c",
+    "type": "json",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/flatManualReviewResolution.tests.js",
+    "size": 27065,
+    "mtimeMs": 1777488009412,
+    "hash": "14814d372179e15e0dba010b15370de36edd07dc9046d563b622385077976a4d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 745,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/goldenReplayPackGenerator.tests.js",
+    "size": 4294,
+    "mtimeMs": 1778049242780,
+    "hash": "94a7dc61a356ee0335d0054c709147570b9c6f5c5324c199e557d856e2f14748",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 101,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/historyOperations.tests.js",
+    "size": 4042,
+    "mtimeMs": 1777488009413,
+    "hash": "307a076f879359ca250b423f667c1e2fb11cfd3451f65617dd4d3ff88689f621",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 93,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/incidentReplayLab.tests.js",
+    "size": 5445,
+    "mtimeMs": 1777488009413,
+    "hash": "237268cea13dc7354ac354f7a4ef0ce5c40875cedb54edb68e83b2f9fa128c2e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 152,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/indicatorFeatureRegistry.tests.js",
+    "size": 8461,
+    "mtimeMs": 1777688321949,
+    "hash": "20ba975ce9c7b96b2a210b0e5267dd339ed9c1cf6a4aa979e20b1737836eb25c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 207,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/largeFoundations.tests.js",
+    "size": 54996,
+    "mtimeMs": 1777675127576,
+    "hash": "07c6d7f428a5fee5ccafd91398f58021a0c475a56f98b6c5622d36b8c9e48fa8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 1434,
+    "largeFileReview": true
+  },
+  {
+    "path": "test/latencyProfiler.tests.js",
+    "size": 2096,
+    "mtimeMs": 1778225596540,
+    "hash": "94a9e78e552e81da3f24d1a033684ff99b1503aab34854ba4c5b7fe69186a411",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 57,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/learningAnalyticsMaintenance.tests.js",
+    "size": 11430,
+    "mtimeMs": 1777757907299,
+    "hash": "aae61c2340eec3e5886644e6de236fb047945ff5ccda9e327ca4748e2d1e0060",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 183,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/liveFastObserveMode.tests.js",
+    "size": 2643,
+    "mtimeMs": 1778228010455,
+    "hash": "0e375ddde8b25e22a04b94842b9b7122ce65307616c3ea553d10ffde05404306",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 56,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/marketProviderHub.tests.js",
+    "size": 5918,
+    "mtimeMs": 1777488009414,
+    "hash": "ccb3214ad7e138d46d239c75b9f510ac655c18c7014080974e08f4a376323bbf",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 169,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/marketProviders.tests.js",
+    "size": 4935,
+    "mtimeMs": 1777863590577,
+    "hash": "3cb879c4c316bd11042c612dcd3c86711965a393b8f31797d28172579c7c0193",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 116,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/microstructureFillSimulator.tests.js",
+    "size": 3137,
+    "mtimeMs": 1777865644814,
+    "hash": "70d2fe6dad1a61b10c4dd67f23edce3b7fedfe769ea47004624f93828ad935d0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 91,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/missionControlRiskIntelligence.tests.js",
+    "size": 6419,
+    "mtimeMs": 1778244017238,
+    "hash": "12612f9d43b519326c7ec93cfb54c30fe8cab0a47e868e8f4d593088db557f49",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 126,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/modelConfidenceRootCause.tests.js",
+    "size": 4076,
+    "mtimeMs": 1778030164278,
+    "hash": "b94a2d1c4ed59922fe1c9aadf5894961cc078326cf1170e9053b0a0f9761e13a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 104,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/nearThresholdWatchlist.tests.js",
+    "size": 2635,
+    "mtimeMs": 1778227667279,
+    "hash": "3ee14262b49df71c503908bcf6f74f7c738c9cbadc39dea09caf3f1f83d899b9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 62,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/neuralAutonomyRoadmap.tests.js",
+    "size": 13662,
+    "mtimeMs": 1778269606803,
+    "hash": "cfb51224d9d5c6f9ea7772bea7c66895dbce86df6cf63e93a0fb1d2e42512eb7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 219,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/newsSentiment.test.js",
+    "size": 1120,
+    "mtimeMs": 1777488009415,
+    "hash": "3de80688c8de5f1a290ad87167fc8489f19e62c9828893a3e4c02de8e177d7a7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 36,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/newsShockCircuitBreaker.tests.js",
+    "size": 2715,
+    "mtimeMs": 1777893576906,
+    "hash": "8645d6d9ebd6f6bb93f607b4bce60cdc458841808b2b29b4e4f82640e5133f2d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 59,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/onlineModel.test.js",
+    "size": 2155,
+    "mtimeMs": 1777488009416,
+    "hash": "71c310443bd95d5de2b86a1688d0035c706f7aa8a55c35106dd4a3d356abb9e5",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 77,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/operationalHardening.tests.js",
+    "size": 5871,
+    "mtimeMs": 1777645613892,
+    "hash": "b997d1fe9da3fdde4af5862227b4ae8dc6036b5e5e506753dec79aa16adf3835",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 111,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/operatorActionQueue.tests.js",
+    "size": 4592,
+    "mtimeMs": 1777848610286,
+    "hash": "71e18ee787d475143936874e652b47bc5945f246ae705ee4b30689fe5d29bffe",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 114,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/operatorReviewLabels.tests.js",
+    "size": 4321,
+    "mtimeMs": 1778035752273,
+    "hash": "46ea36bc5ccb0d6fee18bcf62db2c5981f607ae7df4dfa903e91b4f031c02f7a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 91,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/operatorSafetyTooling.tests.js",
+    "size": 10369,
+    "mtimeMs": 1777766237944,
+    "hash": "1f1a9b0955e411f4c0087bb509aaed89e4be85523a6511b5120c24d75cb98fcb",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 209,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/opportunityCostAnalyzer.tests.js",
+    "size": 2791,
+    "mtimeMs": 1777867409491,
+    "hash": "5dc8f9a55928f786eeb51b0633bb9465bb2f7d25959be2e66b49e99e9fd4d178",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 81,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/orderLifecycleAuditor.tests.js",
+    "size": 3998,
+    "mtimeMs": 1778029829746,
+    "hash": "ab79467e7572dcc39174f388dc83200adfb28816cc15b7849b4739a6380ee425",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 114,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/orderStyleAdvisor.tests.js",
+    "size": 2578,
+    "mtimeMs": 1777893904038,
+    "hash": "2a037eea32320b046b27c56e565307d3194e5c67e71beb422aae4cd8809f26d4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 71,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperCandidateLab.tests.js",
+    "size": 4230,
+    "mtimeMs": 1778032978798,
+    "hash": "276b57c040cda653319aca7c9c122ed42fdde0cd4b33e5b1fb51337c0c1a1ae8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 109,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperEvidenceSpine.tests.js",
+    "size": 3746,
+    "mtimeMs": 1778058120660,
+    "hash": "833ca948cf6c0dc59ccaa503bc7d6e7f6621cc760e3262c37dd08e2b3fb758ab",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 106,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperExchangeSafety.tests.js",
+    "size": 30370,
+    "mtimeMs": 1777488009416,
+    "hash": "393a8bf5e09dfe76ed39928212cfa52d7b2009347a05995101fe3bb4ee56bb70",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 775,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperExitPolicyLab.tests.js",
+    "size": 6298,
+    "mtimeMs": 1778013421274,
+    "hash": "556d72da2ca98031d0a9386575278d15ee7ae6c38c26a66f04345b236e25d90d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 193,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperNetEdgeCalibrationWorkbench.tests.js",
+    "size": 4246,
+    "mtimeMs": 1778034310266,
+    "hash": "2d9b1920a438969d0e9efe660abca096b50ea7763385b1368a2ae0dde9971609",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 108,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperPortfolioAllocatorSimulation.tests.js",
+    "size": 5135,
+    "mtimeMs": 1778014013690,
+    "hash": "07f305d9217b2bb941fb1be6c7eb875c65ffeb394407f9b626681c17728173aa",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 138,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperReplayCoverageAutopilot.tests.js",
+    "size": 3577,
+    "mtimeMs": 1778048098370,
+    "hash": "334c8605b4a3dca9c8df019c4be791b1efe99fe45465b15ce8f8f5a480d0ba8d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 83,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperStrategyCohortScorecard.tests.js",
+    "size": 5293,
+    "mtimeMs": 1778032483140,
+    "hash": "6d9a9e9a9fb3df195025c7c6967137a5e91d362c048594faa11364906fd2acce",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 134,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/paperTradeLifecycleContract.tests.js",
+    "size": 6789,
+    "mtimeMs": 1778011970487,
+    "hash": "ac6a9e57b29f2eb340c7bc7a9eb478c1e1bbea1c991298b8ac7d63b74986ccd4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 213,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/performanceLedger.tests.js",
+    "size": 3699,
+    "mtimeMs": 1777867788733,
+    "hash": "02423510c40091a5772ab38356e56f9187ced4c46e0d00335b3da37f84969c95",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 95,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/performanceTuning.tests.js",
+    "size": 41554,
+    "mtimeMs": 1777488009417,
+    "hash": "bc7a4a2f4dd237cffca34f6ad3b677667d88f537114033343399d9e30dbdaf61",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 928,
+    "largeFileReview": true
+  },
+  {
+    "path": "test/portfolioScenarioStress.tests.js",
+    "size": 4303,
+    "mtimeMs": 1777850310271,
+    "hash": "d5cd19b4c41bdbc17420041799bea6db8b3a1b901c4d4f2cd600e7a17b736271",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 88,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/postReconcileEntryLimits.tests.js",
+    "size": 6076,
+    "mtimeMs": 1777772944306,
+    "hash": "957e45691eefdd2e4aa2028459f797f706812d880dc015e42f6153fe5b2c84d3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 162,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/pullbackReclaimV2.tests.js",
+    "size": 6362,
+    "mtimeMs": 1777721911107,
+    "hash": "07e363dec8e7344d316a71992bb558e255968db5bb843901d5771d369f303d7e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 182,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/readModelAnalyticsQueries.tests.js",
+    "size": 6335,
+    "mtimeMs": 1778059866605,
+    "hash": "1c9ddaef9b0008ee70cbd72a30a6222c181a8adc0c65dc3871fb1c8bee6de713",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 139,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/reconcileAutofixTolerance.tests.js",
+    "size": 6842,
+    "mtimeMs": 1777821155941,
+    "hash": "d2a4c1440b0d80e1e9d3cc7f0051346d19b0b8652b1ed77a6a04e6e6bd5bcd1b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 205,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/recoveryProbePolicy.tests.js",
+    "size": 10893,
+    "mtimeMs": 1777585593293,
+    "hash": "70dc0260ac1a715b95138d58578d96671fb9781eac9f72382dd9f1ba0cfc86fd",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 253,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/replayDeterminism.tests.js",
+    "size": 4773,
+    "mtimeMs": 1777518293558,
+    "hash": "b064a48f91067adcc6f5c4788377b75cc567e04e3110ed47958f2cfc1b8ec691",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 140,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/riskManager.test.js",
+    "size": 1377,
+    "mtimeMs": 1777488009419,
+    "hash": "8ac5cdcfa862bea5be91c7f5913d799c45746a58527eff3afc18db328da1abc0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 51,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/riskOfRuinMonitor.tests.js",
+    "size": 3306,
+    "mtimeMs": 1777866995343,
+    "hash": "cd36a2761826c60a7f4a73d12cb4a77f6b299b4d3a9defb79fb7886bb15ade86",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 68,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/riskPolicyModules.tests.js",
+    "size": 11715,
+    "mtimeMs": 1777488009420,
+    "hash": "3f1b002aecad127e9186107180cce2f8b6bf89d978e73093e92748ca881d8b7e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 284,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/rootBlockerOrchestrator.tests.js",
+    "size": 2760,
+    "mtimeMs": 1777488009421,
+    "hash": "aa44d0f92c953c95a841a80480ea94f75f0d486d15ac31e9c2bdc689986246aa",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 79,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/rootBlockerStalenessVerifier.tests.js",
+    "size": 5160,
+    "mtimeMs": 1778033705745,
+    "hash": "0efbc8d75b054764aff85ec9053d0888e59e0be6a97216f784f3c1456c629109",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 112,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/run.js",
+    "size": 1411016,
+    "mtimeMs": 1778305095120,
+    "hash": "137edc811d0d2de5d9a889f9350f003b7e852e62a404368f158503592a0d61ce",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 33010,
+    "largeFileReview": true
+  },
+  {
+    "path": "test/runtimeMutation.tests.js",
+    "size": 8960,
+    "mtimeMs": 1778272312294,
+    "hash": "e48d49dcf3e200584edcdbb4735e0b2425c645feaa954de9c7e999b333ad1a0c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 177,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/safetyMaintenance.tests.js",
+    "size": 13269,
+    "mtimeMs": 1777755317928,
+    "hash": "ebf1dd106801260e3b12861cf6021b3aebc4a89f8875d13610decdc2ae81c060",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 351,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+    "size": 4807,
+    "mtimeMs": 1778244561714,
+    "hash": "71c20ecc473971c00684a5fb4830224ac6bcf3bfa25aa3cc9594bf165468ae7e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 70,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/scopedLearningAndUniverse.tests.js",
+    "size": 9162,
+    "mtimeMs": 1777488009429,
+    "hash": "44bd5d5a56e37b5850329d63912387c33d971bedd272049db1e3a3556a8642dc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 241,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/shadowStrategyTournament.tests.js",
+    "size": 4453,
+    "mtimeMs": 1778035270279,
+    "hash": "c2e7d181045e2dfa33b44dc82f2ed48cc0bf9f0d9c109765dd19a30d8873cdec",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 104,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/stablecoinRisk.tests.js",
+    "size": 4598,
+    "mtimeMs": 1777895348172,
+    "hash": "be2491863c857f391a01fb6bfb30668e4e418420d1f0ccd018f33b3b08e8d1aa",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 108,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/stopLimitGap.tests.js",
+    "size": 2850,
+    "mtimeMs": 1777824532044,
+    "hash": "7881fadcb9d3c60b239e5b8247f7475e24f680b732cccbf8bf84739476a46948",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 77,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/stopLimitStuck.tests.js",
+    "size": 3589,
+    "mtimeMs": 1777824225858,
+    "hash": "7bb185f6e8138ee1e4971c10322263c3ea1908d0d1a899495561803024a70c2e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 95,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/storageRecovery.tests.js",
+    "size": 5058,
+    "mtimeMs": 1778305089712,
+    "hash": "62db0aa26971bee58b9f86072d2fe3a262725ff310bb1d2d772cf2f8af0a8a3d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 95,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/strategyLifecycle.tests.js",
+    "size": 3881,
+    "mtimeMs": 1777866555887,
+    "hash": "8726d02f43378817ca9838b7877da4a525992f280fe42a29ac59010b683b07ce",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 83,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/strategyValidationCostsPortfolioUx.tests.js",
+    "size": 7776,
+    "mtimeMs": 1778243702362,
+    "hash": "8359d38aff129fa28fa63df8f268d81561a7cfe20bc66dbba369201419ca5066",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 119,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/streamHealthEvidence.tests.js",
+    "size": 5799,
+    "mtimeMs": 1778029187818,
+    "hash": "66597bae4ded68624de509669b3f17493128fd724ea4800473e6d49f1bf01d6a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 144,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/streamRangeOrderflow.tests.js",
+    "size": 7735,
+    "mtimeMs": 1777672239825,
+    "hash": "f0dfec4e920e9b9328e21f51f2b953c054dd73beaa67b10ed3529be44a9dc05c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 177,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/symbolFilters.test.js",
+    "size": 1122,
+    "mtimeMs": 1777488009430,
+    "hash": "4f5b83e0c46674b6c218e8044f6afc79a5b7877635fb850f1cde5143ab07eb53",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 32,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/symbolLifecycleRisk.tests.js",
+    "size": 3346,
+    "mtimeMs": 1777868158717,
+    "hash": "035a837d68dccdb8fb6b83d14e986c44510a9e0e4f065e9022441d8075235ce3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 74,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/symbolQualityDecay.tests.js",
+    "size": 5838,
+    "mtimeMs": 1777894612416,
+    "hash": "286cf2f1718a35a5cd20d7e19e1810b4011fb19ff3d678d1cea3acffda5c54de",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 125,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/tradeQualityAnalytics.tests.js",
+    "size": 5630,
+    "mtimeMs": 1777690437352,
+    "hash": "e4bb980b49bcbf38ff16046352bbc86be4893ef273be2f920f15299ea6d4bd84",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 170,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/tradingPathHealth.tests.js",
+    "size": 16363,
+    "mtimeMs": 1777807597130,
+    "hash": "785ef7b498279bb894cf308b0c8fc29e3d4bea845474ac2ee0eab1b2d7e97521",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 391,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/tradingQualityUpgrade.tests.js",
+    "size": 25777,
+    "mtimeMs": 1777844991367,
+    "hash": "55ce45436ef5fb4349f9edf5c6d143fba40bb01efaa61827852ab606be77a432",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 521,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/vetoReplayCoverage.tests.js",
+    "size": 2947,
+    "mtimeMs": 1778059819090,
+    "hash": "11c6c394f3f632d06bdeee2854f05bca317a7d6658a0cb80d6ef3ba90a0fc187",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 72,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/walkForwardBacktest.tests.js",
+    "size": 3818,
+    "mtimeMs": 1777724563420,
+    "hash": "cd0efb50843a6d190351d857ceb95179c6b50afa9ba4fe0cb502ef68af5c835f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 108,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/walkForwardDeploymentReport.tests.js",
+    "size": 3077,
+    "mtimeMs": 1777866027385,
+    "hash": "038a5518b7e31bdae64a6b4670f06eced16e7dad96865bbb45a432e6fa416ace",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 68,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/watchlistCoverageBalancer.tests.js",
+    "size": 3712,
+    "mtimeMs": 1778036091910,
+    "hash": "690d414ca37ca0691442064c13adaa3945274b1e7a64fd70934c6149ed7faa0f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 89,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/windowsFastDataFoundations.tests.js",
+    "size": 3001,
+    "mtimeMs": 1778226861671,
+    "hash": "fdc7f6ce4135cc49b97c02d7f9306bc22e114fc7fa7ffc45832c7e642cbd6811",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 67,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/windowsGuiStatus.tests.js",
+    "size": 2507,
+    "mtimeMs": 1778225009689,
+    "hash": "d8b3adef6dacce71e9807c324061ac38ca98bf62c52b51633952f004796f1696",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 66,
+    "largeFileReview": false
+  },
+  {
+    "path": "test-output-current.log",
+    "size": 134398,
+    "mtimeMs": 1777493923523,
+    "hash": "afced49479d1aec91827cd9667dee5df3745e16967b67d8c89109afc4fbc2a07",
+    "type": "log",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": "test-output.log",
+    "size": 138584,
+    "mtimeMs": 1777556414493,
+    "hash": "1e2a5ad457f8d7e93de3c57544c7e360be168eaa79b3675a658247a71f321f31",
+    "type": "log",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  }
+]

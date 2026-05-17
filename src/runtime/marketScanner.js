@@ -29,15 +29,31 @@ async function fetchCachedBinanceTicker24h({ client, config = {}, caller = "scan
   const key = `${client?.baseUrl || "binance"}:ticker24h`;
   const now = Date.now();
   const cached = cacheBucket.get(key);
-  if (cached && cached.expiresAt > now) {
+  if (cached && cached.payload !== undefined && cached.expiresAt > now) {
+    client?.noteCacheDiagnostics?.({ caller, cacheKey: "universe_ticker_24hr", type: "cache_hit", ttlMs });
     return cached.payload;
   }
-  const payload = await client.publicRequest("GET", "/api/v3/ticker/24hr", {}, { caller });
-  cacheBucket.set(key, {
-    payload,
-    expiresAt: now + ttlMs
-  });
-  return payload;
+  if (cached?.inFlight) {
+    client?.noteCacheDiagnostics?.({ caller, cacheKey: "universe_ticker_24hr", type: "coalesced", ttlMs });
+    return cached.inFlight;
+  }
+  client?.noteCacheDiagnostics?.({ caller, cacheKey: "universe_ticker_24hr", type: "cache_miss", ttlMs, fallbackReason: "ttl_expired_or_empty" });
+  const inFlight = client.publicRequest("GET", "/api/v3/ticker/24hr", {}, { caller })
+    .then((payload) => {
+      cacheBucket.set(key, {
+        payload,
+        expiresAt: Date.now() + ttlMs
+      });
+      return payload;
+    })
+    .catch((error) => {
+      if (cacheBucket.get(key)?.inFlight === inFlight) {
+        cacheBucket.delete(key);
+      }
+      throw error;
+    });
+  cacheBucket.set(key, { inFlight, expiresAt: now + ttlMs });
+  return inFlight;
 }
 
 function getObjectScopedCache({ object, weakMap, fallbackMap }) {
@@ -92,17 +108,31 @@ async function fetchCachedScannerOrderBook({ client, symbol, levels, config = {}
   const key = `${client?.baseUrl || "binance"}:${symbol}:${levels}`;
   const now = Date.now();
   const cached = cache.get(key);
-  if (cached && cached.expiresAt > now) {
+  if (cached && cached.payload !== undefined && cached.expiresAt > now) {
+    client?.noteCacheDiagnostics?.({ caller: "scanner.deep_book", cacheKey: "market_depth_or_book_ticker", type: "cache_hit", ttlMs });
     return cached.payload;
   }
-  const payload = await client.getOrderBook(symbol, levels, {
+  if (cached?.inFlight) {
+    client?.noteCacheDiagnostics?.({ caller: "scanner.deep_book", cacheKey: "market_depth_or_book_ticker", type: "coalesced", ttlMs });
+    return cached.inFlight;
+  }
+  client?.noteCacheDiagnostics?.({ caller: "scanner.deep_book", cacheKey: "market_depth_or_book_ticker", type: "cache_miss", ttlMs, fallbackReason: "ttl_expired_or_empty" });
+  const inFlight = client.getOrderBook(symbol, levels, {
     requestMeta: { caller: "scanner.deep_book" }
+  }).then((payload) => {
+    cache.set(key, {
+      payload,
+      expiresAt: Date.now() + ttlMs
+    });
+    return payload;
+  }).catch((error) => {
+    if (cache.get(key)?.inFlight === inFlight) {
+      cache.delete(key);
+    }
+    throw error;
   });
-  cache.set(key, {
-    payload,
-    expiresAt: now + ttlMs
-  });
-  return payload;
+  cache.set(key, { inFlight, expiresAt: now + ttlMs });
+  return inFlight;
 }
 
 function num(value, digits = 4) {

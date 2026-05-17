@@ -1,0 +1,5102 @@
+[
+  {
+    "file": "eslint.config.js",
+    "name": "default",
+    "type": "default"
+  },
+  {
+    "file": "src/accounts/accountProfileRegistry.js",
+    "name": "ACCOUNT_PROFILES",
+    "type": "named"
+  },
+  {
+    "file": "src/accounts/accountProfileRegistry.js",
+    "name": "resolveAccountProfile",
+    "type": "named"
+  },
+  {
+    "file": "src/accounts/accountProfileRegistry.js",
+    "name": "buildAccountProfileStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/adaptiveModel.js",
+    "name": "AdaptiveTradingModel",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/antiOverfitGovernor.js",
+    "name": "evaluateAntiOverfitGovernor",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/capital/capitalAllocationAI.js",
+    "name": "buildCapitalAllocationPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/confidenceCalibration.js",
+    "name": "buildConfidenceCalibrationSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/confidenceCalibration.js",
+    "name": "evaluateConfidenceCalibrationPromotion",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/crossTimeframeEncoder.js",
+    "name": "buildCrossTimeframeEncoding",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/decision/doNothingIntelligence.js",
+    "name": "evaluateDoNothingIntelligence",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/executionNeuralAdvisor.js",
+    "name": "ExecutionNeuralAdvisor",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/exitIntelligence.js",
+    "name": "ExitIntelligence",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/exitNeuralAdvisor.js",
+    "name": "ExitNeuralAdvisor",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/governance/aiChangeBudget.js",
+    "name": "evaluateAiChangeBudget",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/metaDecisionGate.js",
+    "name": "MetaDecisionGate",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/metaNeuralGateModel.js",
+    "name": "buildMetaNeuralInputs",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/metaNeuralGateModel.js",
+    "name": "MetaNeuralGateModel",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/multiAgentCommittee.js",
+    "name": "MultiAgentCommittee",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/autonomyEngine.js",
+    "name": "runNeuralAutonomyEngine",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/experiments/neuralExperimentRegistry.js",
+    "name": "createNeuralExperiment",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/experiments/neuralExperimentRegistry.js",
+    "name": "updateNeuralExperiment",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/fastReplayEngine.js",
+    "name": "runFastNeuralReplay",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/governance/neuralAutoRollback.js",
+    "name": "evaluateNeuralAutoRollback",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/governance/neuralPerformanceWatchdog.js",
+    "name": "buildNeuralPerformanceWatchdog",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/learningEventStore.js",
+    "name": "LEARNING_EVENT_TYPES",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/learningEventStore.js",
+    "name": "buildLearningEvent",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/learningEventStore.js",
+    "name": "inferLearningLabel",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/learningEventStore.js",
+    "name": "learningEventStorePath",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/learningEventStore.js",
+    "name": "LearningEventStore",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/neuralContinuousLearner.js",
+    "name": "evaluateNeuralContinuousLearning",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/neuralSelfTuningController.js",
+    "name": "applyNeuralTuningClamp",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/learning/positionOutcomeLearner.js",
+    "name": "buildPositionOutcomeFeedback",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/live/neuralLiveExecutionAdapter.js",
+    "name": "buildNeuralLiveExecutionIntent",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/live/neuralLiveExecutionGate.js",
+    "name": "evaluateNeuralLiveExecutionGate",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/modelRegistryV2.js",
+    "name": "buildNeuralModelCard",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/modelRegistryV2.js",
+    "name": "compareNeuralModelCards",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/neuralAutonomyGovernor.js",
+    "name": "NeuralAutonomyLevel",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/neuralAutonomyGovernor.js",
+    "name": "normalizeNeuralAutonomyLevel",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/neuralAutonomyGovernor.js",
+    "name": "evaluateNeuralAutonomyGovernor",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/neuralAutonomyGovernor.js",
+    "name": "buildNeuralAutonomyReport",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/neuralSafetyAuditor.js",
+    "name": "auditNeuralProposal",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/neuralWalkForward.js",
+    "name": "runNeuralWalkForward",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/overlayStore.js",
+    "name": "OVERLAY_ALLOWED_KEYS",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/overlayStore.js",
+    "name": "buildNeuralOverlay",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/overlayStore.js",
+    "name": "NeuralOverlayStore",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/promotionPipeline.js",
+    "name": "NEURAL_PROMOTION_STAGES",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/promotionPipeline.js",
+    "name": "advanceNeuralPromotion",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/promotionPipeline.js",
+    "name": "triggerNeuralRollback",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/proposalEngine.js",
+    "name": "NEURAL_PROPOSAL_TYPES",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/proposalEngine.js",
+    "name": "summarizeLearningEvidence",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/proposalEngine.js",
+    "name": "buildNeuralProposal",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/proposalEngine.js",
+    "name": "generateNeuralProposals",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/replay/neuralReplayArena.js",
+    "name": "runNeuralReplayArena",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/replay/neuralReplayEngine.js",
+    "name": "runNeuralReplay",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/replay/neuralReplayQueue.js",
+    "name": "buildNeuralReplayQueue",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/replay/replayPromotionGate.js",
+    "name": "evaluateReplayPromotionGate",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/safetyBoundLayer.js",
+    "name": "FORBIDDEN_NEURAL_KEYS",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/safetyBoundLayer.js",
+    "name": "DEFAULT_MUTATION_POLICY",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/safetyBoundLayer.js",
+    "name": "applySafetyBounds",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/stressScenarioEngine.js",
+    "name": "NEURAL_STRESS_PACKS",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/stressScenarioEngine.js",
+    "name": "runNeuralStressScenarios",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/training/neuralTrainingScheduler.js",
+    "name": "evaluateNeuralTrainingSchedule",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/utils.js",
+    "name": "finiteNumber",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/utils.js",
+    "name": "clamp",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/utils.js",
+    "name": "asArray",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/utils.js",
+    "name": "mean",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/utils.js",
+    "name": "stableId",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/neural/utils.js",
+    "name": "nowIso",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/onlineModel.js",
+    "name": "OnlineTradingModel",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/parameterGovernor.js",
+    "name": "ParameterGovernor",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/probabilityCalibrator.js",
+    "name": "ProbabilityCalibrator",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/regimeModel.js",
+    "name": "classifyRegime",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/risk/lossPreventionAI.js",
+    "name": "evaluateLossPreventionAI",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/rlExecutionPolicy.js",
+    "name": "ReinforcementExecutionPolicy",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/sequenceChallenger.js",
+    "name": "SequenceChallenger",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/strategyAllocationBandit.js",
+    "name": "StrategyAllocationBandit",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/strategyAttribution.js",
+    "name": "StrategyAttribution",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/strategyMetaSelector.js",
+    "name": "StrategyMetaSelector",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/strategyOptimizer.js",
+    "name": "StrategyOptimizer",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/tinyNeuralNetwork.js",
+    "name": "TinyNeuralNetwork",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/tradeLabeler.js",
+    "name": "buildTradeOutcomeLabel",
+    "type": "named"
+  },
+  {
+    "file": "src/ai/transformerChallenger.js",
+    "name": "TransformerChallenger",
+    "type": "named"
+  },
+  {
+    "file": "src/backtest/backtestIntegrity.js",
+    "name": "validateBacktestResult",
+    "type": "named"
+  },
+  {
+    "file": "src/backtest/backtestMetrics.js",
+    "name": "buildBacktestQualityMetrics",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/client.js",
+    "name": "BinanceClient",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/client.js",
+    "name": "normalizeKlines",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/symbolFilters.js",
+    "name": "buildSymbolRules",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/symbolFilters.js",
+    "name": "normalizePrice",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/symbolFilters.js",
+    "name": "normalizeQuantity",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/symbolFilters.js",
+    "name": "resolveMarketBuyQuantity",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/symbolFilters.js",
+    "name": "formatPrice",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/symbolFilters.js",
+    "name": "formatQuantity",
+    "type": "named"
+  },
+  {
+    "file": "src/binance/symbolFilters.js",
+    "name": "resolveStpMode",
+    "type": "named"
+  },
+  {
+    "file": "src/cli/commandRegistry.js",
+    "name": "CLI_COMMANDS",
+    "type": "named"
+  },
+  {
+    "file": "src/cli/commandRegistry.js",
+    "name": "listCommandMetadata",
+    "type": "named"
+  },
+  {
+    "file": "src/cli/commandRegistry.js",
+    "name": "findCommandMetadata",
+    "type": "named"
+  },
+  {
+    "file": "src/cli/runCli.js",
+    "name": "default",
+    "type": "default"
+  },
+  {
+    "file": "src/config/configHash.js",
+    "name": "buildConfigHashInput",
+    "type": "named"
+  },
+  {
+    "file": "src/config/configHash.js",
+    "name": "buildConfigHash",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/ai.js",
+    "name": "aiDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/core.js",
+    "name": "coreDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/dashboard.js",
+    "name": "dashboardDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/index.js",
+    "name": "DEFAULTS",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/index.js",
+    "name": "default",
+    "type": "default"
+  },
+  {
+    "file": "src/config/defaults/liveExecution.js",
+    "name": "liveExecutionDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/marketData.js",
+    "name": "marketDataDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/paperLearning.js",
+    "name": "paperLearningDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/recorder.js",
+    "name": "recorderDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/risk.js",
+    "name": "riskDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/defaults/service.js",
+    "name": "serviceDefaults",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envFile.js",
+    "name": "parseEnvText",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envFile.js",
+    "name": "ensureEnvFile",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envFile.js",
+    "name": "readEnvFile",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envFile.js",
+    "name": "updateEnvFile",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envFile.js",
+    "name": "verifyEnvUpdates",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "TRUE_VALUES",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "FALSE_VALUES",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "parseEnvLines",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "collectDuplicateEnvKeys",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "parseNumberStrict",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "parseBooleanStrict",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "buildStrictEnvParseErrors",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "parseEnumStrict",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "parseCsvStrict",
+    "type": "named"
+  },
+  {
+    "file": "src/config/envValidation.js",
+    "name": "parseUrlStrict",
+    "type": "named"
+  },
+  {
+    "file": "src/config/errors.js",
+    "name": "ConfigValidationError",
+    "type": "named"
+  },
+  {
+    "file": "src/config/exchangeCapabilities.js",
+    "name": "resolveExchangeCapabilities",
+    "type": "named"
+  },
+  {
+    "file": "src/config/index.js",
+    "name": "resolveDefaultHistoryDir",
+    "type": "named"
+  },
+  {
+    "file": "src/config/index.js",
+    "name": "loadConfig",
+    "type": "named"
+  },
+  {
+    "file": "src/config/mode.js",
+    "name": "resolveModeMatrix",
+    "type": "named"
+  },
+  {
+    "file": "src/config/mode.js",
+    "name": "isInternalPaper",
+    "type": "named"
+  },
+  {
+    "file": "src/config/mode.js",
+    "name": "isDemoPaper",
+    "type": "named"
+  },
+  {
+    "file": "src/config/mode.js",
+    "name": "isLive",
+    "type": "named"
+  },
+  {
+    "file": "src/config/mode.js",
+    "name": "isLiveUnsafe",
+    "type": "named"
+  },
+  {
+    "file": "src/config/paperModeProfile.js",
+    "name": "PAPER_MODE_PROFILE_IDS",
+    "type": "named"
+  },
+  {
+    "file": "src/config/paperModeProfile.js",
+    "name": "normalizePaperModeProfileId",
+    "type": "named"
+  },
+  {
+    "file": "src/config/paperModeProfile.js",
+    "name": "resolvePaperModeProfile",
+    "type": "named"
+  },
+  {
+    "file": "src/config/profileAudit.js",
+    "name": "buildConfigProfileAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/config/profiles.js",
+    "name": "resolveConfigProfiles",
+    "type": "named"
+  },
+  {
+    "file": "src/config/profiles.js",
+    "name": "applyResolvedConfigProfiles",
+    "type": "named"
+  },
+  {
+    "file": "src/config/schema.js",
+    "name": "createConfigSchema",
+    "type": "named"
+  },
+  {
+    "file": "src/config/schema.js",
+    "name": "parseNormalizedConfig",
+    "type": "named"
+  },
+  {
+    "file": "src/config/tradeProfiles.js",
+    "name": "TRADE_PROFILE_CATALOG",
+    "type": "named"
+  },
+  {
+    "file": "src/config/tradeProfiles.js",
+    "name": "getTradeProfile",
+    "type": "named"
+  },
+  {
+    "file": "src/config/tradeProfiles.js",
+    "name": "buildTradeProfilePreview",
+    "type": "named"
+  },
+  {
+    "file": "src/config/validate.js",
+    "name": "validateConfig",
+    "type": "named"
+  },
+  {
+    "file": "src/config/validate.js",
+    "name": "assertValidConfig",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/eventBus.js",
+    "name": "DashboardEventBus",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/eventBus.js",
+    "name": "buildSseEventPayload",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/fastExecutionDashboard.js",
+    "name": "buildFastExecutionDashboardSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/guiStatus.js",
+    "name": "buildWindowsGuiStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/public/app.js",
+    "name": "resolveQuickActionRequest",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/public/app.js",
+    "name": "summarizeQuickActionResult",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/public/app.js",
+    "name": "__dashboardSmokeRender",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/server.js",
+    "name": "normalizeSymbolList",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/server.js",
+    "name": "readRequestBody",
+    "type": "named"
+  },
+  {
+    "file": "src/dashboard/server.js",
+    "name": "startDashboardServer",
+    "type": "named"
+  },
+  {
+    "file": "src/docs/autoDocsGenerator.js",
+    "name": "buildAutoDocs",
+    "type": "named"
+  },
+  {
+    "file": "src/docs/autoDocsGenerator.js",
+    "name": "writeAutoDocs",
+    "type": "named"
+  },
+  {
+    "file": "src/events/binanceAnnouncementService.js",
+    "name": "normalizeCmsArticles",
+    "type": "named"
+  },
+  {
+    "file": "src/events/binanceAnnouncementService.js",
+    "name": "BinanceAnnouncementService",
+    "type": "named"
+  },
+  {
+    "file": "src/events/calendarService.js",
+    "name": "parseIcsEvents",
+    "type": "named"
+  },
+  {
+    "file": "src/events/calendarService.js",
+    "name": "summarizeCalendarEvents",
+    "type": "named"
+  },
+  {
+    "file": "src/events/calendarService.js",
+    "name": "CalendarService",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/binance/BinanceExchangeAdapter.js",
+    "name": "BinanceExchangeAdapter",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "ExchangeAdapter",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "normalizeOrderResponse",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "normalizeFill",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "normalizeBalances",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "normalizeSymbolRules",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "normalizeOrderBook",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "normalizeExchangeError",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/ExchangeAdapter.js",
+    "name": "normalizeRateLimitState",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/paper/PaperExchangeAdapter.js",
+    "name": "PaperExchangeAdapter",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/adapters/synthetic/SyntheticExchangeAdapter.js",
+    "name": "SyntheticExchangeAdapter",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/exchangeCapabilities.js",
+    "name": "EXCHANGE_CAPABILITY_MATRIX",
+    "type": "named"
+  },
+  {
+    "file": "src/exchange/exchangeCapabilities.js",
+    "name": "getExchangeCapabilities",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/autoReconcileCoordinator.js",
+    "name": "buildAutoReconcilePlan",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/autoReconcileCoordinator.js",
+    "name": "evaluateExchangeSafetyUnlock",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/autoReconcileCoordinator.js",
+    "name": "explainExchangeSafetyBlock",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/autoReconcileCoordinator.js",
+    "name": "runAutoReconcilePlan",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/autoReconcileCoordinator.js",
+    "name": "buildExchangeSafetyStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/brokerFactory.js",
+    "name": "resolveBrokerSelection",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/brokerFactory.js",
+    "name": "createBroker",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/brokerRouter.js",
+    "name": "buildBrokerRouteRequest",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/brokerRouter.js",
+    "name": "routeBroker",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/costModel.js",
+    "name": "buildExecutionCostBreakdown",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/demoPaperBroker.js",
+    "name": "DemoPaperBroker",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/exchangeAdapterContract.js",
+    "name": "EXCHANGE_ADAPTER_CONTRACT_METHODS",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/exchangeAdapterContract.js",
+    "name": "assertExchangeAdapterContract",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/exchangeAdapterContract.js",
+    "name": "normalizeExchangeAdapterError",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/exchangeAdapterContract.js",
+    "name": "normalizeOrderResponse",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/exchangeAdapterContract.js",
+    "name": "normalizeOpenOrders",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/exchangeAdapterContract.js",
+    "name": "normalizeBalances",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/exchangeAdapterContract.js",
+    "name": "createBinanceClientAdapter",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionEngine.js",
+    "name": "ExecutionEngine",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "EXECUTION_INTENT_STATUS",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "ensureExecutionIntentLedger",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "buildExecutionIntentKey",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "beginExecutionIntent",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "touchExecutionIntent",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "appendExecutionIntentStep",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "resolveExecutionIntent",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "failExecutionIntent",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "markExecutionIntentAmbiguous",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "listExecutionIntents",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "recoverStaleExecutionIntents",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "buildExecutionIntentBlockers",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentLedger.js",
+    "name": "flushExecutionIntentLedger",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentView.js",
+    "name": "buildExecutionIntentRows",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/executionIntentView.js",
+    "name": "buildExecutionIntentSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/feeAccounting.js",
+    "name": "normalizeTradeCommissionToQuote",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/feeAccounting.js",
+    "name": "resolveObservedFeeBps",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/feeAccounting.js",
+    "name": "summarizeTradeFees",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBroker.js",
+    "name": "validateProtectiveSellOcoGeometry",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBroker.js",
+    "name": "LiveBroker",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "AUTO_RECONCILE_DECISION",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "getAutoReconcileConfig",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "fetchReconcileCollection",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "fetchRecentTrades",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "fetchReconcileRetrySnapshot",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "summarizeReconcileEvidence",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "buildFlatPositionResolutionDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "updatePositionReconcileStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "markPositionForManualReview",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "markPositionForRetry",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "markPositionProtectOnly",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "clearPositionReconcileFlags",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "resolveFlatManualReviewPosition",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "collectReconcileEvidence",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "classifyReconcileDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "applySafeReconcileAutofix",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerReconcile.js",
+    "name": "resolvePositionReconcileDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "sleep",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "safeNumber",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "roundNumber",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "safeUpper",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "isRetriableExchangeError",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "normalizeTradeSide",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "averageTradePrice",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "isActiveExchangeOrderStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "toAssetMap",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "ensureLifecycleJournal",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "startLifecycleAction",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "touchLifecycleAction",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/liveBrokerRuntime.js",
+    "name": "finishLifecycleAction",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/microstructureFillSimulator.js",
+    "name": "simulateMicrostructureFill",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/microstructureFillSimulator.js",
+    "name": "buildMicrostructureFillSimulation",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/minNotionalExit.js",
+    "name": "isBinanceMinNotionalFilterError",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/minNotionalExit.js",
+    "name": "resolveAllowSyntheticMinNotionalExit",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/orderLifecycleAuditor.js",
+    "name": "auditOrderLifecycle",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/orderStyleAdvisor.js",
+    "name": "buildOrderStyleAdvice",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/paperBroker.js",
+    "name": "validatePaperPosition",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/paperBroker.js",
+    "name": "validatePaperPortfolioState",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/paperBroker.js",
+    "name": "PaperBroker",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/reconcileEvidenceSummary.js",
+    "name": "buildReconcileEvidenceSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/stopLimitGap.js",
+    "name": "buildLiquidityAwareStopLimitGap",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/stopLimitStuck.js",
+    "name": "buildStopLimitStuckAssessment",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/tradeAnalyticsContext.js",
+    "name": "buildLiquidityContextAtEntry",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/tradeAnalyticsContext.js",
+    "name": "buildPortfolioOverlapAtEntry",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/tradeAnalyticsContext.js",
+    "name": "buildEventShockContext",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/tradeAnalyticsContext.js",
+    "name": "buildStopPlanAtEntry",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/tradeAnalyticsContext.js",
+    "name": "buildExitDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/execution/tradeAnalyticsContext.js",
+    "name": "buildLifecycleOutcome",
+    "type": "named"
+  },
+  {
+    "file": "src/market/crossExchangeDivergence.js",
+    "name": "buildCrossExchangeDivergence",
+    "type": "named"
+  },
+  {
+    "file": "src/market/derivativesContext.js",
+    "name": "buildDerivativesContext",
+    "type": "named"
+  },
+  {
+    "file": "src/market/derivativesMatrix.js",
+    "name": "buildFundingOiMatrix",
+    "type": "named"
+  },
+  {
+    "file": "src/market/globalMarketContext.js",
+    "name": "getGlobalMarketContext",
+    "type": "named"
+  },
+  {
+    "file": "src/market/globalMarketContext.js",
+    "name": "getGlobalMarketSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/market/historicalDataLoader.js",
+    "name": "loadHistoricalKlines",
+    "type": "named"
+  },
+  {
+    "file": "src/market/historicalDataLoader.js",
+    "name": "loadHistoricalKlinesMulti",
+    "type": "named"
+  },
+  {
+    "file": "src/market/historicalDataLoader.js",
+    "name": "summarizeHistoricalData",
+    "type": "named"
+  },
+  {
+    "file": "src/market/leadershipContext.js",
+    "name": "buildLeadershipContext",
+    "type": "named"
+  },
+  {
+    "file": "src/market/liquidityScore.js",
+    "name": "calculateLiquidityScore",
+    "type": "named"
+  },
+  {
+    "file": "src/market/localOrderBook.js",
+    "name": "LocalOrderBookEngine",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketProviderHub.js",
+    "name": "EMPTY_MARKET_PROVIDER_SUMMARY",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketProviderHub.js",
+    "name": "MarketProviderHub",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketSentimentService.js",
+    "name": "EMPTY_MARKET_SENTIMENT",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketSentimentService.js",
+    "name": "summarizeMarketSentiment",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketSentimentService.js",
+    "name": "MarketSentimentService",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketStructureService.js",
+    "name": "summarizeMarketStructure",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketStructureService.js",
+    "name": "MarketStructureService",
+    "type": "named"
+  },
+  {
+    "file": "src/market/marketWorthTradingScore.js",
+    "name": "buildMarketWorthTradingScore",
+    "type": "named"
+  },
+  {
+    "file": "src/market/onChainLiteService.js",
+    "name": "OnChainLiteService",
+    "type": "named"
+  },
+  {
+    "file": "src/market/orderbookDelta.js",
+    "name": "recordAggTrade",
+    "type": "named"
+  },
+  {
+    "file": "src/market/orderbookDelta.js",
+    "name": "getOrderflowDelta",
+    "type": "named"
+  },
+  {
+    "file": "src/market/orderbookDelta.js",
+    "name": "getMultiHorizonOrderflow",
+    "type": "named"
+  },
+  {
+    "file": "src/market/orderbookDelta.js",
+    "name": "getAllDeltas",
+    "type": "named"
+  },
+  {
+    "file": "src/market/orderbookDelta.js",
+    "name": "resetBuffer",
+    "type": "named"
+  },
+  {
+    "file": "src/market/providers/crossExchangeDivergenceProvider.js",
+    "name": "buildCrossExchangeDivergenceProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/market/providers/derivativesContextProvider.js",
+    "name": "buildDerivativesContextProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/market/providers/executionFeedbackProvider.js",
+    "name": "buildExecutionFeedbackProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/market/providers/macroContextProvider.js",
+    "name": "buildMacroContextProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/market/providers/microstructurePriorProvider.js",
+    "name": "buildMicrostructurePriorProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/market/providers/stablecoinFlowProvider.js",
+    "name": "buildStablecoinFlowProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/market/referenceVenueService.js",
+    "name": "ReferenceVenueService",
+    "type": "named"
+  },
+  {
+    "file": "src/market/regimePlaybooks.js",
+    "name": "getRegimePlaybook",
+    "type": "named"
+  },
+  {
+    "file": "src/market/stablecoinRisk.js",
+    "name": "buildStablecoinRisk",
+    "type": "named"
+  },
+  {
+    "file": "src/market/volatilityService.js",
+    "name": "EMPTY_VOLATILITY_CONTEXT",
+    "type": "named"
+  },
+  {
+    "file": "src/market/volatilityService.js",
+    "name": "summarizeVolatilityContext",
+    "type": "named"
+  },
+  {
+    "file": "src/market/volatilityService.js",
+    "name": "VolatilityService",
+    "type": "named"
+  },
+  {
+    "file": "src/market/volumeProfile.js",
+    "name": "calculateVolumeProfile",
+    "type": "named"
+  },
+  {
+    "file": "src/market/volumeProfile.js",
+    "name": "calculateVWAP",
+    "type": "named"
+  },
+  {
+    "file": "src/market/volumeProfile.js",
+    "name": "analyzeVolumeContext",
+    "type": "named"
+  },
+  {
+    "file": "src/models/modelCard.js",
+    "name": "buildModelCard",
+    "type": "named"
+  },
+  {
+    "file": "src/models/modelCard.js",
+    "name": "canPromoteModel",
+    "type": "named"
+  },
+  {
+    "file": "src/models/modelCard.js",
+    "name": "exportModelCardMarkdown",
+    "type": "named"
+  },
+  {
+    "file": "src/news/blockworksProvider.js",
+    "name": "BlockworksProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/news/coindeskProvider.js",
+    "name": "CoinDeskProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/news/cointelegraphProvider.js",
+    "name": "CointelegraphProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/news/decryptProvider.js",
+    "name": "DecryptProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/news/eventClassifier.js",
+    "name": "normalizeSource",
+    "type": "named"
+  },
+  {
+    "file": "src/news/eventClassifier.js",
+    "name": "scoreSource",
+    "type": "named"
+  },
+  {
+    "file": "src/news/eventClassifier.js",
+    "name": "scoreProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/news/eventClassifier.js",
+    "name": "classifyHeadlineEvents",
+    "type": "named"
+  },
+  {
+    "file": "src/news/eventClassifier.js",
+    "name": "evaluateReliability",
+    "type": "named"
+  },
+  {
+    "file": "src/news/eventClassifier.js",
+    "name": "enrichNewsItems",
+    "type": "named"
+  },
+  {
+    "file": "src/news/eventClassifier.js",
+    "name": "summarizeEvents",
+    "type": "named"
+  },
+  {
+    "file": "src/news/googleNewsProvider.js",
+    "name": "GoogleNewsProvider",
+    "type": "named"
+  },
+  {
+    "file": "src/news/newsService.js",
+    "name": "NewsService",
+    "type": "named"
+  },
+  {
+    "file": "src/news/rssFeed.js",
+    "name": "fetchXml",
+    "type": "named"
+  },
+  {
+    "file": "src/news/rssFeed.js",
+    "name": "parseRssItems",
+    "type": "named"
+  },
+  {
+    "file": "src/news/rssFeed.js",
+    "name": "parseAtomItems",
+    "type": "named"
+  },
+  {
+    "file": "src/news/rssFeed.js",
+    "name": "parseProviderItems",
+    "type": "named"
+  },
+  {
+    "file": "src/news/sentiment.js",
+    "name": "scoreHeadline",
+    "type": "named"
+  },
+  {
+    "file": "src/news/sentiment.js",
+    "name": "summarizeNews",
+    "type": "named"
+  },
+  {
+    "file": "src/news/shockCircuitBreaker.js",
+    "name": "buildNewsShockCircuitBreaker",
+    "type": "named"
+  },
+  {
+    "file": "src/news/sourceReliabilityEngine.js",
+    "name": "SourceReliabilityEngine",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/botCoach.js",
+    "name": "buildBotCoachSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/metricsExporter.js",
+    "name": "buildPrometheusMetrics",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/metricsExporter.js",
+    "name": "buildMetricsStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/missionControl.js",
+    "name": "buildMissionControlSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/notificationRouter.js",
+    "name": "routeNotification",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/operatorLanguage.js",
+    "name": "translateOperatorReason",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/operatorLanguage.js",
+    "name": "enrichAlertWithOperatorAction",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/operatorMistakeProtection.js",
+    "name": "evaluateOperatorMistakeProtection",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/operatorNotes.js",
+    "name": "buildOperatorNote",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/operatorNotes.js",
+    "name": "searchOperatorNotes",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/performanceBudget.js",
+    "name": "PERFORMANCE_BUDGETS_MS",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/performanceBudget.js",
+    "name": "summarizePerformanceBudget",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildProductionReadinessGate",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "runBackupNow",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "runRestoreTest",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildReleaseCheck",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildRecoveryPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildKeysCheck",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildIncidentExport",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "queryAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildStorageReport",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildConfigDiff",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/productionOps.js",
+    "name": "buildDryRunResponse",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/reliabilityTargets.js",
+    "name": "RELIABILITY_TARGETS",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/reliabilityTargets.js",
+    "name": "checkReliabilityTargets",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/safeDegradation.js",
+    "name": "DEGRADATION_RULES",
+    "type": "named"
+  },
+  {
+    "file": "src/ops/safeDegradation.js",
+    "name": "buildSafeDegradationStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/policy/policyEngine.js",
+    "name": "POLICY_SEVERITIES",
+    "type": "named"
+  },
+  {
+    "file": "src/policy/policyEngine.js",
+    "name": "POLICY_DECISIONS",
+    "type": "named"
+  },
+  {
+    "file": "src/policy/policyEngine.js",
+    "name": "POLICY_REASON_CODES",
+    "type": "named"
+  },
+  {
+    "file": "src/policy/policyEngine.js",
+    "name": "buildPolicyDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/policy/policyEngine.js",
+    "name": "evaluatePolicy",
+    "type": "named"
+  },
+  {
+    "file": "src/portfolio/correlationEngine.js",
+    "name": "rollingCorrelation",
+    "type": "named"
+  },
+  {
+    "file": "src/portfolio/correlationEngine.js",
+    "name": "buildCorrelationRiskSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/reporting/accountingExport.js",
+    "name": "buildAccountingExport",
+    "type": "named"
+  },
+  {
+    "file": "src/reporting/tradingSystemScorecard.js",
+    "name": "buildTradingSystemScorecard",
+    "type": "named"
+  },
+  {
+    "file": "src/research/monteCarloRiskSimulator.js",
+    "name": "simulateMonteCarloRisk",
+    "type": "named"
+  },
+  {
+    "file": "src/research/noTradeAnalyzer.js",
+    "name": "analyzeNoTradeOutcome",
+    "type": "named"
+  },
+  {
+    "file": "src/research/realityGapDetector.js",
+    "name": "detectRealityGap",
+    "type": "named"
+  },
+  {
+    "file": "src/research/scenarioLab.js",
+    "name": "buildScenario",
+    "type": "named"
+  },
+  {
+    "file": "src/research/scenarioLab.js",
+    "name": "runScenarioOffline",
+    "type": "named"
+  },
+  {
+    "file": "src/research/scenarioLab.js",
+    "name": "compareScenarios",
+    "type": "named"
+  },
+  {
+    "file": "src/research/strategyDsl.js",
+    "name": "buildStrategyDslFingerprint",
+    "type": "named"
+  },
+  {
+    "file": "src/research/strategyDsl.js",
+    "name": "normalizeStrategyDsl",
+    "type": "named"
+  },
+  {
+    "file": "src/research/strategyDsl.js",
+    "name": "validateStrategyDsl",
+    "type": "named"
+  },
+  {
+    "file": "src/research/strategyDsl.js",
+    "name": "summarizeStrategyDsl",
+    "type": "named"
+  },
+  {
+    "file": "src/research/strategyExperimentRegistry.js",
+    "name": "createStrategyExperiment",
+    "type": "named"
+  },
+  {
+    "file": "src/research/strategyExperimentRegistry.js",
+    "name": "updateStrategyExperimentMetrics",
+    "type": "named"
+  },
+  {
+    "file": "src/research/walkForwardDeploymentReport.js",
+    "name": "buildWalkForwardDeploymentReport",
+    "type": "named"
+  },
+  {
+    "file": "src/research/walkForwardOptimizer.js",
+    "name": "runWalkForwardOptimizer",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/confidenceAdjudication.js",
+    "name": "buildSimplifiedConfidenceAdjudication",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/dynamicExitLevels.js",
+    "name": "buildDynamicExitLevels",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entryFinalize.js",
+    "name": "buildReasonProfiles",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entryFinalize.js",
+    "name": "buildPermissioningSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entryFinalize.js",
+    "name": "buildEntryDiagnosticsSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entryGuards.js",
+    "name": "evaluatePositionGuards",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entryGuards.js",
+    "name": "shouldBlockAmbiguousSetup",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entryScoring.js",
+    "name": "getAmbiguityThreshold",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entryScoring.js",
+    "name": "buildDecisionContextConfidence",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entrySizing.js",
+    "name": "buildGroupedSizingPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/entrySizing.js",
+    "name": "buildSizingFactorBreakdown",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/exitIntelligenceV2.js",
+    "name": "buildExitIntelligenceV2",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/fastExecutionSafetyGovernor.js",
+    "name": "evaluateFastExecutionSafety",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/fastPreflightRisk.js",
+    "name": "runFastPreflightRisk",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/neverTradeWhenRules.js",
+    "name": "NEVER_TRADE_RULES",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/neverTradeWhenRules.js",
+    "name": "evaluateNeverTradeWhenRules",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/alphaQualityPolicy.js",
+    "name": "buildEdgeScore",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/diagnosticsPolicy.js",
+    "name": "buildBlockerDecomposition",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/diagnosticsPolicy.js",
+    "name": "buildDecisionBoundarySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/diagnosticsPolicy.js",
+    "name": "buildConfidenceAdjudication",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/governancePolicy.js",
+    "name": "buildPermissioningScore",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/hardSafetyPolicy.js",
+    "name": "resolveExchangeSafetySymbolBlock",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/hardSafetyPolicy.js",
+    "name": "resolveExecutionIntentSymbolBlock",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/hardSafetyPolicy.js",
+    "name": "applyHardSafetyPolicy",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/recoveryProbePolicy.js",
+    "name": "buildRecoveryProbePolicy",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/recoveryProbePolicy.js",
+    "name": "isRecoveryProbeSoftBlocker",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policies/sizingPolicy.js",
+    "name": "buildSizingPolicySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/policyProfiles.js",
+    "name": "resolvePolicyProfile",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/portfolioCrowding.js",
+    "name": "buildPortfolioCrowdingSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/portfolioOptimizer.js",
+    "name": "buildBudgetState",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/portfolioOptimizer.js",
+    "name": "PortfolioOptimizer",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/postReconcileEntryLimits.js",
+    "name": "resolvePostReconcileProbationState",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/postReconcileEntryLimits.js",
+    "name": "applyPostReconcileEntryLimits",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/postReconcileEntryLimits.js",
+    "name": "buildPostReconcileProbationStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonCodes.js",
+    "name": "buildReasonCodeEntry",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonCodes.js",
+    "name": "normalizeReasonCodeEntries",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonCodes.js",
+    "name": "buildRiskVerdict",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "getReasonDefinition",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "classifyReasonCategory",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "classifyDecisionPlane",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "getReasonSeverity",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "getReasonSeverityLevel",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "isHardSafetyReason",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "isPaperSoftEligible",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "canPaperRelaxReason",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "isProbeEligibleReason",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "reasonBlocksLive",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "getReasonRootPriority",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "getDashboardLabel",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "getOperatorAction",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "getOperatorMessage",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "sortReasonsByRootPriority",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/reasonRegistry.js",
+    "name": "REASON_REGISTRY_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/riskManager.js",
+    "name": "RiskManager",
+    "type": "named"
+  },
+  {
+    "file": "src/risk/riskOfRuin.js",
+    "name": "buildRiskOfRuinMonitor",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/adaptiveGovernanceService.js",
+    "name": "AdaptiveGovernanceService",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/adaptiveParameterOptimizer.js",
+    "name": "buildAdaptiveParameterOptimization",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/alertSeverity.js",
+    "name": "normalizeAlertSeverity",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/alertSeverity.js",
+    "name": "isCriticalAlert",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/apiDegradationPlanner.js",
+    "name": "buildApiDegradationPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/auditLogService.js",
+    "name": "AuditLogService",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "buildSyntheticBook",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "resolveCandleIntervalMinutes",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "resolveCandleOpenTime",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "resolveEntryExecution",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "resolveExitAnchorPrice",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "buildExitExecutionBook",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "buildSimulationEntryDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "buildSimulationExitDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "resolveSimulationBuyFill",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestExecution.js",
+    "name": "resolveSimulationSellQuantity",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/backtestRunner.js",
+    "name": "runBacktest",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/badVetoLearningService.js",
+    "name": "BadVetoLearningService",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/botLifecycleStateMachine.js",
+    "name": "createBotLifecycleState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/botLifecycleStateMachine.js",
+    "name": "transitionBotLifecycle",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/botLifecycleStateMachine.js",
+    "name": "setBotLifecycleActivity",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/botManager.js",
+    "name": "BotManager",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/botPersonalityMode.js",
+    "name": "BOT_PERSONALITY_MODES",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/botPersonalityMode.js",
+    "name": "resolveBotPersonalityMode",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/canaryReleaseGate.js",
+    "name": "CANARY_RELEASE_STATES",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/canaryReleaseGate.js",
+    "name": "buildCanaryReleaseGate",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/canaryReleaseGate.js",
+    "name": "buildCanaryReleaseSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateExplainability.js",
+    "name": "buildCandidateExplainability",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateExplainability.js",
+    "name": "summarizeCandidateExplainability",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateFreshnessContract.js",
+    "name": "buildCandidateFreshnessContract",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateFreshnessContract.js",
+    "name": "attachCandidateFreshness",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateOutcomeTracker.js",
+    "name": "buildCandidateOutcomeObservations",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateOutcomeTracker.js",
+    "name": "labelCandidateOutcome",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateOutcomeTracker.js",
+    "name": "summarizeCandidateOutcomes",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateOutcomeTracker.js",
+    "name": "buildCandidateOutcomeTrackerSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateOutcomeTracker.js",
+    "name": "CANDIDATE_OUTCOME_TRACKER_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateRanking.js",
+    "name": "resolveCandidateExecutionPain",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateRanking.js",
+    "name": "resolveCandidateNetExecutableExpectancyScore",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/candidateRanking.js",
+    "name": "compareByNetExecutableExpectancy",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/capitalGovernor.js",
+    "name": "buildCapitalGovernor",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/capitalLadder.js",
+    "name": "CapitalLadder",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/capitalPolicyEngine.js",
+    "name": "buildCapitalPolicySnapshot",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/cryptoRegimeRouter.js",
+    "name": "CRYPTO_MARKET_REGIMES",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/cryptoRegimeRouter.js",
+    "name": "routeCryptoMarketRegime",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/cryptoRegimeRouter.js",
+    "name": "buildCryptoRegimeRouterSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/cycleRunner.js",
+    "name": "runTradingCycle",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dashboardEvidenceDrilldown.js",
+    "name": "buildDashboardEvidenceDrilldown",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dashboardPayloadNormalizers.js",
+    "name": "normalizeDashboardSnapshotPayload",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dashboardSnapshotBuilder.js",
+    "name": "createSnapshotPerformanceTracker",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dashboardSnapshotBuilder.js",
+    "name": "refreshDashboardPrerequisites",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dashboardSnapshotBuilder.js",
+    "name": "buildDashboardSnapshotContract",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dashboardSnapshotBuilder.js",
+    "name": "buildDashboardSnapshotMeta",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dataFreshnessScore.js",
+    "name": "scoreDataFreshness",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dataQualityScoreV2.js",
+    "name": "buildDataQualityScoreV2",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dataQualityScoreV2.js",
+    "name": "attachDataQualityToCandidate",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dataQualityScoreV2.js",
+    "name": "summarizeDataQualityScores",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dataQualityScoreV2.js",
+    "name": "DATA_QUALITY_SCORE_V2_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/dataRecorder.js",
+    "name": "DataRecorder",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/datasetQualityGate.js",
+    "name": "evaluateDatasetQuality",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/decisionContract.js",
+    "name": "normalizeDecisionForAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/decisionInputLineage.js",
+    "name": "buildDecisionInputLineage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/decisionInputLineage.js",
+    "name": "compareDecisionInputLineage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/decisionInputLineage.js",
+    "name": "buildDecisionInputLineageSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/decisionPipeline.js",
+    "name": "executeDecisionPipeline",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/decisionSupportDiagnostics.js",
+    "name": "buildDecisionSupportDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/divergenceMonitor.js",
+    "name": "DivergenceMonitor",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/domainEvents.js",
+    "name": "buildDomainEvent",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/domainEvents.js",
+    "name": "recordDomainEvent",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/driftMonitor.js",
+    "name": "DriftMonitor",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exchangeSafetyReconciler.js",
+    "name": "buildBinanceDemoPaperMismatchSymbolCount",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exchangeSafetyReconciler.js",
+    "name": "binanceDemoPaperHardInventoryDrift",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exchangeSafetyReconciler.js",
+    "name": "materialPaperLifecyclePendingForEntryFreeze",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exchangeSafetyReconciler.js",
+    "name": "sanitizeStaleLiveExchangeTruthFlagsOnPurePaper",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exchangeSafetyReconciler.js",
+    "name": "clearResolvedPaperSymbolState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exchangeSafetyReconciler.js",
+    "name": "buildExchangeSafetyAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/executionFeedbackLearning.js",
+    "name": "tradeMatchesExecutionScope",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/executionFeedbackLearning.js",
+    "name": "buildExecutionFeedbackDataset",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exitFastLane.js",
+    "name": "buildExitFastLanePlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exitFastLane.js",
+    "name": "summarizeExitFastLaneLatency",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/exitQuality.js",
+    "name": "labelExitQuality",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/externalFeedRegistry.js",
+    "name": "detectFeedFailureKind",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/externalFeedRegistry.js",
+    "name": "normalizeExternalFeedState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/externalFeedRegistry.js",
+    "name": "ExternalFeedRegistry",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/failureLibrary.js",
+    "name": "classifyFailureMode",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/fastExecutionTrace.js",
+    "name": "buildFastExecutionTrace",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/fastExecutionTrace.js",
+    "name": "buildOperatorActionAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/fastPaperExecution.js",
+    "name": "buildFastPaperExecutionIntent",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/fastPaperExecution.js",
+    "name": "evaluateLiveFastApprovalGate",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/fastSignalTriggerService.js",
+    "name": "evaluateFastSignalTrigger",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/featureActivationGovernor.js",
+    "name": "normalizeFeatureActivationStage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/featureActivationGovernor.js",
+    "name": "buildFeatureActivationDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/featureActivationGovernor.js",
+    "name": "summarizeFeatureActivationDecisions",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/featureAudit.js",
+    "name": "buildFeatureAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/featureGovernanceService.js",
+    "name": "buildFeatureGovernanceDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/featureWiringCompletionGate.js",
+    "name": "buildFeatureWiringCompletionGate",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/goldenReplayPackGenerator.js",
+    "name": "buildGoldenReplayPackCandidates",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/goldenReplayPackGenerator.js",
+    "name": "compareGoldenReplayOutput",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/goldenReplayPackGenerator.js",
+    "name": "summarizeGoldenReplayPacks",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/healthMonitor.js",
+    "name": "HealthMonitor",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/hotSymbolLane.js",
+    "name": "buildHotSymbolLane",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/immediateEntryQueue.js",
+    "name": "buildImmediateEntryQueueItem",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/immediateEntryQueue.js",
+    "name": "enqueueImmediateEntry",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/immediateEntryQueue.js",
+    "name": "summarizeImmediateEntryQueue",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReplayLab.js",
+    "name": "loadReplayFixture",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReplayLab.js",
+    "name": "buildIncidentReplayPack",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReplayLab.js",
+    "name": "buildReplayDeterminismSignature",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReplayLab.js",
+    "name": "compareReplayPackToFixture",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReplayLab.js",
+    "name": "buildReplayRegressionFixture",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReplayLab.js",
+    "name": "writeReplayRegressionFixture",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReport.js",
+    "name": "buildIncidentReport",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReport.js",
+    "name": "writeIncidentReport",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incidentReport.js",
+    "name": "summarizeIncidentReports",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incrementalFeatureCache.js",
+    "name": "createFeatureCacheState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incrementalFeatureCache.js",
+    "name": "updateFeatureGroup",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/incrementalFeatureCache.js",
+    "name": "summarizeFeatureCache",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/latencyProfiler.js",
+    "name": "buildLatencyProfilerReport",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/learningAnalytics.js",
+    "name": "buildLearningFailureSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/learningAnalytics.js",
+    "name": "buildLearningPromotionSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/learningAnalytics.js",
+    "name": "buildLearningReplayPackSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/learningEvidencePipeline.js",
+    "name": "buildLearningEvidenceRecord",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/learningEvidencePipeline.js",
+    "name": "summarizeLearningEvidence",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/liveFastObserveMode.js",
+    "name": "buildLiveFastObserveDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/liveFastObserveMode.js",
+    "name": "summarizeLiveFastObserve",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/livePreflight.js",
+    "name": "buildLivePreflight",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/liveReadinessAudit.js",
+    "name": "buildLiveReadinessAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/localOnlyPrivacy.js",
+    "name": "buildLocalOnlyPrivacySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketConditionController.js",
+    "name": "buildMarketConditionSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketHistory.js",
+    "name": "createHistoryClient",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketHistory.js",
+    "name": "createHistoryStore",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketHistory.js",
+    "name": "fetchLatestCandlesPaginated",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketHistory.js",
+    "name": "fetchHistoricalRangePaginated",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketHistory.js",
+    "name": "backfillHistoricalCandles",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketHistory.js",
+    "name": "loadHistoricalCandles",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketHistory.js",
+    "name": "runHistoryCommand",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketReplayEngine.js",
+    "name": "buildHistoryActionPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketReplayEngine.js",
+    "name": "runMarketReplay",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketReplayEngine.js",
+    "name": "parseMarketReplayArgs",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketScanner.js",
+    "name": "resolveScannerDeepBookPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketScanner.js",
+    "name": "buildMarketScannerUniverse",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketScanner.js",
+    "name": "rankMarketScannerCandidates",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketScanner.js",
+    "name": "summarizeMarketScannerRun",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketScanner.js",
+    "name": "runMarketScanner",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketSnapshotFlowDebug.js",
+    "name": "summarizeMarketSnapshotForRuntime",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketSnapshotFlowDebug.js",
+    "name": "compactMarketSnapshotMap",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/marketSnapshotFlowDebug.js",
+    "name": "buildMarketSnapshotFlowDebug",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/modelConfidenceRootCause.js",
+    "name": "buildModelConfidenceRootCause",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/modelConfidenceRootCause.js",
+    "name": "summarizeModelConfidenceRootCauses",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/modelRegistry.js",
+    "name": "ModelRegistry",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/nearThresholdWatchlist.js",
+    "name": "buildNearThresholdWatchlist",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/nearThresholdWatchlist.js",
+    "name": "detectThresholdCross",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/nearThresholdWatchlist.js",
+    "name": "buildFastQueueTriggerFromCross",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/netEdgeGate.js",
+    "name": "buildNetEdgeGate",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/offlineTrainer.js",
+    "name": "OfflineTrainer",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/onlineAdaptationController.js",
+    "name": "buildOnlineAdaptationState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/onlineAdaptationController.js",
+    "name": "summarizeOnlineAdaptation",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/onlineAdaptationController.js",
+    "name": "updateOnlineAdaptationState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/onlineAdaptationController.js",
+    "name": "buildOnlineAdaptationGuidance",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operationalTruth.js",
+    "name": "requiresOperatorAck",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operationalTruth.js",
+    "name": "computeOperationalReadiness",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operationalTruth.js",
+    "name": "buildContract",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operationalTruth.js",
+    "name": "buildApiEnvelope",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorActionQueue.js",
+    "name": "normalizeOperatorAction",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorActionQueue.js",
+    "name": "buildOperatorActionQueue",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorActionQueue.js",
+    "name": "hasBlockingOperatorActions",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorAlertDispatcher.js",
+    "name": "buildOperatorAlertDispatchPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorAlertDispatcher.js",
+    "name": "dispatchOperatorAlerts",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorAlertEngine.js",
+    "name": "buildOperatorAlerts",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorMode.js",
+    "name": "OPERATOR_MODES",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorMode.js",
+    "name": "normalizeOperatorMode",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorMode.js",
+    "name": "canOpenNewEntries",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorMode.js",
+    "name": "canManageExistingPositions",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorMode.js",
+    "name": "canRunReconcile",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorMode.js",
+    "name": "resolveOperatorMode",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorReviewLabels.js",
+    "name": "OPERATOR_REVIEW_LABELS",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorReviewLabels.js",
+    "name": "buildOperatorReviewQueue",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorReviewLabels.js",
+    "name": "buildOperatorReviewLabel",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorReviewLabels.js",
+    "name": "summarizeOperatorReviewLabels",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorRunbookGenerator.js",
+    "name": "buildOperatorActionResult",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorRunbookGenerator.js",
+    "name": "buildOperatorRunbookForReason",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorRunbookGenerator.js",
+    "name": "buildStrategyLifecycleDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/operatorWorkflow.js",
+    "name": "buildManualReviewQueue",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/opportunityCostAnalyzer.js",
+    "name": "buildOpportunityCostAnalysis",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/pairHealthMonitor.js",
+    "name": "PairHealthMonitor",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/panicFlattenPlan.js",
+    "name": "buildPanicFlattenPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperCandidateLab.js",
+    "name": "buildPaperCandidateLabRecord",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperCandidateLab.js",
+    "name": "buildPaperCandidateLabRecords",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperCandidateLab.js",
+    "name": "summarizePaperCandidateLab",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperEvidenceSpine.js",
+    "name": "buildPaperEvidencePacket",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperEvidenceSpine.js",
+    "name": "buildPaperEvidenceSpine",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperEvidenceSpine.js",
+    "name": "summarizePaperEvidenceSpine",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperExitPolicyLab.js",
+    "name": "buildPaperExitPolicyChallengerDecision",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperExitPolicyLab.js",
+    "name": "comparePaperExitPolicyToActual",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperExitPolicyLab.js",
+    "name": "summarizePaperExitPolicyLab",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperExitPolicyLab.js",
+    "name": "buildPaperExitPolicyLabSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperExitPolicyLab.js",
+    "name": "PAPER_EXIT_POLICY_LAB_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperLiveDifferenceAnalyzer.js",
+    "name": "analyzePaperLiveDifference",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperLiveParity.js",
+    "name": "buildPaperLiveParityComparison",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperLiveParity.js",
+    "name": "buildPaperLiveParitySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperNetEdgeCalibrationWorkbench.js",
+    "name": "buildPaperNetEdgeCalibrationWorkbench",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperNetEdgeCalibrationWorkbench.js",
+    "name": "summarizePaperNetEdgeCalibration",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperPortfolioAllocatorSimulation.js",
+    "name": "simulatePaperPortfolioAllocation",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperPortfolioAllocatorSimulation.js",
+    "name": "summarizePaperAllocatorSimulation",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperPortfolioAllocatorSimulation.js",
+    "name": "PAPER_PORTFOLIO_ALLOCATOR_SIMULATION_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperReplayCoverageAutopilot.js",
+    "name": "buildPaperReplayCoverageAutopilot",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperReplayCoverageAutopilot.js",
+    "name": "summarizePaperReplayCoverage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperStrategyCohortScorecard.js",
+    "name": "buildPaperStrategyCohortScorecards",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperTradeLifecycleContract.js",
+    "name": "buildPaperTradeLifecycleEvidence",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/paperTradeLifecycleContract.js",
+    "name": "assertPaperTradeLifecycleContract",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/performanceLedger.js",
+    "name": "buildPerformanceLedger",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/persistenceCoordinator.js",
+    "name": "PersistenceCoordinator",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/portfolioScenarioStress.js",
+    "name": "buildPortfolioScenarioStress",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/promotionDossier.js",
+    "name": "buildPromotionDossier",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/regimeConfusion.js",
+    "name": "buildRegimeOutcomeLabel",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/regimeConfusion.js",
+    "name": "updateRegimeConfusionMatrix",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayChaosLab.js",
+    "name": "buildReplayChaosSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayDeterminism.js",
+    "name": "buildReplayContext",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayDeterminism.js",
+    "name": "hashReplayInput",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayDeterminism.js",
+    "name": "compareReplayOutput",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayLabService.js",
+    "name": "ReplayLabService",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayPackManifest.js",
+    "name": "buildReplayPackManifest",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayPackScoring.js",
+    "name": "scoreReplayPackCandidate",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/replayPackScoring.js",
+    "name": "buildReplayPackQueue",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/reportBuilder.js",
+    "name": "buildExecutionCostBreakdown",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/reportBuilder.js",
+    "name": "buildTradePnlBreakdown",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/reportBuilder.js",
+    "name": "buildTradeQualityReview",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/reportBuilder.js",
+    "name": "buildPerformanceReport",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/researchLab.js",
+    "name": "buildWalkForwardWindows",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/researchLab.js",
+    "name": "runWalkForwardExperiment",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/researchLab.js",
+    "name": "runResearchLab",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/researchRegistry.js",
+    "name": "ResearchRegistry",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/restArchitectureAudit.js",
+    "name": "buildRestArchitectureAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/restArchitectureAudit.js",
+    "name": "scanRestCallers",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/restBudgetGovernor.js",
+    "name": "getRequestWeightPressure",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/restBudgetGovernor.js",
+    "name": "classifyRestCaller",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/restBudgetGovernor.js",
+    "name": "defaultPriorityForRestClass",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/restBudgetGovernor.js",
+    "name": "evaluateRestBudgetAllowance",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/restBudgetGovernor.js",
+    "name": "buildRestBudgetGovernorSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/riskOfRuinSimulator.js",
+    "name": "estimateRiskOfRuin",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/rollbackWatch.js",
+    "name": "buildRollbackWatch",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/rootBlockerOrchestrator.js",
+    "name": "buildRootBlockerOrchestrator",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/rootBlockerStalenessVerifier.js",
+    "name": "verifyRootBlockerStaleness",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/rootBlockerStalenessVerifier.js",
+    "name": "summarizeRootBlockerStaleness",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/safetySnapshot.js",
+    "name": "buildSafetySnapshot",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/scanPlanner.js",
+    "name": "buildLightweightSnapshot",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/scanPlanner.js",
+    "name": "buildDeepScanPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/selfHealManager.js",
+    "name": "SelfHealManager",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/sessionManager.js",
+    "name": "buildSessionSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/sessionPerformanceProfiler.js",
+    "name": "buildSessionPerformanceProfile",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/shadowStrategyTournament.js",
+    "name": "buildShadowStrategyTournament",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/shadowStrategyTournament.js",
+    "name": "summarizeShadowStrategyTournament",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/signalFlowService.js",
+    "name": "ensureSignalFlowMetricsState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/stateBackupManager.js",
+    "name": "StateBackupManager",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/strategyEvidenceScorecard.js",
+    "name": "buildStrategyEvidenceScorecard",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/strategyEvidenceScorecard.js",
+    "name": "buildStrategyEvidenceScorecards",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/strategyGenome.js",
+    "name": "buildStrategyGenome",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/strategyResearchMiner.js",
+    "name": "StrategyResearchMiner",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/strategyRetirementEngine.js",
+    "name": "STRATEGY_LIFECYCLE_STATES",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/strategyRetirementEngine.js",
+    "name": "buildStrategyLifecycle",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/strategyRetirementEngine.js",
+    "name": "buildStrategyRetirementSnapshot",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/streamCoordinator.js",
+    "name": "buildPublicStreamNames",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/streamCoordinator.js",
+    "name": "chunkPublicStreams",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/streamCoordinator.js",
+    "name": "StreamCoordinator",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/streamFreshnessMonitor.js",
+    "name": "buildStreamFreshnessSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/streamHealthEvidence.js",
+    "name": "buildStreamHealthEvidence",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/streamHealthEvidence.js",
+    "name": "annotatePaperCandidateStreamEvidence",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/stressLab.js",
+    "name": "evaluateStrategyStress",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/symbolCooldownManager.js",
+    "name": "buildSymbolCooldownState",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/symbolCooldownManager.js",
+    "name": "summarizeSymbolCooldowns",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/symbolLifecycleRisk.js",
+    "name": "buildSymbolLifecycleRisk",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/symbolQualityDecay.js",
+    "name": "buildSymbolQualityDecay",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/symbolQualityDecay.js",
+    "name": "buildSymbolQualityDecaySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/timeframeConsensus.js",
+    "name": "buildTimeframeConsensus",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAttribution.js",
+    "name": "buildTradeLearningAttribution",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAttribution.js",
+    "name": "resolveTradeLearningAttribution",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAttribution.js",
+    "name": "backfillTradeLearningAttributions",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAttribution.js",
+    "name": "summarizeLearningAttribution",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAutopsy.js",
+    "name": "classifyTradeAutopsy",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAutopsy.js",
+    "name": "summarizeTradeAutopsies",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAutopsy.js",
+    "name": "buildExitRegretReview",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAutopsy.js",
+    "name": "scoreOpenPositionExitDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeAutopsy.js",
+    "name": "buildOpenPositionExitReview",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeQualityAnalytics.js",
+    "name": "initializePositionExcursionTracking",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeQualityAnalytics.js",
+    "name": "updateOpenPositionExcursion",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeQualityAnalytics.js",
+    "name": "buildExcursionAnalyticsFromCandles",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeQualityAnalytics.js",
+    "name": "buildTradeQualityAnalytics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeQualityAnalytics.js",
+    "name": "classifyTradeQualityLabels",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeQualityAnalytics.js",
+    "name": "buildTradePathQualitySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeReplayTimeline.js",
+    "name": "buildReplayTimeline",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeReplayTimeline.js",
+    "name": "exportReplayTimelineJson",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradeThesis.js",
+    "name": "buildTradeThesis",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBot.js",
+    "name": "resolveSignalFlowLastEntryAttempt",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBot.js",
+    "name": "resolveMarketHistoryCoverageSymbols",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBot.js",
+    "name": "compareCandidateExecutionRank",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBot.js",
+    "name": "annotateCandidateExecutionRanking",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBot.js",
+    "name": "buildDashboardOperatorDeck",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBot.js",
+    "name": "buildCandidateQualityQuorum",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBot.js",
+    "name": "TradingBot",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBotDecomposition.js",
+    "name": "buildTradingBotServiceMap",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingBotDecomposition.js",
+    "name": "assertTradingBotServiceCoverage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingImprovementDiagnostics.js",
+    "name": "buildMetaCautionDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingImprovementDiagnostics.js",
+    "name": "buildExchangeSafetyRecoveryDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingImprovementDiagnostics.js",
+    "name": "buildBadVetoEvidenceDigest",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingImprovementDiagnostics.js",
+    "name": "buildRequestWeightMitigationPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingImprovementDiagnostics.js",
+    "name": "buildStrategyRiskDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingImprovementDiagnostics.js",
+    "name": "buildTradingImprovementBacklog",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingImprovementDiagnostics.js",
+    "name": "buildTradingImprovementDiagnostics",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingPathHealth.js",
+    "name": "normalizeDashboardFreshness",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingPathHealth.js",
+    "name": "buildFeedAggregationSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingPathHealth.js",
+    "name": "normalizeFrontendPollingHealth",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/tradingPathHealth.js",
+    "name": "buildTradingPathHealth",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/universeScorer.js",
+    "name": "scoreUniverseEntries",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/universeSelector.js",
+    "name": "UniverseSelector",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/vetoOutcome.js",
+    "name": "buildVetoObservation",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/vetoOutcome.js",
+    "name": "labelVetoOutcome",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/vetoReplayCoverage.js",
+    "name": "buildVetoReplayCoverage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildCoreMetricsView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildDecisionTruthView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildExecutionTruthView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildExpectedNetEdgeView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildEntryTimingRefinementView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildLearningImpactView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildScannerPriorityView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/viewMappers.js",
+    "name": "buildFeatureUsefulnessView",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/walkForwardBacktest.js",
+    "name": "buildWalkForwardStudy",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/walkForwardBacktest.js",
+    "name": "buildWalkForwardWindowsFromCandles",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/walkForwardBacktest.js",
+    "name": "summarizeWalkForwardBacktestStage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/walkForwardBacktest.js",
+    "name": "parseBacktestWalkForwardArgs",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/walkForwardBacktest.js",
+    "name": "runBacktestWalkForward",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/watchlistCoverageBalancer.js",
+    "name": "buildWatchlistCoverageBalancer",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/watchlistCoverageBalancer.js",
+    "name": "summarizeWatchlistCoverage",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/watchlistResolver.js",
+    "name": "isStableOrFiatAsset",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/watchlistResolver.js",
+    "name": "isLeveragedToken",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/watchlistResolver.js",
+    "name": "getSymbolHygieneFlags",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/watchlistResolver.js",
+    "name": "buildTradableUniverse",
+    "type": "named"
+  },
+  {
+    "file": "src/runtime/watchlistResolver.js",
+    "name": "resolveDynamicWatchlist",
+    "type": "named"
+  },
+  {
+    "file": "src/setup/setupWizard.js",
+    "name": "buildSetupWizardPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/setup/setupWizard.js",
+    "name": "writeSetupWizardEnv",
+    "type": "named"
+  },
+  {
+    "file": "src/setup/setupWizard.js",
+    "name": "buildSetupWizardCliSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/shared/statusTone.js",
+    "name": "resolveStatusTone",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/auditLogStore.js",
+    "name": "AuditLogStore",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/dataLake.js",
+    "name": "DATASET_LAYERS",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/dataLake.js",
+    "name": "buildDatasetManifest",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/dataLake.js",
+    "name": "buildDataLakeReport",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/marketHistoryStore.js",
+    "name": "intervalToMs",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/marketHistoryStore.js",
+    "name": "analyzeCandles",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/marketHistoryStore.js",
+    "name": "MarketHistoryStore",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/migrations/index.js",
+    "name": "migrateRecord",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/readModelAnalyticsQueries.js",
+    "name": "buildPaperAnalyticsReadModelSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/readModelStore.js",
+    "name": "ReadModelStore",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/readModelStore.js",
+    "name": "runReadModelCommand",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/readModelStore.js",
+    "name": "runReadModelTraceCommand",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/recorderIntegrityAudit.js",
+    "name": "auditRecorderFrames",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "RUNTIME_STATE_SCHEMA_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "DECISION_RECORD_SCHEMA_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "TRADE_RECORD_SCHEMA_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "RECORDER_FRAME_SCHEMA_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "INCIDENT_REPORT_SCHEMA_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "REPLAY_RECORD_SCHEMA_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "withSchemaVersion",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "getSchemaVersion",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "isSchemaVersionSupported",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/schemaVersion.js",
+    "name": "currentSchemaVersionForKind",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/stateStore.js",
+    "name": "migrateRuntime",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/stateStore.js",
+    "name": "migrateJournal",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/stateStore.js",
+    "name": "StateStore",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/storageAudit.js",
+    "name": "loadRecentRecorderFrames",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/storageAudit.js",
+    "name": "buildRecorderAuditSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/storage/storageAudit.js",
+    "name": "buildStorageAuditSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/strategies/pluginInterface.js",
+    "name": "validateStrategyPlugin",
+    "type": "named"
+  },
+  {
+    "file": "src/strategies/pluginInterface.js",
+    "name": "normalizeStrategyPlugin",
+    "type": "named"
+  },
+  {
+    "file": "src/strategies/strategyKillSwitch.js",
+    "name": "buildStrategyKillSwitchRegistry",
+    "type": "named"
+  },
+  {
+    "file": "src/strategies/strategyKillSwitch.js",
+    "name": "createStrategyKillSwitch",
+    "type": "named"
+  },
+  {
+    "file": "src/strategies/strategyKillSwitch.js",
+    "name": "resumeStrategyKillSwitch",
+    "type": "named"
+  },
+  {
+    "file": "src/strategies/strategyRegistry.js",
+    "name": "buildStrategyRegistry",
+    "type": "named"
+  },
+  {
+    "file": "src/strategies/strategyRegistry.js",
+    "name": "applyStrategyStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "anchoredVwap",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "emaSlopeStack",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "relativeVolume",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "bollingerKeltnerSqueeze",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "atrPercentile",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "vwapZScore",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "obvDivergence",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "spreadPercentile",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "orderBookImbalanceStability",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/advancedIndicators.js",
+    "name": "slippageConfidenceScore",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/candidateInsights.js",
+    "name": "buildDataQualitySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/candidateInsights.js",
+    "name": "buildSignalQualitySummary",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/candidateInsights.js",
+    "name": "buildConfidenceBreakdown",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/exitPlanHints.js",
+    "name": "buildExitPlanHint",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/failedBreakoutDetector.js",
+    "name": "detectFailedBreakout",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "featureGroup",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "buildSampleConfidence",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "isSupportFeature",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "buildFeatureAttribution",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "buildFeatureParityAudit",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "buildFeaturePruningPlan",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "buildGuardEffectiveness",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/featureGovernance.js",
+    "name": "buildFeatureGovernanceSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/features.js",
+    "name": "buildFeatureVector",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicatorFeatureRegistry.js",
+    "name": "INDICATOR_FEATURE_REGISTRY_VERSION",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicatorFeatureRegistry.js",
+    "name": "INDICATOR_FEATURE_DEFINITIONS",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicatorFeatureRegistry.js",
+    "name": "buildIndicatorFeaturePack",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicatorRegimeScoring.js",
+    "name": "scoreIndicatorRegimeFit",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicators.js",
+    "name": "sma",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicators.js",
+    "name": "ema",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicators.js",
+    "name": "rsi",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicators.js",
+    "name": "atr",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicators.js",
+    "name": "macd",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicators.js",
+    "name": "computeMarketFeatures",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/indicators.js",
+    "name": "computeOrderBookFeatures",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/marketState.js",
+    "name": "buildMarketStateSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/setupThesis.js",
+    "name": "buildSetupThesis",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/strategyLifecycleGovernance.js",
+    "name": "classifyStrategyLifecycleStatus",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/strategyLifecycleGovernance.js",
+    "name": "buildStrategyLifecycleGovernance",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/strategyLifecycleGovernance.js",
+    "name": "resolveRangeGridLifecycleFromTrades",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/strategyRouter.js",
+    "name": "STRATEGY_META",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/strategyRouter.js",
+    "name": "evaluateStrategySet",
+    "type": "named"
+  },
+  {
+    "file": "src/strategy/trendState.js",
+    "name": "buildTrendStateSummary",
+    "type": "named"
+  },
+  {
+    "file": "src/trading/tradeQualityScore.js",
+    "name": "buildTradeQualityScore",
+    "type": "named"
+  },
+  {
+    "file": "src/trading/tradeReceipt.js",
+    "name": "buildTradeReceipt",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/async.js",
+    "name": "mapWithConcurrency",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/fs.js",
+    "name": "ensureDir",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/fs.js",
+    "name": "loadJson",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/fs.js",
+    "name": "saveJson",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/fs.js",
+    "name": "appendJsonLine",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/fs.js",
+    "name": "listFiles",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/fs.js",
+    "name": "removeFile",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/logger.js",
+    "name": "Logger",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/logger.js",
+    "name": "createLogger",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "clamp",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "sum",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "average",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "standardDeviation",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "sigmoid",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "roundToStep",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "decimalsFromStep",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "formatDecimal",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "basisPoints",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/math.js",
+    "name": "pctChange",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/redactSecrets.js",
+    "name": "redactSecrets",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/redactSecrets.js",
+    "name": "isSensitiveLogKey",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/requestBudget.js",
+    "name": "maskUrl",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/requestBudget.js",
+    "name": "redactSensitiveText",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/requestBudget.js",
+    "name": "isRequestBudgetCooldownError",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/requestBudget.js",
+    "name": "RequestBudget",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/safeMath.js",
+    "name": "safeNumber",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/safeMath.js",
+    "name": "safeRatio",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/safeMath.js",
+    "name": "clampFinite",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/score.js",
+    "name": "clamp01",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/score.js",
+    "name": "asArray",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/score.js",
+    "name": "average",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/score.js",
+    "name": "statusFromScore",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/seeded.js",
+    "name": "createSeededRandom",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/seeded.js",
+    "name": "createDeterministicId",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/time.js",
+    "name": "nowIso",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/time.js",
+    "name": "minutesBetween",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/time.js",
+    "name": "sameUtcDay",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/time.js",
+    "name": "intervalToMs",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/tradingSource.js",
+    "name": "canonicalizeTradingSource",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/tradingSource.js",
+    "name": "getConfiguredTradingSource",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/tradingSource.js",
+    "name": "getRuntimeTradingSource",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/tradingSource.js",
+    "name": "resolveItemTradingSource",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/tradingSource.js",
+    "name": "matchesBrokerMode",
+    "type": "named"
+  },
+  {
+    "file": "src/utils/tradingSource.js",
+    "name": "matchesTradingSource",
+    "type": "named"
+  },
+  {
+    "file": "test/adaptiveGovernance.tests.js",
+    "name": "registerAdaptiveGovernanceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/apiDegradationPlanner.tests.js",
+    "name": "registerApiDegradationPlannerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/auditLog.tests.js",
+    "name": "registerAuditLogTests",
+    "type": "named"
+  },
+  {
+    "file": "test/autoReconcileCoordinator.tests.js",
+    "name": "registerAutoReconcileCoordinatorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/binanceRestArchitecture.tests.js",
+    "name": "registerBinanceRestArchitectureTests",
+    "type": "named"
+  },
+  {
+    "file": "test/botLifecycle.tests.js",
+    "name": "registerBotLifecycleTests",
+    "type": "named"
+  },
+  {
+    "file": "test/breakoutRetestStrategy.tests.js",
+    "name": "registerBreakoutRetestStrategyTests",
+    "type": "named"
+  },
+  {
+    "file": "test/brokerFactory.tests.js",
+    "name": "registerBrokerFactoryTests",
+    "type": "named"
+  },
+  {
+    "file": "test/canaryReleaseGate.tests.js",
+    "name": "registerCanaryReleaseGateTests",
+    "type": "named"
+  },
+  {
+    "file": "test/candidateExplainability.tests.js",
+    "name": "registerCandidateExplainabilityTests",
+    "type": "named"
+  },
+  {
+    "file": "test/candidateFreshnessContract.tests.js",
+    "name": "registerCandidateFreshnessContractTests",
+    "type": "named"
+  },
+  {
+    "file": "test/candidateOutcomeTracker.tests.js",
+    "name": "registerCandidateOutcomeTrackerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/candidateRanking.tests.js",
+    "name": "registerCandidateRankingTests",
+    "type": "named"
+  },
+  {
+    "file": "test/capitalGovernorReliability.tests.js",
+    "name": "registerCapitalGovernorReliabilityTests",
+    "type": "named"
+  },
+  {
+    "file": "test/confidenceCalibration.tests.js",
+    "name": "registerConfidenceCalibrationTests",
+    "type": "named"
+  },
+  {
+    "file": "test/configOperatorMaintenance.tests.js",
+    "name": "registerConfigOperatorMaintenanceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/configSchema.tests.js",
+    "name": "registerConfigSchemaTests",
+    "type": "named"
+  },
+  {
+    "file": "test/crossExchangeDivergence.tests.js",
+    "name": "registerCrossExchangeDivergenceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/cryptoRegimeRouter.tests.js",
+    "name": "registerCryptoRegimeRouterTests",
+    "type": "named"
+  },
+  {
+    "file": "test/dashboardEvidenceDrilldown.tests.js",
+    "name": "registerDashboardEvidenceDrilldownTests",
+    "type": "named"
+  },
+  {
+    "file": "test/dashboardHealth.tests.js",
+    "name": "registerDashboardHealthTests",
+    "type": "named"
+  },
+  {
+    "file": "test/dashboardSnapshot.tests.js",
+    "name": "registerDashboardSnapshotTests",
+    "type": "named"
+  },
+  {
+    "file": "test/dataIntegrityMaintenance.tests.js",
+    "name": "registerDataIntegrityMaintenanceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/dataQualityScoreV2.tests.js",
+    "name": "registerDataQualityScoreV2Tests",
+    "type": "named"
+  },
+  {
+    "file": "test/decisionInputLineage.tests.js",
+    "name": "registerDecisionInputLineageTests",
+    "type": "named"
+  },
+  {
+    "file": "test/decisionPipeline.tests.js",
+    "name": "registerDecisionPipelineTests",
+    "type": "named"
+  },
+  {
+    "file": "test/decisionSupportFoundation.tests.js",
+    "name": "registerDecisionSupportFoundationTests",
+    "type": "named"
+  },
+  {
+    "file": "test/dynamicExitLevels.tests.js",
+    "name": "registerDynamicExitLevelsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/execution/exchangeAdapterContract.tests.js",
+    "name": "registerExchangeAdapterContractTests",
+    "type": "named"
+  },
+  {
+    "file": "test/executionFeedbackLearning.tests.js",
+    "name": "registerExecutionFeedbackLearningTests",
+    "type": "named"
+  },
+  {
+    "file": "test/executionIntentLedger.tests.js",
+    "name": "registerExecutionIntentLedgerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/executionSafetyFilters.tests.js",
+    "name": "registerExecutionSafetyFilterTests",
+    "type": "named"
+  },
+  {
+    "file": "test/exitFastLane.tests.js",
+    "name": "registerExitFastLaneTests",
+    "type": "named"
+  },
+  {
+    "file": "test/exitIntelligenceV2.tests.js",
+    "name": "registerExitIntelligenceV2Tests",
+    "type": "named"
+  },
+  {
+    "file": "test/exitRegretDiagnostics.tests.js",
+    "name": "registerExitRegretDiagnosticsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/fastExecutionCore.tests.js",
+    "name": "registerFastExecutionCoreTests",
+    "type": "named"
+  },
+  {
+    "file": "test/fastExecutionDashboard.tests.js",
+    "name": "registerFastExecutionDashboardTests",
+    "type": "named"
+  },
+  {
+    "file": "test/fastExecutionSafetyGovernor.tests.js",
+    "name": "registerFastExecutionSafetyGovernorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/fastExecutionTrace.tests.js",
+    "name": "registerFastExecutionTraceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/fastPaperExecution.tests.js",
+    "name": "registerFastPaperExecutionTests",
+    "type": "named"
+  },
+  {
+    "file": "test/fastSignalTriggerService.tests.js",
+    "name": "registerFastSignalTriggerServiceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/featureActivationGovernor.tests.js",
+    "name": "registerFeatureActivationGovernorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/featureAudit.tests.js",
+    "name": "registerFeatureAuditTests",
+    "type": "named"
+  },
+  {
+    "file": "test/featureAudit.tests.js",
+    "name": "buildNetEdgeGate",
+    "type": "named"
+  },
+  {
+    "file": "test/featureAudit.tests.js",
+    "name": "detectFailedBreakout",
+    "type": "named"
+  },
+  {
+    "file": "test/featureAudit.tests.js",
+    "name": "runBacktestWalkForward",
+    "type": "named"
+  },
+  {
+    "file": "test/featureAudit.tests.js",
+    "name": "buildNetEdgeGate",
+    "type": "named"
+  },
+  {
+    "file": "test/featureAudit.tests.js",
+    "name": "buildDynamicExitLevels",
+    "type": "named"
+  },
+  {
+    "file": "test/featureAudit.tests.js",
+    "name": "buildIndicatorFeaturePack",
+    "type": "named"
+  },
+  {
+    "file": "test/featureFlagHygiene.tests.js",
+    "name": "registerFeatureFlagHygieneTests",
+    "type": "named"
+  },
+  {
+    "file": "test/featureGovernance.tests.js",
+    "name": "registerFeatureGovernanceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/featureWiringCompletionGate.tests.js",
+    "name": "registerFeatureWiringCompletionGateTests",
+    "type": "named"
+  },
+  {
+    "file": "test/flatManualReviewResolution.tests.js",
+    "name": "registerFlatManualReviewResolutionTests",
+    "type": "named"
+  },
+  {
+    "file": "test/goldenReplayPackGenerator.tests.js",
+    "name": "registerGoldenReplayPackGeneratorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/historyOperations.tests.js",
+    "name": "registerHistoryOperationsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/incidentReplayLab.tests.js",
+    "name": "registerIncidentReplayLabTests",
+    "type": "named"
+  },
+  {
+    "file": "test/indicatorFeatureRegistry.tests.js",
+    "name": "registerIndicatorFeatureRegistryTests",
+    "type": "named"
+  },
+  {
+    "file": "test/largeFoundations.tests.js",
+    "name": "registerLargeFoundationsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/latencyProfiler.tests.js",
+    "name": "registerLatencyProfilerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/learningAnalyticsMaintenance.tests.js",
+    "name": "registerLearningAnalyticsMaintenanceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/liveFastObserveMode.tests.js",
+    "name": "registerLiveFastObserveModeTests",
+    "type": "named"
+  },
+  {
+    "file": "test/marketProviderHub.tests.js",
+    "name": "registerMarketProviderHubTests",
+    "type": "named"
+  },
+  {
+    "file": "test/marketProviders.tests.js",
+    "name": "registerMarketProvidersTests",
+    "type": "named"
+  },
+  {
+    "file": "test/microstructureFillSimulator.tests.js",
+    "name": "registerMicrostructureFillSimulatorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/missionControlRiskIntelligence.tests.js",
+    "name": "registerMissionControlRiskIntelligenceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/modelConfidenceRootCause.tests.js",
+    "name": "registerModelConfidenceRootCauseTests",
+    "type": "named"
+  },
+  {
+    "file": "test/nearThresholdWatchlist.tests.js",
+    "name": "registerNearThresholdWatchlistTests",
+    "type": "named"
+  },
+  {
+    "file": "test/neuralAutonomyRoadmap.tests.js",
+    "name": "registerNeuralAutonomyRoadmapTests",
+    "type": "named"
+  },
+  {
+    "file": "test/newsShockCircuitBreaker.tests.js",
+    "name": "registerNewsShockCircuitBreakerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/operationalHardening.tests.js",
+    "name": "registerOperationalHardeningTests",
+    "type": "named"
+  },
+  {
+    "file": "test/operatorActionQueue.tests.js",
+    "name": "registerOperatorActionQueueTests",
+    "type": "named"
+  },
+  {
+    "file": "test/operatorReviewLabels.tests.js",
+    "name": "registerOperatorReviewLabelsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/operatorSafetyTooling.tests.js",
+    "name": "registerOperatorSafetyToolingTests",
+    "type": "named"
+  },
+  {
+    "file": "test/opportunityCostAnalyzer.tests.js",
+    "name": "registerOpportunityCostAnalyzerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/orderLifecycleAuditor.tests.js",
+    "name": "registerOrderLifecycleAuditorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/orderStyleAdvisor.tests.js",
+    "name": "registerOrderStyleAdvisorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperCandidateLab.tests.js",
+    "name": "registerPaperCandidateLabTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperEvidenceSpine.tests.js",
+    "name": "registerPaperEvidenceSpineTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperExchangeSafety.tests.js",
+    "name": "registerPaperExchangeSafetyTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperExitPolicyLab.tests.js",
+    "name": "registerPaperExitPolicyLabTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperNetEdgeCalibrationWorkbench.tests.js",
+    "name": "registerPaperNetEdgeCalibrationWorkbenchTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperPortfolioAllocatorSimulation.tests.js",
+    "name": "registerPaperPortfolioAllocatorSimulationTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperReplayCoverageAutopilot.tests.js",
+    "name": "registerPaperReplayCoverageAutopilotTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperStrategyCohortScorecard.tests.js",
+    "name": "registerPaperStrategyCohortScorecardTests",
+    "type": "named"
+  },
+  {
+    "file": "test/paperTradeLifecycleContract.tests.js",
+    "name": "registerPaperTradeLifecycleContractTests",
+    "type": "named"
+  },
+  {
+    "file": "test/performanceLedger.tests.js",
+    "name": "registerPerformanceLedgerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/performanceTuning.tests.js",
+    "name": "registerPerformanceTuningTests",
+    "type": "named"
+  },
+  {
+    "file": "test/portfolioScenarioStress.tests.js",
+    "name": "registerPortfolioScenarioStressTests",
+    "type": "named"
+  },
+  {
+    "file": "test/postReconcileEntryLimits.tests.js",
+    "name": "registerPostReconcileEntryLimitsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/pullbackReclaimV2.tests.js",
+    "name": "registerPullbackReclaimV2Tests",
+    "type": "named"
+  },
+  {
+    "file": "test/readModelAnalyticsQueries.tests.js",
+    "name": "registerReadModelAnalyticsQueriesTests",
+    "type": "named"
+  },
+  {
+    "file": "test/reconcileAutofixTolerance.tests.js",
+    "name": "registerReconcileAutofixToleranceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/recoveryProbePolicy.tests.js",
+    "name": "registerRecoveryProbePolicyTests",
+    "type": "named"
+  },
+  {
+    "file": "test/replayDeterminism.tests.js",
+    "name": "registerReplayDeterminismTests",
+    "type": "named"
+  },
+  {
+    "file": "test/riskOfRuinMonitor.tests.js",
+    "name": "registerRiskOfRuinMonitorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/riskPolicyModules.tests.js",
+    "name": "registerRiskPolicyModuleTests",
+    "type": "named"
+  },
+  {
+    "file": "test/rootBlockerOrchestrator.tests.js",
+    "name": "registerRootBlockerOrchestratorTests",
+    "type": "named"
+  },
+  {
+    "file": "test/rootBlockerStalenessVerifier.tests.js",
+    "name": "registerRootBlockerStalenessVerifierTests",
+    "type": "named"
+  },
+  {
+    "file": "test/runtimeMutation.tests.js",
+    "name": "registerRuntimeMutationTests",
+    "type": "named"
+  },
+  {
+    "file": "test/safetyMaintenance.tests.js",
+    "name": "registerSafetyMaintenanceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+    "name": "registerScalabilityMultiExchangePolicyObservabilityTests",
+    "type": "named"
+  },
+  {
+    "file": "test/scopedLearningAndUniverse.tests.js",
+    "name": "registerScopedLearningAndUniverseTests",
+    "type": "named"
+  },
+  {
+    "file": "test/shadowStrategyTournament.tests.js",
+    "name": "registerShadowStrategyTournamentTests",
+    "type": "named"
+  },
+  {
+    "file": "test/stablecoinRisk.tests.js",
+    "name": "registerStablecoinRiskTests",
+    "type": "named"
+  },
+  {
+    "file": "test/stopLimitGap.tests.js",
+    "name": "registerStopLimitGapTests",
+    "type": "named"
+  },
+  {
+    "file": "test/stopLimitStuck.tests.js",
+    "name": "registerStopLimitStuckTests",
+    "type": "named"
+  },
+  {
+    "file": "test/storageRecovery.tests.js",
+    "name": "registerStorageRecoveryTests",
+    "type": "named"
+  },
+  {
+    "file": "test/strategyLifecycle.tests.js",
+    "name": "registerStrategyLifecycleTests",
+    "type": "named"
+  },
+  {
+    "file": "test/strategyValidationCostsPortfolioUx.tests.js",
+    "name": "registerStrategyValidationCostsPortfolioUxTests",
+    "type": "named"
+  },
+  {
+    "file": "test/streamHealthEvidence.tests.js",
+    "name": "registerStreamHealthEvidenceTests",
+    "type": "named"
+  },
+  {
+    "file": "test/streamRangeOrderflow.tests.js",
+    "name": "registerStreamRangeOrderflowTests",
+    "type": "named"
+  },
+  {
+    "file": "test/symbolLifecycleRisk.tests.js",
+    "name": "registerSymbolLifecycleRiskTests",
+    "type": "named"
+  },
+  {
+    "file": "test/symbolQualityDecay.tests.js",
+    "name": "registerSymbolQualityDecayTests",
+    "type": "named"
+  },
+  {
+    "file": "test/tradeQualityAnalytics.tests.js",
+    "name": "registerTradeQualityAnalyticsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/tradingPathHealth.tests.js",
+    "name": "registerTradingPathHealthTests",
+    "type": "named"
+  },
+  {
+    "file": "test/tradingQualityUpgrade.tests.js",
+    "name": "registerTradingQualityUpgradeTests",
+    "type": "named"
+  },
+  {
+    "file": "test/vetoReplayCoverage.tests.js",
+    "name": "registerVetoReplayCoverageTests",
+    "type": "named"
+  },
+  {
+    "file": "test/walkForwardBacktest.tests.js",
+    "name": "registerWalkForwardBacktestTests",
+    "type": "named"
+  },
+  {
+    "file": "test/walkForwardDeploymentReport.tests.js",
+    "name": "registerWalkForwardDeploymentReportTests",
+    "type": "named"
+  },
+  {
+    "file": "test/watchlistCoverageBalancer.tests.js",
+    "name": "registerWatchlistCoverageBalancerTests",
+    "type": "named"
+  },
+  {
+    "file": "test/windowsFastDataFoundations.tests.js",
+    "name": "registerWindowsFastDataFoundationsTests",
+    "type": "named"
+  },
+  {
+    "file": "test/windowsGuiStatus.tests.js",
+    "name": "registerWindowsGuiStatusTests",
+    "type": "named"
+  }
+]

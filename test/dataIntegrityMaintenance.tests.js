@@ -8,7 +8,7 @@ import {
 } from "../src/storage/schemaVersion.js";
 import { migrateRecord } from "../src/storage/migrations/index.js";
 import { auditRecorderFrames } from "../src/storage/recorderIntegrityAudit.js";
-import { buildRecorderAuditSummary, buildStorageAuditSummary } from "../src/storage/storageAudit.js";
+import { buildRecorderAuditSummary, buildStorageAuditSummary, buildStorageRetentionReport } from "../src/storage/storageAudit.js";
 import { buildReplayContext, compareReplayOutput, hashReplayInput } from "../src/runtime/replayDeterminism.js";
 import { createDeterministicId, createSeededRandom } from "../src/utils/seeded.js";
 import { scoreDataFreshness } from "../src/runtime/dataFreshnessScore.js";
@@ -206,6 +206,25 @@ export async function registerDataIntegrityMaintenanceTests({
     assert.equal(storage.status, "ok");
     assert.equal(recorder.status, "ok");
     assert.equal(recorder.countsByType.decision, 1);
+    const retention = await buildStorageRetentionReport({ runtimeDir: root });
+    assert.equal(retention.readOnly, true);
+    assert.equal(retention.autoDelete, false);
+    assert.ok(retention.familySummaries.some((item) => item.family === "runtime_snapshots"));
+    assert.ok(retention.familySummaries.some((item) => item.family === "recorder_frames"));
+    assert.equal(retention.cleanupPlan.readOnly, true);
+    assert.equal(retention.cleanupPlan.autoDelete, false);
+    assert.equal(retention.archivePlan.readOnly, true);
+    assert.equal(retention.archivePlan.autoDelete, false);
+    assert.equal(retention.archivePlan.backupRequired, true);
+    assert.equal(retention.archivePlan.backupEvidence.requiredBeforeArchive, true);
+    assert.equal(retention.archivePlan.restoreTestEvidence.requiredBeforeArchive, true);
+    assert.ok(retention.archivePlan.postArchiveValidation.includes("run_ops_readiness"));
+    assert.equal(retention.archiveBatchManifest.manualOnly, true);
+    assert.equal(retention.restorePrecheck.restoreTestTimestamp, null);
+    assert.ok(retention.archiveBatchManifest.protectedFiles.includes("runtime.json"));
+    assert.equal(retention.restorePrecheck.readOnly, true);
+    assert.equal(retention.restorePrecheck.backupEvidenceRequired, true);
+    assert.ok(retention.restorePrecheck.requiredBeforeCleanup.includes("restore_test_recent"));
   });
 
   await runCheck("dashboard normalizer keeps data integrity summaries optional", async () => {
@@ -233,13 +252,15 @@ export async function registerDataIntegrityMaintenanceTests({
       const config = { runtimeDir, projectRoot: root, configHash: "cfg" };
       const logger = { info() {}, warn() {}, error() {}, debug() {} };
       await runCli({ command: "storage:audit", args: [], config, logger, processState: { exitCode: undefined } });
+      await runCli({ command: "storage:retention", args: [], config, logger, processState: { exitCode: undefined } });
       await runCli({ command: "recorder:audit", args: [], config, logger, processState: { exitCode: undefined } });
       await runCli({ command: "replay:manifest", args: ["--type", "operator_review"], config, logger, processState: { exitCode: undefined } });
     } finally {
       console.log = previousLog;
     }
     assert.equal(JSON.parse(lines[0]).readOnly, true);
-    assert.ok(["ok", "warning"].includes(JSON.parse(lines[1]).status));
-    assert.equal(JSON.parse(lines[2]).packType, "operator_review");
+    assert.equal(JSON.parse(lines[1]).autoDelete, false);
+    assert.ok(["ok", "warning"].includes(JSON.parse(lines[2]).status));
+    assert.equal(JSON.parse(lines[3]).packType, "operator_review");
   });
 }

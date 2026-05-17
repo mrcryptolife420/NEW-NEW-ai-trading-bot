@@ -205,4 +205,54 @@ export async function registerOperatorSafetyToolingTests({
     assert.equal(summary.count, 1);
     assert.equal(panic.mode, "dry_run");
   });
+
+  await runCheck("ops readiness is read-only and blocks live on unresolved production risks", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "ops-readiness-"));
+    const runtimeDir = path.join(root, "runtime");
+    const { StateStore } = await import("../src/storage/stateStore.js");
+    const store = new StateStore(runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    runtime.orderLifecycle = { executionIntentLedger: { unresolvedIntentIds: ["intent-1"], intents: { "intent-1": { id: "intent-1" } } } };
+    runtime.clockHealth = { driftMs: 1500 };
+    runtime.accountPermissions = { canTrade: false, withdraw: true };
+    await store.saveRuntime(runtime);
+    const lines = [];
+    const previousLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+      const config = {
+        runtimeDir,
+        projectRoot: root,
+        botMode: "live",
+        liveTradingAcknowledged: false,
+        enableExchangeProtection: false,
+        stateBackupEnabled: false,
+        riskPerTrade: 0.01
+      };
+      const logger = { info() {}, warn() {}, error() {}, debug() {} };
+      await runCli({ command: "ops:readiness", args: [], config, logger, processState: { exitCode: undefined } });
+    } finally {
+      console.log = previousLog;
+    }
+    const readiness = JSON.parse(lines[0]);
+    assert.equal(readiness.command, "ops:readiness");
+    assert.equal(readiness.readOnly, true);
+    assert.equal(readiness.safeToStartLive, false);
+    assert.ok(readiness.blockingReasons.includes("unresolved_intents"));
+    assert.ok(readiness.blockingReasons.includes("clock_health"));
+    assert.ok(readiness.blockingReasons.includes("api_permissions"));
+    assert.equal(readiness.unresolvedIntents[0].id, "intent-1");
+    assert.equal(readiness.unresolvedIntents[0].nextSafeAction, "run_reconcile_plan_for_intent");
+    assert.equal(readiness.unresolvedIntents[0].lastReconcileEvidence.source, "runtime_reconcile_state");
+    assert.equal(readiness.unresolvedIntents[0].expectedBrokerTruth.requiresExchangeTruth, true);
+    assert.equal(readiness.unresolvedIntents[0].traceLookup.missingLocalEvidence.includes("intent_steps_missing"), true);
+    assert.equal(readiness.unresolvedIntents[0].symbolReconcileStatus.nextEvidenceNeeded, "read_only_exchange_order_status");
+    assert.equal(readiness.unresolvedIntents[0].recoveryDossier.status, "reconcile_required");
+    assert.equal(readiness.unresolvedIntents[0].recoveryDossier.terminalEvidenceChecklist[0].id, "exchange_order_status");
+    assert.equal(readiness.unresolvedIntents[0].recoveryDossier.terminalEvidenceChecklist[0].status, "missing");
+    assert.ok(readiness.unresolvedIntents[0].recoveryDossier.operatorChecklist.includes("run_read_only_reconcile_for_symbol"));
+    assert.ok(readiness.unresolvedIntents[0].safeResolutionOptions.includes("run_reconcile_plan"));
+    assert.equal(readiness.storageRetention.autoDelete, false);
+  });
 }

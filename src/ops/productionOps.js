@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { StateBackupManager } from "../runtime/stateBackupManager.js";
 import { AuditLogStore } from "../storage/auditLogStore.js";
 import { StateStore, migrateJournal, migrateRuntime } from "../storage/stateStore.js";
+import { buildStorageRetentionReport } from "../storage/storageAudit.js";
 import { redactSecrets } from "../utils/redactSecrets.js";
 import { ensureDir, listFiles, loadJson, saveJson } from "../utils/fs.js";
 
@@ -58,6 +59,154 @@ function unresolvedIntents(runtime = {}) {
   return Array.isArray(ledger.unresolvedIntentIds) ? ledger.unresolvedIntentIds.filter(Boolean) : [];
 }
 
+function lastReconcileEvidenceForIntent(runtime = {}, intent = {}) {
+  const symbol = `${intent.symbol || ""}`.toUpperCase();
+  const reconcile = runtime.autoReconcile || runtime.autoReconcileCoordinator || runtime.reconcile || {};
+  const orderLifecycle = runtime.orderLifecycle || {};
+  const symbolEvidence = symbol
+    ? (reconcile.bySymbol?.[symbol] || reconcile.symbols?.[symbol] || orderLifecycle.bySymbol?.[symbol] || null)
+    : null;
+  return {
+    status: intent.lastReconcileStatus || symbolEvidence?.status || reconcile.status || null,
+    checkedAt: intent.lastReconcileAt || symbolEvidence?.checkedAt || symbolEvidence?.at || reconcile.checkedAt || reconcile.lastRunAt || null,
+    source: intent.lastReconcileSource || symbolEvidence?.source || reconcile.source || "runtime_reconcile_state",
+    exchangeOrderStatus: intent.exchangeOrderStatus || symbolEvidence?.exchangeOrderStatus || symbolEvidence?.orderStatus || null,
+    terminalEvidence: Boolean(intent.terminalEvidence || symbolEvidence?.terminalEvidence || symbolEvidence?.terminal === true)
+  };
+}
+
+function safeNextActionForIntent(intent = {}, evidence = {}) {
+  if (evidence.terminalEvidence) return "mark_intent_resolved_after_operator_review";
+  if (!evidence.checkedAt) return "run_reconcile_plan_for_intent";
+  if (intent.symbol) return "reconcile_symbol_and_confirm_exchange_truth";
+  return "inspect_intent_trace_then_reconcile";
+}
+
+function buildIntentTraceLookup(intent = {}) {
+  const steps = Array.isArray(intent.steps) ? intent.steps : [];
+  const terminalStep = steps.find((step) => /filled|canceled|expired|rejected|resolved|terminal/i.test(`${step?.step || step?.name || step?.status || ""}`)) || null;
+  const lastStep = steps.at(-1) || null;
+  const missingLocalEvidence = [
+    !steps.length ? "intent_steps_missing" : null,
+    !terminalStep ? "local_intent_terminal_step_missing" : null,
+    !intent.resolvedAt && !intent.terminalEvidence ? "journal_or_audit_resolution_event_missing" : null
+  ].filter(Boolean);
+  return {
+    stepCount: steps.length,
+    lastStep: lastStep?.step || lastStep?.name || lastStep?.status || null,
+    terminalStep: terminalStep?.step || terminalStep?.name || terminalStep?.status || null,
+    missingLocalEvidence
+  };
+}
+
+function buildSymbolReconcileStatus(intent = {}, evidence = {}) {
+  return {
+    symbol: intent.symbol || null,
+    status: evidence.status || "unknown",
+    checkedAt: evidence.checkedAt || null,
+    source: evidence.source || "runtime_reconcile_state",
+    exchangeOrderStatus: evidence.exchangeOrderStatus || null,
+    terminalEvidence: Boolean(evidence.terminalEvidence),
+    nextEvidenceNeeded: evidence.terminalEvidence ? "operator_review_resolution" : "read_only_exchange_order_status"
+  };
+}
+
+function buildTerminalEvidenceChecklist(intent = {}, evidence = {}, trace = {}) {
+  const terminalStates = new Set(["FILLED", "CANCELED", "EXPIRED", "REJECTED"]);
+  const exchangeTerminal = terminalStates.has(`${evidence.exchangeOrderStatus || ""}`.toUpperCase());
+  return [
+    {
+      id: "exchange_order_status",
+      status: exchangeTerminal ? "present" : "missing",
+      requiredEvidence: "read_only_broker_or_exchange_order_status"
+    },
+    {
+      id: "local_intent_terminal_step",
+      status: trace.terminalStep ? "present" : "missing",
+      requiredEvidence: "intent_trace_terminal_step"
+    },
+    {
+      id: "journal_or_audit_resolution_event",
+      status: intent.resolvedAt || evidence.terminalEvidence ? "present" : "missing",
+      requiredEvidence: "local_resolution_event_after_operator_review"
+    }
+  ];
+}
+
+function expectedBrokerTruthForIntent(intent = {}) {
+  const side = `${intent.side || intent.orderSide || ""}`.toUpperCase() || null;
+  return {
+    symbol: intent.symbol || null,
+    kind: intent.kind || intent.type || "execution_intent",
+    expectedOrderSide: side,
+    expectedTerminalStates: ["FILLED", "CANCELED", "EXPIRED", "REJECTED"],
+    requiresExchangeTruth: true,
+    expectedEvidence: [
+      "exchange_order_status",
+      "local_intent_terminal_step",
+      "journal_or_audit_resolution_event"
+    ]
+  };
+}
+
+function recoveryDossierForIntent(intent = {}, evidence = {}, nextSafeAction = "inspect_intent_trace_then_reconcile") {
+  const traceLookup = buildIntentTraceLookup(intent);
+  const symbolReconcileStatus = buildSymbolReconcileStatus(intent, evidence);
+  return {
+    status: evidence.terminalEvidence ? "terminal_evidence_found" : "reconcile_required",
+    expectedBrokerTruth: expectedBrokerTruthForIntent(intent),
+    lastReconcileEvidence: evidence,
+    traceLookup,
+    symbolReconcileStatus,
+    terminalEvidenceChecklist: buildTerminalEvidenceChecklist(intent, evidence, traceLookup),
+    missingLocalEvidence: traceLookup.missingLocalEvidence,
+    operatorChecklist: [
+      "inspect_intent_trace",
+      "run_read_only_reconcile_for_symbol",
+      "compare_exchange_truth_with_local_ledger",
+      "resolve_only_after_terminal_evidence"
+    ],
+    safeNextAction: nextSafeAction,
+    readOnly: true,
+    liveBehaviorChanged: false
+  };
+}
+
+function unresolvedIntentDetails(runtime = {}, now = Date.now()) {
+  const ledger = runtime.orderLifecycle?.executionIntentLedger || {};
+  const intents = ledger.intents || {};
+  return unresolvedIntents(runtime).map((id) => {
+    const intent = intents[id] || {};
+    const at = intent.updatedAt || intent.createdAt || intent.openedAt || intent.at || null;
+    const ms = at ? new Date(at).getTime() : Number.NaN;
+    const ageMs = Number.isFinite(ms) ? Math.max(0, now - ms) : null;
+    const lastStep = Array.isArray(intent.steps) ? intent.steps.at(-1) : null;
+    const lastReconcileEvidence = lastReconcileEvidenceForIntent(runtime, intent);
+    const nextSafeAction = safeNextActionForIntent(intent, lastReconcileEvidence);
+    return {
+      id,
+      symbol: intent.symbol || null,
+      kind: intent.kind || intent.type || null,
+      status: intent.status || null,
+      at,
+      ageMs,
+      lastStep: lastStep?.step || lastStep?.name || lastStep?.status || null,
+      source: intent.source || intent.createdBy || "execution_intent_ledger",
+      lastReconcileEvidence,
+      traceLookup: buildIntentTraceLookup(intent),
+      symbolReconcileStatus: buildSymbolReconcileStatus(intent, lastReconcileEvidence),
+      expectedBrokerTruth: expectedBrokerTruthForIntent(intent),
+      recoveryDossier: recoveryDossierForIntent(intent, lastReconcileEvidence, nextSafeAction),
+      nextSafeAction,
+      safeResolutionOptions: [
+        "inspect_intent_trace",
+        "run_reconcile_plan",
+        "resolve_only_after_exchange_truth_confirms_terminal_state"
+      ]
+    };
+  });
+}
+
 function manualReviewItems(runtime = {}) {
   return [
     ...(Array.isArray(runtime.operatorReview?.items) ? runtime.operatorReview.items : []),
@@ -95,6 +244,7 @@ async function latestBackupSummary(config) {
 
 export async function buildProductionReadinessGate({ config, manager = null } = {}) {
   const checkedAt = nowIso();
+  const checkedAtMs = new Date(checkedAt).getTime();
   const { runtime } = await loadRuntimeBundle(config);
   const dashboardReadiness = manager?.getOperationalReadiness ? await manager.getOperationalReadiness().catch(() => null) : runtime.ops?.readiness;
   const backup = await latestBackupSummary(config);
@@ -102,8 +252,17 @@ export async function buildProductionReadinessGate({ config, manager = null } = 
   const backupAge = ageHours(backup.lastBackupAt);
   const restoreAge = ageHours(restore?.lastSuccessfulAt);
   const intents = unresolvedIntents(runtime);
+  const intentDetails = unresolvedIntentDetails(runtime, checkedAtMs);
   const review = manualReviewItems(runtime);
   const alerts = activeAlerts(runtime);
+  const storageRetention = await buildStorageRetentionReport({ runtimeDir: config.runtimeDir }).catch((error) => ({
+    status: "warning",
+    error: error?.message || "storage_retention_unavailable",
+    readOnly: true
+  }));
+  const clockHealth = runtime.clockHealth || runtime.timeSync || {};
+  const driftMs = Number(clockHealth.driftMs ?? clockHealth.clockDriftMs);
+  const apiPermissions = runtime.exchangeTruth?.apiPermissions || runtime.accountPermissions || {};
   const checks = [
     check("bot_mode", config.botMode === "live" || config.botMode === "paper" ? "ready" : "blocked", `Bot mode is ${config.botMode || "unknown"}.`, { botMode: config.botMode }),
     check("live_acknowledgement", config.botMode === "live" && !config.liveTradingAcknowledged ? "blocked" : "ready", config.botMode === "live" ? "Live acknowledgement checked." : "Paper mode does not require live acknowledgement."),
@@ -116,26 +275,39 @@ export async function buildProductionReadinessGate({ config, manager = null } = 
     check("state_backup", config.stateBackupEnabled ? "ready" : "warning", `State backups are ${config.stateBackupEnabled ? "enabled" : "disabled"}.`),
     check("latest_backup", backupAge == null ? "warning" : backupAge > BACKUP_MAX_AGE_HOURS ? "warning" : "ready", "Latest backup age checked.", { lastBackupAt: backup.lastBackupAt, ageHours: backupAge }),
     check("restore_test", restoreAge == null ? "warning" : restoreAge > RESTORE_TEST_MAX_AGE_HOURS ? "warning" : "ready", "Latest restore-test age checked.", { lastSuccessfulAt: restore?.lastSuccessfulAt || null, ageHours: restoreAge }),
+    check("clock_health", Number.isFinite(driftMs) && Math.abs(driftMs) > 1000 && config.botMode === "live" ? "blocked" : clockHealth.status === "blocked" ? "blocked" : Number.isFinite(driftMs) && Math.abs(driftMs) > 1000 ? "warning" : "ready", "Clock drift health checked.", { status: clockHealth.status || null, driftMs: Number.isFinite(driftMs) ? driftMs : null }),
+    check("api_permissions", config.botMode === "live" && apiPermissions.withdraw === true ? "blocked" : apiPermissions.canTrade === false && config.botMode === "live" ? "blocked" : "ready", "API permission posture checked without exposing secrets.", { canTrade: apiPermissions.canTrade ?? null, withdraw: apiPermissions.withdraw ?? null }),
     check("dashboard_api", dashboardReadiness ? "ready" : "warning", "Dashboard/API readiness source checked.", { readiness: dashboardReadiness || null }),
     check("stream_health", runtime.streamHealth?.status === "blocked" ? "blocked" : runtime.streamHealth?.status === "stale" ? "warning" : "ready", "Stream health checked.", runtime.streamHealth || {}),
     check("rest_health", runtime.ops?.apiDegradationSummary?.blockedActions?.includes("open_new_entries") ? "blocked" : "ready", "REST health checked.", runtime.ops?.apiDegradationSummary || {}),
     check("user_stream_health", runtime.streamHealth?.userStream?.status === "stale" ? "warning" : "ready", "User stream health checked.", runtime.streamHealth?.userStream || {}),
     check("open_positions_protection", (runtime.exchangeTruth?.staleProtectiveSymbols || []).length ? "blocked" : "ready", "Open position protection checked.", { staleProtectiveSymbols: runtime.exchangeTruth?.staleProtectiveSymbols || [] }),
-    check("unresolved_intents", intents.length ? "blocked" : "ready", "Unresolved execution intents checked.", { unresolvedIntentIds: intents }),
+    check("unresolved_intents", intents.length ? "blocked" : "ready", "Unresolved execution intents checked.", { unresolvedIntentIds: intents, intents: intentDetails }),
     check("manual_review", review.length ? "warning" : "ready", "Manual review flags checked.", { pendingCount: review.length }),
     check("active_alerts", alerts.some((alert) => ["critical", "panic"].includes(alert.severity)) ? "blocked" : alerts.length ? "warning" : "ready", "Active alerts checked.", { activeCount: alerts.length }),
     check("neural_live_influence", config.botMode === "live" && config.neuralLiveAutonomyEnabled ? "warning" : "ready", "Neural live influence status checked.", { enabled: Boolean(config.neuralLiveAutonomyEnabled) }),
     check("fast_execution", config.liveFastObserveOnly === false && config.botMode === "live" ? "warning" : "ready", "Fast execution status checked.", { liveFastObserveOnly: config.liveFastObserveOnly }),
     check("risk_budget", Number.isFinite(config.riskPerTrade) && config.riskPerTrade > 0 ? "ready" : "blocked", "Risk budget checked.", { riskPerTrade: config.riskPerTrade }),
     check("daily_drawdown", runtime.capitalGovernor?.status === "blocked" ? "blocked" : "ready", "Daily drawdown/capital governor checked.", runtime.capitalGovernor || {}),
+    check("storage_retention", storageRetention.status === "warning" ? "warning" : "ready", "Storage retention/bloat report checked read-only.", { totalBytes: storageRetention.totalBytes || 0, warnings: storageRetention.retentionWarnings || [] }),
     check("config_profile", "ready", "Config profile checked.", { configProfile: config.configProfile || config.profile || "default", releaseChannel: config.releaseChannel || process.env.RELEASE_CHANNEL || "paper" })
   ];
   const status = statusFromChecks(checks);
+  const blockingReasons = checks.filter((item) => item.status === "blocked").map((item) => item.id);
+  const warnings = checks.filter((item) => item.status === "warning").map((item) => item.id);
   return {
     status,
     ok: status === "ready",
+    readOnly: true,
+    safeToStartLive: config.botMode === "live" && status === "ready",
     checkedAt,
     reasons: checks.filter((item) => item.status !== "ready").map((item) => item.id),
+    blockingReasons,
+    warnings,
+    requiredActions: blockingReasons.length ? blockingReasons.map((reason) => `resolve_${reason}`) : warnings.map((reason) => `review_${reason}`),
+    unresolvedIntents: intentDetails,
+    storageRetention,
+    liveBehaviorChanged: false,
     checks
   };
 }
@@ -284,6 +456,7 @@ export async function buildStorageReport({ config }) {
     bytes += stat?.size || 0;
   }
   const disk = os.freemem();
+  const retention = await buildStorageRetentionReport({ runtimeDir: config.runtimeDir }).catch(() => null);
   return {
     status: bytes > 1024 * 1024 * 1024 ? "warning" : "ready",
     runtimeDir: config.runtimeDir,
@@ -291,7 +464,8 @@ export async function buildStorageReport({ config }) {
     bytes,
     hotStorage: config.runtimeDir,
     coldArchive: path.join(config.runtimeDir, "archive"),
-    freeMemoryBytes: disk
+    freeMemoryBytes: disk,
+    retention
   };
 }
 

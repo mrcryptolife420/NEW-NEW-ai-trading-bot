@@ -24,6 +24,29 @@ export function registerStrategyValidationCostsPortfolioUxTests({ runCheck, asse
     assert.equal(plan.preview.BINANCE_API_KEY, "[REDACTED]");
   });
 
+  runCheck("setup wizard writes beginner profile-compatible paper config", () => {
+    const plan = buildSetupWizardPlan({ answers: { mode: "paper" } });
+    assert.equal(plan.safeToWrite, true);
+    assert.equal(plan.profile.id, "beginner-paper-learning");
+    assert.equal(plan.env.BOT_MODE, "paper");
+    assert.equal(plan.env.CONFIG_PROFILE, "paper-learning");
+    assert.equal(plan.env.PAPER_MODE_PROFILE, "learn");
+    assert.equal(plan.env.PAPER_EXECUTION_VENUE, "internal");
+    assert.equal(plan.env.LIVE_TRADING_ACKNOWLEDGED, "");
+    assert.equal(plan.env.NEURAL_LIVE_AUTONOMY_ENABLED, "false");
+  });
+
+  runCheck("setup wizard demo mode selects Binance demo spot paper profile", () => {
+    const plan = buildSetupWizardPlan({ answers: { mode: "demo" } });
+    assert.equal(plan.safeToWrite, true);
+    assert.equal(plan.profile.id, "paper-demo-spot");
+    assert.equal(plan.env.BOT_MODE, "paper");
+    assert.equal(plan.env.PAPER_MODE_PROFILE, "demo_spot");
+    assert.equal(plan.env.PAPER_EXECUTION_VENUE, "binance_demo_spot");
+    assert.equal(plan.env.BINANCE_API_BASE_URL, "https://demo-api.binance.com");
+    assert.equal(plan.env.BINANCE_FUTURES_API_BASE_URL, "https://demo-fapi.binance.com");
+  });
+
   runCheck("strategy plugin interface blocks missing metadata tests and live safety review", () => {
     const invalid = validateStrategyPlugin({ id: "x" });
     const live = normalizeStrategyPlugin({

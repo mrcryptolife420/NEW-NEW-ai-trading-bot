@@ -186,6 +186,10 @@ function clone(value) {
   return structuredClone(value);
 }
 
+function sha256(content = "") {
+  return crypto.createHash("sha256").update(content).digest("hex");
+}
+
 function mergeDefaultShape(base, loaded) {
   if (Array.isArray(base)) {
     return Array.isArray(loaded) ? [...loaded] : [...base];
@@ -248,14 +252,16 @@ export class StateStore {
     this.runtimePath = path.join(runtimeDir, "runtime.json");
     this.journalPath = path.join(runtimeDir, "journal.json");
     this.modelBackupsPath = path.join(runtimeDir, "model-backups.json");
+    this.snapshotManifestPath = path.join(runtimeDir, "snapshot-manifest.json");
   }
 
   async init() {
     await ensureDir(this.runtimeDir);
-    const staleTempFiles = (await listFiles(this.runtimeDir)).filter((filePath) => filePath.endsWith(".tmp"));
+    const staleTempFiles = (await listFiles(this.runtimeDir)).filter((filePath) => filePath.endsWith(".tmp") || filePath.includes(".staging-manifest-"));
     for (const filePath of staleTempFiles) {
       await removeFile(filePath);
     }
+    await this.verifySnapshotManifest().catch(() => null);
   }
 
   async loadModel() {
@@ -291,11 +297,12 @@ export class StateStore {
   }
 
   async saveSnapshotBundle({ runtime, journal, model, modelBackups }) {
+    await ensureDir(this.runtimeDir);
     const payloads = [
-      { path: this.runtimePath, data: migrateRuntime(runtime) },
-      { path: this.journalPath, data: migrateJournal(journal) },
-      { path: this.modelPath, data: model },
-      { path: this.modelBackupsPath, data: modelBackups }
+      { role: "runtime", path: this.runtimePath, schemaVersion: RUNTIME_SCHEMA_VERSION, data: migrateRuntime(runtime) },
+      { role: "journal", path: this.journalPath, schemaVersion: JOURNAL_SCHEMA_VERSION, data: migrateJournal(journal) },
+      { role: "model", path: this.modelPath, schemaVersion: 1, data: model },
+      { role: "modelBackups", path: this.modelBackupsPath, schemaVersion: 1, data: modelBackups }
     ];
     const staged = [];
     const nonce = `${Date.now()}-${crypto.randomUUID()}`;
@@ -304,17 +311,61 @@ export class StateStore {
         const tempPath = `${item.path}.staging-${nonce}.tmp`;
         const content = `${JSON.stringify(item.data, null, 2)}\n`;
         await fs.writeFile(tempPath, content, "utf8");
-        staged.push({ tempPath, finalPath: item.path });
+        staged.push({ ...item, tempPath, finalPath: item.path, bytes: Buffer.byteLength(content), sha256: sha256(content) });
       }
       for (const item of staged) {
         await fs.rename(item.tempPath, item.finalPath);
       }
+      const manifest = {
+        schemaVersion: 1,
+        transactionId: nonce,
+        savedAt: new Date().toISOString(),
+        files: staged.map((item) => ({
+          role: item.role,
+          path: path.basename(item.finalPath),
+          schemaVersion: item.schemaVersion,
+          bytes: item.bytes,
+          sha256: item.sha256
+        }))
+      };
+      const manifestTempPath = `${this.snapshotManifestPath}.staging-manifest-${nonce}.tmp`;
+      await fs.writeFile(manifestTempPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+      await fs.rename(manifestTempPath, this.snapshotManifestPath);
+      return manifest;
     } catch (error) {
       for (const item of staged) {
         await removeFile(item.tempPath).catch(() => {});
       }
       throw error;
     }
+  }
+
+  async loadSnapshotManifest() {
+    return loadJson(this.snapshotManifestPath, null);
+  }
+
+  async verifySnapshotManifest() {
+    const manifest = await this.loadSnapshotManifest();
+    if (!manifest?.files?.length) {
+      return { status: "missing", manifest: null, errors: [] };
+    }
+    const errors = [];
+    for (const file of manifest.files) {
+      const filePath = path.join(this.runtimeDir, file.path);
+      try {
+        const content = await fs.readFile(filePath, "utf8");
+        if (sha256(content) !== file.sha256) {
+          errors.push(`${file.path}: sha256 mismatch`);
+        }
+      } catch (error) {
+        errors.push(`${file.path}: ${error.code || error.message}`);
+      }
+    }
+    return {
+      status: errors.length ? "corrupt" : "ok",
+      manifest,
+      errors
+    };
   }
 
   async quarantineCorruptFile(filePath, atIso = new Date().toISOString()) {

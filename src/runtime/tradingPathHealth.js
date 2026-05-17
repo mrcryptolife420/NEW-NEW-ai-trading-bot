@@ -55,6 +55,58 @@ function lower(value) {
   return `${value || ""}`.trim().toLowerCase();
 }
 
+function isoFromMs(value) {
+  const ms = Number(value);
+  return Number.isFinite(ms) && ms > 0 ? new Date(ms).toISOString() : null;
+}
+
+function futureRetrySummary(candidates = [], nowMs = Date.now()) {
+  const normalized = arr(candidates)
+    .map((item) => ({ ...item, ms: timestampMs(item?.at) }))
+    .filter((item) => item.at && Number.isFinite(item.ms));
+  const future = normalized
+    .filter((item) => !Number.isFinite(nowMs) || item.ms > nowMs)
+    .sort((left, right) => left.ms - right.ms)[0] || null;
+  const stale = normalized
+    .filter((item) => Number.isFinite(nowMs) && item.ms <= nowMs)
+    .map((item) => item.source)
+    .filter(Boolean);
+  return {
+    nextRetryAt: future?.at || null,
+    nextRetrySource: future?.source || null,
+    staleRetryWarnings: stale.length ? ["stale_retry_timestamp"] : [],
+    staleRetrySources: [...new Set(stale)]
+  };
+}
+
+function inferAffectedSubsystems({ blockers = [], staleSources = [] } = {}) {
+  const values = [...blockers, ...staleSources].map((value) => lower(value));
+  const subsystems = new Set();
+  for (const value of values) {
+    if (/rest_budget|api_degradation|market_snapshot|feed|data|price_sanity/.test(value)) subsystems.add("market_data");
+    if (/stream/.test(value)) subsystems.add("streaming");
+    if (/cycle|heartbeat|scan/.test(value)) subsystems.add("runtime_loop");
+    if (/dashboard|polling/.test(value)) subsystems.add("dashboard");
+    if (/readmodel|persistence|storage/.test(value)) subsystems.add("storage_readmodel");
+    if (/exchange_safety|risk|governance|veto|preflight/.test(value)) subsystems.add("risk_execution_safety");
+    if (/decision/.test(value)) subsystems.add("decision_pipeline");
+  }
+  return [...subsystems];
+}
+
+function inferIncidentRootCause({ blockers = [], staleSources = [], status = "unknown" } = {}) {
+  const text = [...blockers, ...staleSources].join(" ").toLowerCase();
+  if (!text && ["active", "degraded"].includes(status)) return null;
+  if (/exchange_safety|risk|governance|veto|preflight/.test(text)) return "risk_block";
+  if (/rest_budget|api_degradation|data|market_snapshot|feed|price_sanity/.test(text)) return "data_pressure";
+  if (/stream/.test(text)) return "stream_stall";
+  if (/cycle|heartbeat|scan/.test(text)) return "stale_cycle";
+  if (/readmodel|persistence|storage/.test(text)) return "persistence_drift";
+  if (/dashboard|polling/.test(text)) return "dashboard_drift";
+  if (/decision/.test(text)) return "decision_pipeline_inactive";
+  return "unknown";
+}
+
 function isStreamConnectivityAuthoritative(runtimeState = {}, streamStatus = {}) {
   const runtime = objectOrFallback(runtimeState, {});
   const streams = objectOrFallback(streamStatus, {});
@@ -306,6 +358,7 @@ export function buildTradingPathHealth({
   const dashboardFresh = dashboardFreshness.fresh;
   const frontendPollingHealthy = frontendPolling.healthy;
   const hardBlocked = uniqueBlockers.includes("exchange_safety_blocked");
+  const displayStaleSources = uniqueStale.filter((source) => displayOnlyStaleSources.has(source));
   const status = hardBlocked
     ? "blocked"
     : pathStaleSources.length
@@ -319,17 +372,59 @@ export function buildTradingPathHealth({
             : "degraded";
   const nextAction = hardBlocked
     ? "run_reconcile_plan_or_exchange_safety_status"
-    : uniqueStale.includes("feed_aggregation_stale") || uniqueStale.includes("no_market_snapshots_ready")
-      ? "run_once_and_check_feed_sources"
-      : uniqueBlockers.includes("no_decision_snapshot_created")
-        ? "inspect_scan_cycle_and_candidate_generation"
-        : uniqueStale.includes("readmodel_snapshot_stale")
-          ? "run_readmodel_rebuild"
-          : uniqueStale.includes("dashboard_snapshot_unavailable")
-            ? "start_dashboard_or_fetch_snapshot"
-          : uniqueStale.includes("dashboard_polling_error") || uniqueStale.includes("dashboard_polling_stale")
-            ? "restart_dashboard_or_check_frontend_polling"
-            : "monitor_next_cycle";
+    : uniqueStale.includes("rest_budget_exhausted") || uniqueStale.some((source) => `${source}`.startsWith("api_degradation_"))
+      ? "wait_for_rest_budget_recovery_and_use_stream_cache_only"
+      : uniqueStale.includes("feed_aggregation_stale") || uniqueStale.includes("no_market_snapshots_ready")
+        ? "run_once_and_check_feed_sources"
+        : uniqueBlockers.includes("no_decision_snapshot_created")
+          ? "inspect_scan_cycle_and_candidate_generation"
+          : uniqueStale.includes("readmodel_snapshot_stale")
+            ? "run_readmodel_rebuild"
+            : uniqueStale.includes("dashboard_snapshot_unavailable")
+              ? "start_dashboard_or_fetch_snapshot"
+              : uniqueStale.includes("dashboard_polling_error") || uniqueStale.includes("dashboard_polling_stale")
+                ? "restart_dashboard_or_check_frontend_polling"
+                : "monitor_next_cycle";
+  const dashboardOperationalTruth = {
+    status: displayStaleSources.length
+      ? (botRunning || cycleFresh ? "backend_alive_dashboard_stale" : "dashboard_stale_backend_inactive")
+      : "consistent",
+    backendAlive: Boolean(botRunning || cycleFresh),
+    cycleFresh,
+    dashboardFresh,
+    frontendPollingHealthy,
+    staleDisplaySources: displayStaleSources,
+    warning: displayStaleSources.length
+      ? "Dashboard display state is stale or unavailable; use backend/readmodel/runtime truth before operator action."
+      : null,
+    nextSafeAction: displayStaleSources.length
+      ? (displayStaleSources.includes("readmodel_snapshot_stale") ? "run_readmodel_rebuild" : "restart_dashboard_or_check_frontend_polling")
+      : "none",
+    diagnosticsOnly: true,
+    liveBehaviorChanged: false
+  };
+  const incidentRootCause = inferIncidentRootCause({ blockers: uniqueBlockers, staleSources: uniqueStale, status });
+  const retrySummary = futureRetrySummary([
+    { source: "runtime_service", at: runtime.service?.nextRetryAt },
+    { source: "runtime_next_cycle", at: runtime.nextCycleAt },
+    { source: "api_degradation", at: apiDegradation.nextRetryAt },
+    { source: "rest_ban_pause", at: isoFromMs(runtime.requestWeight?.banUntil) }
+  ], nowMs);
+  const incidentRecovery = {
+    status: incidentRootCause ? "incident" : "clear",
+    rootCause: incidentRootCause,
+    affectedSubsystems: inferAffectedSubsystems({ blockers: uniqueBlockers, staleSources: uniqueStale }),
+    entriesPaused: uniqueBlockers.length > 0 || arr(apiDegradation.blockedActions).includes("open_new_entries"),
+    nextRetryAt: retrySummary.nextRetryAt,
+    nextRetrySource: retrySummary.nextRetrySource,
+    staleRetryWarnings: retrySummary.staleRetryWarnings,
+    staleRetrySources: retrySummary.staleRetrySources,
+    staleSources: uniqueStale,
+    blockingReasons: uniqueBlockers,
+    safeNextAction: nextAction,
+    diagnosticsOnly: true,
+    liveBehaviorChanged: false
+  };
 
   return {
     status,
@@ -349,6 +444,8 @@ export function buildTradingPathHealth({
     feedSummary: feed,
     apiDegradationSummary: apiDegradation,
     priceSanitySummary: priceSanity,
+    dashboardOperationalTruth,
+    incidentRecovery,
     dashboardFreshness,
     readmodelFreshness: {
       fresh: readmodelFresh,

@@ -201,6 +201,9 @@ async function handleApi(request, response, manager, eventBus = null) {
   if (request.method === "GET" && url.pathname === "/api/learning") {
     return sendJson(response, 200, await manager.getLearning());
   }
+  if (request.method === "GET" && url.pathname === "/api/live/preflight") {
+    return sendJson(response, 200, await manager.getLivePreflight());
+  }
 
   if (request.method !== "POST") {
     return sendJson(response, 405, { error: "Method not allowed" });
@@ -306,9 +309,10 @@ async function handleApi(request, response, manager, eventBus = null) {
 export async function startDashboardServer({
   projectRoot = process.cwd(),
   logger,
-  port
+  port,
+  manager: injectedManager = null
 } = {}) {
-  const manager = new BotManager({ projectRoot, logger });
+  const manager = injectedManager || new BotManager({ projectRoot, logger });
   const initial = await manager.init();
   const eventBus = new DashboardEventBus();
   const publicDir = path.join(projectRoot, "src", "dashboard", "public");
@@ -343,7 +347,7 @@ export async function startDashboardServer({
     process.off("SIGINT", shutdown);
     process.off("SIGTERM", shutdown);
     try {
-      await manager.stop("dashboard_shutdown");
+      await manager.stop?.("dashboard_shutdown");
     } catch {
       // ignore shutdown failures
     }
@@ -357,7 +361,7 @@ export async function startDashboardServer({
     });
   } catch (error) {
     try {
-      await manager.stop("dashboard_listen_failed");
+      await manager.stop?.("dashboard_listen_failed");
     } catch {
       // ignore cleanup failures after listen failure
     }

@@ -4,8 +4,46 @@ export async function registerStorageRecoveryTests({
   fs,
   os,
   path,
-  MarketHistoryStore
+  MarketHistoryStore,
+  StateStore
 }) {
+  await runCheck("state store writes manifest-backed snapshot bundles and verifies hashes", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-state-manifest-"));
+    const store = new StateStore(runtimeDir);
+    await store.init();
+    const manifest = await store.saveSnapshotBundle({
+      runtime: { openPositions: [{ id: "pos-1", symbol: "BTCUSDT", entryAt: "2026-01-01T00:00:00.000Z", quantity: 0.01, entryPrice: 100 }] },
+      journal: { trades: [{ id: "trade-1", symbol: "BTCUSDT", brokerMode: "paper" }] },
+      model: { bias: 0.1, weights: { momentum: 1 } },
+      modelBackups: [{ id: "backup-1" }]
+    });
+    assert.equal(manifest.files.length, 4);
+    assert.equal(manifest.files.some((item) => item.path === "runtime.json" && item.role === "runtime"), true);
+    const verification = await store.verifySnapshotManifest();
+    assert.equal(verification.status, "ok");
+    assert.equal(verification.errors.length, 0);
+  });
+
+  await runCheck("state store detects corrupted manifest bundle member and cleans incomplete staging files", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-state-corrupt-"));
+    const store = new StateStore(runtimeDir);
+    await store.init();
+    await store.saveSnapshotBundle({
+      runtime: { openPositions: [] },
+      journal: { trades: [] },
+      model: { bias: 0, weights: {} },
+      modelBackups: []
+    });
+    await fs.writeFile(path.join(runtimeDir, "runtime.json"), "{\"schemaVersion\":7,\"openPositions\":[]}\n", "utf8");
+    await fs.writeFile(path.join(runtimeDir, "runtime.json.staging-leftover.tmp"), "partial", "utf8");
+    const verification = await store.verifySnapshotManifest();
+    assert.equal(verification.status, "corrupt");
+    assert.ok(verification.errors.some((item) => item.includes("runtime.json")));
+    await store.init();
+    const files = await fs.readdir(runtimeDir);
+    assert.equal(files.some((item) => item.endsWith(".tmp")), false);
+  });
+
   await runCheck("market history store quarantines corrupt manifests and rebuilds from valid partitions", async () => {
     const historyDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-history-manifest-"));
     const store = new MarketHistoryStore({ rootDir: historyDir });

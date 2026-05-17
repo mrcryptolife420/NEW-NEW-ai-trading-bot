@@ -182,6 +182,7 @@ import { registerVetoReplayCoverageTests } from "./vetoReplayCoverage.tests.js";
 import { registerStreamHealthEvidenceTests } from "./streamHealthEvidence.tests.js";
 import { registerOrderLifecycleAuditorTests } from "./orderLifecycleAuditor.tests.js";
 import { registerModelConfidenceRootCauseTests } from "./modelConfidenceRootCause.tests.js";
+import { registerNoTradeTimelineTests } from "./noTradeTimeline.tests.js";
 import { registerPaperStrategyCohortScorecardTests } from "./paperStrategyCohortScorecard.tests.js";
 import { registerRootBlockerStalenessVerifierTests } from "./rootBlockerStalenessVerifier.tests.js";
 import { registerPaperNetEdgeCalibrationWorkbenchTests } from "./paperNetEdgeCalibrationWorkbench.tests.js";
@@ -214,6 +215,8 @@ import { registerFastExecutionTraceTests } from "./fastExecutionTrace.tests.js";
 import { registerFastPaperExecutionTests } from "./fastPaperExecution.tests.js";
 import { registerNeuralAutonomyRoadmapTests } from "./neuralAutonomyRoadmap.tests.js";
 import { registerStrategyValidationCostsPortfolioUxTests } from "./strategyValidationCostsPortfolioUx.tests.js";
+import { registerRiskReasonPolicyTests } from "./riskReasonPolicy.tests.js";
+import { registerRiskSetupQualityPolicyTests } from "./riskSetupQualityPolicy.tests.js";
 import { registerMissionControlRiskIntelligenceTests } from "./missionControlRiskIntelligence.tests.js";
 import { registerScalabilityMultiExchangePolicyObservabilityTests } from "./scalabilityMultiExchangePolicyObservability.tests.js";
 import { registerFeatureActivationGovernorTests } from "./featureActivationGovernor.tests.js";
@@ -238,11 +241,89 @@ import { registerSymbolQualityDecayTests } from "./symbolQualityDecay.tests.js";
 import { registerStablecoinRiskTests } from "./stablecoinRisk.tests.js";
 import { registerCrossExchangeDivergenceTests } from "./crossExchangeDivergence.tests.js";
 import { registerPaperTradeLifecycleContractTests } from "./paperTradeLifecycleContract.tests.js";
+import { registerBrokerFactoryTests } from "./brokerFactory.tests.js";
+import { classifyTestDomain, resolveRequestedTestDomains } from "./domainTestRegistry.js";
+import { registerDomainTestRegistryTests } from "./domainTestRegistry.tests.js";
 import http from "node:http";
 
+const testStartedAt = Date.now();
+const runnerArgs = process.argv.slice(2);
+const runnerOptions = {
+  grep: (runnerArgs.find((arg) => arg.startsWith("--grep=")) || "").slice("--grep=".length).trim().toLowerCase(),
+  unit: runnerArgs.includes("--unit"),
+  integration: runnerArgs.includes("--integration"),
+  safety: runnerArgs.includes("--safety"),
+  desktop: runnerArgs.includes("--desktop"),
+  bail: runnerArgs.includes("--bail"),
+  timeoutMs: Number(runnerArgs.find((arg) => arg.startsWith("--timeout-ms="))?.slice("--timeout-ms=".length) || 30000)
+};
+const runnerStats = {
+  passed: 0,
+  failed: 0,
+  skipped: 0,
+  total: 0
+};
+let checkCount = 0;
+
+process.on("unhandledRejection", (error) => {
+  runnerStats.failed += 1;
+  console.error("not ok - unhandled rejection");
+  console.error(error);
+  process.exitCode = 1;
+});
+
+function shouldRunCheck(name = "") {
+  const normalized = name.toLowerCase();
+  if (runnerOptions.grep && !normalized.includes(runnerOptions.grep)) return false;
+  const requested = resolveRequestedTestDomains(runnerOptions);
+  return requested.length === 0 || requested.includes(classifyTestDomain(name));
+}
+
+async function withTimeout(name, fn) {
+  let timeout;
+  try {
+    return await Promise.race([
+      fn(),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(`Timed out after ${runnerOptions.timeoutMs}ms: ${name}`)), runnerOptions.timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function collectTestFiles(dir) {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const files = await Promise.all(entries.map(async (entry) => {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return collectTestFiles(fullPath);
+    }
+    return /\.(test|tests)\.js$/i.test(entry.name) ? [fullPath] : [];
+  }));
+  return files.flat();
+}
+
 async function runCheck(name, fn) {
-  await fn();
-  console.log(`ok - ${name}`);
+  if (!shouldRunCheck(name)) {
+    runnerStats.skipped += 1;
+    return;
+  }
+  const startedAt = Date.now();
+  runnerStats.total += 1;
+  try {
+    await withTimeout(name, fn);
+    checkCount += 1;
+    runnerStats.passed += 1;
+    console.log(`ok - ${name} (${Date.now() - startedAt}ms)`);
+  } catch (error) {
+    runnerStats.failed += 1;
+    console.error(`not ok - ${name} (${Date.now() - startedAt}ms)`);
+    console.error(error);
+    if (runnerOptions.bail) throw error;
+    process.exitCode = 1;
+  }
 }
 
 function sleep(ms) {
@@ -603,6 +684,19 @@ function makeConfig(overrides = {}) {
   config.exchangeCapabilities = resolveExchangeCapabilities(config);
   return config;
 }
+
+await runCheck("import integrity: critical modules expose expected contracts", async () => {
+  assert.equal(typeof TradingBot, "function");
+  assert.equal(typeof BotManager, "function");
+  assert.equal(typeof PaperBroker, "function");
+  assert.equal(typeof DemoPaperBroker, "function");
+  assert.equal(typeof LiveBroker, "function");
+  assert.equal(typeof startDashboardServer, "function");
+  assert.equal(typeof StateStore, "function");
+  assert.equal(typeof RiskManager, "function");
+  const brokerFactoryModule = await import("../src/execution/brokerFactory.js");
+  assert.equal(typeof brokerFactoryModule.createBroker, "function");
+});
 
 const exchangeInfo = {
   symbols: [
@@ -14040,8 +14134,13 @@ await runCheck("bot manager surfaces readiness blockers from the dashboard snaps
       safety: {
         exchangeTruth: { freezeEntries: true },
         orderLifecycle: { pendingActions: [{ state: "manual_review" }] }
+      }
     }
-  }
+  });
+  assert.equal(readiness.ok, false);
+  assert.ok(readiness.reasons.includes("manager_error"));
+  assert.ok(readiness.reasons.includes("health_circuit_open"));
+  assert.ok(readiness.reasons.includes("exchange_truth_freeze"));
 });
 
 await runCheck("runCli initializes manager commands in read-only mode for snapshot commands", async () => {
@@ -14050,6 +14149,7 @@ await runCheck("runCli initializes manager commands in read-only mode for snapsh
   const originalGetDoctor = BotManager.prototype.getDoctor;
   const originalGetReport = BotManager.prototype.getReport;
   const originalGetLearning = BotManager.prototype.getLearning;
+  const originalStop = BotManager.prototype.stop;
   const calls = [];
   try {
     BotManager.prototype.init = async function initStub(options = {}) {
@@ -14072,6 +14172,10 @@ await runCheck("runCli initializes manager commands in read-only mode for snapsh
       calls.push({ type: "learning" });
       return { learning: { adaptiveLearning: { status: "active" } } };
     };
+    BotManager.prototype.stop = async function stopStub(reason) {
+      calls.push({ type: "stop", reason });
+      return {};
+    };
 
     for (const command of ["status", "doctor", "report", "learning"]) {
       await runCli({
@@ -14087,6 +14191,7 @@ await runCheck("runCli initializes manager commands in read-only mode for snapsh
     BotManager.prototype.getDoctor = originalGetDoctor;
     BotManager.prototype.getReport = originalGetReport;
     BotManager.prototype.getLearning = originalGetLearning;
+    BotManager.prototype.stop = originalStop;
   }
 
   const initCalls = calls.filter((item) => item.type === "init");
@@ -14095,11 +14200,6 @@ await runCheck("runCli initializes manager commands in read-only mode for snapsh
     assert.equal(initCall.options.readOnly, true);
     assert.equal(initCall.options.enableStreams, false);
   }
-});
-  assert.equal(readiness.ok, false);
-  assert.ok(readiness.reasons.includes("manager_error"));
-  assert.ok(readiness.reasons.includes("health_circuit_open"));
-  assert.ok(readiness.reasons.includes("exchange_truth_freeze"));
 });
 
 await runCheck("bot manager requires ack for unresolved critical alerts", async () => {
@@ -30626,9 +30726,9 @@ await runCheck("runCycleOnce preserves self-heal blocker error context", async (
   }
 });
 
-await runCheck("bot manager escalates after repeated cycle failures", async () => {
+await runCheck("live bot manager escalates after repeated cycle failures", async () => {
   const manager = new BotManager({ projectRoot: process.cwd(), logger: { error() {}, warn() {} } });
-  manager.config = { ...makeConfig(), tradingIntervalSeconds: 0, managerCycleFailureEscalationThreshold: 3 };
+  manager.config = { ...makeConfig({ botMode: "live" }), botMode: "live", tradingIntervalSeconds: 0, managerCycleFailureEscalationThreshold: 3 };
   manager.bot = {
     async runCycle() {
       throw new Error("cycle_broken");
@@ -32195,7 +32295,8 @@ await registerStorageRecoveryTests({
   fs,
   os,
   path,
-  MarketHistoryStore
+  MarketHistoryStore,
+  StateStore
 });
 
 await registerDashboardSnapshotTests({
@@ -32578,6 +32679,11 @@ await registerModelConfidenceRootCauseTests({
   assert
 });
 
+await registerNoTradeTimelineTests({
+  runCheck,
+  assert
+});
+
 await registerPaperStrategyCohortScorecardTests({
   runCheck,
   assert
@@ -32752,6 +32858,16 @@ await registerStrategyValidationCostsPortfolioUxTests({
   assert
 });
 
+await registerRiskReasonPolicyTests({
+  runCheck,
+  assert
+});
+
+await registerRiskSetupQualityPolicyTests({
+  runCheck,
+  assert
+});
+
 await registerMissionControlRiskIntelligenceTests({
   runCheck,
   assert
@@ -32870,6 +32986,16 @@ await registerPaperTradeLifecycleContractTests({
   makeConfig
 });
 
+await registerBrokerFactoryTests({
+  runCheck,
+  assert
+});
+
+await registerDomainTestRegistryTests({
+  runCheck,
+  assert
+});
+
 await registerStopLimitStuckTests({
   runCheck,
   assert
@@ -32880,5 +33006,21 @@ await registerStopLimitGapTests({
   assert
 });
 
+const desktopTestDir = path.resolve("desktop", "test");
+const discoveredTestFiles = [
+  ...(await collectTestFiles(path.resolve("test"))),
+  ...((await fs.stat(desktopTestDir).then((stat) => stat.isDirectory()).catch(() => false)) ? await collectTestFiles(desktopTestDir) : [])
+];
+if (discoveredTestFiles.length === 0) {
+  throw new Error("No test files found.");
+}
+if (runnerStats.total === 0) {
+  throw new Error(`No tests matched filters: ${runnerArgs.join(" ") || "(none)"}`);
+}
+const durationMs = Date.now() - testStartedAt;
+console.log(`Test summary: files=${discoveredTestFiles.length} total=${runnerStats.total} passed=${runnerStats.passed} failed=${runnerStats.failed} skipped=${runnerStats.skipped} suites=${checkCount} assertions=${checkCount} durationMs=${durationMs}`);
+if (runnerStats.failed > 0 || process.exitCode) {
+  process.exit(1);
+}
 console.log("All checks passed.");
 process.exit(0);

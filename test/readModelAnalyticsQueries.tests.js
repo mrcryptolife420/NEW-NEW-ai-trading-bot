@@ -12,7 +12,7 @@ function createAnalyticsDb() {
     CREATE TABLE trades (id TEXT, symbol TEXT, broker_mode TEXT, strategy_family TEXT, pnl_quote REAL, net_pnl_pct REAL, exit_at TEXT, entry_at TEXT, json TEXT NOT NULL);
     CREATE TABLE decisions (id TEXT, symbol TEXT, at TEXT, allow INTEGER, root_blocker TEXT, json TEXT NOT NULL);
     CREATE TABLE blockers (reason TEXT, symbol TEXT);
-    CREATE TABLE audit_events (type TEXT, at TEXT, json TEXT NOT NULL);
+    CREATE TABLE audit_events (type TEXT, at TEXT, symbol TEXT, decision_id TEXT, json TEXT NOT NULL);
     CREATE TABLE scorecards (strategy_id TEXT, strategy_family TEXT, regime TEXT, session TEXT, status TEXT, sample_size INTEGER, expectancy_pct REAL, confidence REAL, json TEXT NOT NULL);
     CREATE TABLE replay_traces (id TEXT, symbol TEXT, at TEXT, status TEXT, json TEXT NOT NULL);
   `);
@@ -95,6 +95,62 @@ export async function registerReadModelAnalyticsQueriesTests({ runCheck, assert 
     assert.equal(summary.paperEvidenceSpineSummary.count, 1);
     assert.equal(summary.paperEvidenceSpineSummary.paperOnly, true);
     assert.equal(summary.vetoReplayCoverageSummary.outcomeCount, 1);
+    assert.equal(summary.vetoReplayCoverageSummary.replayTraceCount, 1);
+    assert.equal(summary.vetoReplayCoverageSummary.coverageStatus, "covered");
+    db.close();
+  });
+
+  await runCheck("readmodel analytics derives paper evidence from audit events when core tables are empty", async () => {
+    const db = createAnalyticsDb();
+    db.prepare("INSERT INTO audit_events(type, at, symbol, decision_id, json) VALUES (?, ?, ?, ?, ?)").run(
+      "paper_candidate_blocked",
+      "2026-05-06T09:00:00.000Z",
+      "BTCUSDT",
+      "d-audit",
+      JSON.stringify({
+        decisionId: "d-audit",
+        symbol: "BTCUSDT",
+        rootBlocker: "model_confidence_too_low",
+        setupType: "pullback"
+      })
+    );
+    db.prepare("INSERT INTO audit_events(type, at, symbol, decision_id, json) VALUES (?, ?, ?, ?, ?)").run(
+      "paper_trade_closed",
+      "2026-05-06T10:00:00.000Z",
+      "BTCUSDT",
+      "d-audit",
+      JSON.stringify({
+        trade: {
+          id: "paper-t1",
+          symbol: "BTCUSDT",
+          brokerMode: "paper",
+          pnlQuote: 4,
+          netPnlPct: 0.2,
+          exitQuality: { label: "good_exit" }
+        }
+      })
+    );
+    db.prepare("INSERT INTO audit_events(type, at, symbol, decision_id, json) VALUES (?, ?, ?, ?, ?)").run(
+      "veto_outcome",
+      "2026-05-06T10:05:00.000Z",
+      "BTCUSDT",
+      "d-audit",
+      JSON.stringify({ decisionId: "d-audit", symbol: "BTCUSDT", vetoOutcome: { label: "good_veto" } })
+    );
+
+    const summary = buildPaperAnalyticsReadModelSummary({ db });
+    assert.equal(summary.counts.persistedPaperCandidates, 0);
+    assert.equal(summary.counts.auditDerivedPaperCandidates, 1);
+    assert.equal(summary.persistenceCoverage.decisions.status, "derived_only");
+    assert.equal(summary.persistenceCoverage.blockers.status, "derived_only");
+    assert.ok(summary.persistenceGaps.some((gap) => gap.area === "decisions"));
+    assert.equal(summary.blockerTimelines[0].reason, "model_confidence_too_low");
+    assert.equal(summary.blockerTimelines[0].stage, "model");
+    assert.equal(summary.counts.auditDerivedBlockerTimelines, 1);
+    assert.equal(summary.counts.paperCandidates, 1);
+    assert.equal(summary.counts.paperTrades, 1);
+    assert.equal(summary.counts.derivedReplayTraces, 1);
+    assert.equal(summary.paperEvidenceSpineSummary.status, "ready");
     assert.equal(summary.vetoReplayCoverageSummary.replayTraceCount, 1);
     assert.equal(summary.vetoReplayCoverageSummary.coverageStatus, "covered");
     db.close();

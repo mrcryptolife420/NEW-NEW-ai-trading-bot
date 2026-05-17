@@ -34,7 +34,7 @@ import {
   buildTradingPathHealth,
   normalizeDashboardFreshness
 } from "../runtime/tradingPathHealth.js";
-import { buildNoTradeTimeline, summarizeNoTradeTimelines } from "../runtime/noTradeTimeline.js";
+import { buildNoTradeTimeline, inferNoTradeStage, summarizeNoTradeTimelines } from "../runtime/noTradeTimeline.js";
 import { buildRuntimeLivenessSummary } from "../runtime/runtimeLiveness.js";
 import { buildCanaryReleaseGate, buildCanaryReleaseSummary } from "../runtime/canaryReleaseGate.js";
 import { buildOperatorActionQueue } from "../runtime/operatorActionQueue.js";
@@ -676,7 +676,24 @@ export default async function runCli({
       ...(Array.isArray(runtime.latestDecisions) ? runtime.latestDecisions : []),
       ...(Array.isArray(readmodel.paperAnalyticsReadmodelSummary?.paperCandidates) ? readmodel.paperAnalyticsReadmodelSummary.paperCandidates : [])
     ].slice(0, 20);
-    const noTradeTimelines = noTradeInputs.map((candidate) => buildNoTradeTimeline({
+    const healthBlockers = Array.isArray(health.blockingReasons) ? health.blockingReasons : [];
+    const healthStaleSources = Array.isArray(health.staleSources) ? health.staleSources : [];
+    const healthTimelineReason = [...healthBlockers, ...healthStaleSources]
+      .find((reason) => inferNoTradeStage(reason) !== "insufficient_evidence") ||
+      healthBlockers[0] ||
+      healthStaleSources[0] ||
+      null;
+    const noTradeTimelineInputs = noTradeInputs.length
+      ? noTradeInputs
+      : healthTimelineReason
+        ? [{
+            symbol: "runtime_path",
+            rootBlocker: healthTimelineReason,
+            blockerReasons: healthBlockers,
+            reasons: healthStaleSources
+          }]
+        : [];
+    const noTradeTimelines = noTradeTimelineInputs.map((candidate) => buildNoTradeTimeline({
       candidate,
       decision: candidate,
       tradingPathHealth: health,

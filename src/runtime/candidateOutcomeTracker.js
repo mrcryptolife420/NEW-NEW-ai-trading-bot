@@ -12,6 +12,14 @@ function finite(value, fallback = null) {
   return Number.isFinite(numeric) ? numeric : fallback;
 }
 
+function firstDefined(...values) {
+  return values.find((value) => value != null && value !== "") ?? null;
+}
+
+function text(value, fallback = null) {
+  return typeof value === "string" && value.trim().length ? value.trim() : fallback;
+}
+
 function unique(values) {
   return [...new Set(arr(values).filter((value) => typeof value === "string" && value.length))];
 }
@@ -58,6 +66,77 @@ function resolveFeatureQuality(decision = {}) {
     null;
 }
 
+function resolveDataLineage(decision = {}) {
+  const lineage = decision.dataLineage ||
+    decision.inputLineage ||
+    decision.sourceLineage ||
+    decision.learningLineage ||
+    {};
+  const marketSnapshot = decision.marketSnapshot || decision.market || {};
+  const featureSnapshot = decision.featureSnapshot || decision.features || {};
+  return {
+    decisionCreatedAt: text(firstDefined(decision.createdAt, decision.timestamp, decision.at)),
+    marketDataAt: text(firstDefined(
+      lineage.marketDataAt,
+      lineage.marketUpdatedAt,
+      decision.marketDataAt,
+      decision.marketUpdatedAt,
+      marketSnapshot.updatedAt,
+      marketSnapshot.at
+    )),
+    featureDataAt: text(firstDefined(
+      lineage.featureDataAt,
+      lineage.featuresAt,
+      decision.featureDataAt,
+      decision.featuresAt,
+      featureSnapshot.updatedAt,
+      featureSnapshot.at
+    )),
+    orderBookAt: text(firstDefined(lineage.orderBookAt, decision.orderBookAt, decision.orderBook?.updatedAt, decision.orderBook?.lastUpdateAt)),
+    newsAt: text(firstDefined(lineage.newsAt, decision.newsAt, decision.newsSummary?.updatedAt)),
+    sentimentAt: text(firstDefined(lineage.sentimentAt, decision.sentimentAt, decision.sentimentSummary?.updatedAt)),
+    featuresHash: text(firstDefined(lineage.featuresHash, lineage.featureHash, decision.featuresHash, decision.featureHash)),
+    configHash: text(firstDefined(lineage.configHash, decision.configHash, decision.configSnapshotHash)),
+    modelVersion: text(firstDefined(lineage.modelVersion, decision.modelVersion, decision.modelSummary?.version)),
+    sources: unique([
+      ...arr(lineage.sources),
+      lineage.source,
+      decision.source,
+      marketSnapshot.source,
+      featureSnapshot.source
+    ])
+  };
+}
+
+function resolveDataQuality(decision = {}) {
+  const freshness = decision.candidateFreshness || decision.freshness || {};
+  const diagnostics = decision.entryDiagnostics || {};
+  return {
+    dataFreshnessStatus: text(firstDefined(freshness.dataFreshnessStatus, decision.dataFreshnessStatus), "unknown"),
+    marketDataAgeMs: finite(firstDefined(freshness.marketDataAgeMs, decision.marketDataAgeMs, diagnostics.marketDataAgeMs)),
+    featureAgeMs: finite(firstDefined(freshness.featureAgeMs, decision.featureAgeMs, diagnostics.featureAgeMs)),
+    spreadBps: finite(firstDefined(decision.spreadBps, diagnostics.spreadBps, decision.marketSnapshot?.spreadBps)),
+    slippageBps: finite(firstDefined(decision.slippageBps, diagnostics.slippageBps)),
+    probability: finite(decision.probability),
+    threshold: finite(decision.threshold),
+    expectedNetEdgePct: finite(firstDefined(decision.expectedNetEdgePct, decision.netEdgePct, decision.edgePct)),
+    setupQuality: finite(firstDefined(decision.setupQuality, decision.qualityScore, decision.strategySummary?.setupQuality))
+  };
+}
+
+function learningWeightFor({ hardSafetyReasons = [], dataLineage = {}, dataQuality = {} } = {}) {
+  if (arr(hardSafetyReasons).length) return 0;
+  let weight = 1;
+  const freshness = `${dataQuality.dataFreshnessStatus || ""}`.toLowerCase();
+  if (["stale", "expired"].includes(freshness)) weight *= 0.5;
+  const marketDataAgeMs = finite(dataQuality.marketDataAgeMs);
+  if (marketDataAgeMs != null && marketDataAgeMs > 300000) weight *= 0.25;
+  else if (marketDataAgeMs != null && marketDataAgeMs > 60000) weight *= 0.5;
+  if (!dataLineage.marketDataAt) weight *= 0.8;
+  if (!dataLineage.featuresHash && !dataLineage.configHash) weight *= 0.85;
+  return Math.max(0, Number(weight.toFixed(3)));
+}
+
 function pathFromCandles({ observation = {}, futureCandles = [], horizonMinutes = null } = {}) {
   const candles = arr(futureCandles)
     .filter((candle) => finite(candle?.close ?? candle?.price) != null)
@@ -90,6 +169,9 @@ export function buildCandidateOutcomeObservations(decision = {}, {
   const reasons = resolveReasons(decision);
   const hardSafetyReasons = reasons.filter(isHardSafetyReason);
   const blockerFamily = classifyReasonCategory(observation.rootBlocker || reasons[0] || "unknown");
+  const dataLineage = resolveDataLineage(decision);
+  const dataQuality = resolveDataQuality(decision);
+  const learningWeight = learningWeightFor({ hardSafetyReasons, dataLineage, dataQuality });
   return arr(horizonsMinutes).map((horizonMinutes) => ({
     observationId: `${observation.id || observation.symbol || "candidate"}::${horizonMinutes}m`,
     decisionId: observation.id,
@@ -106,6 +188,9 @@ export function buildCandidateOutcomeObservations(decision = {}, {
     strategyFamily: resolveStrategyFamily(decision),
     regime: resolveRegime(decision),
     featureQuality: resolveFeatureQuality(decision),
+    dataLineage,
+    dataQuality,
+    learningWeight,
     learningEligible: hardSafetyReasons.length === 0,
     relaxationAllowed: false
   }));
@@ -150,6 +235,15 @@ export function summarizeCandidateOutcomes(records = []) {
   let hardSafetyCount = 0;
   const badVetoByBlocker = new Map();
   const missedWinners = [];
+  const lineageCoverage = {
+    withMarketDataAt: 0,
+    withFeatureDataAt: 0,
+    withFeaturesHash: 0,
+    withConfigHash: 0,
+    staleDataCount: 0,
+    missingLineageCount: 0,
+    totalLearningWeight: 0
+  };
 
   for (const record of items) {
     const label = record.label || record.outcome || "unknown_veto";
@@ -157,6 +251,19 @@ export function summarizeCandidateOutcomes(records = []) {
     if (record.hardSafetyBlocked || arr(record.hardSafetyReasons).length) {
       hardSafetyCount += 1;
     }
+    const lineage = record.dataLineage || {};
+    const quality = record.dataQuality || {};
+    if (lineage.marketDataAt) lineageCoverage.withMarketDataAt += 1;
+    if (lineage.featureDataAt) lineageCoverage.withFeatureDataAt += 1;
+    if (lineage.featuresHash) lineageCoverage.withFeaturesHash += 1;
+    if (lineage.configHash) lineageCoverage.withConfigHash += 1;
+    if (["stale", "expired"].includes(`${quality.dataFreshnessStatus || ""}`.toLowerCase())) {
+      lineageCoverage.staleDataCount += 1;
+    }
+    if (!lineage.marketDataAt && !lineage.featureDataAt && !lineage.featuresHash && !lineage.configHash) {
+      lineageCoverage.missingLineageCount += 1;
+    }
+    lineageCoverage.totalLearningWeight += finite(record.learningWeight, 0);
     if (label === "bad_veto") {
       const key = record.blocker || "unknown";
       const current = badVetoByBlocker.get(key) || { blocker: key, count: 0, strategyFamilies: new Set(), regimes: new Set() };
@@ -182,6 +289,10 @@ export function summarizeCandidateOutcomes(records = []) {
     counts,
     hardSafetyCount,
     hardSafetyRelaxationAllowed: false,
+    lineageCoverage: {
+      ...lineageCoverage,
+      averageLearningWeight: items.length ? Number((lineageCoverage.totalLearningWeight / items.length).toFixed(3)) : 0
+    },
     missedWinnerSummary: {
       count: counts.bad_veto || 0,
       top: missedWinners.sort((left, right) => right.confidence - left.confidence).slice(0, 10)

@@ -9,8 +9,18 @@ on:
       - main
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  qa:
+    name: QA (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        node-version:
+          - 22
+          - 24
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,11 +28,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check critical files
+        run: npm run check:critical
+
+      - name: Check syntax
+        run: npm run check:syntax
+
+      - name: Check import integrity
+        run: npm run check:imports
+
+      - name: Check env examples
+        run: npm run check:env
 
       - name: Run lint
         run: npm run lint
@@ -30,8 +52,69 @@ jobs:
       - name: Run format check
         run: npm run format:check
 
-      - name: Run tests
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Run paper safety and no-live-leak tests
+        run: npm run test:safety
+
+      - name: Run full test suite
         run: npm test
 
       - name: Run coverage
         run: npm run coverage
+
+      - name: Run feature audit
+        run: node src/cli.js feature:audit
+
+      - name: Run REST audit
+        run: node src/cli.js rest:audit
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ matrix.os }}-node-${{ matrix.node-version }}
+          path: coverage/
+          if-no-files-found: ignore
+
+  desktop-smoke:
+    name: Desktop smoke build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install bot dependencies
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Diagnose desktop package
+        working-directory: desktop
+        run: npm run diagnose
+
+      - name: Build unpacked desktop app
+        working-directory: desktop
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+        run: npm run dist:dir
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-dist-dir
+          path: desktop/dist/
+          if-no-files-found: error

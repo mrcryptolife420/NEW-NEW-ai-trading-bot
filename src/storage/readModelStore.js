@@ -6,6 +6,7 @@ import { AuditLogStore } from "./auditLogStore.js";
 import { buildStrategyEvidenceScorecards } from "../runtime/strategyEvidenceScorecard.js";
 import { buildOperatorRunbookForReason, buildStrategyLifecycleDiagnostics } from "../runtime/operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "../runtime/tradingImprovementDiagnostics.js";
+import { buildRestBudgetGovernorSummary } from "../runtime/restBudgetGovernor.js";
 import { ensureDir } from "../utils/fs.js";
 import { buildPaperAnalyticsReadModelSummary } from "./readModelAnalyticsQueries.js";
 
@@ -95,12 +96,126 @@ function tableCount(db, table) {
   return db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get().count || 0;
 }
 
+function shouldMaterializePrimaryEvidence(status = {}) {
+  const tables = status.tables || {};
+  if (!tables.auditEvents) return false;
+  const gaps = arr(status.paperAnalyticsReadmodelSummary?.persistenceGaps).map((gap) => gap.area);
+  return [
+    tables.decisions === 0 && gaps.includes("decisions"),
+    tables.blockers === 0 && gaps.includes("blockers"),
+    tables.trades === 0 && gaps.includes("paperTrades")
+  ].some(Boolean);
+}
+
 function parseJson(value, fallback = null) {
   try {
     return JSON.parse(value);
   } catch {
     return fallback;
   }
+}
+
+function eventPayload(event = {}) {
+  return event.payload || event.detail || event.data || event;
+}
+
+function uniqueStrings(values = []) {
+  return [...new Set(arr(values).filter(Boolean).map((value) => `${value}`))];
+}
+
+function inferBlockerStage(reason = "") {
+  const text = `${reason || ""}`.toLowerCase();
+  if (/data|quality|quorum|snapshot|stream|feed|lineage|local_book/.test(text)) return "data";
+  if (/setup|strategy|breakout|trend|regime|session/.test(text)) return "setup";
+  if (/confidence|model|calibration|score|probability/.test(text)) return "model";
+  if (/risk|portfolio|capital|correlation|drawdown|exposure|size/.test(text)) return "risk";
+  if (/cost|spread|slippage|exec|order|intent|fill|min_notional/.test(text)) return "execution";
+  if (/committee|meta|veto|governance|canary/.test(text)) return "governance";
+  if (/exchange_safety|exchange_truth|reconcile|live_ack|preflight|manual_review/.test(text)) return "safety";
+  return "unknown";
+}
+
+function normalizeAuditDecisionEvent(event = {}, index = 0) {
+  const payload = eventPayload(event);
+  const reasons = uniqueStrings([
+    payload.rootBlocker,
+    payload.primaryRootBlocker,
+    payload.blockedReason,
+    payload.primaryReason,
+    ...arr(payload.reasons),
+    ...arr(payload.blockerReasons),
+    ...arr(payload.reasonCodes),
+    ...arr(payload.riskVerdict?.rejections).map((item) => item?.code)
+  ]);
+  const type = event.type || event.kind || event.eventType || "audit_event";
+  const symbol = event.symbol || payload.symbol || null;
+  const decisionLikeType = /decision|candidate|blocked|blocker|veto|confidence|governance|risk/.test(`${type}`.toLowerCase());
+  const decisionId = event.decisionId || event.decision_id || payload.decisionId || (decisionLikeType ? payload.id : null) || null;
+  if (!decisionId && !reasons.length && !decisionLikeType) return null;
+  const status = `${payload.status || event.status || ""}`.toLowerCase();
+  return {
+    id: safeString(decisionId, `audit-decision:${type}:${symbol || "unknown"}:${event.at || index}`),
+    symbol: safeString(symbol),
+    at: safeString(event.at || payload.at || payload.createdAt),
+    allow: payload.allow || payload.approved || ["allowed", "approved", "executed", "queued"].includes(status) ? 1 : 0,
+    rootBlocker: safeString(payload.rootBlocker || payload.primaryRootBlocker || reasons[0]),
+    blockerStage: safeString(payload.blockerStage || payload.stage || inferBlockerStage(payload.rootBlocker || payload.primaryRootBlocker || reasons[0])),
+    reasons,
+    sourceType: type,
+    json: { ...payload, id: decisionId, symbol, source: "audit_events", sourceType: type }
+  };
+}
+
+function normalizeAuditTradeEvent(event = {}, index = 0) {
+  const payload = eventPayload(event);
+  const trade = payload.trade || payload.position || payload.executionResult || payload;
+  const type = `${event.type || event.kind || event.eventType || ""}`.toLowerCase();
+  const brokerMode = trade.brokerMode || trade.mode || trade.source || payload.brokerMode || payload.mode || null;
+  const looksLikePaper = `${brokerMode || ""}`.toLowerCase() === "paper" || type.includes("paper_trade");
+  if (!looksLikePaper || !(trade.id || trade.tradeId || trade.symbol || payload.symbol)) return null;
+  const strategy = trade.strategyAtEntry || trade.strategy || trade.strategySummary || {};
+  return {
+    id: safeString(trade.id || trade.tradeId, `audit-trade:${event.at || index}`),
+    symbol: safeString(trade.symbol || payload.symbol || event.symbol),
+    brokerMode: "paper",
+    strategyId: safeString(strategy.strategy || strategy.id || trade.strategyId || trade.activeStrategy),
+    strategyFamily: safeString(strategy.family || trade.strategyFamily || trade.family),
+    regime: safeString(trade.regimeAtEntry || trade.regime),
+    session: safeString(trade.session || trade.sessionAtEntry),
+    entryAt: safeString(trade.entryAt || payload.entryAt),
+    exitAt: safeString(trade.exitAt || payload.exitAt || event.at),
+    pnlQuote: safeNumber(trade.pnlQuote ?? trade.pnl, 0),
+    netPnlPct: safeNumber(trade.netPnlPct ?? trade.pnlPct, 0),
+    json: { ...trade, brokerMode: "paper", source: "audit_events" }
+  };
+}
+
+function shouldCreateReplayTrace(decision = {}, event = {}) {
+  const text = `${decision.rootBlocker || ""} ${decision.sourceType || ""} ${JSON.stringify(eventPayload(event))}`.toLowerCase();
+  return /bad_veto|good_veto|veto|committee_veto|meta_neural_caution|model_confidence_too_low|confidence/.test(text);
+}
+
+function buildDerivedReplayTrace(decision = {}, event = {}, index = 0) {
+  if (!shouldCreateReplayTrace(decision, event)) return null;
+  const payload = eventPayload(event);
+  const label = payload.vetoOutcome?.label || payload.label || payload.outcome || decision.rootBlocker || "confidence_near_miss";
+  const seed = `${decision.id || event.id || index}:${decision.symbol || "unknown"}:${label}`;
+  return {
+    id: `derived-replay:${seed}`.replace(/[^a-zA-Z0-9:._-]/g, "_").slice(0, 180),
+    symbol: decision.symbol || event.symbol || payload.symbol || null,
+    at: decision.at || event.at || payload.at || null,
+    status: "derived_from_audit_evidence",
+    json: {
+      source: "audit_events",
+      sourceDecisionId: decision.id || null,
+      sourceAuditId: event.id || event.eventId || null,
+      label,
+      seed,
+      configHash: event.configHash || payload.configHash || null,
+      deterministicInputHash: `${seed}:${event.configHash || payload.configHash || "no_config_hash"}`,
+      replayRequiredFor: decision.rootBlocker || label
+    }
+  };
 }
 
 function isSqliteBusy(error) {
@@ -486,15 +601,66 @@ export class ReadModelStore {
 
       arr(allAuditLikeEvents).forEach((event, index) => {
         const id = safeString(event.id || event.eventId, `audit:${index}`);
+        const payload = eventPayload(event);
         insertAudit.run(
           id,
-          safeString(event.at),
+          safeString(event.at || payload.at),
           safeString(event.type || event.kind || event.eventType),
-          safeString(event.symbol),
-          safeString(event.cycleId || event.cycle_id),
-          safeString(event.decisionId || event.decision_id),
+          safeString(event.symbol || payload.symbol),
+          safeString(event.cycleId || event.cycle_id || payload.cycleId),
+          safeString(event.decisionId || event.decision_id || payload.decisionId),
           json(event)
         );
+        const materializedDecision = normalizeAuditDecisionEvent(event, index);
+        if (materializedDecision) {
+          insertDecision.run(
+            materializedDecision.id,
+            materializedDecision.symbol,
+            materializedDecision.at,
+            materializedDecision.allow,
+            materializedDecision.rootBlocker,
+            materializedDecision.blockerStage,
+            json(materializedDecision.json)
+          );
+          materializedDecision.reasons.forEach((reason, reasonIndex) => {
+            insertBlocker.run(
+              `${materializedDecision.id}:audit:${reasonIndex}:${reason}`.slice(0, 220),
+              materializedDecision.id,
+              materializedDecision.symbol,
+              safeString(reason),
+              safeString(inferBlockerStage(reason)),
+              reasonIndex === 0 ? 1 : 0,
+              json({
+                reason,
+                decisionId: materializedDecision.id,
+                source: "audit_events",
+                sourceAuditId: id,
+                sourceType: materializedDecision.sourceType
+              })
+            );
+          });
+          const replayTrace = buildDerivedReplayTrace(materializedDecision, { ...event, id }, index);
+          if (replayTrace) {
+            insertReplay.run(replayTrace.id, safeString(replayTrace.symbol), safeString(replayTrace.at), safeString(replayTrace.status), json(replayTrace.json));
+          }
+        }
+        const materializedTrade = normalizeAuditTradeEvent(event, index);
+        if (materializedTrade) {
+          insertTrade.run(
+            materializedTrade.id,
+            materializedTrade.symbol,
+            materializedTrade.brokerMode,
+            materializedTrade.strategyId,
+            materializedTrade.strategyFamily,
+            materializedTrade.regime,
+            materializedTrade.session,
+            materializedTrade.entryAt,
+            materializedTrade.exitAt,
+            materializedTrade.pnlQuote,
+            materializedTrade.netPnlPct,
+            json(materializedTrade.json)
+          );
+        }
       });
 
       const scorecards = buildStrategyEvidenceScorecards({
@@ -546,6 +712,116 @@ export class ReadModelStore {
     const effectiveAuditStore = auditStore || new AuditLogStore(this.runtimeDir);
     const auditEvents = await readAllAuditEvents(effectiveAuditStore.auditDir);
     return this.rebuild({ journal, auditEvents });
+  }
+
+  materializePrimaryEvidenceFromAuditEvents({ at = new Date().toISOString() } = {}) {
+    if (this.unavailable) return { status: "unavailable", reason: "readmodel_db_unavailable" };
+    const db = this.open();
+    this.ensureSchema();
+    const before = {
+      decisions: tableCount(db, "decisions"),
+      blockers: tableCount(db, "blockers"),
+      trades: tableCount(db, "trades"),
+      replayTraces: tableCount(db, "replay_traces"),
+      auditEvents: tableCount(db, "audit_events")
+    };
+    if (!before.auditEvents) {
+      return { status: "skipped", source: "audit_events", reason: "no_audit_events_available", before };
+    }
+    const insertDecision = db.prepare(`
+      INSERT OR REPLACE INTO decisions(id, symbol, at, allow, root_blocker, blocker_stage, json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertBlocker = db.prepare(`
+      INSERT OR REPLACE INTO blockers(id, decision_id, symbol, reason, stage, root, json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertTrade = db.prepare(`
+      INSERT OR REPLACE INTO trades(id, symbol, broker_mode, strategy_id, strategy_family, regime, session, entry_at, exit_at, pnl_quote, net_pnl_pct, json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertReplay = db.prepare(`
+      INSERT OR REPLACE INTO replay_traces(id, symbol, at, status, json)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const rows = db.prepare("SELECT id, at, type, symbol, cycle_id AS cycleId, decision_id AS decisionId, json FROM audit_events ORDER BY COALESCE(at, ''), id").all();
+    db.exec("BEGIN");
+    try {
+      rows.forEach((row, index) => {
+        const event = { ...parseJson(row.json, {}), ...row };
+        const materializedDecision = normalizeAuditDecisionEvent(event, index);
+        if (materializedDecision) {
+          insertDecision.run(
+            materializedDecision.id,
+            materializedDecision.symbol,
+            materializedDecision.at,
+            materializedDecision.allow,
+            materializedDecision.rootBlocker,
+            materializedDecision.blockerStage,
+            json(materializedDecision.json)
+          );
+          materializedDecision.reasons.forEach((reason, reasonIndex) => {
+            insertBlocker.run(
+              `${materializedDecision.id}:audit:${reasonIndex}:${reason}`.slice(0, 220),
+              materializedDecision.id,
+              materializedDecision.symbol,
+              safeString(reason),
+              safeString(inferBlockerStage(reason)),
+              reasonIndex === 0 ? 1 : 0,
+              json({ reason, decisionId: materializedDecision.id, source: "audit_events", sourceAuditId: row.id, sourceType: materializedDecision.sourceType })
+            );
+          });
+          const replayTrace = buildDerivedReplayTrace(materializedDecision, { ...event, id: row.id }, index);
+          if (replayTrace) {
+            insertReplay.run(replayTrace.id, safeString(replayTrace.symbol), safeString(replayTrace.at), safeString(replayTrace.status), json(replayTrace.json));
+          }
+        }
+        const materializedTrade = normalizeAuditTradeEvent(event, index);
+        if (materializedTrade) {
+          insertTrade.run(
+            materializedTrade.id,
+            materializedTrade.symbol,
+            materializedTrade.brokerMode,
+            materializedTrade.strategyId,
+            materializedTrade.strategyFamily,
+            materializedTrade.regime,
+            materializedTrade.session,
+            materializedTrade.entryAt,
+            materializedTrade.exitAt,
+            materializedTrade.pnlQuote,
+            materializedTrade.netPnlPct,
+            json(materializedTrade.json)
+          );
+        }
+      });
+      const after = {
+        decisions: tableCount(db, "decisions"),
+        blockers: tableCount(db, "blockers"),
+        trades: tableCount(db, "trades"),
+        replayTraces: tableCount(db, "replay_traces"),
+        auditEvents: tableCount(db, "audit_events")
+      };
+      const result = {
+        status: "materialized",
+        source: "audit_events",
+        materializedAt: at,
+        before,
+        after,
+        inserted: {
+          decisions: Math.max(0, after.decisions - before.decisions),
+          blockers: Math.max(0, after.blockers - before.blockers),
+          trades: Math.max(0, after.trades - before.trades),
+          replayTraces: Math.max(0, after.replayTraces - before.replayTraces)
+        }
+      };
+      db.prepare("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)").run("primaryEvidenceMaterializedAt", at);
+      db.prepare("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)").run("primaryEvidenceMaterializationLast", json(result));
+      db.exec("COMMIT");
+      return result;
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
   }
 
   refreshFromJournalSnapshot({ journal = {}, at = new Date().toISOString() } = {}) {
@@ -704,6 +980,7 @@ export class ReadModelStore {
       schemaVersion: Number(meta.schemaVersion || READ_MODEL_SCHEMA_VERSION),
       rebuiltAt: meta.rebuiltAt || null,
       journalRefreshedAt: meta.journalRefreshedAt || null,
+      primaryEvidenceMaterializedAt: meta.primaryEvidenceMaterializedAt || null,
       tables: {
         trades: tableCount(db, "trades"),
         decisions: tableCount(db, "decisions"),
@@ -716,8 +993,10 @@ export class ReadModelStore {
         replayTraces: tableCount(db, "replay_traces")
       }
     };
+    const primaryEvidenceMaterialization = parseJson(meta.primaryEvidenceMaterializationLast, null);
     return {
       ...baseStatus,
+      primaryEvidenceMaterialization,
       paperAnalyticsReadmodelSummary: buildPaperAnalyticsReadModelSummary({
         db,
         status: baseStatus,
@@ -899,6 +1178,24 @@ export class ReadModelStore {
       })
       .sort((left, right) => (right.weight - left.weight) || (right.count - left.count) || left.caller.localeCompare(right.caller))
       .slice(0, limit);
+    const governorSummary = buildRestBudgetGovernorSummary({
+      rateLimitState: {
+        usedWeight1m: latestWeight1m || 0,
+        topRestCallers: Object.fromEntries([...callers.values()].map((caller) => [
+          caller.caller,
+          { count: caller.count, weight: caller.weight }
+        ]))
+      }
+    });
+    const enrichedTopCallers = governorSummary.topCallers.slice(0, limit).map((caller) => {
+      const orderTruthCaller = /openorders|open_orders|orderlist|order_lists|getorder/i.test(caller.caller || "");
+      if (!orderTruthCaller) return caller;
+      return {
+        ...caller,
+        streamReplacementAvailable: true,
+        nextSafeAction: "use_user_stream_order_truth_and_reduce_rest_sanity"
+      };
+    });
     const pressureLevel = latestWeight1m == null
       ? "unknown"
       : latestWeight1m >= 6000
@@ -911,13 +1208,15 @@ export class ReadModelStore {
     const criticalCallers = topCallers
       .filter((caller) => caller.weight >= 25 || ["public_market_depth", "private_orders", "private_account"].includes(caller.restClass))
       .slice(0, Math.max(1, Math.min(5, limit)));
-    const callerGroups = topCallers.reduce((groups, caller) => {
+    const callerGroups = enrichedTopCallers.reduce((groups, caller) => {
       const group = caller.restClass === "public_market_depth"
         ? "public_depth"
-        : caller.restClass === "public_book_ticker"
-          ? "public_book_ticker"
-          : caller.restClass === "public_klines"
-            ? "public_klines"
+        : caller.cacheRecommendation?.cacheKey === "universe_ticker_24hr"
+          ? "public_universe_ticker"
+          : caller.cacheRecommendation?.cacheKey === "exchange_info"
+            ? "exchange_info"
+            : caller.restClass === "public_market_snapshot"
+              ? "public_market_snapshot"
             : caller.restClass === "private_orders"
               ? "private_orders"
               : caller.restClass === "private_trade_history"
@@ -963,13 +1262,15 @@ export class ReadModelStore {
       latestWeight1m,
       pressureLevel,
       rateLimitEvents,
-      topCallers,
+      topCallers: enrichedTopCallers,
       criticalCallers,
+      budgetSlo: governorSummary.budgetSlo,
+      cacheTelemetry: governorSummary.cacheTelemetry || [],
       callerGroups: Object.values(callerGroups)
         .sort((left, right) => right.weight - left.weight)
         .slice(0, limit),
       incidents: [...incidents, ...incidentCandidates].slice(0, limit),
-      recommendedActions
+      recommendedActions: [...new Set([...recommendedActions, ...governorSummary.recommendedActions])]
     };
   }
 
@@ -1075,7 +1376,12 @@ export async function runReadModelCommand({ config, logger = null, action = "sta
     if (action === "dashboard") {
       return store.dashboardSummary();
     }
-    return store.status();
+    const status = store.status();
+    if (action === "status" && shouldMaterializePrimaryEvidence(status)) {
+      const materialization = store.materializePrimaryEvidenceFromAuditEvents();
+      return { ...store.status(), primaryEvidenceMaterialization: materialization };
+    }
+    return status;
   } finally {
     store.close();
   }

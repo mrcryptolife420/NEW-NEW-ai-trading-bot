@@ -29,8 +29,24 @@ export async function registerFastExecutionCoreTests({ runCheck, assert }) {
     const item = buildImmediateEntryQueueItem({ symbol: "SOLUSDT", now, ttlMs: 1000 });
     const summary = summarizeImmediateEntryQueue({ queue: [item], now: "2026-05-08T10:00:02.000Z" });
     assert.equal(summary.size, 0);
+    assert.equal(summary.expiredCount, 1);
     assert.equal(summary.items[0].status, "expired");
     assert.equal(summary.items[0].blockedReason, "candidate_expired");
+  });
+
+  await runCheck("immediate entry queue stores source trace context and preflight deadline", async () => {
+    const item = buildImmediateEntryQueueItem({
+      symbol: "ADAUSDT",
+      source: "fast_signal_trigger",
+      now,
+      ttlMs: 5000,
+      latencyBudgetMs: 250,
+      traceContext: { marketDataAgeMs: 120, featuresHash: "features-fast" }
+    });
+    assert.equal(item.source, "fast_signal_trigger");
+    assert.equal(item.preflightDeadlineAt, "2026-05-08T10:00:00.250Z");
+    assert.equal(item.latencyBudgetMs, 250);
+    assert.equal(item.traceContext.featuresHash, "features-fast");
   });
 
   await runCheck("fast preflight allows clean fresh candidate", async () => {

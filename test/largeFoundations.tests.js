@@ -1,5 +1,5 @@
 import { AuditLogStore } from "../src/storage/auditLogStore.js";
-import { ReadModelStore } from "../src/storage/readModelStore.js";
+import { ReadModelStore, runReadModelCommand } from "../src/storage/readModelStore.js";
 import { StateStore } from "../src/storage/stateStore.js";
 import { PersistenceCoordinator } from "../src/runtime/persistenceCoordinator.js";
 import { TradingBot } from "../src/runtime/tradingBot.js";
@@ -18,6 +18,8 @@ import {
 } from "../src/runtime/operatorRunbookGenerator.js";
 import { buildTradingImprovementDiagnostics } from "../src/runtime/tradingImprovementDiagnostics.js";
 import { buildRestBudgetGovernorSummary, evaluateRestBudgetAllowance } from "../src/runtime/restBudgetGovernor.js";
+import { buildRuntimeLivenessSummary } from "../src/runtime/runtimeLiveness.js";
+import { buildRestBanPauseSummary } from "../src/runtime/restBanPause.js";
 import { StreamCoordinator } from "../src/runtime/streamCoordinator.js";
 import { getMultiHorizonOrderflow, recordAggTrade, resetBuffer } from "../src/market/orderbookDelta.js";
 import { buildStrategyLifecycleGovernance, resolveRangeGridLifecycleFromTrades } from "../src/strategy/strategyLifecycleGovernance.js";
@@ -133,6 +135,155 @@ export async function registerLargeFoundationsTests({
     assert.equal(decisionTrace.blockers.length, 2);
     assert.equal(cycleTrace.decisionIds.includes("decision-1"), true);
     assert.equal(symbolTrace.decisions.length, 1);
+  });
+
+  await runCheck("sqlite read model materializes audit-only paper evidence into primary tables", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-readmodel-audit-evidence-"));
+    const stateStore = new StateStore(runtimeDir);
+    await stateStore.init();
+    await stateStore.saveJournal({ trades: [], blockedSetups: [], events: [] });
+    const auditStore = new AuditLogStore(runtimeDir);
+    await auditStore.append({
+      id: "audit-paper-candidate-1",
+      at: "2026-01-01T03:00:00.000Z",
+      type: "paper_candidate_blocked",
+      symbol: "SOLUSDT",
+      decisionId: "audit-decision-1",
+      rootBlocker: "committee_veto",
+      reasons: ["committee_veto", "model_confidence_too_low"],
+      configHash: "cfg-audit-1"
+    });
+    await auditStore.append({
+      id: "audit-paper-trade-1",
+      at: "2026-01-01T03:10:00.000Z",
+      type: "paper_trade_closed",
+      symbol: "SOLUSDT",
+      trade: {
+        id: "paper-audit-trade-1",
+        symbol: "SOLUSDT",
+        brokerMode: "paper",
+        entryAt: "2026-01-01T03:01:00.000Z",
+        exitAt: "2026-01-01T03:10:00.000Z",
+        pnlQuote: 1.2,
+        netPnlPct: 0.01,
+        strategyAtEntry: { strategy: "breakout", family: "breakout" }
+      }
+    });
+
+    const readModel = new ReadModelStore({ runtimeDir });
+    const status = await readModel.rebuildFromSources({ stateStore, auditStore });
+    const summary = status.paperAnalyticsReadmodelSummary;
+    readModel.close();
+
+    assert.equal(status.tables.decisions, 1);
+    assert.equal(status.tables.blockers, 2);
+    assert.equal(status.tables.trades, 1);
+    assert.equal(status.tables.replayTraces, 1);
+    assert.equal(summary.persistenceCoverage.decisions.status, "persisted");
+    assert.equal(summary.persistenceCoverage.blockers.status, "persisted");
+    assert.equal(summary.persistenceCoverage.paperTrades.status, "persisted");
+    assert.equal(summary.vetoReplayCoverageSummary.coverageStatus, "covered");
+  });
+
+  await runCheck("readmodel status repairs audit-derived primary persistence gaps in place", async () => {
+    const runtimeDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-readmodel-status-materialize-"));
+    const readModel = new ReadModelStore({ runtimeDir });
+    await readModel.init();
+    const db = readModel.open();
+    const candidate = {
+      id: "audit-paper-candidate-1",
+      at: "2026-01-01T03:00:00.000Z",
+      type: "paper_candidate_blocked",
+      symbol: "SOLUSDT",
+      decisionId: "audit-decision-1",
+      rootBlocker: "committee_veto",
+      reasons: ["committee_veto", "model_confidence_too_low"],
+      configHash: "cfg-audit-1"
+    };
+    const trade = {
+      id: "audit-paper-trade-1",
+      at: "2026-01-01T03:10:00.000Z",
+      type: "paper_trade_closed",
+      symbol: "SOLUSDT",
+      trade: {
+        id: "paper-audit-trade-1",
+        symbol: "SOLUSDT",
+        brokerMode: "paper",
+        entryAt: "2026-01-01T03:01:00.000Z",
+        exitAt: "2026-01-01T03:10:00.000Z",
+        pnlQuote: 1.2,
+        netPnlPct: 0.01,
+        strategyAtEntry: { strategy: "breakout", family: "breakout" }
+      }
+    };
+    const insert = db.prepare("INSERT OR REPLACE INTO audit_events(id, at, type, symbol, cycle_id, decision_id, json) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    insert.run(candidate.id, candidate.at, candidate.type, candidate.symbol, null, candidate.decisionId, JSON.stringify(candidate));
+    insert.run(trade.id, trade.at, trade.type, trade.symbol, null, null, JSON.stringify(trade));
+    assert.equal(readModel.status().tables.decisions, 0);
+    readModel.close();
+
+    const status = await runReadModelCommand({ config: { runtimeDir }, action: "status" });
+    const gaps = status.paperAnalyticsReadmodelSummary.persistenceGaps.map((gap) => gap.area);
+    assert.equal(status.tables.decisions, 1);
+    assert.equal(status.tables.blockers, 2);
+    assert.equal(status.tables.trades, 1);
+    assert.equal(status.tables.replayTraces, 1);
+    assert.equal(status.primaryEvidenceMaterialization.status, "materialized");
+    assert.equal(gaps.includes("decisions"), false);
+    assert.equal(gaps.includes("blockers"), false);
+    assert.equal(gaps.includes("paperTrades"), false);
+  });
+
+  await runCheck("runtime liveness emits incident snapshot when process runs but trading is inactive", async () => {
+    const summary = buildRuntimeLivenessSummary({
+      runtime: {
+        liveness: {
+          lastHeartbeatAt: "2026-01-01T00:00:00.000Z",
+          currentPhase: "cycle_waiting",
+          phases: { cycle_waiting: { at: "2026-01-01T00:04:00.000Z" } }
+        },
+        lastCycleAt: "2026-01-01T00:00:00.000Z",
+        selfHealState: { pauseEntries: true }
+      },
+      manager: { runState: "running", failureStreak: 2 },
+      config: { tradingIntervalSeconds: 30, runtimeLivenessStaleMs: 60_000 },
+      now: "2026-01-01T00:05:00.000Z"
+    });
+
+    assert.equal(summary.functionalStatus, "process_running_trading_not_functional");
+    assert.equal(summary.incidentSnapshot.status, "incident");
+    assert.equal(summary.incidentSnapshot.rootCause, "heartbeat_miss");
+    assert.equal(summary.incidentSnapshot.processRunning, true);
+    assert.equal(summary.incidentSnapshot.entriesPaused, true);
+    assert.equal(summary.incidentSnapshot.nextSafeAction, "inspect_runtime_loop_and_restart_if_heartbeat_does_not_recover");
+    assert.equal(summary.incidentSnapshot.nextRetryAt, null);
+    assert.ok(summary.incidentSnapshot.staleRetryWarnings.includes("stale_retry_timestamp"));
+  });
+
+  await runCheck("Binance REST ban pause is a functional data-pressure incident", async () => {
+    const pause = buildRestBanPauseSummary(
+      { banActive: true, banUntil: Date.parse("2026-01-01T00:10:00.000Z"), usedWeight1m: 0 },
+      { at: "2026-01-01T00:00:00.000Z", nowMs: Date.parse("2026-01-01T00:00:00.000Z") }
+    );
+    const summary = buildRuntimeLivenessSummary({
+      runtime: {
+        liveness: { lastHeartbeatAt: "2026-01-01T00:00:00.000Z", currentPhase: "cycle_waiting" },
+        lastCycleAt: "2026-01-01T00:00:00.000Z",
+        entryBlockedReasons: [pause.reason],
+        ops: { apiDegradationSummary: pause.apiDegradationSummary },
+        nextCycleAt: pause.nextRetryAt
+      },
+      manager: { runState: "running" },
+      config: { tradingIntervalSeconds: 30, runtimeLivenessStaleMs: 60_000 },
+      now: "2026-01-01T00:00:30.000Z"
+    });
+
+    assert.equal(pause.active, true);
+    assert.equal(pause.nextRetryAt, "2026-01-01T00:10:00.000Z");
+    assert.equal(summary.functionalStatus, "running_with_entry_blocks");
+    assert.equal(summary.incidentSnapshot.status, "incident");
+    assert.equal(summary.incidentSnapshot.rootCause, "data_pressure");
+    assert.equal(summary.incidentSnapshot.nextSafeAction, "reduce_rest_pressure_or_wait_for_budget_recovery_before_entries");
   });
 
   await runCheck("sqlite read model can discard corrupt local cache and rebuild empty", async () => {
@@ -1424,10 +1575,12 @@ export async function registerLargeFoundationsTests({
       "ExecutionCoordinator",
       "RuntimePersistenceService",
       "ReplayLabService",
-      "DashboardReadModelService"
+      "DashboardReadModelService",
+      "RuntimeLivenessService",
+      "OperatorDiagnosticsService"
     ]);
     assert.equal(map.status, "decomposition_foundation_ready");
     assert.equal(coverage.ok, true);
-    assert.equal(coverage.serviceCount >= 7, true);
+    assert.equal(coverage.serviceCount >= 9, true);
   });
 }

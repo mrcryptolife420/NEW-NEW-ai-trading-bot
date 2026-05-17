@@ -1,0 +1,176 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/events"
+    },
+    {
+      "method": "GET",
+      "path": "/api/snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics"
+    },
+    {
+      "method": "GET",
+      "path": "/api/accounts"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/gui/status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/gui/fast-execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/gui/diagnostics"
+    },
+    {
+      "method": "GET",
+      "path": "/api/config/env"
+    },
+    {
+      "method": "GET",
+      "path": "/api/config/profiles"
+    },
+    {
+      "method": "GET",
+      "path": "/api/readiness"
+    },
+    {
+      "method": "GET",
+      "path": "/api/mission-control"
+    },
+    {
+      "method": "GET",
+      "path": "/api/status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/doctor"
+    },
+    {
+      "method": "GET",
+      "path": "/api/report"
+    },
+    {
+      "method": "GET",
+      "path": "/api/learning"
+    },
+    {
+      "method": "GET",
+      "path": "/api/live/preflight"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/start"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/stop"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/refresh"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/cycle"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/research"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/mode"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/config/profile/preview"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/config/profile/apply"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/setup/run-checks"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/setup/complete"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/setup/reset"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/alerts/ack"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/alerts/silence"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/alerts/resolve"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/ops/force-reconcile"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/positions/review"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/ops/probe-only"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/diagnostics/action"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/policies/approve"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/policies/reject"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/policies/revert"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/promotion/approve"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/promotion/rollback"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/promotion/scope/approve"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/promotion/scope/rollback"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/promotion/probation/decide"
+    }
+  ]
+}

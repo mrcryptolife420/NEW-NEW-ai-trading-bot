@@ -1,0 +1,7261 @@
+{
+  "generatedAt": "2026-05-16T22:09:24.411Z",
+  "edges": [
+    {
+      "from": "src/accounts/accountProfileRegistry.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/probabilityCalibrator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/regimeModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/onlineModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/transformerChallenger.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/tradeLabeler.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/sequenceChallenger.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/metaNeuralGateModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/executionNeuralAdvisor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/exitNeuralAdvisor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/crossTimeframeEncoder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/strategyMetaSelector.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/adaptiveModel.js",
+      "to": "src/ai/strategyAllocationBandit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/capital/capitalAllocationAI.js",
+      "to": "src/utils/score.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/confidenceCalibration.js",
+      "to": "src/ai/antiOverfitGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/crossTimeframeEncoder.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/decision/doNothingIntelligence.js",
+      "to": "src/utils/score.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/executionNeuralAdvisor.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/executionNeuralAdvisor.js",
+      "to": "src/ai/tinyNeuralNetwork.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/exitIntelligence.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/exitIntelligence.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/exitNeuralAdvisor.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/exitNeuralAdvisor.js",
+      "to": "src/ai/tinyNeuralNetwork.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/metaDecisionGate.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/metaDecisionGate.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/metaNeuralGateModel.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/metaNeuralGateModel.js",
+      "to": "src/ai/tinyNeuralNetwork.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/multiAgentCommittee.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/learning/learningEventStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/proposalEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/safetyBoundLayer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/neuralSafetyAuditor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/fastReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/neuralWalkForward.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/stressScenarioEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/promotionPipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/autonomyEngine.js",
+      "to": "src/ai/neural/overlayStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/experiments/neuralExperimentRegistry.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/fastReplayEngine.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/governance/neuralAutoRollback.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/governance/neuralPerformanceWatchdog.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/learning/learningEventStore.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/learning/learningEventStore.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/learning/learningEventStore.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/learning/learningEventStore.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/learning/neuralSelfTuningController.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/learning/positionOutcomeLearner.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/live/neuralLiveExecutionAdapter.js",
+      "to": "src/ai/neural/live/neuralLiveExecutionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/live/neuralLiveExecutionGate.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/modelRegistryV2.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/neuralAutonomyGovernor.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/neuralSafetyAuditor.js",
+      "to": "src/ai/neural/safetyBoundLayer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/neuralSafetyAuditor.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/neuralWalkForward.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/overlayStore.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/overlayStore.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/overlayStore.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/overlayStore.js",
+      "to": "src/ai/neural/safetyBoundLayer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/overlayStore.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/promotionPipeline.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/proposalEngine.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/replay/neuralReplayArena.js",
+      "to": "src/ai/neural/replay/neuralReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/replay/neuralReplayEngine.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/replay/neuralReplayQueue.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/replay/replayPromotionGate.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/safetyBoundLayer.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/neural/stressScenarioEngine.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/onlineModel.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/probabilityCalibrator.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/regimeModel.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/regimeModel.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/risk/lossPreventionAI.js",
+      "to": "src/utils/score.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/rlExecutionPolicy.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/sequenceChallenger.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/sequenceChallenger.js",
+      "to": "src/ai/tinyNeuralNetwork.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/strategyAllocationBandit.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/strategyAttribution.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/strategyAttribution.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/strategyMetaSelector.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/strategyMetaSelector.js",
+      "to": "src/ai/tinyNeuralNetwork.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/strategyOptimizer.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/strategyOptimizer.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/tinyNeuralNetwork.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/tradeLabeler.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ai/transformerChallenger.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/backtest/backtestMetrics.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/binance/client.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/binance/symbolFilters.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/backtestRunner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/marketHistory.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/walkForwardBacktest.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/featureAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/featureWiringCompletionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/marketReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/storage/readModelStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/storage/stateStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/tradingBot.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/botManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/restArchitectureAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/execution/executionIntentView.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/learningAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/incidentReport.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/panicFlattenPlan.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/storage/storageAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/replayPackManifest.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/execution/autoReconcileCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/risk/postReconcileEntryLimits.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/tradingPathHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/noTradeTimeline.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/runtimeLiveness.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/canaryReleaseGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/operatorActionQueue.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/research/walkForwardDeploymentReport.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/latencyProfiler.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/neuralAutonomyGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/replay/neuralReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/replay/neuralReplayArena.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/replay/replayPromotionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/learning/neuralContinuousLearner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/learning/neuralSelfTuningController.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/live/neuralLiveExecutionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/autonomyEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/proposalEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/safetyBoundLayer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/fastReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/neuralWalkForward.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/stressScenarioEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/promotionPipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/overlayStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ai/neural/modelRegistryV2.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/setup/setupWizard.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/strategies/strategyRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/research/monteCarloRiskSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/research/walkForwardOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/execution/costModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/research/noTradeAnalyzer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/portfolio/correlationEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/sessionPerformanceProfiler.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/symbolCooldownManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/operatorNotes.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/notificationRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/operatorLanguage.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/reporting/accountingExport.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/localOnlyPrivacy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/livePreflight.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/runtime/paperLiveDifferenceAnalyzer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/productionOps.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/reliabilityTargets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/botCoach.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/performanceBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/safeDegradation.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/storage/dataLake.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/research/scenarioLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/docs/autoDocsGenerator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/metricsExporter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/ops/missionControl.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/reporting/tradingSystemScorecard.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/strategies/strategyKillSwitch.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/cli/commandRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/dashboard/server.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "src/cli/runCli.js",
+      "to": "src/market/historicalDataLoader.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "src/cli.js",
+      "to": "src/config/index.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli.js",
+      "to": "src/utils/logger.js",
+      "type": "static"
+    },
+    {
+      "from": "src/cli.js",
+      "to": "src/cli/runCli.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "src/config/configHash.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/config/configHash.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/core.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/risk.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/marketData.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/ai.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/paperLearning.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/liveExecution.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/dashboard.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/recorder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/defaults/index.js",
+      "to": "src/config/defaults/service.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/envFile.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/config/envFile.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "node:os",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/data/coinAliases.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/data/coinProfiles.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/exchangeCapabilities.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/errors.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/profiles.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/schema.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/validate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/envValidation.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/configHash.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/defaults/index.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/paperModeProfile.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/index.js",
+      "to": "src/config/profileAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/paperModeProfile.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/config/schema.js",
+      "to": "zod",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/eventBus.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/guiStatus.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/public/app.js",
+      "to": "src/shared/statusTone.js",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "node:http",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "src/runtime/botManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "src/dashboard/guiStatus.js",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "src/dashboard/eventBus.js",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "src/dashboard/fastExecutionDashboard.js",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "src/ops/metricsExporter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/dashboard/server.js",
+      "to": "src/accounts/accountProfileRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/docs/autoDocsGenerator.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/docs/autoDocsGenerator.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/docs/autoDocsGenerator.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/binanceAnnouncementService.js",
+      "to": "src/news/sentiment.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/binanceAnnouncementService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/binanceAnnouncementService.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/binanceAnnouncementService.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/calendarService.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/events/calendarService.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/events/calendarService.js",
+      "to": "src/data/eventCalendarSeed.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/calendarService.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/calendarService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/calendarService.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/events/calendarService.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/exchange/adapters/binance/BinanceExchangeAdapter.js",
+      "to": "src/exchange/adapters/ExchangeAdapter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/exchange/adapters/paper/PaperExchangeAdapter.js",
+      "to": "src/exchange/adapters/ExchangeAdapter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/exchange/adapters/synthetic/SyntheticExchangeAdapter.js",
+      "to": "src/exchange/adapters/paper/PaperExchangeAdapter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/autoReconcileCoordinator.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/autoReconcileCoordinator.js",
+      "to": "src/execution/liveBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/autoReconcileCoordinator.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/autoReconcileCoordinator.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/brokerFactory.js",
+      "to": "src/execution/demoPaperBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/brokerFactory.js",
+      "to": "src/execution/liveBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/brokerFactory.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/brokerRouter.js",
+      "to": "src/policy/policyEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/demoPaperBroker.js",
+      "to": "src/execution/liveBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/executionEngine.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/executionIntentLedger.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/executionIntentLedger.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/executionIntentView.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/execution/minNotionalExit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/execution/executionEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/execution/liveBrokerRuntime.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/execution/liveBrokerReconcile.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/execution/tradeAnalyticsContext.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/execution/feeAccounting.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBroker.js",
+      "to": "src/runtime/tradeQualityAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBrokerReconcile.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBrokerReconcile.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBrokerReconcile.js",
+      "to": "src/execution/liveBrokerRuntime.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBrokerRuntime.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/liveBrokerRuntime.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/orderStyleAdvisor.js",
+      "to": "src/execution/stopLimitGap.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/paperBroker.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/paperBroker.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/paperBroker.js",
+      "to": "src/execution/executionEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/paperBroker.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/paperBroker.js",
+      "to": "src/execution/tradeAnalyticsContext.js",
+      "type": "static"
+    },
+    {
+      "from": "src/execution/paperBroker.js",
+      "to": "src/runtime/tradeQualityAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/crossExchangeDivergence.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/derivativesContext.js",
+      "to": "src/market/derivativesMatrix.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/derivativesMatrix.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/historicalDataLoader.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/market/historicalDataLoader.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/market/historicalDataLoader.js",
+      "to": "node:zlib",
+      "type": "static"
+    },
+    {
+      "from": "src/market/leadershipContext.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/localOrderBook.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/localOrderBook.js",
+      "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketProviderHub.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketProviderHub.js",
+      "to": "src/market/providers/derivativesContextProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketProviderHub.js",
+      "to": "src/market/providers/macroContextProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketProviderHub.js",
+      "to": "src/market/providers/executionFeedbackProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketProviderHub.js",
+      "to": "src/market/providers/crossExchangeDivergenceProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketProviderHub.js",
+      "to": "src/market/providers/stablecoinFlowProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketProviderHub.js",
+      "to": "src/market/providers/microstructurePriorProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketSentimentService.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketSentimentService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketSentimentService.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketSentimentService.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketStructureService.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketStructureService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/marketWorthTradingScore.js",
+      "to": "src/utils/score.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/onChainLiteService.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/onChainLiteService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/onChainLiteService.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/onChainLiteService.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/providers/crossExchangeDivergenceProvider.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/providers/derivativesContextProvider.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/providers/executionFeedbackProvider.js",
+      "to": "src/runtime/executionFeedbackLearning.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/providers/macroContextProvider.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/providers/microstructurePriorProvider.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/providers/stablecoinFlowProvider.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/referenceVenueService.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/referenceVenueService.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/regimePlaybooks.js",
+      "to": "src/runtime/botPersonalityMode.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/stablecoinRisk.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/volatilityService.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/volatilityService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/volatilityService.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/market/volatilityService.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/models/modelCard.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/blockworksProvider.js",
+      "to": "src/news/rssFeed.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/coindeskProvider.js",
+      "to": "src/news/rssFeed.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/cointelegraphProvider.js",
+      "to": "src/news/rssFeed.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/decryptProvider.js",
+      "to": "src/news/rssFeed.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/eventClassifier.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/googleNewsProvider.js",
+      "to": "src/news/rssFeed.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/news/sourceReliabilityEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/news/blockworksProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/news/coindeskProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/news/cointelegraphProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/news/decryptProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/news/googleNewsProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/news/sentiment.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/utils/async.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/newsService.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/sentiment.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/sentiment.js",
+      "to": "src/news/eventClassifier.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/shockCircuitBreaker.js",
+      "to": "src/news/eventClassifier.js",
+      "type": "static"
+    },
+    {
+      "from": "src/news/sourceReliabilityEngine.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/metricsExporter.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/missionControl.js",
+      "to": "src/market/marketWorthTradingScore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/missionControl.js",
+      "to": "src/risk/neverTradeWhenRules.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/missionControl.js",
+      "to": "src/runtime/botPersonalityMode.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/notificationRouter.js",
+      "to": "src/ops/operatorNotes.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/operatorNotes.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "node:os",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "src/runtime/stateBackupManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "src/storage/auditLogStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "src/storage/stateStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "src/storage/storageAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/ops/productionOps.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/reporting/tradingSystemScorecard.js",
+      "to": "src/utils/score.js",
+      "type": "static"
+    },
+    {
+      "from": "src/research/noTradeAnalyzer.js",
+      "to": "src/execution/costModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/research/realityGapDetector.js",
+      "to": "src/utils/score.js",
+      "type": "static"
+    },
+    {
+      "from": "src/research/scenarioLab.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/research/strategyExperimentRegistry.js",
+      "to": "src/ai/neural/utils.js",
+      "type": "static"
+    },
+    {
+      "from": "src/research/walkForwardDeploymentReport.js",
+      "to": "src/ai/antiOverfitGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/research/walkForwardDeploymentReport.js",
+      "to": "src/backtest/backtestMetrics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/research/walkForwardDeploymentReport.js",
+      "to": "src/runtime/canaryReleaseGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/confidenceAdjudication.js",
+      "to": "src/risk/policies/hardSafetyPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/dynamicExitLevels.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/entryScoring.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/exitIntelligenceV2.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/exitIntelligenceV2.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/policies/diagnosticsPolicy.js",
+      "to": "src/risk/policies/hardSafetyPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/policies/diagnosticsPolicy.js",
+      "to": "src/risk/confidenceAdjudication.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/policies/diagnosticsPolicy.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/policies/recoveryProbePolicy.js",
+      "to": "src/risk/policies/hardSafetyPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/portfolioCrowding.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/portfolioOptimizer.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/portfolioOptimizer.js",
+      "to": "src/utils/tradingSource.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/reasonCodes.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/strategy/candidateInsights.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/utils/tradingSource.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/entryGuards.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/entryScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/entrySizing.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/entryFinalize.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/reasonCodes.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/hardSafetyPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/diagnosticsPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/alphaQualityPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/governancePolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/sizingPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/recoveryProbePolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/reasonPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policyProfiles.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/exitIntelligenceV2.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/dynamicExitLevels.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/strategy/strategyLifecycleGovernance.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/postReconcileEntryLimits.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskOfRuin.js",
+      "to": "src/runtime/riskOfRuinSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/adaptiveGovernanceService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/adaptiveParameterOptimizer.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/auditLogService.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestExecution.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestExecution.js",
+      "to": "src/runtime/sessionManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestExecution.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/ai/adaptiveModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/execution/executionEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/strategy/features.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/strategy/trendState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/runtime/marketHistory.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/runtime/backtestExecution.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/backtestRunner.js",
+      "to": "src/runtime/tradeQualityAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botLifecycleStateMachine.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/config/index.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "node:fs",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/config/envFile.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/config/tradeProfiles.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/tradingBot.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/botLifecycleStateMachine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/operationalTruth.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/ops/missionControl.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/livePreflight.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/runtimeLiveness.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/canaryReleaseGate.js",
+      "to": "src/ai/antiOverfitGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/candidateOutcomeTracker.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/candidateOutcomeTracker.js",
+      "to": "src/runtime/vetoOutcome.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/candidateRanking.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/capitalGovernor.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/capitalGovernor.js",
+      "to": "src/utils/tradingSource.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/capitalPolicyEngine.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/capitalPolicyEngine.js",
+      "to": "src/risk/portfolioOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/cryptoRegimeRouter.js",
+      "to": "src/strategy/indicatorRegimeScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/cryptoRegimeRouter.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/cycleRunner.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/dashboardEvidenceDrilldown.js",
+      "to": "src/runtime/candidateExplainability.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/dataQualityScoreV2.js",
+      "to": "src/runtime/dataFreshnessScore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/dataQualityScoreV2.js",
+      "to": "src/runtime/decisionInputLineage.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/dataRecorder.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/dataRecorder.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/dataRecorder.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/dataRecorder.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionContract.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionContract.js",
+      "to": "src/runtime/decisionInputLineage.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionInputLineage.js",
+      "to": "src/runtime/replayDeterminism.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionPipeline.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionSupportDiagnostics.js",
+      "to": "src/market/derivativesMatrix.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionSupportDiagnostics.js",
+      "to": "src/market/leadershipContext.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionSupportDiagnostics.js",
+      "to": "src/strategy/failedBreakoutDetector.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionSupportDiagnostics.js",
+      "to": "src/runtime/netEdgeGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/divergenceMonitor.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/domainEvents.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/driftMonitor.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/exchangeSafetyReconciler.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/executionFeedbackLearning.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/externalFeedRegistry.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/fastSignalTriggerService.js",
+      "to": "src/runtime/candidateFreshnessContract.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/fastSignalTriggerService.js",
+      "to": "src/runtime/nearThresholdWatchlist.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/fastSignalTriggerService.js",
+      "to": "src/runtime/immediateEntryQueue.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/fastSignalTriggerService.js",
+      "to": "src/risk/fastPreflightRisk.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/fastSignalTriggerService.js",
+      "to": "src/risk/fastExecutionSafetyGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/featureAudit.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/featureAudit.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/featureGovernanceService.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/featureGovernanceService.js",
+      "to": "src/strategy/featureGovernance.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/featureWiringCompletionGate.js",
+      "to": "src/runtime/featureActivationGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/goldenReplayPackGenerator.js",
+      "to": "src/runtime/replayPackManifest.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/goldenReplayPackGenerator.js",
+      "to": "src/runtime/replayPackScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/goldenReplayPackGenerator.js",
+      "to": "src/runtime/incidentReplayLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/healthMonitor.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReplayLab.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReplayLab.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReport.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReport.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReport.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReport.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReport.js",
+      "to": "src/storage/schemaVersion.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/incidentReport.js",
+      "to": "src/runtime/alertSeverity.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningAnalytics.js",
+      "to": "src/runtime/exitQuality.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningAnalytics.js",
+      "to": "src/runtime/failureLibrary.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningAnalytics.js",
+      "to": "src/runtime/promotionDossier.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningAnalytics.js",
+      "to": "src/runtime/rollbackWatch.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningAnalytics.js",
+      "to": "src/runtime/replayPackScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningAnalytics.js",
+      "to": "src/runtime/vetoOutcome.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningAnalytics.js",
+      "to": "src/runtime/regimeConfusion.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningEvidencePipeline.js",
+      "to": "src/runtime/tradeThesis.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningEvidencePipeline.js",
+      "to": "src/runtime/exitQuality.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningEvidencePipeline.js",
+      "to": "src/runtime/vetoOutcome.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningEvidencePipeline.js",
+      "to": "src/runtime/failureLibrary.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningEvidencePipeline.js",
+      "to": "src/runtime/regimeConfusion.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningEvidencePipeline.js",
+      "to": "src/runtime/replayPackScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/learningEvidencePipeline.js",
+      "to": "src/runtime/tradeAutopsy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/livePreflight.js",
+      "to": "src/runtime/liveReadinessAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/liveReadinessAudit.js",
+      "to": "src/runtime/alertSeverity.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/liveReadinessAudit.js",
+      "to": "src/runtime/operatorActionQueue.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketConditionController.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketHistory.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketHistory.js",
+      "to": "src/storage/marketHistoryStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketHistory.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketHistory.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketHistory.js",
+      "to": "src/config/index.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketReplayEngine.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketReplayEngine.js",
+      "to": "src/storage/marketHistoryStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketReplayEngine.js",
+      "to": "src/storage/readModelStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketReplayEngine.js",
+      "to": "src/runtime/backtestRunner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/ai/regimeModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/strategy/candidateInsights.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/strategy/trendState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/utils/async.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketScanner.js",
+      "to": "src/runtime/watchlistResolver.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/modelConfidenceRootCause.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/modelRegistry.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/netEdgeGate.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/noTradeTimeline.js",
+      "to": "src/runtime/modelConfidenceRootCause.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/offlineTrainer.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/offlineTrainer.js",
+      "to": "src/strategy/featureGovernance.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/offlineTrainer.js",
+      "to": "src/runtime/tradeAttribution.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/offlineTrainer.js",
+      "to": "src/runtime/adaptiveParameterOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/offlineTrainer.js",
+      "to": "src/utils/tradingSource.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/onlineAdaptationController.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operationalTruth.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorActionQueue.js",
+      "to": "src/runtime/alertSeverity.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorAlertDispatcher.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorMode.js",
+      "to": "src/runtime/alertSeverity.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorReviewLabels.js",
+      "to": "src/ai/tradeLabeler.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorReviewLabels.js",
+      "to": "src/runtime/exitQuality.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorReviewLabels.js",
+      "to": "src/runtime/failureLibrary.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorReviewLabels.js",
+      "to": "src/runtime/vetoOutcome.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/operatorRunbookGenerator.js",
+      "to": "src/strategy/strategyLifecycleGovernance.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/pairHealthMonitor.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperCandidateLab.js",
+      "to": "src/runtime/candidateExplainability.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperCandidateLab.js",
+      "to": "src/runtime/decisionSupportDiagnostics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperCandidateLab.js",
+      "to": "src/runtime/featureActivationGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperCandidateLab.js",
+      "to": "src/runtime/learningEvidencePipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperCandidateLab.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperEvidenceSpine.js",
+      "to": "src/runtime/learningEvidencePipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperExitPolicyLab.js",
+      "to": "src/risk/exitIntelligenceV2.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperExitPolicyLab.js",
+      "to": "src/runtime/tradeQualityAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperNetEdgeCalibrationWorkbench.js",
+      "to": "src/runtime/netEdgeGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperNetEdgeCalibrationWorkbench.js",
+      "to": "src/execution/microstructureFillSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperPortfolioAllocatorSimulation.js",
+      "to": "src/risk/portfolioCrowding.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperPortfolioAllocatorSimulation.js",
+      "to": "src/runtime/portfolioScenarioStress.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/paperStrategyCohortScorecard.js",
+      "to": "src/runtime/strategyEvidenceScorecard.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/portfolioScenarioStress.js",
+      "to": "src/risk/portfolioCrowding.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/replayChaosLab.js",
+      "to": "src/runtime/stressLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/replayDeterminism.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/replayLabService.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/replayLabService.js",
+      "to": "src/runtime/incidentReplayLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/replayPackManifest.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/replayPackManifest.js",
+      "to": "src/storage/schemaVersion.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/reportBuilder.js",
+      "to": "src/utils/tradingSource.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/reportBuilder.js",
+      "to": "src/runtime/paperLiveParity.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/reportBuilder.js",
+      "to": "src/runtime/tradeAutopsy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/reportBuilder.js",
+      "to": "src/runtime/tradeQualityAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/reportBuilder.js",
+      "to": "src/runtime/paperExitPolicyLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/ai/adaptiveModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/execution/executionEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/strategy/features.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/strategy/trendState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/runtime/marketHistory.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchLab.js",
+      "to": "src/runtime/backtestExecution.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/researchRegistry.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/restArchitectureAudit.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/restArchitectureAudit.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/riskOfRuinSimulator.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/rootBlockerStalenessVerifier.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/safetySnapshot.js",
+      "to": "src/runtime/alertSeverity.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/safetySnapshot.js",
+      "to": "src/runtime/operatorMode.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/scanPlanner.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/scanPlanner.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/selfHealManager.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/sessionManager.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/shadowStrategyTournament.js",
+      "to": "src/runtime/featureActivationGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/shadowStrategyTournament.js",
+      "to": "src/runtime/replayPackScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/shadowStrategyTournament.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/stateBackupManager.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/stateBackupManager.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/stateBackupManager.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyGenome.js",
+      "to": "src/research/strategyDsl.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyLifecycle.js",
+      "to": "src/runtime/strategyRetirementEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyResearchMiner.js",
+      "to": "src/research/strategyDsl.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyResearchMiner.js",
+      "to": "src/runtime/stressLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyResearchMiner.js",
+      "to": "src/runtime/strategyGenome.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyResearchMiner.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyResearchMiner.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyRetirementEngine.js",
+      "to": "src/ai/antiOverfitGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyRetirementEngine.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/streamCoordinator.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/streamCoordinator.js",
+      "to": "src/market/localOrderBook.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/streamCoordinator.js",
+      "to": "src/market/orderbookDelta.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/streamCoordinator.js",
+      "to": "src/utils/async.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/symbolQualityDecay.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/timeframeConsensus.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeAttribution.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeAttribution.js",
+      "to": "src/strategy/featureGovernance.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeAttribution.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeQualityAnalytics.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeQualityAnalytics.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeReplayTimeline.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeThesis.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradeThesis.js",
+      "to": "src/strategy/exitPlanHints.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/config/validate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/adaptiveModel.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/multiAgentCommittee.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/rlExecutionPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/strategyOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/strategyAttribution.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/exitIntelligence.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/metaDecisionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/execution/brokerFactory.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/execution/executionEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/news/newsService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/events/binanceAnnouncementService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/events/calendarService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/marketStructureService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/marketSentimentService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/volatilityService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/onChainLiteService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/globalMarketContext.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/marketProviderHub.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/volumeProfile.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/market/referenceVenueService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/risk/portfolioOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/ai/parameterGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/storage/auditLogStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/storage/stateStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/storage/readModelStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/dataRecorder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/modelRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/stateBackupManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/storage/marketHistoryStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/researchLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/marketHistory.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/researchRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/universeSelector.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/strategyResearchMiner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/watchlistResolver.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/healthMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/driftMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/pairHealthMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/divergenceMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/offlineTrainer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/selfHealManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/streamCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/scanPlanner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/capitalLadder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/sessionManager.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/timeframeConsensus.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/marketConditionController.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/exchangeSafetyReconciler.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/operatorAlertEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/operatorAlertDispatcher.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/strategyRetirementEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/replayChaosLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/capitalGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/capitalPolicyEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/marketScanner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/features.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/trendState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/candidateInsights.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/research/strategyDsl.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/utils/async.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/utils/tradingSource.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/shared/statusTone.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/operationalTruth.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/tradeAttribution.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/domainEvents.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/signalFlowService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/persistenceCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/decisionPipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/decisionContract.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/candidateFreshnessContract.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/cycleRunner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/dashboardSnapshotBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/operatorWorkflow.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/rootBlockerOrchestrator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/replayLabService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/badVetoLearningService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/featureGovernanceService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/candidateRanking.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/decisionSupportDiagnostics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/onlineAdaptationController.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/tradeQualityAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/auditLogService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/adaptiveGovernanceService.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/viewMappers.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/operatorRunbookGenerator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/tradingImprovementDiagnostics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/streamHealthEvidence.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/featureAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/learningAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/tradeThesis.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/operatorMode.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/liveReadinessAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/incidentReport.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/panicFlattenPlan.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/safetySnapshot.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/dataFreshnessScore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/datasetQualityGate.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/replayDeterminism.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/storage/storageAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/execution/autoReconcileCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/risk/postReconcileEntryLimits.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/indicatorRegimeScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/setupThesis.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/strategy/exitPlanHints.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/risk/portfolioCrowding.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/tradingPathHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/marketSnapshotFlowDebug.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/universeSelector.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/vetoReplayCoverage.js",
+      "to": "src/runtime/candidateOutcomeTracker.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/vetoReplayCoverage.js",
+      "to": "src/runtime/replayPackScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/walkForwardBacktest.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/walkForwardBacktest.js",
+      "to": "src/runtime/marketHistory.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/walkForwardBacktest.js",
+      "to": "src/runtime/backtestRunner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/watchlistResolver.js",
+      "to": "src/data/coinAliases.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/watchlistResolver.js",
+      "to": "src/data/coinProfiles.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/watchlistResolver.js",
+      "to": "src/utils/requestBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/watchlistResolver.js",
+      "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/watchlistResolver.js",
+      "to": "src/runtime/universeScorer.js",
+      "type": "static"
+    },
+    {
+      "from": "src/setup/setupWizard.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/setup/setupWizard.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/setup/setupWizard.js",
+      "to": "src/config/tradeProfiles.js",
+      "type": "static"
+    },
+    {
+      "from": "src/setup/setupWizard.js",
+      "to": "src/config/envFile.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/auditLogStore.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/auditLogStore.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/auditLogStore.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/dataLake.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/marketHistoryStore.js",
+      "to": "node:fs",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/marketHistoryStore.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/marketHistoryStore.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/marketHistoryStore.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/migrations/index.js",
+      "to": "src/storage/schemaVersion.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelAnalyticsQueries.js",
+      "to": "src/runtime/paperEvidenceSpine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelAnalyticsQueries.js",
+      "to": "src/runtime/vetoReplayCoverage.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "node:module",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/storage/stateStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/storage/auditLogStore.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/runtime/strategyEvidenceScorecard.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/runtime/operatorRunbookGenerator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/runtime/tradingImprovementDiagnostics.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/readModelStore.js",
+      "to": "src/storage/readModelAnalyticsQueries.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/recorderIntegrityAudit.js",
+      "to": "src/storage/schemaVersion.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/stateStore.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/stateStore.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/stateStore.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/stateStore.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/storageAudit.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/storageAudit.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/storageAudit.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "src/storage/storageAudit.js",
+      "to": "src/storage/recorderIntegrityAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategies/strategyRegistry.js",
+      "to": "src/strategies/pluginInterface.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/advancedIndicators.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/advancedIndicators.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/candidateInsights.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/failedBreakoutDetector.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/featureGovernance.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/features.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/indicatorFeatureRegistry.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/indicatorRegimeScoring.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/indicators.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/indicators.js",
+      "to": "src/strategy/indicatorFeatureRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/marketState.js",
+      "to": "src/strategy/trendState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/setupThesis.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/setupThesis.js",
+      "to": "src/strategy/exitPlanHints.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/strategyRouter.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/strategyRouter.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "src/strategy/trendState.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
+      "from": "src/trading/tradeQualityScore.js",
+      "to": "src/utils/score.js",
+      "type": "static"
+    },
+    {
+      "from": "src/utils/fs.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/utils/fs.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "src/utils/fs.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "src/utils/logger.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "src/utils/seeded.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "test/adaptiveGovernance.tests.js",
+      "to": "src/runtime/adaptiveGovernanceService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/apiDegradationPlanner.tests.js",
+      "to": "src/runtime/apiDegradationPlanner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/apiDegradationPlanner.tests.js",
+      "to": "src/runtime/tradingPathHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "test/apiDegradationPlanner.tests.js",
+      "to": "src/runtime/safetySnapshot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/apiDegradationPlanner.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/auditLog.tests.js",
+      "to": "node:fs",
+      "type": "static"
+    },
+    {
+      "from": "test/auditLog.tests.js",
+      "to": "src/runtime/auditLogService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/auditLog.tests.js",
+      "to": "src/storage/auditLogStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/autoReconcileCoordinator.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/autoReconcileCoordinator.tests.js",
+      "to": "src/execution/autoReconcileCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/autoReconcileCoordinator.tests.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "test/autoReconcileCoordinator.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/binanceRestArchitecture.tests.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "test/binanceRestArchitecture.tests.js",
+      "to": "src/runtime/tradingBot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/binanceRestArchitecture.tests.js",
+      "to": "src/runtime/restArchitectureAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/binanceRestArchitecture.tests.js",
+      "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/binanceRestArchitecture.tests.js",
+      "to": "src/runtime/marketScanner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/botLifecycle.tests.js",
+      "to": "src/runtime/botLifecycleStateMachine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/breakoutRetestStrategy.tests.js",
+      "to": "src/strategy/features.js",
+      "type": "static"
+    },
+    {
+      "from": "test/breakoutRetestStrategy.tests.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/brokerFactory.tests.js",
+      "to": "src/execution/brokerFactory.js",
+      "type": "static"
+    },
+    {
+      "from": "test/brokerFactory.tests.js",
+      "to": "src/runtime/livePreflight.js",
+      "type": "static"
+    },
+    {
+      "from": "test/canaryReleaseGate.tests.js",
+      "to": "src/runtime/canaryReleaseGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/canaryReleaseGate.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/candidateExplainability.tests.js",
+      "to": "src/runtime/candidateExplainability.js",
+      "type": "static"
+    },
+    {
+      "from": "test/candidateExplainability.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/candidateFreshnessContract.tests.js",
+      "to": "src/runtime/candidateFreshnessContract.js",
+      "type": "static"
+    },
+    {
+      "from": "test/candidateOutcomeTracker.tests.js",
+      "to": "src/runtime/candidateOutcomeTracker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/candidateOutcomeTracker.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/candidateRanking.tests.js",
+      "to": "src/runtime/candidateRanking.js",
+      "type": "static"
+    },
+    {
+      "from": "test/capitalGovernorReliability.tests.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/capitalGovernorReliability.tests.js",
+      "to": "src/runtime/capitalGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/capitalGovernorReliability.tests.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/confidenceCalibration.tests.js",
+      "to": "src/ai/confidenceCalibration.js",
+      "type": "static"
+    },
+    {
+      "from": "test/confidenceCalibration.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/config/defaults/index.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/config/configHash.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/config/profileAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/config/paperModeProfile.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/runtime/decisionContract.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/execution/executionIntentView.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/execution/reconcileEvidenceSummary.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/ops/productionOps.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/configOperatorMaintenance.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/configSchema.tests.js",
+      "to": "src/config/envFile.js",
+      "type": "static"
+    },
+    {
+      "from": "test/configSchema.tests.js",
+      "to": "src/config/tradeProfiles.js",
+      "type": "static"
+    },
+    {
+      "from": "test/crossExchangeDivergence.tests.js",
+      "to": "src/market/crossExchangeDivergence.js",
+      "type": "static"
+    },
+    {
+      "from": "test/crossExchangeDivergence.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/crossExchangeDivergence.tests.js",
+      "to": "src/runtime/tradingPathHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "test/cryptoRegimeRouter.tests.js",
+      "to": "src/runtime/cryptoRegimeRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/cryptoRegimeRouter.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dashboardEvidenceDrilldown.tests.js",
+      "to": "src/runtime/dashboardEvidenceDrilldown.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dashboardEvidenceDrilldown.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dashboardEvidenceDrilldown.tests.js",
+      "to": "src/runtime/tradingPathHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/utils/fs.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/storage/schemaVersion.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/storage/migrations/index.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/storage/recorderIntegrityAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/storage/storageAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/runtime/replayDeterminism.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/utils/seeded.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/runtime/dataFreshnessScore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/runtime/datasetQualityGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/backtest/backtestIntegrity.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/runtime/replayPackManifest.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/dataQualityScoreV2.tests.js",
+      "to": "src/runtime/dataQualityScoreV2.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataQualityScoreV2.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionInputLineage.tests.js",
+      "to": "src/runtime/decisionInputLineage.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionInputLineage.tests.js",
+      "to": "src/runtime/decisionContract.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionInputLineage.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionPipeline.tests.js",
+      "to": "src/runtime/decisionPipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionSupportFoundation.tests.js",
+      "to": "src/market/derivativesMatrix.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionSupportFoundation.tests.js",
+      "to": "src/market/leadershipContext.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionSupportFoundation.tests.js",
+      "to": "src/runtime/decisionSupportDiagnostics.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionSupportFoundation.tests.js",
+      "to": "src/runtime/riskOfRuinSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionSupportFoundation.tests.js",
+      "to": "src/runtime/netEdgeGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionSupportFoundation.tests.js",
+      "to": "src/runtime/walkForwardBacktest.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionSupportFoundation.tests.js",
+      "to": "src/strategy/failedBreakoutDetector.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dynamicExitLevels.tests.js",
+      "to": "src/risk/dynamicExitLevels.js",
+      "type": "static"
+    },
+    {
+      "from": "test/execution/exchangeAdapterContract.tests.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/execution/exchangeAdapterContract.tests.js",
+      "to": "src/execution/exchangeAdapterContract.js",
+      "type": "static"
+    },
+    {
+      "from": "test/executionFeedbackLearning.tests.js",
+      "to": "src/runtime/executionFeedbackLearning.js",
+      "type": "static"
+    },
+    {
+      "from": "test/executionIntentLedger.tests.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "test/executionSafetyFilters.tests.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/executionSafetyFilters.tests.js",
+      "to": "src/execution/feeAccounting.js",
+      "type": "static"
+    },
+    {
+      "from": "test/executionSafetyFilters.tests.js",
+      "to": "src/execution/liveBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/executionSafetyFilters.tests.js",
+      "to": "src/runtime/executionFeedbackLearning.js",
+      "type": "static"
+    },
+    {
+      "from": "test/exitFastLane.tests.js",
+      "to": "src/runtime/exitFastLane.js",
+      "type": "static"
+    },
+    {
+      "from": "test/exitIntelligenceV2.tests.js",
+      "to": "src/risk/exitIntelligenceV2.js",
+      "type": "static"
+    },
+    {
+      "from": "test/exitRegretDiagnostics.tests.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "test/exitRegretDiagnostics.tests.js",
+      "to": "src/runtime/tradeAutopsy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/exitRegretDiagnostics.tests.js",
+      "to": "src/runtime/marketReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastExecutionCore.tests.js",
+      "to": "src/runtime/immediateEntryQueue.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastExecutionCore.tests.js",
+      "to": "src/risk/fastPreflightRisk.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastExecutionDashboard.tests.js",
+      "to": "src/dashboard/fastExecutionDashboard.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastExecutionSafetyGovernor.tests.js",
+      "to": "src/risk/fastExecutionSafetyGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastExecutionTrace.tests.js",
+      "to": "src/runtime/fastExecutionTrace.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastPaperExecution.tests.js",
+      "to": "src/runtime/fastPaperExecution.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastSignalTriggerService.tests.js",
+      "to": "src/runtime/fastSignalTriggerService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/fastSignalTriggerService.tests.js",
+      "to": "src/risk/fastPreflightRisk.js",
+      "type": "static"
+    },
+    {
+      "from": "test/featureActivationGovernor.tests.js",
+      "to": "src/runtime/featureActivationGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/featureAudit.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/featureAudit.tests.js",
+      "to": "src/runtime/featureAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/featureFlagHygiene.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/featureFlagHygiene.tests.js",
+      "to": "src/config/index.js",
+      "type": "static"
+    },
+    {
+      "from": "test/featureGovernance.tests.js",
+      "to": "src/runtime/featureGovernanceService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/featureWiringCompletionGate.tests.js",
+      "to": "src/runtime/featureWiringCompletionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/featureWiringCompletionGate.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/goldenReplayPackGenerator.tests.js",
+      "to": "src/runtime/goldenReplayPackGenerator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/goldenReplayPackGenerator.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/incidentReplayLab.tests.js",
+      "to": "src/runtime/dataRecorder.js",
+      "type": "static"
+    },
+    {
+      "from": "test/incidentReplayLab.tests.js",
+      "to": "src/runtime/incidentReplayLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/incidentReplayLab.tests.js",
+      "to": "src/runtime/replayLabService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/indicatorFeatureRegistry.tests.js",
+      "to": "src/strategy/indicatorFeatureRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/indicatorFeatureRegistry.tests.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "test/indicatorFeatureRegistry.tests.js",
+      "to": "src/strategy/features.js",
+      "type": "static"
+    },
+    {
+      "from": "test/indicatorFeatureRegistry.tests.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/storage/auditLogStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/storage/readModelStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/persistenceCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/tradingBot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/execution/liveBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/marketReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/marketScanner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/tradingBotDecomposition.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/operatorRunbookGenerator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/tradingImprovementDiagnostics.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/streamCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/market/orderbookDelta.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/strategy/strategyLifecycleGovernance.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/market/localOrderBook.js",
+      "type": "static"
+    },
+    {
+      "from": "test/latencyProfiler.tests.js",
+      "to": "src/runtime/latencyProfiler.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/tradeThesis.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/exitQuality.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/vetoOutcome.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/failureLibrary.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/regimeConfusion.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/promotionDossier.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/rollbackWatch.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/replayPackScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/learningAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/learningAnalyticsMaintenance.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/liveFastObserveMode.tests.js",
+      "to": "src/runtime/liveFastObserveMode.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviderHub.tests.js",
+      "to": "src/market/marketProviderHub.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviderHub.tests.js",
+      "to": "src/market/providers/derivativesContextProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviderHub.tests.js",
+      "to": "src/market/providers/executionFeedbackProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviders.tests.js",
+      "to": "src/market/providers/crossExchangeDivergenceProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviders.tests.js",
+      "to": "src/market/providers/stablecoinFlowProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviders.tests.js",
+      "to": "src/market/providers/microstructurePriorProvider.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviders.tests.js",
+      "to": "src/market/derivativesContext.js",
+      "type": "static"
+    },
+    {
+      "from": "test/marketProviders.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/microstructureFillSimulator.tests.js",
+      "to": "src/execution/microstructureFillSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/ops/missionControl.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/market/marketWorthTradingScore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/risk/neverTradeWhenRules.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/trading/tradeQualityScore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/trading/tradeReceipt.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/ai/risk/lossPreventionAI.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/ai/capital/capitalAllocationAI.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/ai/decision/doNothingIntelligence.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/research/realityGapDetector.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/ai/governance/aiChangeBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/runtime/botPersonalityMode.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/market/regimePlaybooks.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/strategies/strategyKillSwitch.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/ops/operatorMistakeProtection.js",
+      "type": "static"
+    },
+    {
+      "from": "test/missionControlRiskIntelligence.tests.js",
+      "to": "src/reporting/tradingSystemScorecard.js",
+      "type": "static"
+    },
+    {
+      "from": "test/modelConfidenceRootCause.tests.js",
+      "to": "src/runtime/modelConfidenceRootCause.js",
+      "type": "static"
+    },
+    {
+      "from": "test/modelConfidenceRootCause.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/nearThresholdWatchlist.tests.js",
+      "to": "src/runtime/nearThresholdWatchlist.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/neuralAutonomyGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/replay/neuralReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/replay/neuralReplayArena.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/replay/replayPromotionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/replay/neuralReplayQueue.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/learning/positionOutcomeLearner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/learning/neuralContinuousLearner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/learning/neuralSelfTuningController.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/live/neuralLiveExecutionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/live/neuralLiveExecutionAdapter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/experiments/neuralExperimentRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/governance/neuralAutoRollback.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/governance/neuralPerformanceWatchdog.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/training/neuralTrainingScheduler.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/learning/learningEventStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/proposalEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/safetyBoundLayer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/neuralSafetyAuditor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/fastReplayEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/neuralWalkForward.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/stressScenarioEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/promotionPipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/overlayStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/autonomyEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/neuralAutonomyRoadmap.tests.js",
+      "to": "src/ai/neural/modelRegistryV2.js",
+      "type": "static"
+    },
+    {
+      "from": "test/newsSentiment.test.js",
+      "to": "node:test",
+      "type": "static"
+    },
+    {
+      "from": "test/newsSentiment.test.js",
+      "to": "node:assert/strict",
+      "type": "static"
+    },
+    {
+      "from": "test/newsSentiment.test.js",
+      "to": "src/news/sentiment.js",
+      "type": "static"
+    },
+    {
+      "from": "test/newsShockCircuitBreaker.tests.js",
+      "to": "src/news/shockCircuitBreaker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/noTradeTimeline.tests.js",
+      "to": "src/runtime/noTradeTimeline.js",
+      "type": "static"
+    },
+    {
+      "from": "test/noTradeTimeline.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/onlineModel.test.js",
+      "to": "node:test",
+      "type": "static"
+    },
+    {
+      "from": "test/onlineModel.test.js",
+      "to": "node:assert/strict",
+      "type": "static"
+    },
+    {
+      "from": "test/onlineModel.test.js",
+      "to": "src/ai/onlineModel.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operationalHardening.tests.js",
+      "to": "src/execution/feeAccounting.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operationalHardening.tests.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operationalHardening.tests.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operationalHardening.tests.js",
+      "to": "src/runtime/strategyEvidenceScorecard.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operationalHardening.tests.js",
+      "to": "src/runtime/tradeAutopsy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operationalHardening.tests.js",
+      "to": "src/runtime/paperLiveParity.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorActionQueue.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorActionQueue.tests.js",
+      "to": "src/runtime/operatorActionQueue.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorActionQueue.tests.js",
+      "to": "src/runtime/liveReadinessAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorActionQueue.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorReviewLabels.tests.js",
+      "to": "src/runtime/operatorReviewLabels.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorReviewLabels.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/runtime/alertSeverity.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/runtime/operatorMode.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/runtime/liveReadinessAudit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/runtime/incidentReport.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/runtime/panicFlattenPlan.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/runtime/safetySnapshot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/operatorSafetyTooling.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/opportunityCostAnalyzer.tests.js",
+      "to": "src/runtime/opportunityCostAnalyzer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/orderLifecycleAuditor.tests.js",
+      "to": "src/execution/orderLifecycleAuditor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/orderLifecycleAuditor.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/orderStyleAdvisor.tests.js",
+      "to": "src/execution/orderStyleAdvisor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperCandidateLab.tests.js",
+      "to": "src/runtime/paperCandidateLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperCandidateLab.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperEvidenceSpine.tests.js",
+      "to": "src/runtime/paperEvidenceSpine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperEvidenceSpine.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperExitPolicyLab.tests.js",
+      "to": "src/runtime/paperExitPolicyLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperExitPolicyLab.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperNetEdgeCalibrationWorkbench.tests.js",
+      "to": "src/runtime/paperNetEdgeCalibrationWorkbench.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperNetEdgeCalibrationWorkbench.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperPortfolioAllocatorSimulation.tests.js",
+      "to": "src/runtime/paperPortfolioAllocatorSimulation.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperPortfolioAllocatorSimulation.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperReplayCoverageAutopilot.tests.js",
+      "to": "src/runtime/paperReplayCoverageAutopilot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperReplayCoverageAutopilot.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperStrategyCohortScorecard.tests.js",
+      "to": "src/runtime/paperStrategyCohortScorecard.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperStrategyCohortScorecard.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/paperTradeLifecycleContract.tests.js",
+      "to": "src/runtime/paperTradeLifecycleContract.js",
+      "type": "static"
+    },
+    {
+      "from": "test/performanceLedger.tests.js",
+      "to": "src/runtime/performanceLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "test/performanceTuning.tests.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/performanceTuning.tests.js",
+      "to": "src/ai/metaDecisionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/performanceTuning.tests.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/performanceTuning.tests.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/performanceTuning.tests.js",
+      "to": "src/runtime/tradingBot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/portfolioScenarioStress.tests.js",
+      "to": "src/runtime/portfolioScenarioStress.js",
+      "type": "static"
+    },
+    {
+      "from": "test/portfolioScenarioStress.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/portfolioScenarioStress.tests.js",
+      "to": "src/runtime/safetySnapshot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/postReconcileEntryLimits.tests.js",
+      "to": "src/risk/postReconcileEntryLimits.js",
+      "type": "static"
+    },
+    {
+      "from": "test/pullbackReclaimV2.tests.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/readModelAnalyticsQueries.tests.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "test/readModelAnalyticsQueries.tests.js",
+      "to": "node:os",
+      "type": "static"
+    },
+    {
+      "from": "test/readModelAnalyticsQueries.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/readModelAnalyticsQueries.tests.js",
+      "to": "node:sqlite",
+      "type": "static"
+    },
+    {
+      "from": "test/readModelAnalyticsQueries.tests.js",
+      "to": "src/storage/readModelAnalyticsQueries.js",
+      "type": "static"
+    },
+    {
+      "from": "test/readModelAnalyticsQueries.tests.js",
+      "to": "src/storage/readModelStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/readModelAnalyticsQueries.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/reconcileAutofixTolerance.tests.js",
+      "to": "src/execution/liveBrokerReconcile.js",
+      "type": "static"
+    },
+    {
+      "from": "test/recoveryProbePolicy.tests.js",
+      "to": "src/risk/policies/recoveryProbePolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/replayDeterminism.tests.js",
+      "to": "src/runtime/incidentReplayLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/replayDeterminism.tests.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "test/replayDeterminism.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/riskManager.test.js",
+      "to": "node:test",
+      "type": "static"
+    },
+    {
+      "from": "test/riskManager.test.js",
+      "to": "node:assert/strict",
+      "type": "static"
+    },
+    {
+      "from": "test/riskManager.test.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskOfRuinMonitor.tests.js",
+      "to": "src/risk/riskOfRuin.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/risk/policies/alphaQualityPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/risk/policies/governancePolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/risk/policies/hardSafetyPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/risk/policies/sizingPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/risk/policyProfiles.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskPolicyModules.tests.js",
+      "to": "src/risk/confidenceAdjudication.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskReasonPolicy.tests.js",
+      "to": "src/risk/policies/reasonPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/rootBlockerOrchestrator.tests.js",
+      "to": "src/runtime/rootBlockerOrchestrator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/rootBlockerStalenessVerifier.tests.js",
+      "to": "src/runtime/rootBlockerStalenessVerifier.js",
+      "type": "static"
+    },
+    {
+      "from": "test/rootBlockerStalenessVerifier.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "node:assert/strict",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "node:events",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "node:os",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "node:stream",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/adaptiveModel.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/parameterGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/strategyMetaSelector.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/strategyAllocationBandit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/executionEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/binance/client.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/news/sentiment.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/news/newsService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/news/rssFeed.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/events/binanceAnnouncementService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/market/marketStructureService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/market/marketSentimentService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/market/referenceVenueService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/market/volatilityService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/market/localOrderBook.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/events/calendarService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/research/strategyDsl.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/risk/portfolioOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/config/index.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/config/errors.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/config/envFile.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/cli/runCli.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/config/validate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/config/exchangeCapabilities.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/healthMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/liveBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/demoPaperBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/minNotionalExit.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/regimeModel.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/onlineModel.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/strategy/features.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/strategy/strategyRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/strategy/trendState.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/strategy/marketState.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/strategy/candidateInsights.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/strategyOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/strategyAttribution.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/exitIntelligence.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/metaDecisionGate.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/researchRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/modelRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/universeSelector.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/marketScanner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/scanPlanner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/watchlistResolver.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/sessionManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/driftMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/selfHealManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/researchLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/backtestExecution.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/dataRecorder.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/tradeAttribution.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/onlineAdaptationController.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/adaptiveParameterOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/stateBackupManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/storage/stateStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/storage/marketHistoryStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/pairHealthMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/divergenceMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/capitalLadder.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/offlineTrainer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/strategyResearchMiner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/capitalPolicyEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/operationalTruth.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/viewMappers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/risk/entryFinalize.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/risk/entryGuards.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/timeframeConsensus.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/marketConditionController.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/news/sourceReliabilityEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/market/onChainLiteService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/exchangeSafetyReconciler.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/operatorAlertEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/operatorAlertDispatcher.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/dashboard/public/app.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/strategyRetirementEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/replayChaosLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/ai/multiAgentCommittee.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/marketHistory.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/backtestRunner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/capitalGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/tradingBot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/botManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/runtime/streamCoordinator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/dashboard/server.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/utils/logger.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/utils/tradingSource.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/shared/statusTone.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/storageRecovery.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/dashboardSnapshot.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/runtimeMutation.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/historyOperations.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/configSchema.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/botLifecycle.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/decisionPipeline.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/auditLog.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/adaptiveGovernance.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/dashboardHealth.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperExchangeSafety.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/portfolioScenarioStress.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/executionIntentLedger.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/rootBlockerOrchestrator.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/incidentReplayLab.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/capitalGovernorReliability.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/flatManualReviewResolution.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/performanceTuning.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/riskPolicyModules.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/scopedLearningAndUniverse.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/marketProviderHub.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/recoveryProbePolicy.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/candidateRanking.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/confidenceCalibration.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/executionFeedbackLearning.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/execution/exchangeAdapterContract.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/executionSafetyFilters.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/featureGovernance.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/replayDeterminism.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/marketProviders.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/binanceRestArchitecture.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/operationalHardening.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/largeFoundations.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/streamRangeOrderflow.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/exitRegretDiagnostics.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/reconcileAutofixTolerance.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/indicatorFeatureRegistry.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/exitIntelligenceV2.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/tradeQualityAnalytics.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/dynamicExitLevels.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/breakoutRetestStrategy.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/pullbackReclaimV2.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/decisionSupportFoundation.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/walkForwardBacktest.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/featureAudit.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/featureFlagHygiene.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/safetyMaintenance.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/configOperatorMaintenance.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/learningAnalyticsMaintenance.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/candidateOutcomeTracker.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperExitPolicyLab.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperPortfolioAllocatorSimulation.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/dataQualityScoreV2.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperCandidateLab.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperEvidenceSpine.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/vetoReplayCoverage.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/streamHealthEvidence.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/orderLifecycleAuditor.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/modelConfidenceRootCause.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/noTradeTimeline.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperStrategyCohortScorecard.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/rootBlockerStalenessVerifier.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperNetEdgeCalibrationWorkbench.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/shadowStrategyTournament.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/operatorReviewLabels.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/watchlistCoverageBalancer.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperReplayCoverageAutopilot.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/goldenReplayPackGenerator.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/dashboardEvidenceDrilldown.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/featureWiringCompletionGate.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/readModelAnalyticsQueries.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/operatorSafetyTooling.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/dataIntegrityMaintenance.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/autoReconcileCoordinator.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/postReconcileEntryLimits.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/tradingQualityUpgrade.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/tradingPathHealth.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/windowsGuiStatus.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/latencyProfiler.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/candidateFreshnessContract.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/fastExecutionCore.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/windowsFastDataFoundations.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/nearThresholdWatchlist.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/liveFastObserveMode.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/exitFastLane.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/fastExecutionDashboard.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/fastExecutionSafetyGovernor.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/fastSignalTriggerService.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/fastExecutionTrace.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/fastPaperExecution.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/neuralAutonomyRoadmap.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/riskReasonPolicy.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/missionControlRiskIntelligence.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/featureActivationGovernor.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/stopLimitStuck.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/stopLimitGap.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/decisionInputLineage.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/canaryReleaseGate.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/operatorActionQueue.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/cryptoRegimeRouter.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/apiDegradationPlanner.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/candidateExplainability.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/microstructureFillSimulator.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/walkForwardDeploymentReport.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/strategyLifecycle.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/riskOfRuinMonitor.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/opportunityCostAnalyzer.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/performanceLedger.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/symbolLifecycleRisk.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/newsShockCircuitBreaker.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/orderStyleAdvisor.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/symbolQualityDecay.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/stablecoinRisk.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/crossExchangeDivergence.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/paperTradeLifecycleContract.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/brokerFactory.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "node:http",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/brokerFactory.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/paperBroker.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/execution/liveBrokerReconcile.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/run.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "dynamic"
+    },
+    {
+      "from": "test/safetyMaintenance.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/safetyMaintenance.tests.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
+      "from": "test/safetyMaintenance.tests.js",
+      "to": "src/execution/liveBroker.js",
+      "type": "static"
+    },
+    {
+      "from": "test/safetyMaintenance.tests.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/safetyMaintenance.tests.js",
+      "to": "src/utils/logger.js",
+      "type": "static"
+    },
+    {
+      "from": "test/safetyMaintenance.tests.js",
+      "to": "src/utils/redactSecrets.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "node:assert/strict",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/exchange/adapters/paper/PaperExchangeAdapter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/exchange/adapters/synthetic/SyntheticExchangeAdapter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/exchange/adapters/ExchangeAdapter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/accounts/accountProfileRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/policy/policyEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/execution/brokerRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/ops/reliabilityTargets.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/ops/metricsExporter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/research/scenarioLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/market/liquidityScore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/ops/safeDegradation.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/ops/performanceBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/models/modelCard.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/runtime/tradeReplayTimeline.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/docs/autoDocsGenerator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/storage/dataLake.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scalabilityMultiExchangePolicyObservability.tests.js",
+      "to": "src/ops/botCoach.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scopedLearningAndUniverse.tests.js",
+      "to": "src/runtime/badVetoLearningService.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scopedLearningAndUniverse.tests.js",
+      "to": "src/runtime/universeScorer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/scopedLearningAndUniverse.tests.js",
+      "to": "src/runtime/adaptiveParameterOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/shadowStrategyTournament.tests.js",
+      "to": "src/runtime/shadowStrategyTournament.js",
+      "type": "static"
+    },
+    {
+      "from": "test/shadowStrategyTournament.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/stablecoinRisk.tests.js",
+      "to": "src/market/stablecoinRisk.js",
+      "type": "static"
+    },
+    {
+      "from": "test/stablecoinRisk.tests.js",
+      "to": "src/runtime/cryptoRegimeRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/stablecoinRisk.tests.js",
+      "to": "src/runtime/safetySnapshot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/stablecoinRisk.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/stopLimitGap.tests.js",
+      "to": "src/execution/stopLimitGap.js",
+      "type": "static"
+    },
+    {
+      "from": "test/stopLimitStuck.tests.js",
+      "to": "src/execution/stopLimitStuck.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyLifecycle.tests.js",
+      "to": "src/runtime/strategyLifecycle.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/setup/setupWizard.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/strategies/pluginInterface.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/strategies/strategyRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/research/monteCarloRiskSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/research/walkForwardOptimizer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/execution/costModel.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/research/noTradeAnalyzer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/portfolio/correlationEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/runtime/sessionPerformanceProfiler.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/runtime/symbolCooldownManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/ops/operatorNotes.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/ops/notificationRouter.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/research/strategyExperimentRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/ops/operatorLanguage.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/reporting/accountingExport.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/runtime/localOnlyPrivacy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/strategyValidationCostsPortfolioUx.tests.js",
+      "to": "src/runtime/paperLiveDifferenceAnalyzer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/streamHealthEvidence.tests.js",
+      "to": "src/runtime/streamHealthEvidence.js",
+      "type": "static"
+    },
+    {
+      "from": "test/streamHealthEvidence.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/streamRangeOrderflow.tests.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/streamRangeOrderflow.tests.js",
+      "to": "src/market/orderbookDelta.js",
+      "type": "static"
+    },
+    {
+      "from": "test/streamRangeOrderflow.tests.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    },
+    {
+      "from": "test/streamRangeOrderflow.tests.js",
+      "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/streamRangeOrderflow.tests.js",
+      "to": "src/strategy/indicators.js",
+      "type": "static"
+    },
+    {
+      "from": "test/symbolFilters.test.js",
+      "to": "node:test",
+      "type": "static"
+    },
+    {
+      "from": "test/symbolFilters.test.js",
+      "to": "node:assert/strict",
+      "type": "static"
+    },
+    {
+      "from": "test/symbolFilters.test.js",
+      "to": "src/binance/symbolFilters.js",
+      "type": "static"
+    },
+    {
+      "from": "test/symbolLifecycleRisk.tests.js",
+      "to": "src/runtime/symbolLifecycleRisk.js",
+      "type": "static"
+    },
+    {
+      "from": "test/symbolQualityDecay.tests.js",
+      "to": "src/runtime/symbolQualityDecay.js",
+      "type": "static"
+    },
+    {
+      "from": "test/symbolQualityDecay.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradeQualityAnalytics.tests.js",
+      "to": "src/runtime/tradeQualityAnalytics.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradeQualityAnalytics.tests.js",
+      "to": "src/runtime/reportBuilder.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingPathHealth.tests.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingPathHealth.tests.js",
+      "to": "src/runtime/tradingPathHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingPathHealth.tests.js",
+      "to": "src/runtime/marketSnapshotFlowDebug.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingPathHealth.tests.js",
+      "to": "src/storage/stateStore.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/strategy/advancedIndicators.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/strategy/indicatorRegimeScoring.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/strategy/setupThesis.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/strategy/exitPlanHints.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/risk/portfolioCrowding.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/risk/postReconcileEntryLimits.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/backtest/backtestMetrics.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/backtest/backtestIntegrity.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/runtime/learningEvidencePipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/runtime/tradeThesis.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/ai/antiOverfitGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/tradingQualityUpgrade.tests.js",
+      "to": "src/utils/safeMath.js",
+      "type": "static"
+    },
+    {
+      "from": "test/vetoReplayCoverage.tests.js",
+      "to": "src/runtime/vetoReplayCoverage.js",
+      "type": "static"
+    },
+    {
+      "from": "test/vetoReplayCoverage.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/walkForwardBacktest.tests.js",
+      "to": "src/runtime/walkForwardBacktest.js",
+      "type": "static"
+    },
+    {
+      "from": "test/walkForwardDeploymentReport.tests.js",
+      "to": "src/research/walkForwardDeploymentReport.js",
+      "type": "static"
+    },
+    {
+      "from": "test/watchlistCoverageBalancer.tests.js",
+      "to": "src/runtime/watchlistCoverageBalancer.js",
+      "type": "static"
+    },
+    {
+      "from": "test/watchlistCoverageBalancer.tests.js",
+      "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/windowsFastDataFoundations.tests.js",
+      "to": "src/dashboard/eventBus.js",
+      "type": "static"
+    },
+    {
+      "from": "test/windowsFastDataFoundations.tests.js",
+      "to": "src/runtime/streamFreshnessMonitor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/windowsFastDataFoundations.tests.js",
+      "to": "src/runtime/hotSymbolLane.js",
+      "type": "static"
+    },
+    {
+      "from": "test/windowsFastDataFoundations.tests.js",
+      "to": "src/runtime/incrementalFeatureCache.js",
+      "type": "static"
+    },
+    {
+      "from": "test/windowsGuiStatus.tests.js",
+      "to": "src/dashboard/guiStatus.js",
+      "type": "static"
+    },
+    {
+      "from": "scripts/analyze-dependencies.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/analyze-dependencies.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/backfill-trade-attribution.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/backfill-trade-attribution.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/backfill-trade-attribution.mjs",
+      "to": "src/runtime/tradeAttribution.js",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-api-route-contracts.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-api-route-contracts.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-critical-files.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-critical-files.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-dashboard-dom-contract.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-dashboard-dom-contract.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-env-duplicates.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-env-duplicates.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-env-duplicates.mjs",
+      "to": "src/config/envValidation.js",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-env.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-env.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-env.mjs",
+      "to": "src/config/envValidation.js",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-imports.mjs",
+      "to": "node:child_process",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-package-scripts.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-package-scripts.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-syntax.mjs",
+      "to": "node:child_process",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-syntax.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/check-syntax.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/generate-debug-inventory.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/generate-debug-inventory.mjs",
+      "to": "node:fs",
+      "type": "static"
+    },
+    {
+      "from": "scripts/generate-debug-inventory.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/generate-debug-inventory.mjs",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "scripts/scan-secrets.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/scan-secrets.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/scan-secrets.mjs",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "scripts/setup-git-hooks.mjs",
+      "to": "node:child_process",
+      "type": "static"
+    },
+    {
+      "from": "scripts/setup-git-hooks.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/setup-git-hooks.mjs",
+      "to": "node:url",
+      "type": "static"
+    },
+    {
+      "from": "scripts/smoke-cli.mjs",
+      "to": "node:child_process",
+      "type": "static"
+    },
+    {
+      "from": "scripts/smoke-dashboard.mjs",
+      "to": "node:http",
+      "type": "static"
+    },
+    {
+      "from": "scripts/smoke-dashboard.mjs",
+      "to": "src/dashboard/server.js",
+      "type": "static"
+    },
+    {
+      "from": "scripts/strict-entry-replay.js",
+      "to": "node:fs",
+      "type": "static"
+    },
+    {
+      "from": "scripts/strict-entry-replay.js",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
+      "from": "scripts/strict-entry-replay.js",
+      "to": "src/risk/riskManager.js",
+      "type": "static"
+    }
+  ],
+  "warnings": []
+}

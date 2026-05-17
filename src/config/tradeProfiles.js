@@ -6,6 +6,7 @@ export const TRADE_PROFILE_CATALOG = Object.freeze([
     description: "Default safe paper mode with bounded learning probes and internal demo fills.",
     env: {
       BOT_MODE: "paper",
+      TRADE_PROFILE_ID: "beginner-paper-learning",
       CONFIG_PROFILE: "paper-learning",
       CONFIG_CAPABILITY_BUNDLES: "paper,dashboard,research",
       PAPER_MODE_PROFILE: "learn",
@@ -28,6 +29,7 @@ export const TRADE_PROFILE_CATALOG = Object.freeze([
     description: "Paper learning against Binance demo spot constraints; still not live trading.",
     env: {
       BOT_MODE: "paper",
+      TRADE_PROFILE_ID: "paper-demo-spot",
       CONFIG_PROFILE: "paper-learning",
       CONFIG_CAPABILITY_BUNDLES: "paper,dashboard,research",
       PAPER_MODE_PROFILE: "demo_spot",
@@ -50,6 +52,7 @@ export const TRADE_PROFILE_CATALOG = Object.freeze([
     description: "Full paper-only neural learning with replay, continuous learning and self tuning.",
     env: {
       BOT_MODE: "paper",
+      TRADE_PROFILE_ID: "paper-neural-learning",
       CONFIG_PROFILE: "paper-learning",
       CONFIG_CAPABILITY_BUNDLES: "paper,dashboard,research",
       PAPER_MODE_PROFILE: "learn",
@@ -83,6 +86,7 @@ export const TRADE_PROFILE_CATALOG = Object.freeze([
     description: "Full paper-only neural learning against Binance demo spot constraints.",
     env: {
       BOT_MODE: "paper",
+      TRADE_PROFILE_ID: "paper-neural-demo-spot",
       CONFIG_PROFILE: "paper-learning",
       CONFIG_CAPABILITY_BUNDLES: "paper,dashboard,research",
       PAPER_MODE_PROFILE: "demo_spot",
@@ -116,6 +120,7 @@ export const TRADE_PROFILE_CATALOG = Object.freeze([
     description: "Conservative paper profile for live-like simulation without learning probes.",
     env: {
       BOT_MODE: "paper",
+      TRADE_PROFILE_ID: "paper-safe-simulation",
       CONFIG_PROFILE: "paper-safe",
       CONFIG_CAPABILITY_BUNDLES: "paper,dashboard",
       PAPER_MODE_PROFILE: "sim",
@@ -139,6 +144,7 @@ export const TRADE_PROFILE_CATALOG = Object.freeze([
     requiresLiveAcknowledgement: true,
     env: {
       BOT_MODE: "live",
+      TRADE_PROFILE_ID: "guarded-live-template",
       CONFIG_PROFILE: "guarded-live",
       CONFIG_CAPABILITY_BUNDLES: "live,dashboard",
       PAPER_EXECUTION_VENUE: "internal",

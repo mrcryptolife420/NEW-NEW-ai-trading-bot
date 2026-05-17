@@ -40,6 +40,18 @@ const SERVICES = [
     responsibility: "Build dashboard-safe read models without mutating runtime trading state.",
     currentModules: ["dashboardSnapshotBuilder", "viewMappers", "readModelStore"],
     extracted: true
+  },
+  {
+    name: "RuntimeLivenessService",
+    responsibility: "Separate process and manager heartbeat, cycle freshness, and broken runtime phase diagnostics.",
+    currentModules: ["runtimeLiveness", "tradingPathHealth", "botManager"],
+    extracted: true
+  },
+  {
+    name: "OperatorDiagnosticsService",
+    responsibility: "Build no-trade, request-budget, readiness, retention, and feature-review diagnostics without changing execution behavior.",
+    currentModules: ["noTradeTimeline", "restBudgetGovernor", "productionOps", "storageAudit", "featureAudit"],
+    extracted: true
   }
 ];
 

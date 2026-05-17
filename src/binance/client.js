@@ -176,7 +176,14 @@ function cloneTopCallerMap(map = {}) {
         weight: Number(value?.weight || 0),
         lastAt: value?.lastAt || null,
         scope: value?.scope || null,
-        endpoint: value?.endpoint || null
+        endpoint: value?.endpoint || null,
+        cacheKey: value?.cacheKey || null,
+        ttlMs: value?.ttlMs ?? null,
+        cacheHits: Number(value?.cacheHits || 0),
+        cacheMisses: Number(value?.cacheMisses || 0),
+        coalescedCount: Number(value?.coalescedCount || 0),
+        fallbackCount: Number(value?.fallbackCount || 0),
+        fallbackReason: value?.fallbackReason || null
       }])
   );
 }
@@ -207,6 +214,7 @@ export class BinanceClient {
     clockSyncMaxAgeMs = 5 * 60_000,
     clockSyncMaxRttMs = 1500,
     exchangeInfoCacheMs = 6 * 60 * 60_000,
+    futuresPublicCacheMs = 30_000,
     requestWeightBackoffMaxMs = 60_000,
     requestWeightWarnThreshold1m = 4800,
     onRequestWeightUpdate = null
@@ -224,6 +232,7 @@ export class BinanceClient {
     this.clockSyncMaxAgeMs = Math.max(1_000, Number(clockSyncMaxAgeMs || 5 * 60_000));
     this.clockSyncMaxRttMs = Math.max(100, Number(clockSyncMaxRttMs || 1500));
     this.exchangeInfoCacheMs = Math.max(60_000, Number(exchangeInfoCacheMs || 6 * 60 * 60_000));
+    this.futuresPublicCacheMs = Math.max(1_000, Number(futuresPublicCacheMs || 30_000));
     this.requestWeightBackoffMaxMs = Math.max(1_000, Number(requestWeightBackoffMaxMs || 60_000));
     this.requestWeightWarnThreshold1m = Math.max(100, Number(requestWeightWarnThreshold1m || 4800));
     this.onRequestWeightUpdate = typeof onRequestWeightUpdate === "function" ? onRequestWeightUpdate : null;
@@ -241,6 +250,8 @@ export class BinanceClient {
       syncAgeMs: null
     };
     this.exchangeInfoCache = new Map();
+    this.exchangeInfoInflight = new Map();
+    this.futuresPublicCache = new Map();
     this.requestWeightState = {
       lastUpdatedAt: null,
       usedWeight: null,
@@ -375,6 +386,30 @@ export class BinanceClient {
       caller: key,
       estimatedWeight: estimateRequestWeight({ pathname, params })
     });
+  }
+
+  noteCacheDiagnostics({ caller = "", cacheKey = "unknown", type = "cache_hit", ttlMs = null, fallbackReason = null } = {}) {
+    if (!caller) return;
+    const state = this.requestWeightState;
+    const next = state.topRestCallers[caller] || {
+      count: 0,
+      weight: 0,
+      lastAt: null,
+      scope: "cache",
+      endpoint: cacheKey
+    };
+    next.lastAt = new Date(this.nowFn()).toISOString();
+    next.scope = next.scope || "cache";
+    next.endpoint = next.endpoint || cacheKey;
+    next.cacheKey = cacheKey;
+    if (ttlMs != null) next.ttlMs = Number(ttlMs);
+    if (type === "cache_hit") next.cacheHits = Number(next.cacheHits || 0) + 1;
+    if (type === "cache_miss") next.cacheMisses = Number(next.cacheMisses || 0) + 1;
+    if (type === "coalesced") next.coalescedCount = Number(next.coalescedCount || 0) + 1;
+    if (type === "fallback") next.fallbackCount = Number(next.fallbackCount || 0) + 1;
+    if (fallbackReason) next.fallbackReason = fallbackReason;
+    state.topRestCallers[caller] = next;
+    this.emitRequestWeightUpdate({ type: "cache_telemetry", caller, cacheKey, cacheEvent: type, ttlMs, fallbackReason });
   }
 
   updateRequestWeightFromResponse(response, { status = null, payload = null, rawBody = "", scope = "spot", method = "GET", pathname = "", requestMeta = {} } = {}) {
@@ -569,6 +604,24 @@ export class BinanceClient {
     let lastError = null;
     const cleanBaseUrl = `${baseUrl}`.replace(/\/$/, "");
     const scope = cleanBaseUrl === this.futuresBaseUrl ? "futures_public" : "external_public";
+    const methodName = `${method || "GET"}`.toUpperCase();
+    const cacheableFuturesPublic = scope === "futures_public" && methodName === "GET" && requestMeta?.skipCache !== true;
+    const caller = requestMeta?.caller || `${scope}:${methodName} ${pathname}`;
+    const cacheMs = Math.max(1_000, Number(requestMeta?.cacheMs || this.futuresPublicCacheMs));
+    const cacheKey = cacheableFuturesPublic ? `${pathname}?${createSortedQueryString(params)}` : null;
+    if (cacheableFuturesPublic) {
+      const cached = this.futuresPublicCache.get(cacheKey);
+      if (cached?.payload !== undefined && this.nowFn() - cached.cachedAtMs <= cacheMs) {
+        this.noteCacheDiagnostics({ caller, cacheKey: "futures_public_context", type: "cache_hit", ttlMs: cacheMs });
+        return cached.payload;
+      }
+      if (cached?.inFlight) {
+        this.noteCacheDiagnostics({ caller, cacheKey: "futures_public_context", type: "coalesced", ttlMs: cacheMs });
+        return cached.inFlight;
+      }
+      this.noteCacheDiagnostics({ caller, cacheKey: "futures_public_context", type: "cache_miss", ttlMs: cacheMs, fallbackReason: "ttl_expired_or_empty" });
+    }
+    const performRequest = async () => {
     for (let attempt = 1; attempt <= this.maxRetries; attempt += 1) {
       try {
         await this.respectActiveRateLimits();
@@ -617,6 +670,21 @@ export class BinanceClient {
       }
     }
     throw lastError;
+    };
+    if (!cacheableFuturesPublic) {
+      return performRequest();
+    }
+    const inFlight = performRequest().then((payload) => {
+      this.futuresPublicCache.set(cacheKey, { payload, cachedAtMs: this.nowFn() });
+      return payload;
+    }).finally(() => {
+      const current = this.futuresPublicCache.get(cacheKey);
+      if (current?.inFlight === inFlight) {
+        this.futuresPublicCache.delete(cacheKey);
+      }
+    });
+    this.futuresPublicCache.set(cacheKey, { inFlight, cachedAtMs: this.nowFn() });
+    return inFlight;
   }
 
   async publicRequest(method, pathname, params = {}, requestMeta = {}) {
@@ -763,18 +831,47 @@ export class BinanceClient {
       : "__all__";
     const cached = this.exchangeInfoCache.get(cacheKey);
     if (!forceRefresh && cached && (this.nowFn() - cached.cachedAtMs) <= cacheMs) {
+      this.noteCacheDiagnostics({
+        caller: options?.requestMeta?.caller || "exchange_info",
+        cacheKey: "exchange_info",
+        type: "cache_hit",
+        ttlMs: cacheMs
+      });
       return cached.payload;
     }
+    if (!forceRefresh && this.exchangeInfoInflight.has(cacheKey)) {
+      this.noteCacheDiagnostics({
+        caller: options?.requestMeta?.caller || "exchange_info",
+        cacheKey: "exchange_info",
+        type: "coalesced",
+        ttlMs: cacheMs
+      });
+      return this.exchangeInfoInflight.get(cacheKey);
+    }
+    this.noteCacheDiagnostics({
+      caller: options?.requestMeta?.caller || "exchange_info",
+      cacheKey: "exchange_info",
+      type: "cache_miss",
+      ttlMs: cacheMs,
+      fallbackReason: forceRefresh ? "forced_refresh" : "ttl_expired_or_empty"
+    });
     const params = symbolList.length === 1 ? { symbol: symbolList[0] } : symbolList.length > 1 ? { symbols: symbolList } : {};
-    const payload = await this.publicRequest("GET", "/api/v3/exchangeInfo", params, {
+    const inFlight = this.publicRequest("GET", "/api/v3/exchangeInfo", params, {
       caller: options?.requestMeta?.caller || "exchange_info",
       ...(options?.requestMeta || {})
+    }).then((payload) => {
+      this.exchangeInfoCache.set(cacheKey, {
+        cachedAtMs: this.nowFn(),
+        payload
+      });
+      return payload;
+    }).finally(() => {
+      if (this.exchangeInfoInflight.get(cacheKey) === inFlight) {
+        this.exchangeInfoInflight.delete(cacheKey);
+      }
     });
-    this.exchangeInfoCache.set(cacheKey, {
-      cachedAtMs: this.nowFn(),
-      payload
-    });
-    return payload;
+    this.exchangeInfoInflight.set(cacheKey, inFlight);
+    return inFlight;
   }
 
   async getKlines(symbol, interval, limit = 200, options = {}) {

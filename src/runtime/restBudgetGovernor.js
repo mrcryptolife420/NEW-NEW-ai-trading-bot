@@ -57,8 +57,11 @@ export function classifyRestCaller(caller = "") {
   if (/reconcile|openorders|open_orders|account_info|account|orderlist|order_lists|getorder/.test(text)) {
     return "critical_reconcile";
   }
-  if (/depth|orderbook|book_ticker|bookticker/.test(text)) {
+  if (/depth|orderbook|book_ticker|bookticker|deep_book/.test(text)) {
     return "public_market_depth";
+  }
+  if (/futures_public|fapi|futures\/data|openinterest|premiumindex|longshortratio|basis|funding/.test(text)) {
+    return "public_derivatives_context";
   }
   if (/kline|ticker|market_snapshot|scanner|watchlist|exchange_info/.test(text)) {
     return "public_market_snapshot";
@@ -67,6 +70,85 @@ export function classifyRestCaller(caller = "") {
     return "operator_low_priority";
   }
   return "unknown";
+}
+
+function cacheRecommendationForCaller(caller = "", restClass = "unknown") {
+  const text = `${caller || ""}`.toLowerCase();
+  if (/exchange_info/.test(text)) {
+    return {
+      cacheKey: "exchange_info",
+      action: "reuse_exchange_info_cache",
+      coalesceWindowMs: 60_000,
+      expectedImpact: "reduce_startup_and_symbol_rule_rest_repetition"
+    };
+  }
+  if (/universe.*ticker|ticker_24hr/.test(text)) {
+    return {
+      cacheKey: "universe_ticker_24hr",
+      action: "coalesce_universe_ticker_scan",
+      coalesceWindowMs: 30_000,
+      expectedImpact: "reduce_scanner_universe_rest_pressure"
+    };
+  }
+  if (/deep_book|depth|orderbook|book_ticker|bookticker/.test(text)) {
+    return {
+      cacheKey: restClass === "public_market_depth" ? "market_depth_or_book_ticker" : "market_snapshot_book",
+      action: "prefer_local_book_or_cached_book_ticker",
+      coalesceWindowMs: 5_000,
+      expectedImpact: "reduce_quality_quorum_degradation_from_depth_rest_pressure"
+    };
+  }
+  if (/market_snapshot|kline|timeframe/.test(text)) {
+    return {
+      cacheKey: "market_snapshot_klines",
+      action: "reuse_recent_market_snapshot_or_stream_klines",
+      coalesceWindowMs: 15_000,
+      expectedImpact: "reduce_repeated_snapshot_rest_calls"
+    };
+  }
+  if (/futures_public|fapi|futures\/data|openinterest|premiumindex|longshortratio|basis|funding/.test(text)) {
+    return {
+      cacheKey: "futures_public_context",
+      action: "cache_public_derivatives_context",
+      coalesceWindowMs: 30_000,
+      expectedImpact: "reduce_repeated_futures_context_rest_calls"
+    };
+  }
+  return {
+    cacheKey: restClass,
+    action: "review_rest_call_frequency",
+    coalesceWindowMs: 0,
+    expectedImpact: "manual_review_required"
+  };
+}
+
+function buildCacheTelemetry({ caller = "", value = {}, cacheRecommendation = {}, allowance = {} } = {}) {
+  const recordedHits = safeNumber(value?.cacheHits ?? value?.hits, 0);
+  const recordedMisses = safeNumber(value?.cacheMisses ?? value?.misses, 0);
+  const coalesced = safeNumber(value?.coalescedCount ?? value?.coalesced, 0);
+  const recordedFallbackCount = safeNumber(value?.fallbackCount ?? value?.fallbacks, 0);
+  const legacyRestCount = safeNumber(value?.count, 0);
+  const cacheable = safeNumber(cacheRecommendation.coalesceWindowMs, 0) > 0;
+  const legacyWithoutCacheEvents = cacheable && recordedHits === 0 && recordedMisses === 0 && legacyRestCount > 0;
+  const hits = recordedHits;
+  const misses = legacyWithoutCacheEvents ? legacyRestCount : recordedMisses;
+  const fallbackCount = legacyWithoutCacheEvents ? legacyRestCount : recordedFallbackCount;
+  const totalCacheEvents = hits + misses;
+  return {
+    caller,
+    cacheKey: cacheRecommendation.cacheKey || "unknown",
+    ttlMs: safeNumber(value?.ttlMs ?? value?.cacheTtlMs ?? cacheRecommendation.coalesceWindowMs, 0),
+    coalesceWindowMs: safeNumber(cacheRecommendation.coalesceWindowMs, 0),
+    cacheHits: hits,
+    cacheMisses: misses,
+    cacheHitRatio: totalCacheEvents > 0 ? Number((hits / totalCacheEvents).toFixed(4)) : null,
+    coalescedCount: coalesced,
+    fallbackCount,
+    fallbackReason: value?.fallbackReason || value?.reason || (legacyWithoutCacheEvents ? "legacy_rest_without_cache_event" : allowance.reason) || "not_recorded",
+    telemetryStatus: legacyWithoutCacheEvents ? "legacy_rest_observed_without_cache_event" : totalCacheEvents > 0 || coalesced || fallbackCount ? "recorded" : "not_recorded",
+    nextSafeAction: cacheRecommendation.action || "review_rest_call_frequency",
+    diagnosticsOnly: true
+  };
 }
 
 export function defaultPriorityForRestClass(restClass) {
@@ -79,6 +161,7 @@ export function defaultPriorityForRestClass(restClass) {
     case "public_market_depth":
       return "low";
     case "public_market_snapshot":
+    case "public_derivatives_context":
       return "medium";
     case "operator_low_priority":
       return "low";
@@ -296,6 +379,7 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
       const hotCallerThreshold = resolveHotCallerThreshold(restClass, config);
       const weight = safeNumber(value?.weight, 0);
       const streamReplacement = streamReplacementAvailable(restClass, streamStatus, caller);
+      const cacheRecommendation = cacheRecommendationForCaller(caller, restClass);
       const allowance = evaluateRestBudgetAllowance({
         caller,
         priority,
@@ -303,11 +387,20 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
         config,
         streamPrimary: streamReplacement || ["public_market_depth", "private_trade_history"].includes(restClass)
       });
+      const cacheTelemetry = buildCacheTelemetry({ caller, value, cacheRecommendation, allowance });
       return {
         caller,
         count: safeNumber(value?.count, 0),
         weight,
         restClass,
+        callerFamily: cacheRecommendation.cacheKey,
+        cacheRecommendation,
+        cacheTelemetry,
+        cacheHitRatio: cacheTelemetry.cacheHitRatio,
+        cacheMisses: cacheTelemetry.cacheMisses,
+        coalescedCount: cacheTelemetry.coalescedCount,
+        fallbackReason: cacheTelemetry.fallbackReason,
+        telemetryStatus: cacheTelemetry.telemetryStatus,
         priority,
         hotCallerThreshold,
         hot: hotCallerThreshold > 0 ? weight >= hotCallerThreshold : weight >= 1000,
@@ -320,6 +413,7 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
     .sort((left, right) => (right.weight - left.weight) || (right.count - left.count))
     .slice(0, 12);
   const budgetSlo = buildRequestBudgetSlo(topCallers, pressureState);
+  const cacheTelemetry = topCallers.map((caller) => caller.cacheTelemetry);
   const publicStreamConnected = Boolean(streamStatus?.public?.connected ?? streamStatus?.publicStreamConnected ?? streamStatus?.connected);
   const userStreamConnected = Boolean(streamStatus?.userStreamConnected);
   const guardedCallers = topCallers
@@ -348,6 +442,7 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
     publicStreamConnected,
     userStreamConnected,
     topCallers,
+    cacheTelemetry,
     budgetSlo,
     guardedCallers: guardedCallers.slice(0, 8),
     recommendedActions: [
@@ -356,6 +451,15 @@ export function buildRestBudgetGovernorSummary({ rateLimitState = {}, config = {
         : null,
       topCallers.some((item) => item.restClass === "public_market_depth")
         ? "Gebruik public stream/local book als primaire depth bron; REST depth blijft onder budget guard."
+        : null,
+      topCallers.some((item) => item.cacheRecommendation?.action === "reuse_exchange_info_cache")
+        ? "Herbruik exchange-info cache en coalesce startup/symbol-rule calls."
+        : null,
+      topCallers.some((item) => item.cacheRecommendation?.action === "coalesce_universe_ticker_scan")
+        ? "Coalesce universe ticker scans; voer ticker_24hr niet per scanner-loop opnieuw uit."
+        : null,
+      topCallers.some((item) => item.cacheRecommendation?.action === "cache_public_derivatives_context")
+        ? "Cache futures-public context snapshots; gebruik ze alleen als read-only sanity lane naast stream/readmodel data."
         : null,
       guardedCallers.some((item) => item.allowance?.reason === "hot_public_depth_rest_suppressed")
         ? "Depth REST caller is historisch te heet; laat streams/local book eerst herstellen voordat fallback terugkomt."

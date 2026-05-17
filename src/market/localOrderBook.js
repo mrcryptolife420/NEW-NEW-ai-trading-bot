@@ -194,6 +194,13 @@ export class LocalOrderBookEngine {
     bucket.lastPrimeSkipReason = allowance.reason || "depth_snapshot_rest_suppressed";
     bucket.lastPrimeRestBudget = allowance;
     bucket.lastDepthSummary = this.computeDepthSummary(bucket);
+    this.client?.noteCacheDiagnostics?.({
+      caller: "local_order_book.depth_snapshot",
+      cacheKey: "market_depth_or_book_ticker",
+      type: "fallback",
+      ttlMs: cooldownMs,
+      fallbackReason: bucket.lastPrimeSkipReason
+    });
   }
 
   resetBucket(bucket, reason = "resync") {
@@ -251,15 +258,34 @@ export class LocalOrderBookEngine {
       return bucket;
     }
     if (bucket.synced) {
+      this.client?.noteCacheDiagnostics?.({
+        caller: "local_order_book.depth_snapshot",
+        cacheKey: "market_depth_or_book_ticker",
+        type: "cache_hit",
+        ttlMs: Math.max(5_000, safeNumber(this.config.restDepthFallbackMinMs, 30_000))
+      });
       return bucket;
     }
     if (bucket.nextPrimeAllowedAt && Date.now() < bucket.nextPrimeAllowedAt) {
+      this.client?.noteCacheDiagnostics?.({
+        caller: "local_order_book.depth_snapshot",
+        cacheKey: "market_depth_or_book_ticker",
+        type: "fallback",
+        ttlMs: Math.max(5_000, bucket.nextPrimeAllowedAt - Date.now()),
+        fallbackReason: bucket.lastPrimeSkipReason || "local_order_book_depth_snapshot_cooldown"
+      });
       const error = new Error(bucket.lastPrimeSkipReason || "local_order_book_depth_snapshot_cooldown");
       error.code = "LOCAL_BOOK_DEPTH_SNAPSHOT_COOLDOWN";
       error.restBudget = bucket.lastPrimeRestBudget || null;
       throw error;
     }
     if (bucket.primingPromise) {
+      this.client?.noteCacheDiagnostics?.({
+        caller: "local_order_book.depth_snapshot",
+        cacheKey: "market_depth_or_book_ticker",
+        type: "coalesced",
+        ttlMs: Math.max(5_000, safeNumber(this.config.restDepthFallbackMinMs, 30_000))
+      });
       return bucket.primingPromise;
     }
 
@@ -282,6 +308,13 @@ export class LocalOrderBookEngine {
           });
           throw error;
         }
+        this.client?.noteCacheDiagnostics?.({
+          caller: "local_order_book.depth_snapshot",
+          cacheKey: "market_depth_or_book_ticker",
+          type: "cache_miss",
+          ttlMs: Math.max(5_000, safeNumber(this.config.restDepthFallbackMinMs, 30_000)),
+          fallbackReason: "stream_bootstrap_snapshot"
+        });
         const snapshot = await this.client.getOrderBook(symbol, this.config.streamDepthSnapshotLimit, {
           requestMeta: { caller: "local_order_book.depth_snapshot" }
         });
