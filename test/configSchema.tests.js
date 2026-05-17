@@ -1,5 +1,6 @@
 import { parseEnvText } from "../src/config/envFile.js";
 import { getTradeProfile } from "../src/config/tradeProfiles.js";
+import { pathToFileURL } from "node:url";
 
 export async function registerConfigSchemaTests({
   runCheck,
@@ -118,6 +119,35 @@ export async function registerConfigSchemaTests({
       assert.equal(values.CONFIG_CAPABILITY_BUNDLES, profile.env.CONFIG_CAPABILITY_BUNDLES, fileName);
       assert.equal(values.PAPER_EXECUTION_VENUE, profile.env.PAPER_EXECUTION_VENUE, fileName);
     }
+  });
+
+  await runCheck("package exposes cross-platform paper and demo mode scripts", async () => {
+    const projectRoot = process.cwd();
+    const packageJson = JSON.parse(await fs.readFile(path.join(projectRoot, "package.json"), "utf8"));
+    const scripts = packageJson.scripts || {};
+    const expectedScripts = {
+      paper: "node scripts/run-mode.mjs paper run",
+      "paper:once": "node scripts/run-mode.mjs paper once",
+      "paper:doctor": "node scripts/run-mode.mjs paper doctor",
+      "paper:audit": "node scripts/run-mode.mjs paper feature:audit",
+      demo: "node scripts/run-mode.mjs demo run",
+      "demo:once": "node scripts/run-mode.mjs demo once",
+      "demo:doctor": "node scripts/run-mode.mjs demo doctor",
+      "demo:audit": "node scripts/run-mode.mjs demo feature:audit"
+    };
+    for (const [name, command] of Object.entries(expectedScripts)) {
+      assert.equal(scripts[name], command, name);
+    }
+
+    const runModeModule = await import(pathToFileURL(path.join(projectRoot, "scripts", "run-mode.mjs")));
+    const paperEnv = runModeModule.buildModeEnv("paper", { BOT_MODE: "live", PAPER_MODE_PROFILE: "demo_spot" });
+    assert.equal(paperEnv.BOT_MODE, "paper");
+    assert.equal(paperEnv.PAPER_EXECUTION_VENUE, "internal");
+    assert.equal(paperEnv.PAPER_MODE_PROFILE, "learn");
+    const demoEnv = runModeModule.buildModeEnv("demo", { BOT_MODE: "live", PAPER_EXECUTION_VENUE: "internal" });
+    assert.equal(demoEnv.BOT_MODE, "paper");
+    assert.equal(demoEnv.PAPER_EXECUTION_VENUE, "binance_demo_spot");
+    assert.equal(demoEnv.PAPER_MODE_PROFILE, "demo_spot");
   });
 
   await runCheck("config resolves relative runtime and history directories under project root", async () => {

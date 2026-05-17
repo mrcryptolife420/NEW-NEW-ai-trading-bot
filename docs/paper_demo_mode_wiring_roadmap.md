@@ -89,27 +89,24 @@ BOT_MODE=paper node src/cli.js once
 BOT_MODE=paper node src/cli.js run
 ```
 
-- [ ] Voeg ontbrekende expliciete scripts toe aan `package.json`:
+- [x] Voeg ontbrekende expliciete scripts toe aan `package.json`:
 
 ```json
 {
   "scripts": {
-    "paper": "BOT_MODE=paper node src/cli.js run",
-    "paper:once": "BOT_MODE=paper node src/cli.js once",
-    "paper:doctor": "BOT_MODE=paper node src/cli.js doctor",
-    "paper:audit": "BOT_MODE=paper node src/cli.js feature:audit",
-    "demo": "BOT_MODE=paper PAPER_MODE_PROFILE=demo_spot node src/cli.js run",
-    "demo:once": "BOT_MODE=paper PAPER_MODE_PROFILE=demo_spot node src/cli.js once"
+    "paper": "node scripts/run-mode.mjs paper run",
+    "paper:once": "node scripts/run-mode.mjs paper once",
+    "paper:doctor": "node scripts/run-mode.mjs paper doctor",
+    "paper:audit": "node scripts/run-mode.mjs paper feature:audit",
+    "demo": "node scripts/run-mode.mjs demo run",
+    "demo:once": "node scripts/run-mode.mjs demo once",
+    "demo:doctor": "node scripts/run-mode.mjs demo doctor",
+    "demo:audit": "node scripts/run-mode.mjs demo feature:audit"
   }
 }
 ```
 
-Voor Windows PowerShell liever:
-
-```powershell
-$env:BOT_MODE="paper"; node src/cli.js once
-$env:BOT_MODE="paper"; $env:PAPER_MODE_PROFILE="demo_spot"; node src/cli.js once
-```
+Deze scripts gebruiken `scripts/run-mode.mjs`, zodat ze cross-platform werken in PowerShell, cmd, Linux en CI zonder shell-specifieke env-var syntax.
 
 - [ ] Verifieer dat `src/config/index.js` overal `botMode` gebruikt als bron van waarheid.
 - [ ] Verifieer dat `BOT_MODE=live` nooit per ongeluk gekozen wordt zonder expliciete live-confirmatie en live credentials.
