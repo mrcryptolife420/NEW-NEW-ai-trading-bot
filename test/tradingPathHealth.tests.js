@@ -67,6 +67,8 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.ok(health.blockingReasons.includes("no_market_snapshots_ready"));
     assert.ok(health.blockingReasons.includes("no_decision_snapshot_created"));
     assert.equal(health.nextAction, "run_once_and_check_feed_sources");
+    assert.equal(health.noTradeSummary.status, "explained");
+    assert.equal(health.noTradeSummary.primaryCategory, "market_data");
   });
 
   await runCheck("exchange safety remains dominant over stale dashboard state", async () => {
@@ -317,6 +319,44 @@ export async function registerTradingPathHealthTests({ runCheck, assert, fs, os,
     assert.deepEqual(health.blockingReasons, []);
     assert.ok(health.staleSources.includes("dashboard_snapshot_unavailable"));
     assert.equal(health.nextAction, "start_dashboard_or_fetch_snapshot");
+  });
+
+  await runCheck("trading path health carries decision funnel no-trade evidence", async () => {
+    const health = buildTradingPathHealth({
+      now,
+      runtimeState: {
+        lifecycle: { activeRun: true },
+        lastCycleAt: "2026-05-03T11:59:00.000Z",
+        latestMarketSnapshots: { BTCUSDT: { updatedAt: "2026-05-03T11:59:30.000Z" } },
+        latestDecisions: [{ symbol: "BTCUSDT" }],
+        signalFlow: {
+          decisionFunnel: {
+            status: "blocked",
+            symbol: "BTCUSDT",
+            firstBlockedStage: "risk_gate",
+            primaryReason: "capital_governor_blocked",
+            nextSafeAction: "inspect_risk_veto_and_sizing"
+          }
+        }
+      },
+      dashboardSnapshot: {
+        generatedAt: "2026-05-03T11:59:50.000Z",
+        topDecisions: [{ symbol: "BTCUSDT" }]
+      },
+      feedSummary: {
+        status: "ready",
+        symbolsRequested: 1,
+        symbolsReady: 1,
+        missingSymbols: [],
+        staleSources: [],
+        lastSuccessfulAggregationAt: "2026-05-03T11:59:30.000Z"
+      },
+      readmodelSummary: { status: "ready", rebuiltAt: "2026-05-03T11:58:00.000Z" }
+    });
+    assert.equal(health.decisionFunnel.firstBlockedStage, "risk_gate");
+    assert.equal(health.noTradeSummary.primaryReason, "capital_governor_blocked");
+    assert.equal(health.noTradeSummary.primaryCategory, "risk_gate");
+    assert.equal(health.noTradeSummary.nextSafeAction, "inspect_risk_veto_and_sizing");
   });
 
   await runCheck("readmodel freshness uses latest journal refresh over older rebuild timestamp", async () => {

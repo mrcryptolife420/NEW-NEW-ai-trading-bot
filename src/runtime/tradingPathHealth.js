@@ -107,6 +107,32 @@ function inferIncidentRootCause({ blockers = [], staleSources = [], status = "un
   return "unknown";
 }
 
+function buildNoTradeSummary({ status, uniqueBlockers = [], uniqueStale = [], feed = {}, decisionFunnel = null, topDecisionsCount = 0, marketSnapshotsCount = 0 } = {}) {
+  const categories = {};
+  const note = (key) => {
+    categories[key] = (categories[key] || 0) + 1;
+  };
+  if (!marketSnapshotsCount || uniqueStale.includes("no_market_snapshots_ready") || uniqueStale.includes("feed_aggregation_stale")) note("market_data");
+  if (!topDecisionsCount || uniqueBlockers.includes("no_decision_snapshot_created")) note("candidate_generation");
+  if (decisionFunnel?.firstBlockedStage) note(decisionFunnel.firstBlockedStage);
+  if (uniqueBlockers.some((reason) => /risk|governance|exchange_safety|preflight/.test(`${reason}`))) note("risk_gate");
+  if (uniqueBlockers.some((reason) => /exec|order|broker|intent|fill/.test(`${reason}`))) note("execution");
+  if (uniqueStale.some((reason) => /readmodel|storage|persist|dashboard/.test(`${reason}`))) note("storage_dashboard");
+  const primaryReason = decisionFunnel?.primaryReason || uniqueBlockers[0] || uniqueStale[0] || null;
+  const primaryCategory = Object.entries(categories).sort((left, right) => right[1] - left[1])[0]?.[0] || (status === "active" ? "none" : "insufficient_evidence");
+  return {
+    status: status === "active" ? "clear" : primaryReason ? "explained" : "insufficient_evidence",
+    primaryReason,
+    primaryCategory,
+    categories,
+    decisionFunnelStatus: decisionFunnel?.status || "unavailable",
+    feedStatus: feed.status || "unknown",
+    nextSafeAction: decisionFunnel?.nextSafeAction || null,
+    diagnosticsOnly: true,
+    liveBehaviorChanged: false
+  };
+}
+
 function isStreamConnectivityAuthoritative(runtimeState = {}, streamStatus = {}) {
   const runtime = objectOrFallback(runtimeState, {});
   const streams = objectOrFallback(streamStatus, {});
@@ -301,6 +327,12 @@ export function buildTradingPathHealth({
   });
   const topDecisionsCount = arr(dashboard.topDecisions || runtime.latestDecisions || scanSummary?.topDecisions).length;
   const marketSnapshotsCount = countMarketSnapshots(runtime.latestMarketSnapshots || runtime.marketSnapshots || dashboard.marketSnapshots) || Number(feed.symbolsReady || 0);
+  const decisionFunnel = runtime.signalFlow?.decisionFunnel ||
+    runtime.signalFlow?.lastCycle?.decisionFunnel ||
+    dashboard.ops?.signalFlow?.decisionFunnel ||
+    dashboard.ops?.signalFlow?.lastCycle?.decisionFunnel ||
+    dashboard.report?.decisionFunnel ||
+    null;
   const blockingReasons = [];
   const staleSources = [];
   const exchangeSafety = dashboard.exchangeSafety || runtime.exchangeSafety || {};
@@ -425,6 +457,15 @@ export function buildTradingPathHealth({
     diagnosticsOnly: true,
     liveBehaviorChanged: false
   };
+  const noTradeSummary = buildNoTradeSummary({
+    status,
+    uniqueBlockers,
+    uniqueStale,
+    feed,
+    decisionFunnel,
+    topDecisionsCount,
+    marketSnapshotsCount
+  });
 
   return {
     status,
@@ -442,6 +483,8 @@ export function buildTradingPathHealth({
     lastCycleAt: cycleAt,
     cycleAgeMs,
     feedSummary: feed,
+    decisionFunnel,
+    noTradeSummary,
     apiDegradationSummary: apiDegradation,
     priceSanitySummary: priceSanity,
     dashboardOperationalTruth,

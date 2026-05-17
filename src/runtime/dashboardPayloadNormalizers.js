@@ -97,6 +97,10 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       }
     ),
     storageAuditSummary: objectOrFallback(source.storageAuditSummary || source.dataIntegrity?.storageAuditSummary, { status: "unavailable" }),
+    storageTruthMatrix: objectOrFallback(
+      source.storageTruthMatrix || source.dataIntegrity?.storageTruthMatrix || source.ops?.storageTruthMatrix,
+      { status: "unavailable", version: null, entries: [], drift: {}, warnings: [], diagnosticsOnly: true }
+    ),
     storageRetentionSummary: objectOrFallback(
       source.storageRetentionSummary || source.dataIntegrity?.storageRetentionSummary || source.ops?.storageRetentionSummary,
       { status: "unavailable", totalBytes: 0, fileCount: 0, retentionWarnings: [], readOnly: true, autoDelete: false }
@@ -554,6 +558,13 @@ export function normalizeDashboardSnapshotPayload(snapshot = {}) {
       blockingReasons: [],
       staleSources: [],
       nextAction: "inspect_runtime_status"
+    }),
+    noTradeSummary: objectOrFallback(source.noTradeSummary || source.tradingPathHealth?.noTradeSummary || source.ops?.noTradeSummary, {
+      status: "insufficient_evidence",
+      primaryReason: null,
+      primaryCategory: "insufficient_evidence",
+      categories: {},
+      diagnosticsOnly: true
     }),
     feedSummary: objectOrFallback(source.feedSummary || source.ops?.feedSummary, {
       status: "unknown",

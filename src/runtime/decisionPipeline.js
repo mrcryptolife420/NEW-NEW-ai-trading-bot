@@ -1,4 +1,5 @@
 import { nowIso } from "../utils/time.js";
+import { buildDecisionFunnelEvidence } from "./decisionFunnel.js";
 
 function topReasonCodes(decision = {}) {
   if (decision.riskVerdict?.rejections?.length) {
@@ -98,6 +99,21 @@ export async function executeDecisionPipeline(bot, {
   await recordSignalAudit(bot, resolvedCandidates, cycleAt, mode);
   const entryAttempt = await bot.openBestCandidate(resolvedCandidates, { executionBlockers });
   const selectedCandidate = resolvedCandidates.find((candidate) => candidate.symbol === (entryAttempt.selectedSymbol || entryAttempt.openedPosition?.symbol)) || resolvedCandidates[0] || null;
+  const decisionFunnel = buildDecisionFunnelEvidence({
+    cycleId: cycleAt,
+    mode,
+    candidates: resolvedCandidates,
+    selectedCandidate,
+    entryAttempt
+  });
+  if (bot.runtime && typeof bot.runtime === "object") {
+    bot.runtime.signalFlow = bot.runtime.signalFlow || {};
+    bot.runtime.signalFlow.lastCycle = {
+      ...(bot.runtime.signalFlow.lastCycle || {}),
+      decisionFunnel
+    };
+    bot.runtime.signalFlow.decisionFunnel = decisionFunnel;
+  }
   await recordDecisionOutcomeAudit(bot, {
     cycleId: cycleAt,
     mode,
@@ -112,7 +128,15 @@ export async function executeDecisionPipeline(bot, {
     signalDecision: selectedCandidate
       ? {
           id: buildDecisionId(cycleAt, selectedCandidate.symbol),
+          decisionId: decisionFunnel.selectedDecision?.decisionId || buildDecisionId(cycleAt, selectedCandidate.symbol),
+          cycleId: cycleAt,
+          mode,
           symbol: selectedCandidate.symbol,
+          stage: decisionFunnel.selectedDecision?.stage || null,
+          primaryReason: decisionFunnel.selectedDecision?.primaryReason || null,
+          reasonCodes: decisionFunnel.selectedDecision?.reasonCodes || [],
+          reasonCategories: decisionFunnel.selectedDecision?.reasonCategories || {},
+          nextSafeAction: decisionFunnel.selectedDecision?.nextSafeAction || null,
           probability: selectedCandidate.score?.probability ?? null,
           threshold: selectedCandidate.decision?.threshold ?? null,
           allow: Boolean(selectedCandidate.decision?.allow)
@@ -128,6 +152,7 @@ export async function executeDecisionPipeline(bot, {
       status: entryAttempt.openedPosition ? "executed" : (entryAttempt.status || "blocked"),
       openedPosition: entryAttempt.openedPosition || null,
       errors: [...(entryAttempt.entryErrors || [])]
-    }
+    },
+    decisionFunnel
   };
 }

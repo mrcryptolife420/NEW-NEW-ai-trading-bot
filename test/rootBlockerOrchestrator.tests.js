@@ -75,4 +75,20 @@ export async function registerRootBlockerOrchestratorTests({
     assert.equal(summary.globalBlockers.length, 0);
     assert.equal(summary.blockedSymbols[0]?.symbol, "XRPUSDT");
   });
+
+  await runCheck("root blocker orchestrator includes decision funnel blocker context", async () => {
+    const summary = buildRootBlockerOrchestrator({
+      runtime: {},
+      decisionFunnel: {
+        status: "blocked",
+        symbol: "BTCUSDT",
+        firstBlockedStage: "risk_gate",
+        primaryReason: "capital_governor_blocked",
+        nextSafeAction: "inspect_risk_veto_and_sizing"
+      }
+    });
+    assert.equal(summary.primaryRootBlocker?.reason, "capital_governor_blocked");
+    assert.equal(summary.blockedSymbols[0]?.symbol, "BTCUSDT");
+    assert.equal(summary.decisionFunnel.firstBlockedStage, "risk_gate");
+  });
 }

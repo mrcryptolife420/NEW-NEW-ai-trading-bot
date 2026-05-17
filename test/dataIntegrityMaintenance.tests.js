@@ -16,6 +16,7 @@ import { evaluateDatasetQuality } from "../src/runtime/datasetQualityGate.js";
 import { validateBacktestResult } from "../src/backtest/backtestIntegrity.js";
 import { buildReplayPackManifest } from "../src/runtime/replayPackManifest.js";
 import { normalizeDashboardSnapshotPayload } from "../src/runtime/dashboardPayloadNormalizers.js";
+import { buildStorageTruthMatrix } from "../src/storage/storageTruthMatrix.js";
 
 export async function registerDataIntegrityMaintenanceTests({
   runCheck,
@@ -230,10 +231,26 @@ export async function registerDataIntegrityMaintenanceTests({
   await runCheck("dashboard normalizer keeps data integrity summaries optional", async () => {
     const minimal = normalizeDashboardSnapshotPayload({});
     assert.equal(minimal.storageAuditSummary.status, "unavailable");
+    assert.equal(minimal.storageTruthMatrix.status, "unavailable");
     assert.equal(minimal.recorderIntegritySummary.status, "unavailable");
     assert.equal(minimal.dataFreshnessSummary.status, "unknown");
     assert.equal(minimal.datasetQualitySummary.status, "blocked");
     assert.equal(minimal.replayDeterminismSummary.status, "unavailable");
+  });
+
+  await runCheck("storage truth matrix names owners and detects journal readmodel drift", async () => {
+    const matrix = buildStorageTruthMatrix({
+      journal: { trades: [{ id: "t1" }, { id: "t2" }] },
+      readmodelSummary: { status: "ready", tables: { trades: 1 } },
+      recorderAudit: { status: "ok" }
+    });
+    assert.equal(matrix.status, "warning");
+    assert.equal(matrix.drift.tradeCountDrift, true);
+    assert.ok(matrix.warnings.includes("journal_readmodel_trade_count_drift"));
+    assert.ok(matrix.entries.some((entry) => entry.dataType === "journal_trades" && entry.owner === "StateStore"));
+    const normalized = normalizeDashboardSnapshotPayload({ storageTruthMatrix: matrix });
+    assert.equal(normalized.storageTruthMatrix.version, 1);
+    assert.equal(normalized.storageTruthMatrix.nextSafeAction, "run_readmodel_rebuild_and_compare_journal_counts");
   });
 
   await runCheck("storage recorder and replay manifest CLI commands are read-only", async () => {

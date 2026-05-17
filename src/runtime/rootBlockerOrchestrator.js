@@ -47,7 +47,8 @@ export function buildRootBlockerOrchestrator({
   exchangeSafety = {},
   capitalGovernor = {},
   readiness = {},
-  service = {}
+  service = {},
+  decisionFunnel = null
 } = {}) {
   const blockers = [];
   const blockedSymbols = new Map();
@@ -130,6 +131,16 @@ export function buildRootBlockerOrchestrator({
       ]
     });
   }
+  const funnel = decisionFunnel || runtime?.signalFlow?.decisionFunnel || runtime?.signalFlow?.lastCycle?.decisionFunnel || null;
+  if (funnel?.firstBlockedStage && funnel?.primaryReason) {
+    pushBlocker(blockers, {
+      reason: funnel.primaryReason,
+      scope: funnel.symbol ? "symbol" : "global",
+      source: "decisionFunnel",
+      symbols: funnel.symbol ? [funnel.symbol] : [],
+      symptoms: [funnel.firstBlockedStage, funnel.nextSafeAction].filter(Boolean)
+    });
+  }
 
   const sorted = blockers.sort((left, right) => right.priority - left.priority || `${left.reason}`.localeCompare(`${right.reason}`));
   for (const blocker of sorted) {
@@ -158,6 +169,14 @@ export function buildRootBlockerOrchestrator({
     symbolBlockers,
     blockedSymbols: [...blockedSymbols.values()].sort((left, right) => `${left.symbol}`.localeCompare(`${right.symbol}`)),
     blockerGraph: sorted.slice(0, 16),
-    downstreamSymptoms
+    downstreamSymptoms,
+    decisionFunnel: funnel
+      ? {
+          status: funnel.status || "unknown",
+          firstBlockedStage: funnel.firstBlockedStage || null,
+          primaryReason: funnel.primaryReason || null,
+          nextSafeAction: funnel.nextSafeAction || null
+        }
+      : null
   };
 }

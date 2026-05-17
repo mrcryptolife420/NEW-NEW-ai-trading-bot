@@ -1,4 +1,5 @@
 import { executeDecisionPipeline } from "../src/runtime/decisionPipeline.js";
+import { buildDecisionFunnelEvidence } from "../src/runtime/decisionFunnel.js";
 
 function createAuditLogRecorder() {
   const events = [];
@@ -47,6 +48,10 @@ export async function registerDecisionPipelineTests({ runCheck, assert }) {
     });
     assert.equal(result.signalDecision.symbol, "BTCUSDT");
     assert.equal(result.executionResult.status, "executed");
+    assert.equal(result.decisionFunnel.status, "executed");
+    assert.equal(result.decisionFunnel.highestReachedStage, "broker_attempt");
+    assert.equal(result.signalDecision.decisionId, "2026-04-21T10:00:00.000Z:BTCUSDT");
+    assert.equal(result.signalDecision.stage, "execution_plan");
     assert.equal(auditLog.events.length, 4);
     assert.deepEqual(auditLog.events.map((item) => item.kind), [
       "signal_decision",
@@ -93,7 +98,25 @@ export async function registerDecisionPipelineTests({ runCheck, assert }) {
     });
     assert.equal(result.executionResult.status, "risk_blocked");
     assert.equal(result.riskVerdict.rejections[0].code, "max_total_exposure");
+    assert.equal(result.decisionFunnel.status, "blocked");
+    assert.equal(result.decisionFunnel.firstBlockedStage, "risk_gate");
+    assert.equal(result.decisionFunnel.primaryReason, "max_total_exposure");
+    assert.equal(result.decisionFunnel.nextSafeAction, "inspect_risk_veto_and_sizing");
     const executionAudit = auditLog.events.find((item) => item.kind === "execution_result");
     assert.deepEqual(executionAudit.reasonCodes, ["max_total_exposure"]);
+  });
+
+  await runCheck("decision funnel reports no candidates as market-data blocked evidence", async () => {
+    const funnel = buildDecisionFunnelEvidence({
+      cycleId: "cycle-empty",
+      mode: "paper",
+      candidates: [],
+      entryAttempt: { status: "idle", blockedReasons: [] }
+    });
+    assert.equal(funnel.status, "blocked");
+    assert.equal(funnel.firstBlockedStage, "market_data");
+    assert.equal(funnel.primaryReason, "no_candidates_created");
+    assert.equal(funnel.stages[0].stage, "market_data");
+    assert.equal(funnel.stages[0].status, "blocked");
   });
 }

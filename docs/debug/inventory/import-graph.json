@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-16T22:09:24.411Z",
+  "generatedAt": "2026-05-17T20:07:01.813Z",
   "edges": [
     {
       "from": "src/accounts/accountProfileRegistry.js",
@@ -1782,6 +1782,11 @@
       "type": "static"
     },
     {
+      "from": "src/risk/policies/setupQualityPolicy.js",
+      "to": "src/utils/math.js",
+      "type": "static"
+    },
+    {
       "from": "src/risk/portfolioCrowding.js",
       "to": "src/utils/math.js",
       "type": "static"
@@ -1884,6 +1889,11 @@
     {
       "from": "src/risk/riskManager.js",
       "to": "src/risk/policies/reasonPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/risk/riskManager.js",
+      "to": "src/risk/policies/setupQualityPolicy.js",
       "type": "static"
     },
     {
@@ -2182,6 +2192,11 @@
       "type": "static"
     },
     {
+      "from": "src/runtime/decisionFunnel.js",
+      "to": "src/risk/reasonRegistry.js",
+      "type": "static"
+    },
+    {
       "from": "src/runtime/decisionInputLineage.js",
       "to": "src/runtime/replayDeterminism.js",
       "type": "static"
@@ -2189,6 +2204,11 @@
     {
       "from": "src/runtime/decisionPipeline.js",
       "to": "src/utils/time.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/decisionPipeline.js",
+      "to": "src/runtime/decisionFunnel.js",
       "type": "static"
     },
     {
@@ -2629,6 +2649,16 @@
     {
       "from": "src/runtime/operatorRunbookGenerator.js",
       "to": "src/strategy/strategyLifecycleGovernance.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/orderRoutingAudit.js",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/orderRoutingAudit.js",
+      "to": "node:path",
       "type": "static"
     },
     {
@@ -3523,6 +3553,11 @@
     },
     {
       "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/restBanPause.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
       "to": "src/runtime/streamHealthEvidence.js",
       "type": "static"
     },
@@ -4082,6 +4117,11 @@
       "type": "static"
     },
     {
+      "from": "test/brokerFactory.tests.js",
+      "to": "src/runtime/orderRoutingAudit.js",
+      "type": "static"
+    },
+    {
       "from": "test/canaryReleaseGate.tests.js",
       "to": "src/runtime/canaryReleaseGate.js",
       "type": "static"
@@ -4222,6 +4262,11 @@
       "type": "static"
     },
     {
+      "from": "test/configSchema.tests.js",
+      "to": "node:url",
+      "type": "static"
+    },
+    {
       "from": "test/crossExchangeDivergence.tests.js",
       "to": "src/market/crossExchangeDivergence.js",
       "type": "static"
@@ -4328,6 +4373,11 @@
     },
     {
       "from": "test/dataIntegrityMaintenance.tests.js",
+      "to": "src/storage/storageTruthMatrix.js",
+      "type": "static"
+    },
+    {
+      "from": "test/dataIntegrityMaintenance.tests.js",
       "to": "src/storage/stateStore.js",
       "type": "dynamic"
     },
@@ -4359,6 +4409,11 @@
     {
       "from": "test/decisionPipeline.tests.js",
       "to": "src/runtime/decisionPipeline.js",
+      "type": "static"
+    },
+    {
+      "from": "test/decisionPipeline.tests.js",
+      "to": "src/runtime/decisionFunnel.js",
       "type": "static"
     },
     {
@@ -4394,6 +4449,11 @@
     {
       "from": "test/decisionSupportFoundation.tests.js",
       "to": "src/strategy/failedBreakoutDetector.js",
+      "type": "static"
+    },
+    {
+      "from": "test/domainTestRegistry.tests.js",
+      "to": "test/domainTestRegistry.js",
       "type": "static"
     },
     {
@@ -4654,6 +4714,16 @@
     {
       "from": "test/largeFoundations.tests.js",
       "to": "src/runtime/restBudgetGovernor.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/runtimeLiveness.js",
+      "type": "static"
+    },
+    {
+      "from": "test/largeFoundations.tests.js",
+      "to": "src/runtime/restBanPause.js",
       "type": "static"
     },
     {
@@ -5434,6 +5504,11 @@
     {
       "from": "test/riskReasonPolicy.tests.js",
       "to": "src/risk/policies/reasonPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/riskSetupQualityPolicy.tests.js",
+      "to": "src/risk/policies/setupQualityPolicy.js",
       "type": "static"
     },
     {
@@ -6413,6 +6488,11 @@
     },
     {
       "from": "test/run.js",
+      "to": "test/riskSetupQualityPolicy.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
       "to": "test/missionControlRiskIntelligence.tests.js",
       "type": "static"
     },
@@ -6534,6 +6614,16 @@
     {
       "from": "test/run.js",
       "to": "test/brokerFactory.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/domainTestRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/domainTestRegistry.tests.js",
       "type": "static"
     },
     {
@@ -7152,6 +7242,11 @@
       "type": "static"
     },
     {
+      "from": "scripts/check-order-routing.mjs",
+      "to": "src/runtime/orderRoutingAudit.js",
+      "type": "static"
+    },
+    {
       "from": "scripts/check-package-scripts.mjs",
       "to": "node:fs/promises",
       "type": "static"
@@ -7197,6 +7292,21 @@
       "type": "static"
     },
     {
+      "from": "scripts/run-mode.mjs",
+      "to": "node:child_process",
+      "type": "static"
+    },
+    {
+      "from": "scripts/run-mode.mjs",
+      "to": "node:url",
+      "type": "static"
+    },
+    {
+      "from": "scripts/run-mode.mjs",
+      "to": "node:path",
+      "type": "static"
+    },
+    {
       "from": "scripts/scan-secrets.mjs",
       "to": "node:fs/promises",
       "type": "static"
@@ -7209,6 +7319,16 @@
     {
       "from": "scripts/scan-secrets.mjs",
       "to": "node:crypto",
+      "type": "static"
+    },
+    {
+      "from": "scripts/security-scan-report.mjs",
+      "to": "node:fs/promises",
+      "type": "static"
+    },
+    {
+      "from": "scripts/security-scan-report.mjs",
+      "to": "node:path",
       "type": "static"
     },
     {

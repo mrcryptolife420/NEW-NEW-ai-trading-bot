@@ -128,5 +128,6 @@ export async function registerFeatureWiringCompletionGateTests({ runCheck, asser
     assert.equal(normalized.featureWiringCompletionSummary.featureCount, 0);
     assert.equal(fallback.featureWiringCompletionSummary.status, "unavailable");
     assert.equal(fallback.featureWiringCompletionSummary.liveBehaviorChanged, false);
+    assert.equal(fallback.noTradeSummary.status, "insufficient_evidence");
   });
 }
