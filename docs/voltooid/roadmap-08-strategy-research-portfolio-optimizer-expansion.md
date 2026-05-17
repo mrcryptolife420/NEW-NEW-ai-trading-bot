@@ -1,6 +1,7 @@
 # Roadmap 08 - Strategy Research en Portfolio Optimizer Expansion
 
-Status: actief  
+Status: voltooid  
+Voltooid op: 2026-05-17  
 Aanmaakdatum: 2026-05-17  
 Analysebasis: volledige codebase-inspectie, `docs/`, `docs/voltooid/`, strategy router, strategy DSL, research labs, strategy lifecycle, portfolio/risk modules en testinventaris.
 

@@ -244,6 +244,7 @@ import { registerPaperTradeLifecycleContractTests } from "./paperTradeLifecycleC
 import { registerBrokerFactoryTests } from "./brokerFactory.tests.js";
 import { classifyTestDomain, resolveRequestedTestDomains } from "./domainTestRegistry.js";
 import { registerDomainTestRegistryTests } from "./domainTestRegistry.tests.js";
+import { registerRoadmapCompletionTests } from "./roadmapCompletion.tests.js";
 import http from "node:http";
 
 const testStartedAt = Date.now();
@@ -32987,6 +32988,11 @@ await registerPaperTradeLifecycleContractTests({
 });
 
 await registerBrokerFactoryTests({
+  runCheck,
+  assert
+});
+
+await registerRoadmapCompletionTests({
   runCheck,
   assert
 });

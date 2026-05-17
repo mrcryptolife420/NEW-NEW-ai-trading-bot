@@ -167,6 +167,11 @@ import {
   buildMarketSnapshotFlowDebug,
   compactMarketSnapshotMap
 } from "./marketSnapshotFlowDebug.js";
+import { buildMarketDataIntelligence } from "./marketDataIntelligence.js";
+import { buildModelLifecycleDossier } from "./modelLifecycleDossier.js";
+import { buildStrategyLifecycleBoard } from "./strategyResearchWorkflow.js";
+import { buildSetupStateMachine } from "./setupStateMachine.js";
+import { buildLiveIncidentCommandState } from "./liveIncidentCommand.js";
 
 const EMPTY_NEWS = {
   coverage: 0,
@@ -25569,6 +25574,25 @@ export class TradingBot {
       streamStatus: decoratedStreamStatus,
       now: referenceNow
     });
+    const marketDataIntelligence = buildMarketDataIntelligence({
+      symbols: [
+        ...arr(this.config.watchlist || []),
+        ...arr(fullTopDecisions).map((decision) => decision.symbol),
+        ...arr(fullBlockedSetups).map((decision) => decision.symbol)
+      ],
+      candidates: [...fullTopDecisions, ...fullBlockedSetups],
+      marketSnapshots: this.runtime.latestMarketSnapshots || this.runtime.marketSnapshots || {},
+      optionalProviders: {
+        news: this.runtime.newsCache || this.runtime.news || {},
+        marketProviders: this.runtime.marketProviders || marketProvidersSummary
+      },
+      providerSummary: this.runtime.marketProviders || marketProvidersSummary,
+      streamHealth: decoratedStreamStatus,
+      streamFallbackHealth,
+      requestBudget: this.client?.getRateLimitState ? this.client.getRateLimitState() : null,
+      now: referenceNow,
+      mode: this.config.botMode || "paper"
+    });
     const dashboardFreshness = normalizeDashboardFreshness({
       generatedAt: referenceNow,
       snapshotMeta,
@@ -25614,6 +25638,19 @@ export class TradingBot {
     const learningFailureSummary = buildLearningFailureSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
     const learningPromotionSummary = buildLearningPromotionSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
     const learningReplayPackSummary = buildLearningReplayPackSummary({ journal: this.journal, runtime: this.runtime, config: this.config });
+    const modelLifecycleDossier = buildModelLifecycleDossier({
+      mode: this.config.botMode || "paper",
+      modelRegistry: this.runtime.modelRegistry || {},
+      calibration: this.model.getCalibrationSummary(),
+      deployment: this.model.getDeploymentSummary(),
+      offlineTrainer: offlineTrainerSummary,
+      onlineAdaptation: onlineAdaptationSummary,
+      canaryGate: promotionPipeline.canaryGate || promotionPipeline.summary || {},
+      rollbackWatch: learningPromotionSummary.rollbackWatchSummary || {},
+      proposals: promotionPipeline.rolloutCandidates || [],
+      nowIso: referenceNow
+    });
+    const strategyResearchWorkflow = buildStrategyLifecycleBoard(arr(this.runtime.strategyResearch?.workflows || []));
     const operatorRecorderSummary = this.dataRecorder?.getSummary
       ? (this.dataRecorder.getSummary() || {})
       : (this.runtime.dataRecorder || {});
@@ -25651,6 +25688,29 @@ export class TradingBot {
       reports: []
     }));
     const panicPlanPreview = buildPanicFlattenPlan({ config: this.config, positions });
+    const liveIncidentCommand = buildLiveIncidentCommandState({
+      config: this.config,
+      readiness: readinessSummary,
+      livePreflight: liveReadinessAudit,
+      exchangeSafety: exchangeSafetySummary,
+      capitalGovernor: this.runtime.capitalGovernor || {},
+      capitalPolicy: capitalPolicySummary,
+      alerts: alertsSummary,
+      operatorActions: manualReviewQueue,
+      rollbackWatch: learningPromotionSummary.rollbackWatchSummary || {},
+      canaryGate: promotionPipeline.canaryGate || {},
+      incidentSummary,
+      panicPlan: panicPlanPreview,
+      positions,
+      nowIso: referenceNow
+    });
+    const setupState = buildSetupStateMachine({
+      config: this.config,
+      doctor: { warnings: readinessPartition.runtimeDegradationReasons.map((reason) => ({ status: "warning", reason })) },
+      diagnostics: { envPath: this.config.envPath },
+      dashboard: { status: "ready", reachable: true },
+      nowIso: referenceNow
+    });
     const dataFreshnessSummary = scoreDataFreshness({
       now: referenceNow,
       marketUpdatedAt: this.runtime.lastAnalysisAt || this.runtime.marketHistory?.lastUpdatedAt || null,
@@ -25766,6 +25826,7 @@ export class TradingBot {
       ai: {
         calibration: this.model.getCalibrationSummary(),
         deployment: this.model.getDeploymentSummary(),
+        modelLifecycle: modelLifecycleDossier,
         transformer: this.model.getTransformerSummary(),
         strategyMeta: topDecision.strategyMeta || leadPosition?.entryRationale?.strategyMeta || summarizeStrategyMeta({}),
         strategyAllocation: topDecision.strategyAllocation || leadPosition?.entryRationale?.strategyAllocation || summarizeStrategyAllocation(this.model.getStrategyAllocationSummary?.() || {}),
@@ -25785,6 +25846,7 @@ export class TradingBot {
         venueConfirmation: summarizeVenueConfirmation(this.runtime.venueConfirmation || {}),
         exchangeTruth: summarizeExchangeTruth(this.runtime.exchangeTruth || {}),
         exchangeSafety: exchangeSafetySummary,
+        liveIncidentCommand,
         orderLifecycle: summarizeOrderLifecycle(this.runtime.orderLifecycle || {}),
         executionIntents: summarizeExecutionIntentLedger(this.runtime.orderLifecycle?.executionIntentLedger || {}),
         lifecycleInvariants: summarizeLifecycleInvariants({
@@ -25819,6 +25881,7 @@ export class TradingBot {
           lastPortfolioUpdateAt: this.runtime.lastPortfolioUpdateAt || null
         },
         feedSummary,
+        marketDataIntelligence,
         marketSnapshotFlowDebug: this.runtime.marketSnapshotFlowDebug || null,
         tradingPathHealth,
         dashboardFreshness,
@@ -25882,6 +25945,10 @@ export class TradingBot {
         badVetoLearning: rejectAdaptiveLearningSummary,
         tradingImprovementDiagnostics,
         marketProviders: marketProvidersSummary,
+        modelLifecycle: modelLifecycleDossier,
+        strategyResearchWorkflow,
+        setupState,
+        liveIncidentCommand,
         featureIntegrationAudit,
         onlineAdaptation: onlineAdaptationSummary,
         adaptiveLearning: adaptiveLearningSummary,
@@ -25923,6 +25990,11 @@ export class TradingBot {
       storageAuditSummary,
       recorderIntegritySummary,
       dataFreshnessSummary,
+      marketDataIntelligence,
+      modelLifecycleDossier,
+      strategyResearchWorkflow,
+      setupState,
+      liveIncidentCommand,
       datasetQualitySummary,
       replayDeterminismSummary,
       dataIntegrity: {
@@ -25959,7 +26031,10 @@ export class TradingBot {
       strategyAttribution: summarizeAttributionSnapshot(this.runtime.strategyAttribution || {}),
       scanner: this.buildScannerView(),
       research: this.buildResearchView(),
-      strategyResearch: summarizeStrategyResearch(this.runtime.strategyResearch || {}),
+      strategyResearch: {
+        ...summarizeStrategyResearch(this.runtime.strategyResearch || {}),
+        workflow: strategyResearchWorkflow
+      },
       researchRegistry: summarizeResearchRegistry(this.runtime.researchRegistry || {}),
       dataRecorder: summarizeDataRecorder(this.dataRecorder.getSummary()),
       report: {

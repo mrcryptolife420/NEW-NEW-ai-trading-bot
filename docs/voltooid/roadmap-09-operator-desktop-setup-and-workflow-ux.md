@@ -1,6 +1,7 @@
 # Roadmap 09 - Operator Desktop, Setup en Workflow UX
 
-Status: actief  
+Status: voltooid  
+Voltooid op: 2026-05-17  
 Aanmaakdatum: 2026-05-17  
 Analysebasis: volledige codebase-inspectie, `docs/`, `docs/voltooid/`, desktop app, dashboard server/app, setup wizard, profiles, operator workflow en API-contracten.
 

@@ -1231,6 +1231,10 @@ function renderHealth(snapshot) {
   const history = dashboard.marketHistory || {};
   const sourceReliability = dashboard.sourceReliability?.externalFeeds || {};
   const marketProviders = dashboard.marketProviders || ops.marketProviders || {};
+  const marketDataIntelligence = dashboard.marketDataIntelligence || ops.marketDataIntelligence || {};
+  const modelLifecycle = dashboard.modelLifecycleDossier || ops.modelLifecycle || dashboard.ai?.modelLifecycle || {};
+  const setupState = dashboard.setupState || ops.setupState || {};
+  const liveIncidentCommand = dashboard.liveIncidentCommand || ops.liveIncidentCommand || dashboard.safety?.liveIncidentCommand || {};
   const signalFlow = dashboard.ops?.signalFlow || {};
   const flowHealth = signalFlow.tradingFlowHealth || {};
   const inactivityWatchdog = flowHealth.inactivityWatchdog || signalFlow.inactivityWatchdog || {};
@@ -1411,6 +1415,49 @@ function renderHealth(snapshot) {
         marketProviders.note || null
       ]) || "Geen market-provider health beschikbaar.",
       tone: ["degraded", "unavailable"].includes(marketProviders.status) ? "warning" : marketProviders.status === "ready" ? "positive" : "neutral"
+    },
+    {
+      title: "Market data intelligence",
+      detail: compactJoin([
+        titleize(marketDataIntelligence.status || "unknown"),
+        marketDataIntelligence.symbols?.length != null ? `${marketDataIntelligence.symbols.length} symbols` : null,
+        arr(marketDataIntelligence.blockedSymbols || []).length ? `${arr(marketDataIntelligence.blockedSymbols).length} blocked` : null,
+        arr(marketDataIntelligence.degradedSymbols || []).length ? `${arr(marketDataIntelligence.degradedSymbols).length} degraded` : null,
+        marketDataIntelligence.providerQuorum?.status ? `quorum ${titleize(marketDataIntelligence.providerQuorum.status)}` : null
+      ]) || "Market-data intelligence nog niet beschikbaar.",
+      tone: marketDataIntelligence.status === "blocked" ? "negative" : marketDataIntelligence.status === "degraded" ? "warning" : marketDataIntelligence.status === "ready" ? "positive" : "neutral"
+    },
+    {
+      title: "Model lifecycle",
+      detail: compactJoin([
+        titleize(modelLifecycle.status || "unknown"),
+        Number.isFinite(Number(modelLifecycle.evidenceScore)) ? `evidence ${formatPct(modelLifecycle.evidenceScore, 0)}` : null,
+        modelLifecycle.calibrationDrift?.status ? `cal ${titleize(modelLifecycle.calibrationDrift.status)}` : null,
+        arr(modelLifecycle.gates || []).filter((gate) => gate.passed === false).length
+          ? `${arr(modelLifecycle.gates).filter((gate) => gate.passed === false).length} gate(s) blocked`
+          : null
+      ]) || "Model lifecycle dossier nog niet beschikbaar.",
+      tone: modelLifecycle.status === "rollback_required" ? "negative" : arr(modelLifecycle.gates || []).some((gate) => gate.passed === false) ? "warning" : modelLifecycle.status ? "positive" : "neutral"
+    },
+    {
+      title: "Setup state",
+      detail: compactJoin([
+        titleize(setupState.state || "unknown"),
+        setupState.profileId || null,
+        setupState.mode ? `mode ${titleize(setupState.mode)}` : null,
+        arr(setupState.reasons || [])[0] ? humanizeReason(arr(setupState.reasons)[0]) : null
+      ]) || "Setup-state nog niet beschikbaar.",
+      tone: ["live_locked", "env_missing", "doctor_warning"].includes(setupState.state) ? "warning" : setupState.state === "paper_ready" ? "positive" : "neutral"
+    },
+    {
+      title: "Live incident command",
+      detail: compactJoin([
+        titleize(liveIncidentCommand.state || "unknown"),
+        liveIncidentCommand.severity ? `severity ${titleize(liveIncidentCommand.severity)}` : null,
+        arr(liveIncidentCommand.reasons || [])[0] ? humanizeReason(arr(liveIncidentCommand.reasons)[0]) : null,
+        liveIncidentCommand.reconcile?.class ? `reconcile ${titleize(liveIncidentCommand.reconcile.class)}` : null
+      ]) || "Live incident command-state nog niet beschikbaar.",
+      tone: liveIncidentCommand.severity === "critical" || liveIncidentCommand.state === "exit_only" ? "negative" : liveIncidentCommand.state && liveIncidentCommand.state !== "normal" ? "warning" : liveIncidentCommand.state === "normal" ? "positive" : "neutral"
     },
     {
       title: "Binance request weight",

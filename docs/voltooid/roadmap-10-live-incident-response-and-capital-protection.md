@@ -1,6 +1,7 @@
 # Roadmap 10 - Live Incident Response en Capital Protection
 
-Status: actief  
+Status: voltooid  
+Voltooid op: 2026-05-17  
 Aanmaakdatum: 2026-05-17  
 Analysebasis: volledige codebase-inspectie, `docs/`, `docs/voltooid/`, live preflight, exchange safety, alerting, incident replay, capital governor en REST-audit.
 

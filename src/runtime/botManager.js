@@ -4,6 +4,7 @@ import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { ensureEnvFile, parseEnvText, readEnvFile, updateEnvFile } from "../config/envFile.js";
 import { TRADE_PROFILE_CATALOG, buildTradeProfilePreview } from "../config/tradeProfiles.js";
+import { buildProfileDiffPreview } from "./setupStateMachine.js";
 import { nowIso } from "../utils/time.js";
 import { TradingBot } from "./tradingBot.js";
 import { createBotLifecycleState, setBotLifecycleActivity, transitionBotLifecycle } from "./botLifecycleStateMachine.js";
@@ -672,13 +673,19 @@ export class BotManager {
 
   async previewConfigProfile(profileId) {
     await this.ensureBotReady({ allowClosed: true });
-    return buildTradeProfilePreview({ profileId, currentConfig: this.config || {} });
+    return buildProfileDiffPreview({
+      preview: buildTradeProfilePreview({ profileId, currentConfig: this.config || {} }),
+      currentConfig: this.config || {}
+    });
   }
 
   async applyConfigProfile(profileId, { liveAcknowledgement = "" } = {}) {
     return this.withLock(async () => {
       await this.ensureBotReady({ allowClosed: true });
-      const preview = buildTradeProfilePreview({ profileId, currentConfig: this.config || {} });
+      const preview = buildProfileDiffPreview({
+        preview: buildTradeProfilePreview({ profileId, currentConfig: this.config || {} }),
+        currentConfig: this.config || {}
+      });
       const updates = { ...preview.updates };
       const nextMode = updates.BOT_MODE || "paper";
       if (nextMode === "live") {

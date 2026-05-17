@@ -1,6 +1,7 @@
 # Roadmap 06 - Market Data Intelligence en Provider Resilience
 
-Status: actief  
+Status: voltooid  
+Voltooid op: 2026-05-17  
 Aanmaakdatum: 2026-05-17  
 Analysebasis: volledige codebase-inspectie, `docs/`, `docs/voltooid/`, debug-inventaris, runtime market-data modules, dashboard API-contracten en REST-audit.
 
