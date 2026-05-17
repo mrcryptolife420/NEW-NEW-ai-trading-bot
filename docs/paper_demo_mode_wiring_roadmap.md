@@ -191,6 +191,8 @@ npm test
 
 Maak een tabelbestand: `docs/PAPER_DEMO_WIRING_MATRIX.md`.
 
+Status: centrale matrix is aangemaakt als deduplicerende bron voor paper/demo/live wiring en verwijst naar bestaande roadmaps zonder die te verwijderen.
+
 Gebruik deze kolommen:
 
 | Feature | Bestand(en) | Runtime path | Paper status | Demo status | Live status | Tests | Dashboard | Actie |
@@ -211,15 +213,15 @@ Toegestane statuses:
 
 Checklist:
 
-- [ ] Trading core matrix invullen.
-- [ ] Execution/broker matrix invullen.
-- [ ] Risk/safety matrix invullen.
+- [x] Trading core matrix invullen.
+- [x] Execution/broker matrix invullen.
+- [x] Risk/safety matrix invullen.
 - [ ] AI/self-improvement matrix invullen.
 - [ ] Strategy modules matrix invullen.
 - [ ] Market intelligence/read-only modules matrix invullen.
-- [ ] Dashboard/readmodel matrix invullen.
+- [x] Dashboard/readmodel matrix invullen.
 - [ ] Backtest/replay/simulation matrix invullen.
-- [ ] Ops/doctor/audit matrix invullen.
+- [x] Ops/doctor/audit matrix invullen.
 - [ ] Alle `UNKNOWN` statussen oplossen.
 - [ ] Alle core `MISSING` statussen oplossen of bewust markeren als `NOT_REQUIRED`.
 
@@ -355,10 +357,10 @@ Voeg scripts toe:
 ```json
 {
   "scripts": {
-    "qa:paper": "BOT_MODE=paper node src/cli.js feature:audit && BOT_MODE=paper node src/cli.js doctor",
-    "qa:demo": "BOT_MODE=paper PAPER_MODE_PROFILE=demo_spot node src/cli.js feature:audit",
-    "test:paper-safety": "node test/paperSafety.test.js",
-    "test:no-live-leak": "node test/noLiveLeak.test.js"
+    "qa:paper": "npm run paper:audit && npm run paper:doctor && npm run test:paper-safety && npm run test:no-live-leak",
+    "qa:demo": "npm run demo:audit && npm run test:no-live-leak",
+    "test:paper-safety": "node test/run.js --grep=paper",
+    "test:no-live-leak": "npm run debug:order-routing && node test/run.js --grep=\"private order mutations\""
   }
 }
 ```
@@ -367,8 +369,8 @@ Checklist:
 
 - [ ] CI draait `npm test`.
 - [ ] CI draait `npm run feature:audit`.
-- [ ] CI draait paper safety tests.
-- [ ] CI faalt bij directe live broker call in paper/demo.
+- [x] CI draait paper safety tests.
+- [x] CI faalt bij directe live broker call in paper/demo.
 - [ ] CI faalt bij ontbrekende mode metadata.
 - [ ] CI faalt bij `UNKNOWN` status in core features.
 - [ ] CI faalt bij `MISSING` status in paper feature ids.

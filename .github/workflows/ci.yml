@@ -58,8 +58,14 @@ jobs:
       - name: Run integration tests
         run: npm run test:integration
 
-      - name: Run paper safety and no-live-leak tests
+      - name: Run safety tests
         run: npm run test:safety
+
+      - name: Run paper safety tests
+        run: npm run test:paper-safety
+
+      - name: Run no-live-leak tests
+        run: npm run test:no-live-leak
 
       - name: Run full test suite
         run: npm test

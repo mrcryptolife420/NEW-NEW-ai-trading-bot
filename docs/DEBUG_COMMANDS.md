@@ -16,6 +16,7 @@ Dashboard and live-preflight contract checks:
 npm run debug:api-contracts
 npm run debug:dashboard-dom
 npm run debug:order-routing
+npm run test:no-live-leak
 npm run smoke:dashboard
 node src/cli.js live:preflight
 ```
@@ -36,6 +37,9 @@ npm test -- --grep=import
 npm run test:unit
 npm run test:integration
 npm run test:safety
+npm run test:paper-safety
+npm run qa:paper
+npm run qa:demo
 npm test -- --grep="state store"
 npm test -- --grep="live preflight"
 ```

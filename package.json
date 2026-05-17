@@ -52,6 +52,8 @@
     "test:storage": "node test/run.js --grep=storage",
     "test:chaos": "node test/run.js --grep=chaos",
     "test:security": "node test/run.js --grep=secret",
+    "test:paper-safety": "node test/run.js --grep=paper",
+    "test:no-live-leak": "npm run debug:order-routing && node test/run.js --grep=\"private order mutations\"",
     "check:critical": "node scripts/check-critical-files.mjs",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:imports": "node scripts/check-imports.mjs",
@@ -71,8 +73,10 @@
     "lint": "eslint src test scripts --max-warnings=0",
     "format:check": "prettier --check package.json package-lock.json eslint.config.js .prettierrc.json",
     "coverage": "c8 node test/run.js",
+    "qa:paper": "npm run paper:audit && npm run paper:doctor && npm run test:paper-safety && npm run test:no-live-leak",
+    "qa:demo": "npm run demo:audit && npm run test:no-live-leak",
     "qa": "npm run check:critical && npm run check:syntax && npm run check:imports && npm run check:env && npm run lint && npm run format:check && npm run test && npm run coverage && node src/cli.js feature:audit && node src/cli.js rest:audit",
-    "qa:strict": "npm run debug:critical && npm run check:syntax && npm run check:imports && npm run debug:env && npm run debug:package-scripts && npm run debug:order-routing && npm run debug:dashboard-dom && npm run debug:api-contracts && npm run debug:deps && npm run lint && npm run format:check && npm test && npm run test:safety && npm run test:dashboard && npm run coverage && npm run smoke:cli && npm run smoke:dashboard && npm run debug:secrets"
+    "qa:strict": "npm run debug:critical && npm run check:syntax && npm run check:imports && npm run debug:env && npm run debug:package-scripts && npm run debug:order-routing && npm run test:no-live-leak && npm run debug:dashboard-dom && npm run debug:api-contracts && npm run debug:deps && npm run lint && npm run format:check && npm test && npm run test:safety && npm run test:paper-safety && npm run test:dashboard && npm run coverage && npm run smoke:cli && npm run smoke:dashboard && npm run debug:secrets"
   },
   "dependencies": {
     "zod": "^4.3.6"
