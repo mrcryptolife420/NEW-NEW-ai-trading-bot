@@ -950,6 +950,8 @@ For paper-trading tasks specifically, “done” additionally means:
 
 \## Roadmap completion rule
 
+Before creating any new analysis or roadmap, inspect both `docs/` and `docs/voltooid/` for existing active or completed plans so duplicate work is not recreated.
+
 When a roadmap Markdown file in `docs/` has been fully executed and verified, move it to `docs/voltooid/`.
 
 Keep active roadmap files in `docs/`; keep completed roadmap files only in `docs/voltooid/` so future work does not duplicate completed plans.
