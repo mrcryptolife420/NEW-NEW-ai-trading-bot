@@ -223,7 +223,9 @@ export async function registerRuntimeMutationTests({
     };
     manager.ensureBotReady = async () => {};
     manager.stopUnlocked = async () => ({});
-    manager.reinitializeBot = async () => {};
+    manager.reinitializeBot = async () => {
+      throw new Error("dashboard profile apply must not reload the bot");
+    };
     manager.getSnapshot = async () => ({ manager: { currentMode: "paper" }, dashboard: {} });
 
     const result = await manager.applyConfigProfile("paper-neural-learning");
@@ -240,8 +242,8 @@ export async function registerRuntimeMutationTests({
     assert.deepEqual(activeProfiles.map((profile) => profile.id), ["paper-neural-learning"]);
   });
 
-  await runCheck("profile apply reports env success even when runtime reload fails", async () => {
-    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-reload-fail-"));
+  await runCheck("profile apply writes env without runtime reload", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-no-reload-"));
     const envPath = path.join(projectRoot, ".env");
     await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=sim\nPAPER_EXECUTION_VENUE=internal\n", "utf8");
     const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
@@ -255,15 +257,17 @@ export async function registerRuntimeMutationTests({
     manager.ensureBotReady = async () => {};
     manager.stopUnlocked = async () => ({});
     manager.reinitializeBot = async () => {
-      throw new Error("reload failed after env write");
+      throw new Error("profile apply must not reload the bot");
     };
 
     const result = await manager.applyConfigProfile("beginner-paper-learning");
     const written = await fs.readFile(envPath, "utf8");
     assert.equal(result.applied, true);
     assert.equal(result.writeVerified, true);
+    assert.equal(result.reloadDeferred, true);
+    assert.equal(result.restartRequired, true);
     assert.equal(result.reloadOk, false);
-    assert.match(result.reloadError.message, /reload failed/);
+    assert.match(result.reloadError.message, /Herstart/);
     assert.match(written, /CONFIG_PROFILE=paper-learning/);
   });
 
@@ -298,7 +302,7 @@ export async function registerRuntimeMutationTests({
     assert.equal(result.reloadDeferred, true);
     assert.equal(result.restartRequired, true);
     assert.equal(result.reloadOk, false);
-    assert.match(result.reloadError.message, /uitgesteld/);
+    assert.match(result.reloadError.message, /Herstart/);
     assert.match(written, /CONFIG_PROFILE=paper-learning/);
   });
 
@@ -395,6 +399,37 @@ export async function registerRuntimeMutationTests({
     assert.equal(result.restartRequired, true);
     assert.match(result.warnings.join(" "), /Herstart/);
     assert.match(written, /TRADING_INTERVAL_SECONDS=60/);
+  });
+
+  await runCheck("stopped quick settings and refresh status never reinitialize bot", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-stopped-quick-settings-no-reload-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nTRADING_INTERVAL_SECONDS=120\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = { envPath, botMode: "paper", profile: { id: "paper-safe" } };
+    manager.runState = "stopped";
+    manager.lifecycle = { state: "ready", history: [] };
+    manager.ensureBotReady = async () => {
+      throw new Error("quick settings config endpoints must stay env-only");
+    };
+    manager.reinitializeBot = async () => {
+      throw new Error("quick settings apply must not reload the bot");
+    };
+
+    const result = await manager.applyQuickSettings({ TRADING_INTERVAL_SECONDS: "90" });
+    const status = await manager.getQuickSettings();
+    const diagnostics = await manager.getGuiDiagnostics();
+    const checks = await manager.runSetupChecks();
+    const written = await fs.readFile(envPath, "utf8");
+    const interval = status.settings.find((setting) => setting.key === "TRADING_INTERVAL_SECONDS");
+    assert.equal(result.applied, true);
+    assert.equal(result.reloadDeferred, true);
+    assert.equal(result.restartRequired, true);
+    assert.match(result.warnings.join(" "), /Herstart/);
+    assert.equal(interval.value, "90");
+    assert.equal(diagnostics.envExists, true);
+    assert.equal(checks.ok, false);
+    assert.match(written, /TRADING_INTERVAL_SECONDS=90/);
   });
 
   await runCheck("stopping paper quick settings write env and never reload during pending stop", async () => {

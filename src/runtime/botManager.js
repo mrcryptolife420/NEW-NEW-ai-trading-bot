@@ -768,7 +768,6 @@ export class BotManager {
   }
 
   async previewConfigProfile(profileId) {
-    await this.ensureBotReady({ allowClosed: true });
     return buildProfileDiffPreview({
       preview: buildTradeProfilePreview({ profileId, currentConfig: this.config || {} }),
       currentConfig: this.config || {}
@@ -777,7 +776,6 @@ export class BotManager {
 
   async applyConfigProfile(profileId, { liveAcknowledgement = "" } = {}) {
     return this.withLock(async () => {
-      await this.ensureBotReady({ allowClosed: true });
       const preview = buildProfileDiffPreview({
         preview: buildTradeProfilePreview({ profileId, currentConfig: this.config || {} }),
         currentConfig: this.config || {}
@@ -807,29 +805,18 @@ export class BotManager {
       const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
       this.activeMutation = { id: "apply_config_profile", startedAt: nowIso(), profileId };
       const writeResult = await updateEnvFile(envPath, updates);
-      const reloadDeferred = runtimeBusyForReload && nextMode !== "live";
-      let reloadOk = !reloadDeferred;
-      let reloadError = null;
-      if (reloadDeferred) {
-        reloadError = {
-          at: nowIso(),
-          message: "Runtime reload is uitgesteld omdat de bot draait of nog stopt. Herstart de bot om het profiel actief te maken."
-        };
-        await this.inspectExternalMode();
-      } else {
-        try {
-          await this.reinitializeBot();
-          this.lastModeSwitchAt = nowIso();
-        } catch (error) {
-          reloadOk = false;
-          reloadError = publicError(error);
-          this.lastError = summarizeError(error);
-          this.logger?.error?.("Config profile env write succeeded but reload failed", {
-            profileId,
-            error: error.message
-          });
-        }
-      }
+      const reloadDeferred = true;
+      const reloadOk = false;
+      const reloadError = {
+        at: nowIso(),
+        message: "Profiel is naar .env geschreven. Herstart dashboard/bot om het profiel actief te maken."
+      };
+      await this.inspectExternalMode().catch((error) => {
+        this.logger?.warn?.("Config profile env write succeeded but drift inspection failed", {
+          profileId,
+          error: error.message
+        });
+      });
       return {
         applied: true,
         profile: preview.profile,
@@ -873,8 +860,7 @@ export class BotManager {
   }
 
   async getSafeEnvStatus() {
-    await this.ensureBotReady({ allowClosed: true });
-    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
     const values = parseEnvText(await readEnvFile(envPath));
     const safeKeys = [
       "BOT_MODE",
@@ -899,25 +885,21 @@ export class BotManager {
   }
 
   async getQuickSettings() {
-    await this.ensureBotReady({ allowClosed: true });
-    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
     const values = parseEnvText(await readEnvFile(envPath));
     return {
       envPath,
       projectRoot: this.projectRoot,
       mode: this.config?.botMode || "paper",
       runState: this.runState,
-      reloadPolicy: this.runState === "running"
-        ? "Wijzigingen worden naar .env geschreven en worden actief na herstart."
-        : "Wijzigingen worden naar .env geschreven en daarna opnieuw geladen.",
+      reloadPolicy: "Wijzigingen worden naar .env geschreven en worden actief na herstart van dashboard/bot.",
       settings: buildDashboardQuickSettingsStatus(values),
       redacted: Object.keys(values).filter((key) => /SECRET|KEY|TOKEN/i.test(key))
     };
   }
 
   async previewQuickSettings(updates = {}) {
-    await this.ensureBotReady({ allowClosed: true });
-    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
     const values = parseEnvText(await readEnvFile(envPath));
     const preview = buildDashboardQuickSettingsPreview(values, updates);
     return {
@@ -932,7 +914,6 @@ export class BotManager {
 
   async applyQuickSettings(updates = {}) {
     return this.withLock(async () => {
-      await this.ensureBotReady({ allowClosed: true });
       const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
       const currentValues = parseEnvText(await readEnvFile(envPath));
       const normalized = normalizeDashboardQuickSettingUpdates(updates);
@@ -961,29 +942,18 @@ export class BotManager {
       }
       this.activeMutation = { id: "apply_quick_settings", startedAt: nowIso(), keys: Object.keys(normalized.updates) };
       const writeResult = await updateEnvFile(envPath, normalized.updates);
-      const runtimeBusyForReload = isRuntimeBusyForConfigReload(this);
-      let reloadOk = !runtimeBusyForReload;
-      let reloadError = null;
-      if (runtimeBusyForReload) {
-        reloadError = {
-          at: nowIso(),
-          message: "Quick settings zijn naar .env geschreven. Herstart de bot om ze actief te maken wanneer de bot draait of nog stopt."
-        };
-        await this.inspectExternalMode();
-      } else {
-        try {
-          await this.reinitializeBot();
-          this.lastModeSwitchAt = nowIso();
-        } catch (error) {
-          reloadOk = false;
-          reloadError = publicError(error);
-          this.lastError = summarizeError(error);
-          this.logger?.error?.("Quick settings env write succeeded but reload failed", {
-            keys: Object.keys(normalized.updates),
-            error: error.message
-          });
-        }
-      }
+      const reloadDeferred = true;
+      const reloadOk = false;
+      const reloadError = {
+        at: nowIso(),
+        message: "Quick settings zijn naar .env geschreven. Herstart dashboard/bot om ze actief te maken."
+      };
+      await this.inspectExternalMode().catch((error) => {
+        this.logger?.warn?.("Quick settings env write succeeded but drift inspection failed", {
+          keys: Object.keys(normalized.updates),
+          error: error.message
+        });
+      });
       const afterValues = parseEnvText(await readEnvFile(envPath));
       return {
         applied: true,
@@ -997,9 +967,9 @@ export class BotManager {
         mismatches: writeResult.mismatches,
         reloadOk,
         reloadError,
-        reloadDeferred: runtimeBusyForReload,
-        restartRequired: runtimeBusyForReload,
-        warnings: runtimeBusyForReload ? [reloadError.message] : [],
+        reloadDeferred,
+        restartRequired: reloadDeferred,
+        warnings: [reloadError.message],
         settings: buildDashboardQuickSettingsStatus(afterValues),
         snapshot: null,
         snapshotSkipped: "quick_settings_uses_lightweight_response"
@@ -1012,8 +982,7 @@ export class BotManager {
   }
 
   async getGuiDiagnostics({ dashboardUrl = null } = {}) {
-    await this.ensureBotReady({ allowClosed: true });
-    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
     const check = async (filePath) => {
       try {
         await fs.access(filePath);
