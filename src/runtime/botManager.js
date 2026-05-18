@@ -12,6 +12,7 @@ import { buildApiEnvelope, computeOperationalReadiness } from "./operationalTrut
 import { buildMissionControlSummary } from "../ops/missionControl.js";
 import { buildLivePreflight } from "./livePreflight.js";
 import { buildRuntimeLivenessSummary, touchRuntimeLiveness } from "./runtimeLiveness.js";
+import { buildPendingStopSummary, canRunManagerMutation, listManagerMutationContracts } from "./managerMutationContract.js";
 
 function summarizeError(error) {
   return {
@@ -85,6 +86,8 @@ export class BotManager {
     this.stopReason = null;
     this.consecutiveCycleFailures = 0;
     this.botNeedsReinitialize = false;
+    this.pendingStop = null;
+    this.activeMutation = null;
     this.liveness = touchRuntimeLiveness({}, { phase: "manager_constructed", status: "idle" });
     this.serial = Promise.resolve();
   }
@@ -234,6 +237,9 @@ export class BotManager {
     const manager = {
       runState: this.runState,
       lifecycle: this.lifecycle,
+      pendingStop: buildPendingStopSummary(this.pendingStop),
+      activeMutation: this.activeMutation,
+      mutationContracts: listManagerMutationContracts(),
       currentMode: sourceTruthMode,
       externalConfigMode: this.externalConfigMode,
       externalConfigDrift: this.externalConfigDrift,
@@ -270,6 +276,8 @@ export class BotManager {
       manager: body.manager || {
         runState: this.runState,
         lifecycle: this.lifecycle,
+        pendingStop: buildPendingStopSummary(this.pendingStop),
+        activeMutation: this.activeMutation,
         currentMode: this.config?.botMode || "paper",
         lastError: publicError(this.lastError),
         liveness: buildRuntimeLivenessSummary({
@@ -435,6 +443,7 @@ export class BotManager {
     }
     this.noteLiveness("manager_stopped", { status: "stopped", reason: this.stopReason || "loop_stop" });
     this.lastStopAt = nowIso();
+    this.pendingStop = null;
   }
 
   async waitForLoopStop(timeoutMs = null) {
@@ -456,6 +465,12 @@ export class BotManager {
   async stopUnlocked(reason = "manual_stop", { timeoutMs = null } = {}) {
     this.stopRequested = true;
     this.stopReason = reason;
+    this.pendingStop = {
+      reason,
+      requestedAt: nowIso(),
+      timeoutMs: Number.isFinite(Number(timeoutMs)) ? Number(timeoutMs) : null,
+      acceptedBy: "manager"
+    };
     this.cancelDelay();
 
     if (this.runState === "stopped") {
@@ -476,6 +491,7 @@ export class BotManager {
         }
       }
       this.lastStopAt = nowIso();
+      this.pendingStop = null;
       return this.getSnapshot({ allowClosedBot: true });
     }
 
@@ -523,12 +539,20 @@ export class BotManager {
       this.logger?.error?.("Managed shutdown failed", { error: error.message });
     }
     this.lastStopAt = nowIso();
+    this.pendingStop = null;
     return this.getSnapshot({ allowClosedBot: true });
   }
 
   async start() {
     return this.withLock(async () => {
       await this.ensureBotReady();
+      const contract = canRunManagerMutation("start", this.lifecycle.state);
+      if (!contract.allowed) {
+        const error = new Error("Start is geblokkeerd terwijl de manager nog stopt.");
+        error.statusCode = 409;
+        error.publicMessage = "Start is geblokkeerd terwijl de manager nog stopt. Wacht tot de stop klaar is.";
+        throw error;
+      }
       if (this.runState === "running") {
         return this.getSnapshot();
       }
@@ -751,7 +775,16 @@ export class BotManager {
       }
       const wasRunning = this.runState === "running";
       const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
-      await this.stopUnlocked("config_profile_apply");
+      this.activeMutation = { id: "apply_config_profile", startedAt: nowIso(), profileId };
+      const stopResult = await this.stopUnlocked("config_profile_apply", {
+        timeoutMs: Number(this.config?.dashboardStopTimeoutMs || 3000)
+      });
+      if (stopResult?.stop?.pending) {
+        const error = new Error("Config profile apply is waiting for the running cycle to stop.");
+        error.statusCode = 409;
+        error.publicMessage = "Profiel toepassen wacht op de lopende cyclus. Probeer opnieuw wanneer de stop klaar is.";
+        throw error;
+      }
       const writeResult = await updateEnvFile(envPath, updates);
       let reloadOk = true;
       let reloadError = null;
@@ -791,6 +824,10 @@ export class BotManager {
         profiles: await this.getConfigProfiles(),
         snapshot: reloadOk ? await this.getSnapshot() : null
       };
+    }).finally(() => {
+      if (this.activeMutation?.id === "apply_config_profile") {
+        this.activeMutation = null;
+      }
     });
   }
 

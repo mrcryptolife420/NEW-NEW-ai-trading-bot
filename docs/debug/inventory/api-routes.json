@@ -69,6 +69,10 @@
       "path": "/api/live/preflight"
     },
     {
+      "method": "GET",
+      "path": "/api/action-contracts"
+    },
+    {
       "method": "ANY",
       "path": "/api/start"
     },

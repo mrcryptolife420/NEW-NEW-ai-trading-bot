@@ -7,6 +7,7 @@ import { DashboardEventBus } from "./eventBus.js";
 import { buildFastExecutionDashboardSummary } from "./fastExecutionDashboard.js";
 import { buildPrometheusMetrics } from "../ops/metricsExporter.js";
 import { buildAccountProfileStatus } from "../accounts/accountProfileRegistry.js";
+import { buildDashboardActionEnvelope, listDashboardActionContracts, resolveDashboardActionContract } from "./actionRouteContracts.js";
 
 const CONTENT_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -204,6 +205,12 @@ async function handleApi(request, response, manager, eventBus = null) {
   if (request.method === "GET" && url.pathname === "/api/live/preflight") {
     return sendJson(response, 200, await manager.getLivePreflight());
   }
+  if (request.method === "GET" && url.pathname === "/api/action-contracts") {
+    return sendJson(response, 200, {
+      contract: { version: "v1", kind: "dashboard_action_contracts" },
+      actions: listDashboardActionContracts()
+    });
+  }
 
   if (request.method !== "POST") {
     return sendJson(response, 405, { error: "Method not allowed" });
@@ -214,6 +221,17 @@ async function handleApi(request, response, manager, eventBus = null) {
   }
 
   const body = await readRequestBody(request);
+  const actionContract = resolveDashboardActionContract(url.pathname);
+  const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const lifecycleBefore = manager.lifecycle?.state || manager.runState || "unknown";
+  const sendActionResult = async (resultPromise) => {
+    const result = await resultPromise;
+    return sendJson(response, 200, buildDashboardActionEnvelope(actionContract, result, {
+      requestId,
+      lifecycleBefore,
+      lifecycleAfter: manager.lifecycle?.state || manager.runState || "unknown"
+    }));
+  };
 
   if (url.pathname === "/api/start") {
     const result = await manager.start();
@@ -243,7 +261,7 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendJson(response, 200, await manager.previewConfigProfile(body.profileId));
   }
   if (url.pathname === "/api/config/profile/apply") {
-    return sendJson(response, 200, await manager.applyConfigProfile(body.profileId, {
+    return sendActionResult(manager.applyConfigProfile(body.profileId, {
       liveAcknowledgement: body.liveAcknowledgement || ""
     }));
   }
@@ -251,7 +269,7 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendJson(response, 200, await manager.runSetupChecks());
   }
   if (url.pathname === "/api/setup/complete") {
-    return sendJson(response, 200, await manager.completeSetup({
+    return sendActionResult(manager.completeSetup({
       profileId: body.profileId || "beginner-paper-learning",
       liveAcknowledgement: body.liveAcknowledgement || ""
     }));
@@ -335,12 +353,15 @@ export async function startDashboardServer({
       }
       await serveStatic(publicDir, url.pathname, response);
     } catch (error) {
+      const actionContract = resolveDashboardActionContract(new URL(request.url, "http://127.0.0.1").pathname);
       logger?.error?.("Dashboard request failed", {
         error: error.message,
+        actionId: actionContract?.id || null,
         url: request.url
       });
       sendJson(response, error.statusCode || 500, {
-        error: error.publicMessage || error.message || "Unexpected server error"
+        error: error.publicMessage || error.message || "Unexpected server error",
+        actionId: actionContract?.id || null
       });
     }
   });
