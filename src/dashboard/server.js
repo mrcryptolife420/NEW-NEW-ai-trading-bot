@@ -221,7 +221,9 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendJson(response, 200, result);
   }
   if (url.pathname === "/api/stop") {
-    const result = await manager.stop("dashboard_stop");
+    const result = await manager.stop("dashboard_stop", {
+      timeoutMs: Number(manager.config?.dashboardStopTimeoutMs || 3000)
+    });
     eventBus?.publish("bot_status", { action: "stop", result });
     return sendJson(response, 200, result);
   }

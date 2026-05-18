@@ -86,6 +86,11 @@ if errorlevel 1 (
   exit /b 1
 )
 
-start "" "%DASHBOARD_URL%"
+echo Dashboard wordt geopend in Firefox...
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$url='%DASHBOARD_URL%';" ^
+  "$pf=$env:ProgramFiles; $pf86=${env:ProgramFiles(x86)}; $raw=@((Get-Command firefox.exe -ErrorAction SilentlyContinue).Source); if($pf){$raw += (Join-Path $pf 'Mozilla Firefox\firefox.exe')}; if($pf86){$raw += (Join-Path $pf86 'Mozilla Firefox\firefox.exe')}; $candidates=@($raw | Where-Object { $_ -and (Test-Path $_) });" ^
+  "if($candidates.Count -gt 0){ Start-Process -FilePath $candidates[0] -ArgumentList $url; exit 0 }" ^
+  "Start-Process $url"
 echo Dashboard en bot draaien nu met de huidige code uit deze map.
 endlocal

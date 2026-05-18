@@ -427,7 +427,23 @@ export class BotManager {
     this.lastStopAt = nowIso();
   }
 
-  async stopUnlocked(reason = "manual_stop") {
+  async waitForLoopStop(timeoutMs = null) {
+    if (!this.loopPromise) return { completed: true, timedOut: false };
+    if (!Number.isFinite(Number(timeoutMs)) || Number(timeoutMs) <= 0) {
+      await this.loopPromise;
+      return { completed: true, timedOut: false };
+    }
+    let timeoutHandle = null;
+    const timeout = new Promise((resolve) => {
+      timeoutHandle = setTimeout(() => resolve({ completed: false, timedOut: true }), Number(timeoutMs));
+    });
+    const completed = this.loopPromise.then(() => ({ completed: true, timedOut: false }));
+    const result = await Promise.race([completed, timeout]);
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+    return result;
+  }
+
+  async stopUnlocked(reason = "manual_stop", { timeoutMs = null } = {}) {
     this.stopRequested = true;
     this.stopReason = reason;
     this.cancelDelay();
@@ -458,8 +474,30 @@ export class BotManager {
     } else if (!["stopping", "stopped"].includes(this.lifecycle.state)) {
       this.forceLifecycle("stopping", { activity: "idle", reason });
     }
-    if (this.loopPromise) {
-      await this.loopPromise;
+    const loopStop = await this.waitForLoopStop(timeoutMs);
+    if (loopStop.timedOut) {
+      const botAtStop = this.bot;
+      this.loopPromise?.finally?.(async () => {
+        if (this.bot !== botAtStop || this.runState !== "stopped") return;
+        try {
+          await this.closeBotForStop();
+        } catch (error) {
+          this.lastError = summarizeError(error);
+          this.logger?.error?.("Managed shutdown cleanup failed after pending stop", { error: error.message });
+        }
+      });
+      this.noteLiveness("manager_stop_pending", { status: "stopping", reason });
+      this.lastStopAt = nowIso();
+      return {
+        ...await this.getSnapshot({ allowClosedBot: true }),
+        stop: {
+          accepted: true,
+          pending: true,
+          reason,
+          timeoutMs: Number(timeoutMs),
+          message: "Stop is aangevraagd; de lopende cyclus rondt nog af."
+        }
+      };
     }
     if (this.lifecycle.state !== "stopped") {
       if (["stopping", "degraded"].includes(this.lifecycle.state)) {
@@ -498,8 +536,8 @@ export class BotManager {
     });
   }
 
-  async stop(reason = "manual_stop") {
-    return this.withLock(async () => this.stopUnlocked(reason));
+  async stop(reason = "manual_stop", options = {}) {
+    return this.withLock(async () => this.stopUnlocked(reason, options));
   }
 
   async runCycleOnce() {
@@ -705,9 +743,21 @@ export class BotManager {
       const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
       await this.stopUnlocked("config_profile_apply");
       const writeResult = await updateEnvFile(envPath, updates);
-      await this.reinitializeBot();
-      this.lastModeSwitchAt = nowIso();
-      if (wasRunning && nextMode !== "live") {
+      let reloadOk = true;
+      let reloadError = null;
+      try {
+        await this.reinitializeBot();
+        this.lastModeSwitchAt = nowIso();
+      } catch (error) {
+        reloadOk = false;
+        reloadError = publicError(error);
+        this.lastError = summarizeError(error);
+        this.logger?.error?.("Config profile env write succeeded but reload failed", {
+          profileId,
+          error: error.message
+        });
+      }
+      if (reloadOk && wasRunning && nextMode !== "live") {
         this.stopRequested = false;
         this.stopReason = null;
         this.transitionLifecycle("running", { activity: "idle", reason: "config_profile_restart" });
@@ -725,9 +775,11 @@ export class BotManager {
         backupPath: writeResult.backupPath,
         writeVerified: writeResult.writeVerified,
         mismatches: writeResult.mismatches,
-        restarted: wasRunning && nextMode !== "live",
+        reloadOk,
+        reloadError,
+        restarted: reloadOk && wasRunning && nextMode !== "live",
         profiles: await this.getConfigProfiles(),
-        snapshot: await this.getSnapshot()
+        snapshot: reloadOk ? await this.getSnapshot() : null
       };
     });
   }

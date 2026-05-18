@@ -1868,8 +1868,20 @@ async function mutateAndRefresh(path, body = {}) {
         ? `Actie ${actionSummary.status}: ${actionSummary.action}${actionSummary.nextRecommendedAction ? ` - ${actionSummary.nextRecommendedAction}` : ""}`
         : "Actie uitgevoerd. Snapshot vernieuwd.";
     }
-    await fetchSnapshot();
-    if (path.startsWith("/api/config/")) await fetchProfiles();
+    let refreshError = null;
+    try {
+      await fetchSnapshot();
+    } catch (error) {
+      refreshError = error;
+    }
+    if (path.startsWith("/api/config/")) {
+      await fetchProfiles().catch((error) => {
+        refreshError ||= error;
+      });
+    }
+    if (refreshError && elements.controlHint) {
+      elements.controlHint.textContent = `Actie uitgevoerd, maar refresh faalde: ${refreshError.message || "unknown error"}`;
+    }
     return response;
   } catch (error) {
     console.error?.("dashboard_mutation_failed", error);

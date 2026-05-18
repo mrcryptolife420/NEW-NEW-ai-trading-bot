@@ -151,6 +151,24 @@ export async function registerRuntimeMutationTests({
     assert.match(script, /Content-Type'='application\/json'/);
     assert.match(script, /runState -eq 'running'/);
     assert.doesNotMatch(script, /runState -eq 'run'/);
+    assert.match(script, /firefox\.exe/i);
+    assert.match(script, /\$candidates=@\(\$raw \| Where-Object/);
+    assert.match(script, /Start-Process -FilePath \$candidates\[0\] -ArgumentList \$url/);
+  });
+
+  await runCheck("dashboard stop returns accepted pending when a cycle is still finishing", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", tradingIntervalSeconds: 60 };
+    manager.runState = "running";
+    manager.lifecycle = { state: "running", history: [] };
+    manager.bot = { close: async () => {} };
+    manager.getSnapshot = async () => ({ manager: { runState: manager.runState }, dashboard: {} });
+    manager.loopPromise = new Promise(() => {});
+
+    const result = await manager.stop("dashboard_stop", { timeoutMs: 5 });
+    assert.equal(result.stop.accepted, true);
+    assert.equal(result.stop.pending, true);
+    assert.equal(manager.runState, "stopping");
   });
 
   await runCheck("bot manager applies GUI trade profiles to env and marks exact active profile", async () => {
@@ -180,6 +198,33 @@ export async function registerRuntimeMutationTests({
 
     const activeProfiles = (await manager.getConfigProfiles()).profiles.filter((profile) => profile.active);
     assert.deepEqual(activeProfiles.map((profile) => profile.id), ["paper-neural-learning"]);
+  });
+
+  await runCheck("profile apply reports env success even when runtime reload fails", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-reload-fail-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=sim\nPAPER_EXECUTION_VENUE=internal\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = {
+      envPath,
+      botMode: "paper",
+      profile: { id: "paper-safe" },
+      paperModeProfile: "sim",
+      paperExecutionVenue: "internal"
+    };
+    manager.ensureBotReady = async () => {};
+    manager.stopUnlocked = async () => ({});
+    manager.reinitializeBot = async () => {
+      throw new Error("reload failed after env write");
+    };
+
+    const result = await manager.applyConfigProfile("beginner-paper-learning");
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.applied, true);
+    assert.equal(result.writeVerified, true);
+    assert.equal(result.reloadOk, false);
+    assert.match(result.reloadError.message, /reload failed/);
+    assert.match(written, /CONFIG_PROFILE=paper-learning/);
   });
 
   await runCheck("bot manager honors user writable CODEX_BOT_ENV_PATH", async () => {
