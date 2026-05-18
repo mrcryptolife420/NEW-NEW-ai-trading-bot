@@ -224,7 +224,7 @@ export async function registerConfigOperatorMaintenanceTests({
       overview: { mode: "paper", equity: 1000, quoteFree: 900, openPositions: 1, lastCycleAt: "2026-05-17T10:00:00.000Z" },
       openPositions: [{ symbol: "BTCUSDT" }],
       topDecisions: [{ symbol: "ETHUSDT", score: { probability: 0.42 }, decision: { threshold: 0.55, reasons: ["model_confidence_too_low"] } }],
-      ops: { signalFlow: { generated: 1, blocked: 1, topRejectionReasons: ["model_confidence_too_low"] } },
+      ops: { signalFlow: { generated: 1, blocked: 1, topRejectionReasons: { model_confidence_too_low: 3 } } },
       report: { large: true },
       modelWeights: [{ name: "feature", weight: 1 }]
     };
@@ -263,6 +263,7 @@ export async function registerConfigOperatorMaintenanceTests({
     assert.equal(compact.compact, true);
     assert.equal(compact.mode, "paper");
     assert.equal(compact.topDecisions.length, 1);
+    assert.deepEqual(compact.signalFlow.topRejectionReasons[0], { reason: "model_confidence_too_low", count: 3 });
     assert.equal(compact.report, undefined);
     assert.equal(compact.payload, undefined);
     assert.deepEqual(full.report, { large: true });

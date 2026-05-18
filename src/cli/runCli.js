@@ -137,6 +137,19 @@ function compactDecision(decision = {}) {
   };
 }
 
+function compactReasonList(value) {
+  if (Array.isArray(value)) {
+    return value.slice(0, 8);
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
+      .slice(0, 8)
+      .map(([reason, count]) => ({ reason, count }));
+  }
+  return [];
+}
+
 function summarizeCliStatus(payload = {}) {
   const status = payload.status || payload;
   const overview = status.overview || {};
@@ -171,7 +184,7 @@ function summarizeCliStatus(payload = {}) {
       generated: signalFlow.generated ?? signalFlow.generatedCount ?? null,
       allowed: signalFlow.allowed ?? signalFlow.allowedCount ?? null,
       blocked: signalFlow.blocked ?? signalFlow.blockedCount ?? null,
-      topRejectionReasons: (signalFlow.topRejectionReasons || signalFlow.rejectionReasons || []).slice(0, 8)
+      topRejectionReasons: compactReasonList(signalFlow.topRejectionReasons || signalFlow.rejectionReasons)
     },
     topDecisions: (status.topDecisions || []).slice(0, 6).map(compactDecision),
     readModel: readModel

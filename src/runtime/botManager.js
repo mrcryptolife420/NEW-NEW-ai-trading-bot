@@ -95,6 +95,8 @@ export class BotManager {
     this.activeMutation = null;
     this.liveness = touchRuntimeLiveness({}, { phase: "manager_constructed", status: "idle" });
     this.serial = Promise.resolve();
+    this.snapshotCache = null;
+    this.snapshotInFlight = null;
   }
 
   noteLiveness(phase, { status = "running", reason = null, error = null } = {}) {
@@ -272,6 +274,7 @@ export class BotManager {
     });
     snapshot.dashboard = dashboard;
     snapshot.manager.readiness = this.buildOperationalReadiness(snapshot);
+    this.snapshotCache = { createdAtMs: Date.now(), value: snapshot };
     return snapshot;
   }
 
@@ -297,6 +300,69 @@ export class BotManager {
     });
   }
 
+  clearSnapshotCache() {
+    this.snapshotCache = null;
+    this.snapshotInFlight = null;
+  }
+
+  buildManagerSummary(currentMode = this.config?.botMode || "paper") {
+    return {
+      runState: this.runState,
+      lifecycle: this.lifecycle,
+      pendingStop: buildPendingStopSummary(this.pendingStop),
+      activeMutation: this.activeMutation,
+      mutationContracts: listManagerMutationContracts(),
+      currentMode,
+      externalConfigMode: this.externalConfigMode,
+      externalConfigDrift: this.externalConfigDrift,
+      externalConfigCheckedAt: this.externalConfigCheckedAt,
+      externalModeDrift: this.externalModeDrift,
+      lastStartAt: this.lastStartAt,
+      lastStopAt: this.lastStopAt,
+      lastModeSwitchAt: this.lastModeSwitchAt,
+      stopReason: this.stopReason || null,
+      lastError: publicError(this.lastError),
+      liveness: buildRuntimeLivenessSummary({
+        runtime: this.bot?.runtime || {},
+        manager: { runState: this.runState, liveness: this.liveness, lastError: this.lastError },
+        config: this.config || {}
+      }),
+      dashboardPort: this.config?.dashboardPort
+    };
+  }
+
+  buildLightweightStatus() {
+    const runtime = this.bot?.runtime || {};
+    const mode = this.config?.botMode || runtime.sourceOfTruth?.mode || "paper";
+    const stream = (() => {
+      try {
+        return this.bot?.stream?.getStatus?.() || runtime.stream || null;
+      } catch (error) {
+        return { status: "unavailable", error: error.message };
+      }
+    })();
+    const status = {
+      mode,
+      lastCycleAt: runtime.lastCycleAt || null,
+      lastAnalysisAt: runtime.lastAnalysisAt || null,
+      equity: runtime.portfolio?.equity ?? runtime.lastKnownEquity ?? null,
+      quoteFree: runtime.portfolio?.quoteFree ?? runtime.lastKnownBalance ?? null,
+      openPositions: Array.isArray(runtime.openPositions) ? runtime.openPositions : [],
+      readiness: runtime.ops?.readiness || runtime.readiness || null,
+      health: runtime.health || null,
+      stream,
+      signalFlow: runtime.signalFlow || runtime.ops?.signalFlow || {},
+      topDecisions: Array.isArray(runtime.latestDecisions) ? runtime.latestDecisions.slice(0, 12) : [],
+      readModel: runtime.readModel || null,
+      sourceOfTruth: { mode },
+      lightweight: true
+    };
+    return this.buildApiEnvelope("status", {
+      manager: this.buildManagerSummary(mode),
+      status
+    });
+  }
+
   buildLightweightSnapshot() {
     return {
       contract: { version: "v1", kind: "manager_lightweight_snapshot" },
@@ -312,6 +378,62 @@ export class BotManager {
         lastError: publicError(this.lastError)
       },
       dashboard: null,
+      lightweight: true
+    };
+  }
+
+  buildLightweightReadiness() {
+    const runtime = this.bot?.runtime || {};
+    const mode = this.config?.botMode || "paper";
+    const snapshotReadiness = runtime.ops?.readiness || runtime.readiness || {};
+    const alerts = Array.isArray(runtime.alerts?.alerts)
+      ? runtime.alerts.alerts
+      : Array.isArray(runtime.alerts)
+        ? runtime.alerts
+        : [];
+    const pendingActions = Array.isArray(runtime.orderLifecycle?.pendingActions)
+      ? runtime.orderLifecycle.pendingActions
+      : [];
+    return computeOperationalReadiness({
+      snapshotReadiness,
+      checkedAt: nowIso(),
+      lastAnalysisAt: runtime.lastAnalysisAt || (this.runState === "running" ? null : nowIso()),
+      runState: this.runState,
+      mode,
+      managerHasError: Boolean(this.lastError?.message),
+      healthCircuitOpen: Boolean(runtime.health?.circuitOpen),
+      exchangeTruthFreeze: Boolean(runtime.exchangeTruth?.freezeEntries || runtime.exchangeSafety?.freezeEntries),
+      exchangeSafetyBlocked: (runtime.exchangeSafety?.status || "") === "blocked",
+      capitalGovernorBlocked: (runtime.capitalGovernor?.status || "") === "blocked",
+      selfHealMode: runtime.selfHeal?.mode || "",
+      serviceWatchdogStatus: runtime.service?.watchdogStatus || "",
+      serviceHeartbeatStale: Boolean(runtime.service?.heartbeatStale),
+      serviceRecoveryActive: Boolean(runtime.service?.recoveryActive),
+      externalModeMismatch: Boolean(this.externalModeDrift?.externalMode && this.runState === "running"),
+      alerts,
+      pendingActions,
+      analysisMissingStatus: this.runState === "running" ? "warming" : "ready"
+    });
+  }
+
+  async getHealthStatus() {
+    const readiness = this.buildLightweightReadiness();
+    const runtime = this.bot?.runtime || {};
+    return {
+      ok: readiness.ok !== false && (readiness.status || "ready") === "ready",
+      status: readiness.status,
+      reasons: readiness.reasons,
+      checkedAt: readiness.checkedAt,
+      botState: this.lifecycle?.state || this.runState || "unknown",
+      lifecycle: this.lifecycle || null,
+      mode: { botMode: this.config?.botMode || "paper" },
+      exchangeConnectivity: runtime.exchangeConnectivity || runtime.ops?.exchangeConnectivity || null,
+      dataFreshness: runtime.ops?.dataFreshness || {
+        lastAnalysisAt: runtime.lastAnalysisAt || null,
+        lastCycleAt: runtime.lastCycleAt || null
+      },
+      riskLocks: runtime.ops?.riskLocks || null,
+      topRejections: runtime.ops?.topRejections || runtime.signalFlow?.topRejectionReasons || [],
       lightweight: true
     };
   }
@@ -487,6 +609,7 @@ export class BotManager {
   }
 
   async stopUnlocked(reason = "manual_stop", { timeoutMs = null } = {}) {
+    this.clearSnapshotCache();
     this.stopRequested = true;
     this.stopReason = reason;
     this.pendingStop = {
@@ -516,7 +639,7 @@ export class BotManager {
       }
       this.lastStopAt = nowIso();
       this.pendingStop = null;
-      return this.getSnapshot({ allowClosedBot: true });
+      return this.buildLightweightStatus();
     }
 
     if (["running", "ready", "degraded"].includes(this.lifecycle.state)) {
@@ -564,7 +687,7 @@ export class BotManager {
     }
     this.lastStopAt = nowIso();
     this.pendingStop = null;
-    return this.getSnapshot({ allowClosedBot: true });
+    return this.buildLightweightStatus();
   }
 
   async start() {
@@ -578,8 +701,9 @@ export class BotManager {
         throw error;
       }
       if (this.runState === "running") {
-        return this.getSnapshot();
+        return this.buildLightweightStatus();
       }
+      this.clearSnapshotCache();
       this.stopRequested = false;
       this.stopReason = null;
       this.consecutiveCycleFailures = 0;
@@ -590,7 +714,7 @@ export class BotManager {
       this.transitionLifecycle("running", { activity: "idle", reason: "start" });
       this.lastStartAt = nowIso();
       this.loopPromise = this.runLoop();
-      return this.getSnapshot();
+      return this.buildLightweightStatus();
     });
   }
 
@@ -1055,21 +1179,7 @@ export class BotManager {
   }
 
   async getStatus() {
-    await this.ensureBotReady();
-    const status = await this.bot.getStatus();
-    return this.buildApiEnvelope("status", {
-      manager: {
-        runState: this.runState,
-        lifecycle: this.lifecycle,
-        currentMode: status?.sourceOfTruth?.mode || "paper",
-        lastStartAt: this.lastStartAt,
-        lastStopAt: this.lastStopAt,
-        lastModeSwitchAt: this.lastModeSwitchAt,
-        stopReason: this.stopReason || null,
-        lastError: publicError(this.lastError)
-      },
-      status
-    });
+    return this.buildLightweightStatus();
   }
 
   async getDoctor() {
@@ -1293,9 +1403,26 @@ export class BotManager {
     });
   }
 
-  async getSnapshot({ allowClosedBot = false } = {}) {
-    await this.ensureBotReady({ allowClosed: allowClosedBot });
-    const dashboard = await this.bot.getDashboardSnapshot();
-    return this.buildSnapshotFromDashboard(dashboard);
+  async getSnapshot({ allowClosedBot = false, force = false } = {}) {
+    const ttlMs = Math.max(0, Number(this.config?.dashboardSnapshotCacheMs || 8000));
+    const now = Date.now();
+    if (!force && this.snapshotCache && ttlMs > 0 && now - this.snapshotCache.createdAtMs <= ttlMs) {
+      return this.snapshotCache.value;
+    }
+    if (!force && this.snapshotInFlight) {
+      return this.snapshotInFlight;
+    }
+    this.snapshotInFlight = (async () => {
+      await this.ensureBotReady({ allowClosed: allowClosedBot });
+      const dashboard = await this.bot.getDashboardSnapshot();
+      const snapshot = this.buildSnapshotFromDashboard(dashboard);
+      this.snapshotCache = { createdAtMs: Date.now(), value: snapshot };
+      return snapshot;
+    })();
+    try {
+      return await this.snapshotInFlight;
+    } finally {
+      this.snapshotInFlight = null;
+    }
   }
 }

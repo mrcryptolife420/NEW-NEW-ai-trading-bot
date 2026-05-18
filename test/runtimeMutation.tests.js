@@ -125,6 +125,87 @@ export async function registerRuntimeMutationTests({
     assert.equal(snapshot.manager.liveness.brokenPhase, "cycle_completion");
   });
 
+  await runCheck("bot manager start returns lightweight status without rebuilding dashboard snapshot", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", tradingIntervalSeconds: 60 };
+    manager.forceLifecycle("ready", { reason: "test_ready" });
+    manager.ensureBotReady = async () => {};
+    manager.runLoop = async () => {};
+    manager.bot = {
+      runtime: { lastCycleAt: "2026-04-21T10:00:00.000Z", signalFlow: { generated: 1 } },
+      getStatus() {
+        throw new Error("start should not build bot status");
+      },
+      getDashboardSnapshot() {
+        throw new Error("start should not build dashboard snapshot");
+      }
+    };
+
+    const result = await manager.start();
+    assert.equal(result.contract.kind, "status");
+    assert.equal(result.status.lightweight, true);
+    assert.equal(result.manager.runState, "running");
+  });
+
+  await runCheck("bot manager status and health stay lightweight for startup polling", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", tradingIntervalSeconds: 60 };
+    manager.runState = "running";
+    manager.lifecycle = { state: "running", history: [] };
+    manager.bot = {
+      runtime: {
+        lastCycleAt: "2026-04-21T10:00:00.000Z",
+        lastAnalysisAt: "2026-04-21T09:59:00.000Z",
+        signalFlow: { generated: 3, allowed: 0, blocked: 3 }
+      },
+      getStatus() {
+        throw new Error("manager status should not call bot.getStatus");
+      },
+      getDashboardSnapshot() {
+        throw new Error("startup status polling should not build dashboard snapshot");
+      }
+    };
+    manager.getSnapshot = async () => {
+      throw new Error("health should not build dashboard snapshot");
+    };
+
+    const status = await manager.getStatus();
+    const health = await manager.getHealthStatus();
+    assert.equal(status.contract.kind, "status");
+    assert.equal(status.status.lightweight, true);
+    assert.equal(health.lightweight, true);
+    assert.equal(health.botState, "running");
+  });
+
+  await runCheck("dashboard snapshot envelope does not duplicate dashboard under payload snapshot", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", dashboardPort: 3011 };
+    const dashboard = makeDashboardStub({ overview: { mode: "paper", marker: "single-copy" } });
+
+    const snapshot = manager.buildSnapshotFromDashboard(dashboard);
+    assert.equal(snapshot.dashboard.overview.marker, "single-copy");
+    assert.equal(snapshot.payload.snapshot, null);
+  });
+
+  await runCheck("bot manager caches concurrent dashboard snapshots", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", dashboardSnapshotCacheMs: 10000 };
+    let calls = 0;
+    manager.ensureBotReady = async () => {};
+    manager.bot = {
+      runtime: {},
+      async getDashboardSnapshot() {
+        calls += 1;
+        return makeDashboardStub({ overview: { mode: "paper", calls } });
+      }
+    };
+
+    const [first, second] = await Promise.all([manager.getSnapshot(), manager.getSnapshot()]);
+    assert.equal(calls, 1);
+    assert.equal(first.dashboard.overview.calls, 1);
+    assert.equal(second.dashboard.overview.calls, 1);
+  });
+
   await runCheck("live manager still stops after repeated cycle failures", async () => {
     const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
     let attempts = 0;

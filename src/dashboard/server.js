@@ -138,22 +138,7 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendJson(response, 200, { active: manager.config?.accountProfile || "paper", profiles: buildAccountProfileStatus() });
   }
   if (request.method === "GET" && url.pathname === "/api/health") {
-    const snapshot = await manager.getSnapshot();
-    const readiness = await manager.getOperationalReadiness();
-    const ops = snapshot?.dashboard?.ops || {};
-    return sendJson(response, 200, {
-      ok: readiness.ok !== false && (readiness.status || "ready") === "ready",
-      status: readiness.status,
-      reasons: readiness.reasons,
-      checkedAt: readiness.checkedAt,
-      botState: ops.botLifecycle?.state || snapshot?.manager?.lifecycle?.state || snapshot?.manager?.runState || "unknown",
-      lifecycle: snapshot?.manager?.lifecycle || ops.botLifecycle || null,
-      mode: ops.mode || null,
-      exchangeConnectivity: ops.exchangeConnectivity || null,
-      dataFreshness: ops.dataFreshness || null,
-      riskLocks: ops.riskLocks || null,
-      topRejections: ops.topRejections || []
-    });
+    return sendJson(response, 200, await manager.getHealthStatus());
   }
   if (request.method === "GET" && url.pathname === "/api/gui/status") {
     const snapshot = await manager.getSnapshot();

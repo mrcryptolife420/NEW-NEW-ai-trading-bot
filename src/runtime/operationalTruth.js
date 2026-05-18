@@ -126,7 +126,7 @@ export function buildApiEnvelope({ kind, manager, status = null, doctor = null, 
     ...(kind === "learning" ? { learning } : {}),
     ...(kind === "snapshot" ? { dashboard: snapshot?.dashboard || null } : {}),
     payload: {
-      snapshot: kind === "snapshot" ? snapshot : null,
+      snapshot: null,
       status: kind === "status" ? status : null,
       doctor: kind === "doctor" ? doctor : null,
       report: kind === "report" ? report : null,
