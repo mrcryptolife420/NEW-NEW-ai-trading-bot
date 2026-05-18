@@ -421,8 +421,18 @@ export class BotManager {
       await this.interruptibleDelay(this.config.tradingIntervalSeconds * 1000);
     }
     this.noteLiveness("manager_stopping", { status: "stopping", reason: this.stopReason || "loop_stop" });
-    this.transitionLifecycle("stopping", { activity: "idle", reason: this.stopReason || "loop_stop" });
-    this.transitionLifecycle("stopped", { activity: "idle", reason: this.stopReason || "loop_stop" });
+    if (["running", "ready", "degraded"].includes(this.lifecycle.state)) {
+      this.transitionLifecycle("stopping", { activity: "idle", reason: this.stopReason || "loop_stop" });
+    } else if (!["stopping", "stopped"].includes(this.lifecycle.state)) {
+      this.forceLifecycle("stopping", { activity: "idle", reason: this.stopReason || "loop_stop" });
+    }
+    if (this.lifecycle.state !== "stopped") {
+      if (this.lifecycle.state === "stopping") {
+        this.transitionLifecycle("stopped", { activity: "idle", reason: this.stopReason || "loop_stop" });
+      } else {
+        this.forceLifecycle("stopped", { activity: "idle", reason: this.stopReason || "loop_stop" });
+      }
+    }
     this.noteLiveness("manager_stopped", { status: "stopped", reason: this.stopReason || "loop_stop" });
     this.lastStopAt = nowIso();
   }

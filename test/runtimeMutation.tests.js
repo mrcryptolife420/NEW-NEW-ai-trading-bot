@@ -171,6 +171,27 @@ export async function registerRuntimeMutationTests({
     assert.equal(manager.runState, "stopping");
   });
 
+  await runCheck("manager loop completes after dashboard stop already marked stopping", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", tradingIntervalSeconds: 60 };
+    manager.runState = "running";
+    manager.lifecycle = { state: "running", activity: "idle", history: [] };
+    manager.bot = {
+      runtime: {},
+      async runCycle() {
+        manager.stopRequested = true;
+        manager.stopReason = "dashboard_stop";
+        manager.transitionLifecycle("stopping", { activity: "idle", reason: "dashboard_stop" });
+        return {};
+      }
+    };
+
+    await manager.runLoop();
+    assert.equal(manager.lifecycle.state, "stopped");
+    assert.equal(manager.runState, "stopped");
+    assert.equal(manager.lastStopAt !== null, true);
+  });
+
   await runCheck("bot manager applies GUI trade profiles to env and marks exact active profile", async () => {
     const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-apply-"));
     const envPath = path.join(projectRoot, ".env");
