@@ -38,6 +38,10 @@
     },
     {
       "method": "GET",
+      "path": "/api/config/quick-settings"
+    },
+    {
+      "method": "GET",
       "path": "/api/config/profiles"
     },
     {
@@ -103,6 +107,14 @@
     {
       "method": "ANY",
       "path": "/api/config/profile/apply"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/config/quick-settings/preview"
+    },
+    {
+      "method": "ANY",
+      "path": "/api/config/quick-settings/apply"
     },
     {
       "method": "ANY",

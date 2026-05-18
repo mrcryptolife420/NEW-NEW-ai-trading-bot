@@ -29,6 +29,7 @@ function createElements(doc) {
     quickActionsList: q("#quickActionsList"),
     configCurrentBadge: q("#configCurrentBadge"),
     configStatusPanel: q("#configStatusPanel"),
+    quickSettingsPanel: q("#quickSettingsPanel"),
     profileList: q("#profileList"),
     profilePreview: q("#profilePreview"),
     setupWizardPanel: q("#setupWizardPanel"),
@@ -57,6 +58,7 @@ let lastSnapshotReceivedAt = null;
 let latestActionResult = null;
 let latestProfiles = null;
 let latestDiagnostics = null;
+let latestQuickSettings = null;
 const renderFallbackSections = new Set();
 
 function makeNode(tag, { className = "", text = "", attrs = {} } = {}) {
@@ -713,6 +715,127 @@ function renderConfigStatus(payload = latestProfiles) {
   ]);
 }
 
+function buildQuickSettingInput(setting) {
+  if (setting.type === "boolean") {
+    const select = makeNode("select", { className: "quick-setting-input", attrs: { "data-env-key": setting.key } });
+    select.append(
+      makeNode("option", { text: "true", attrs: { value: "true" } }),
+      makeNode("option", { text: "false", attrs: { value: "false" } })
+    );
+    select.value = `${setting.effectiveValue || setting.defaultValue || "false"}`.toLowerCase() === "true" ? "true" : "false";
+    return select;
+  }
+  return makeNode("input", {
+    className: "quick-setting-input",
+    attrs: {
+      type: "number",
+      "data-env-key": setting.key,
+      value: setting.effectiveValue || setting.defaultValue || "",
+      min: setting.min,
+      max: setting.max,
+      step: setting.step || (setting.type === "integer" ? 1 : "any")
+    }
+  });
+}
+
+function renderQuickSettingResult(result, fallbackSetting = null) {
+  const updates = result?.updates || {};
+  const beforeAfter = Object.keys(updates).map((key) => `${key}: ${result.before?.[key] ?? "(unset)"} -> ${result.after?.[key] ?? updates[key]}`);
+  renderProfilePreview({
+    profile: { label: fallbackSetting?.label || "Snelle instellingen", mode: result?.mode || latestProfiles?.current?.mode || "paper" },
+    envPath: result?.envPath,
+    updates,
+    before: result?.before,
+    after: result?.after,
+    writeVerified: result?.writeVerified,
+    backupPath: result?.backupPath,
+    warnings: [
+      result?.applied === false ? "Geen wijziging toegepast." : result?.writeVerified === true ? ".env wijziging geschreven en gecontroleerd." : "Preview van snelle instelling.",
+      ...(result?.errors || []).map((item) => `${item.key}: ${item.message}`),
+      ...(result?.warnings || []),
+      ...beforeAfter
+    ]
+  });
+}
+
+async function previewQuickSetting(setting, input) {
+  const result = await api("/api/config/quick-settings/preview", {
+    method: "POST",
+    body: { updates: { [setting.key]: input.value } }
+  });
+  renderQuickSettingResult({
+    ...result,
+    updates: result.updates || { [setting.key]: input.value },
+    before: Object.fromEntries((result.items || []).map((item) => [item.key, item.before])),
+    after: Object.fromEntries((result.items || []).map((item) => [item.key, item.after]))
+  }, setting);
+}
+
+async function applyQuickSetting(setting, input) {
+  const result = await mutateAndRefresh("/api/config/quick-settings/apply", {
+    updates: { [setting.key]: input.value }
+  });
+  if (!result) {
+    throw new Error("Snelle instelling kon niet worden toegepast.");
+  }
+  renderQuickSettingResult(result, setting);
+  latestQuickSettings = await fetchQuickSettings();
+}
+
+function renderQuickSettingsEditor(payload = latestQuickSettings) {
+  latestQuickSettings = payload || latestQuickSettings;
+  if (!elements.quickSettingsPanel || !latestQuickSettings) return;
+  const groups = new Map();
+  for (const setting of arr(latestQuickSettings.settings)) {
+    const group = setting.group || "Config";
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(setting);
+  }
+  const header = makeNode("div", { className: "quick-settings-head" });
+  const headerText = makeNode("div", { className: "quick-action-text" });
+  headerText.append(
+    makeNode("h3", { text: "Snelle bot- en .env instellingen" }),
+    makeNode("p", { text: "Pas alleen whitelisted instellingen aan. Elke kaart toont wat de key doet, welke .env-regel wijzigt en wanneer de wijziging actief wordt." })
+  );
+  header.append(headerText, makeTag(latestQuickSettings.reloadPolicy || "Wijzigingen schrijven naar .env"));
+  const sections = [...groups.entries()].map(([group, settings]) => {
+    const section = makeNode("section", { className: "quick-settings-group" });
+    section.append(makeNode("h3", { text: group }));
+    const grid = makeNode("div", { className: "quick-settings-grid" });
+    for (const setting of settings) {
+      const card = makeNode("article", { className: `quick-setting-card ${setting.liveSensitive ? "warning" : "neutral"}` });
+      const input = buildQuickSettingInput(setting);
+      const previewBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Preview" });
+      const applyBtn = makeNode("button", { className: "ghost ghost-small", type: "button", text: "Toepassen" });
+      previewBtn.addEventListener("click", () => previewQuickSetting(setting, input).catch((error) => renderProfilePreview({ profile: { label: setting.label }, warnings: [error.message] })));
+      applyBtn.addEventListener("click", () => {
+        applyBtn.disabled = true;
+        applyQuickSetting(setting, input).catch((error) => renderProfilePreview({ profile: { label: setting.label }, warnings: [error.message] })).finally(() => {
+          applyBtn.disabled = false;
+        });
+      });
+      const actions = makeNode("div", { className: "profile-actions" });
+      actions.append(previewBtn, applyBtn);
+      card.append(
+        makeNode("h4", { text: setting.label }),
+        makeTagList([
+          makeTag(setting.key),
+          setting.liveSensitive ? makeTag("Live-sensitive", "tag warning") : makeTag("Paper-safe"),
+          makeTag(`Nu: ${setting.value || "(unset)"}`)
+        ]),
+        makeNode("p", { text: setting.explanation }),
+        makeNode("p", { className: "quick-setting-change", text: setting.changes }),
+        input,
+        actions
+      );
+      grid.append(card);
+    }
+    section.append(grid);
+    return section;
+  });
+  replaceChildren(elements.quickSettingsPanel, [header, ...sections]);
+}
+
 async function previewProfile(profileId) {
   const preview = await api("/api/config/profile/preview", { method: "POST", body: { profileId } });
   renderProfilePreview(preview);
@@ -772,6 +895,7 @@ function renderProfiles(payload = latestProfiles) {
   if (!elements.profileList || !latestProfiles) return;
   const current = latestProfiles.current || {};
   renderConfigStatus(latestProfiles);
+  renderQuickSettingsEditor();
   setBadge(
     elements.configCurrentBadge,
     compactJoin([
@@ -881,6 +1005,17 @@ async function fetchProfiles() {
     renderProfiles(await api("/api/config/profiles"));
   } catch (error) {
     if (elements.profilePreview) elements.profilePreview.textContent = `Config laden mislukt: ${error.message}`;
+  }
+}
+
+async function fetchQuickSettings() {
+  try {
+    latestQuickSettings = await api("/api/config/quick-settings");
+    renderQuickSettingsEditor(latestQuickSettings);
+    return latestQuickSettings;
+  } catch (error) {
+    renderProfilePreview({ profile: { label: "Snelle instellingen" }, warnings: [`Snelle instellingen laden mislukt: ${error.message}`] });
+    return null;
   }
 }
 
@@ -1868,7 +2003,9 @@ async function mutateAndRefresh(path, body = {}) {
         ? `Actie ${actionSummary.status}: ${actionSummary.action}${actionSummary.nextRecommendedAction ? ` - ${actionSummary.nextRecommendedAction}` : ""}`
         : "Actie uitgevoerd. Snapshot vernieuwd.";
     }
-    const skipHeavySnapshotRefresh = path === "/api/config/profile/apply" || path === "/api/setup/complete";
+    const skipHeavySnapshotRefresh = path === "/api/config/profile/apply" ||
+      path === "/api/config/quick-settings/apply" ||
+      path === "/api/setup/complete";
     let refreshError = null;
     if (!skipHeavySnapshotRefresh) {
       try {
@@ -1879,6 +2016,9 @@ async function mutateAndRefresh(path, body = {}) {
     }
     if (path.startsWith("/api/config/")) {
       await fetchProfiles().catch((error) => {
+        refreshError ||= error;
+      });
+      await fetchQuickSettings().catch((error) => {
         refreshError ||= error;
       });
     }
@@ -1939,6 +2079,7 @@ function initDashboard() {
   bindUi();
   fetchSnapshot().catch((error) => showDashboardRenderIssue("bootstrap", error));
   fetchProfiles().catch((error) => showDashboardRenderIssue("profiles", error));
+  fetchQuickSettings().catch((error) => showDashboardRenderIssue("quick-settings", error));
   fetchDiagnostics().catch(() => {});
   if (typeof window !== "undefined" && window?.setInterval) {
     window.setInterval(() => {

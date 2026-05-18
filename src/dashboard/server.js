@@ -180,6 +180,9 @@ async function handleApi(request, response, manager, eventBus = null) {
   if (request.method === "GET" && url.pathname === "/api/config/env") {
     return sendJson(response, 200, await manager.getSafeEnvStatus());
   }
+  if (request.method === "GET" && url.pathname === "/api/config/quick-settings") {
+    return sendJson(response, 200, await manager.getQuickSettings());
+  }
   if (request.method === "GET" && url.pathname === "/api/config/profiles") {
     return sendJson(response, 200, await manager.getConfigProfiles());
   }
@@ -264,6 +267,12 @@ async function handleApi(request, response, manager, eventBus = null) {
     return sendActionResult(manager.applyConfigProfile(body.profileId, {
       liveAcknowledgement: body.liveAcknowledgement || ""
     }));
+  }
+  if (url.pathname === "/api/config/quick-settings/preview") {
+    return sendActionResult(manager.previewQuickSettings(body.updates || {}));
+  }
+  if (url.pathname === "/api/config/quick-settings/apply") {
+    return sendActionResult(manager.applyQuickSettings(body.updates || {}));
   }
   if (url.pathname === "/api/setup/run-checks") {
     return sendJson(response, 200, await manager.runSetupChecks());

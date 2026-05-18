@@ -58,8 +58,11 @@ export async function registerRoadmapSecondWaveCompletionTests({ runCheck, asser
   await runCheck("roadmap 12 dashboard action contracts cover live-sensitive profile routes", () => {
     const contracts = listDashboardActionContracts();
     const profile = resolveDashboardActionContract("/api/config/profile/apply");
+    const quickSettings = resolveDashboardActionContract("/api/config/quick-settings/apply");
     assert.equal(profile.liveSensitive, true);
     assert.ok(profile.bodyFields.includes("profileId"));
+    assert.equal(quickSettings.liveSensitive, true);
+    assert.ok(quickSettings.bodyFields.includes("updates"));
     assert.equal(contracts.some((contract) => contract.path === "/api/setup/complete"), true);
     const envelope = buildDashboardActionEnvelope(profile, { applied: true }, { requestId: "r1", lifecycleBefore: "ready", lifecycleAfter: "stopped" });
     assert.equal(envelope.applied, true);

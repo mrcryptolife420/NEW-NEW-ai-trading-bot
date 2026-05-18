@@ -4,6 +4,7 @@ import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { ensureEnvFile, parseEnvText, readEnvFile, updateEnvFile } from "../config/envFile.js";
 import { TRADE_PROFILE_CATALOG, buildTradeProfilePreview } from "../config/tradeProfiles.js";
+import { buildDashboardQuickSettingsPreview, buildDashboardQuickSettingsStatus, listDashboardQuickSettings, normalizeDashboardQuickSettingUpdates } from "../config/dashboardQuickSettings.js";
 import { buildProfileDiffPreview } from "./setupStateMachine.js";
 import { nowIso } from "../utils/time.js";
 import { TradingBot } from "./tradingBot.js";
@@ -888,8 +889,122 @@ export class BotManager {
       envPath,
       projectRoot: this.projectRoot,
       safeValues: Object.fromEntries(safeKeys.map((key) => [key, values[key] ?? ""])),
+      quickSettings: buildDashboardQuickSettingsStatus(values),
       redacted: Object.keys(values).filter((key) => /SECRET|KEY|TOKEN/i.test(key))
     };
+  }
+
+  async getQuickSettings() {
+    await this.ensureBotReady({ allowClosed: true });
+    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const values = parseEnvText(await readEnvFile(envPath));
+    return {
+      envPath,
+      projectRoot: this.projectRoot,
+      mode: this.config?.botMode || "paper",
+      runState: this.runState,
+      reloadPolicy: this.runState === "running"
+        ? "Wijzigingen worden naar .env geschreven en worden actief na herstart."
+        : "Wijzigingen worden naar .env geschreven en daarna opnieuw geladen.",
+      settings: buildDashboardQuickSettingsStatus(values),
+      redacted: Object.keys(values).filter((key) => /SECRET|KEY|TOKEN/i.test(key))
+    };
+  }
+
+  async previewQuickSettings(updates = {}) {
+    await this.ensureBotReady({ allowClosed: true });
+    const envPath = this.config?.envPath || path.join(this.projectRoot, ".env");
+    const values = parseEnvText(await readEnvFile(envPath));
+    const preview = buildDashboardQuickSettingsPreview(values, updates);
+    return {
+      envPath,
+      projectRoot: this.projectRoot,
+      mode: this.config?.botMode || "paper",
+      runState: this.runState,
+      ...preview,
+      catalog: listDashboardQuickSettings()
+    };
+  }
+
+  async applyQuickSettings(updates = {}) {
+    return this.withLock(async () => {
+      await this.ensureBotReady({ allowClosed: true });
+      const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
+      const currentValues = parseEnvText(await readEnvFile(envPath));
+      const normalized = normalizeDashboardQuickSettingUpdates(updates);
+      if (normalized.errors.length) {
+        const error = new Error("Een of meer snelle instellingen zijn ongeldig.");
+        error.statusCode = 400;
+        error.publicMessage = normalized.errors.map((item) => `${item.key}: ${item.message}`).join(" ");
+        throw error;
+      }
+      if (!Object.keys(normalized.updates).length) {
+        return {
+          applied: false,
+          envPath,
+          updates: {},
+          warnings: ["Geen toegestane instellingen ontvangen."],
+          settings: buildDashboardQuickSettingsStatus(currentValues)
+        };
+      }
+      const catalogByKey = new Map(listDashboardQuickSettings().map((setting) => [setting.key, setting]));
+      const liveSensitive = Object.keys(normalized.updates).filter((key) => catalogByKey.get(key)?.liveSensitive);
+      if (this.config?.botMode === "live" && liveSensitive.length) {
+        const error = new Error("Live-sensitive quick settings require a stopped non-live bot.");
+        error.statusCode = 409;
+        error.publicMessage = `Stop live mode eerst voordat je deze instellingen wijzigt: ${liveSensitive.join(", ")}.`;
+        throw error;
+      }
+      this.activeMutation = { id: "apply_quick_settings", startedAt: nowIso(), keys: Object.keys(normalized.updates) };
+      const writeResult = await updateEnvFile(envPath, normalized.updates);
+      const wasRunning = this.runState === "running";
+      let reloadOk = !wasRunning;
+      let reloadError = null;
+      if (wasRunning) {
+        reloadError = {
+          at: nowIso(),
+          message: "Quick settings zijn naar .env geschreven. Herstart de bot om ze actief te maken."
+        };
+        await this.inspectExternalMode();
+      } else {
+        try {
+          await this.reinitializeBot();
+          this.lastModeSwitchAt = nowIso();
+        } catch (error) {
+          reloadOk = false;
+          reloadError = publicError(error);
+          this.lastError = summarizeError(error);
+          this.logger?.error?.("Quick settings env write succeeded but reload failed", {
+            keys: Object.keys(normalized.updates),
+            error: error.message
+          });
+        }
+      }
+      const afterValues = parseEnvText(await readEnvFile(envPath));
+      return {
+        applied: true,
+        envPath,
+        projectRoot: this.projectRoot,
+        updates: writeResult.updates,
+        before: writeResult.before,
+        after: writeResult.after,
+        backupPath: writeResult.backupPath,
+        writeVerified: writeResult.writeVerified,
+        mismatches: writeResult.mismatches,
+        reloadOk,
+        reloadError,
+        reloadDeferred: wasRunning,
+        restartRequired: wasRunning,
+        warnings: wasRunning ? [reloadError.message] : [],
+        settings: buildDashboardQuickSettingsStatus(afterValues),
+        snapshot: null,
+        snapshotSkipped: "quick_settings_uses_lightweight_response"
+      };
+    }).finally(() => {
+      if (this.activeMutation?.id === "apply_quick_settings") {
+        this.activeMutation = null;
+      }
+    });
   }
 
   async getGuiDiagnostics({ dashboardUrl = null } = {}) {

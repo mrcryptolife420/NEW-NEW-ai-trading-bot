@@ -7,6 +7,8 @@ const ACTION_CONTRACTS = [
   { id: "mode_set", path: "/api/mode", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "config", bodyFields: ["mode"] },
   { id: "config_profile_preview", path: "/api/config/profile/preview", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded", "stopping"], auditCategory: "config", bodyFields: ["profileId"] },
   { id: "config_profile_apply", path: "/api/config/profile/apply", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "config", bodyFields: ["profileId", "liveAcknowledgement"] },
+  { id: "config_quick_settings_preview", path: "/api/config/quick-settings/preview", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded", "stopping"], auditCategory: "config", bodyFields: ["updates"] },
+  { id: "config_quick_settings_apply", path: "/api/config/quick-settings/apply", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "config", bodyFields: ["updates"] },
   { id: "setup_run_checks", path: "/api/setup/run-checks", liveSensitive: false, allowedLifecycleStates: ["ready", "stopped", "degraded"], auditCategory: "setup" },
   { id: "setup_complete", path: "/api/setup/complete", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "setup", bodyFields: ["profileId", "liveAcknowledgement"] },
   { id: "setup_reset", path: "/api/setup/reset", liveSensitive: false, allowedLifecycleStates: ["ready", "running", "stopped", "degraded", "stopping"], auditCategory: "setup" },

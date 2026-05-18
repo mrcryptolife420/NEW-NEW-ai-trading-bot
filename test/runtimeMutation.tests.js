@@ -335,6 +335,82 @@ export async function registerRuntimeMutationTests({
     assert.doesNotMatch(written, /BOT_MODE=live/);
   });
 
+  await runCheck("dashboard quick settings whitelist env edits and explain impact", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-quick-settings-preview-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nTRADING_INTERVAL_SECONDS=120\nRISK_PER_TRADE=0.01\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = { envPath, botMode: "paper", profile: { id: "paper-safe" } };
+    manager.ensureBotReady = async () => {};
+
+    const status = await manager.getQuickSettings();
+    const interval = status.settings.find((setting) => setting.key === "TRADING_INTERVAL_SECONDS");
+    assert.equal(interval.value, "120");
+    assert.match(interval.explanation, /cycli/i);
+
+    const preview = await manager.previewQuickSettings({
+      TRADING_INTERVAL_SECONDS: "60",
+      BINANCE_API_KEY: "should-not-write"
+    });
+    assert.equal(preview.updates.TRADING_INTERVAL_SECONDS, "60");
+    assert.equal(preview.errors[0].key, "BINANCE_API_KEY");
+    assert.match(preview.items[0].changes, /TRADING_INTERVAL_SECONDS/);
+  });
+
+  await runCheck("running paper quick settings write env and defer reload without stopping", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-running-quick-settings-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nTRADING_INTERVAL_SECONDS=120\nMAX_OPEN_POSITIONS=4\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = {
+      envPath,
+      botMode: "paper",
+      profile: { id: "paper-safe" },
+      paperModeProfile: "sim",
+      paperExecutionVenue: "internal"
+    };
+    manager.runState = "running";
+    manager.lifecycle = { state: "running", history: [] };
+    manager.ensureBotReady = async () => {};
+    manager.stopUnlocked = async () => {
+      throw new Error("quick settings must not stop running paper bot");
+    };
+    manager.reinitializeBot = async () => {
+      throw new Error("quick settings must defer reload while running");
+    };
+
+    const result = await manager.applyQuickSettings({ TRADING_INTERVAL_SECONDS: "60" });
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.applied, true);
+    assert.equal(result.writeVerified, true);
+    assert.equal(result.reloadDeferred, true);
+    assert.equal(result.restartRequired, true);
+    assert.match(result.warnings.join(" "), /Herstart/);
+    assert.match(written, /TRADING_INTERVAL_SECONDS=60/);
+  });
+
+  await runCheck("live quick settings block live-sensitive env mutation", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-live-quick-settings-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=live\nMAX_OPEN_POSITIONS=4\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = { envPath, botMode: "live", profile: { id: "guarded-live-template" } };
+    manager.ensureBotReady = async () => {};
+    let caught = null;
+
+    try {
+      await manager.applyQuickSettings({ MAX_OPEN_POSITIONS: "5" });
+    } catch (error) {
+      caught = error;
+    }
+
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(caught?.statusCode, 409);
+    assert.match(caught?.publicMessage, /Stop live mode eerst/);
+    assert.match(written, /MAX_OPEN_POSITIONS=4/);
+    assert.doesNotMatch(written, /MAX_OPEN_POSITIONS=5/);
+  });
+
   await runCheck("bot manager honors user writable CODEX_BOT_ENV_PATH", async () => {
     const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-project-env-root-"));
     const configDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-user-env-"));
