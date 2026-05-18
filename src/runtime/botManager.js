@@ -292,6 +292,25 @@ export class BotManager {
     });
   }
 
+  buildLightweightSnapshot() {
+    return {
+      contract: { version: "v1", kind: "manager_lightweight_snapshot" },
+      manager: {
+        runState: this.runState,
+        lifecycle: this.lifecycle,
+        pendingStop: buildPendingStopSummary(this.pendingStop),
+        activeMutation: this.activeMutation,
+        currentMode: this.config?.botMode || "paper",
+        lastStartAt: this.lastStartAt,
+        lastStopAt: this.lastStopAt,
+        stopReason: this.stopReason || null,
+        lastError: publicError(this.lastError)
+      },
+      dashboard: null,
+      lightweight: true
+    };
+  }
+
   async closeBotForStop() {
     if (!this.bot?.close || this.botNeedsReinitialize) {
       return;
@@ -515,7 +534,7 @@ export class BotManager {
       this.noteLiveness("manager_stop_pending", { status: "stopping", reason });
       this.lastStopAt = nowIso();
       return {
-        ...await this.getSnapshot({ allowClosedBot: true }),
+        ...this.buildLightweightSnapshot(),
         stop: {
           accepted: true,
           pending: true,
@@ -822,7 +841,8 @@ export class BotManager {
         reloadError,
         restarted: reloadOk && wasRunning && nextMode !== "live",
         profiles: await this.getConfigProfiles(),
-        snapshot: reloadOk ? await this.getSnapshot() : null
+        snapshot: null,
+        snapshotSkipped: "profile_apply_uses_lightweight_response"
       };
     }).finally(() => {
       if (this.activeMutation?.id === "apply_config_profile") {

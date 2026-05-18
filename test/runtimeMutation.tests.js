@@ -171,6 +171,23 @@ export async function registerRuntimeMutationTests({
     assert.equal(manager.runState, "stopping");
   });
 
+  await runCheck("pending stop returns lightweight manager state without rebuilding dashboard snapshot", async () => {
+    const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
+    manager.config = { botMode: "paper", tradingIntervalSeconds: 60 };
+    manager.runState = "running";
+    manager.lifecycle = { state: "running", history: [] };
+    manager.bot = { close: async () => {} };
+    manager.getSnapshot = async () => {
+      throw new Error("heavy dashboard snapshot should not be built");
+    };
+    manager.loopPromise = new Promise(() => {});
+
+    const result = await manager.stop("dashboard_stop", { timeoutMs: 5 });
+    assert.equal(result.lightweight, true);
+    assert.equal(result.dashboard, null);
+    assert.equal(result.stop.pending, true);
+  });
+
   await runCheck("manager loop completes after dashboard stop already marked stopping", async () => {
     const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {} } });
     manager.config = { botMode: "paper", tradingIntervalSeconds: 60 };
@@ -212,6 +229,8 @@ export async function registerRuntimeMutationTests({
     const result = await manager.applyConfigProfile("paper-neural-learning");
     const written = await fs.readFile(envPath, "utf8");
     assert.equal(result.writeVerified, true);
+    assert.equal(result.snapshot, null);
+    assert.equal(result.snapshotSkipped, "profile_apply_uses_lightweight_response");
     assert.match(written, /PAPER_MODE_PROFILE=learn/);
     assert.match(written, /NEURAL_SELF_TUNING_ENABLED=true/);
     assert.match(written, /BINANCE_API_BASE_URL=\n/);

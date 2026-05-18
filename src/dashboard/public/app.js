@@ -1868,11 +1868,14 @@ async function mutateAndRefresh(path, body = {}) {
         ? `Actie ${actionSummary.status}: ${actionSummary.action}${actionSummary.nextRecommendedAction ? ` - ${actionSummary.nextRecommendedAction}` : ""}`
         : "Actie uitgevoerd. Snapshot vernieuwd.";
     }
+    const skipHeavySnapshotRefresh = path === "/api/config/profile/apply" || path === "/api/setup/complete";
     let refreshError = null;
-    try {
-      await fetchSnapshot();
-    } catch (error) {
-      refreshError = error;
+    if (!skipHeavySnapshotRefresh) {
+      try {
+        await fetchSnapshot();
+      } catch (error) {
+        refreshError = error;
+      }
     }
     if (path.startsWith("/api/config/")) {
       await fetchProfiles().catch((error) => {
