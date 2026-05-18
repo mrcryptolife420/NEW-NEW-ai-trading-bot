@@ -267,6 +267,74 @@ export async function registerRuntimeMutationTests({
     assert.match(written, /CONFIG_PROFILE=paper-learning/);
   });
 
+  await runCheck("running paper profile apply persists env and defers runtime reload", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-running-profile-apply-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=sim\nPAPER_EXECUTION_VENUE=internal\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = {
+      envPath,
+      botMode: "paper",
+      profile: { id: "paper-safe" },
+      paperModeProfile: "sim",
+      paperExecutionVenue: "internal"
+    };
+    manager.runState = "running";
+    manager.lifecycle = { state: "running", history: [] };
+    manager.ensureBotReady = async () => {};
+    manager.stopUnlocked = async () => {
+      throw new Error("profile apply must not stop running paper bot");
+    };
+    manager.reinitializeBot = async () => {
+      throw new Error("profile apply must defer reload while running");
+    };
+    manager.getSnapshot = async () => {
+      throw new Error("profile apply must not build dashboard snapshot");
+    };
+
+    const result = await manager.applyConfigProfile("beginner-paper-learning");
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.writeVerified, true);
+    assert.equal(result.reloadDeferred, true);
+    assert.equal(result.restartRequired, true);
+    assert.equal(result.reloadOk, false);
+    assert.match(result.reloadError.message, /uitgesteld/);
+    assert.match(written, /CONFIG_PROFILE=paper-learning/);
+  });
+
+  await runCheck("running live profile apply is blocked before env mutation", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-running-live-profile-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-learning\nPAPER_MODE_PROFILE=sim\nPAPER_EXECUTION_VENUE=internal\nBINANCE_API_BASE_URL=\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = {
+      envPath,
+      botMode: "paper",
+      profile: { id: "paper-learning" },
+      paperModeProfile: "sim",
+      paperExecutionVenue: "internal",
+      binanceApiBaseUrl: ""
+    };
+    manager.runState = "running";
+    manager.lifecycle = { state: "running", history: [] };
+    manager.ensureBotReady = async () => {};
+    let caught = null;
+
+    try {
+      await manager.applyConfigProfile("guarded-live-template", {
+        liveAcknowledgement: "I_UNDERSTAND_LIVE_TRADING_RISK"
+      });
+    } catch (error) {
+      caught = error;
+    }
+
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(caught?.statusCode, 409);
+    assert.match(caught?.publicMessage, /Stop de bot eerst/);
+    assert.match(written, /BOT_MODE=paper/);
+    assert.doesNotMatch(written, /BOT_MODE=live/);
+  });
+
   await runCheck("bot manager honors user writable CODEX_BOT_ENV_PATH", async () => {
     const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-project-env-root-"));
     const configDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-user-env-"));

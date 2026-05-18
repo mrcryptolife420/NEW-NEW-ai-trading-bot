@@ -50,18 +50,20 @@ const CONTRACTS = [
     method: "applyConfigProfile",
     allowedStates: ["ready", "running", "stopped", "degraded"],
     blockedStates: ["stopping", "closed"],
-    effect: "writes_profile_env_and_reloads",
+    effect: "writes_profile_env_and_reloads_or_defers",
     liveSensitive: true,
-    waitsForStop: true
+    waitsForStop: false,
+    reloadMayDeferWhileRunning: true
   },
   {
     id: "complete_setup",
     method: "completeSetup",
     allowedStates: ["ready", "running", "stopped", "degraded"],
     blockedStates: ["stopping", "closed"],
-    effect: "applies_profile_and_runs_checks",
+    effect: "applies_profile_and_runs_checks_with_deferred_reload",
     liveSensitive: true,
-    waitsForStop: true
+    waitsForStop: false,
+    reloadMayDeferWhileRunning: true
   }
 ];
 

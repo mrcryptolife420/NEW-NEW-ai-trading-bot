@@ -779,11 +779,18 @@ export class BotManager {
       });
       const updates = { ...preview.updates };
       const nextMode = updates.BOT_MODE || "paper";
+      const wasRunning = this.runState === "running";
       if (nextMode === "live") {
         if (liveAcknowledgement !== "I_UNDERSTAND_LIVE_TRADING_RISK") {
           throw new Error("Live profiel vereist exacte bevestiging: I_UNDERSTAND_LIVE_TRADING_RISK.");
         }
         updates.LIVE_TRADING_ACKNOWLEDGED = liveAcknowledgement;
+        if (wasRunning) {
+          const error = new Error("Live profile apply requires a stopped bot.");
+          error.statusCode = 409;
+          error.publicMessage = "Stop de bot eerst voordat je een live profiel toepast.";
+          throw error;
+        }
         assertLiveModeGuardrails({
           ...this.config,
           botMode: "live",
@@ -792,39 +799,31 @@ export class BotManager {
           liveTradingAcknowledged: liveAcknowledgement
         });
       }
-      const wasRunning = this.runState === "running";
       const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
       this.activeMutation = { id: "apply_config_profile", startedAt: nowIso(), profileId };
-      const stopResult = await this.stopUnlocked("config_profile_apply", {
-        timeoutMs: Number(this.config?.dashboardStopTimeoutMs || 3000)
-      });
-      if (stopResult?.stop?.pending) {
-        const error = new Error("Config profile apply is waiting for the running cycle to stop.");
-        error.statusCode = 409;
-        error.publicMessage = "Profiel toepassen wacht op de lopende cyclus. Probeer opnieuw wanneer de stop klaar is.";
-        throw error;
-      }
       const writeResult = await updateEnvFile(envPath, updates);
-      let reloadOk = true;
+      const reloadDeferred = wasRunning && nextMode !== "live";
+      let reloadOk = !reloadDeferred;
       let reloadError = null;
-      try {
-        await this.reinitializeBot();
-        this.lastModeSwitchAt = nowIso();
-      } catch (error) {
-        reloadOk = false;
-        reloadError = publicError(error);
-        this.lastError = summarizeError(error);
-        this.logger?.error?.("Config profile env write succeeded but reload failed", {
-          profileId,
-          error: error.message
-        });
-      }
-      if (reloadOk && wasRunning && nextMode !== "live") {
-        this.stopRequested = false;
-        this.stopReason = null;
-        this.transitionLifecycle("running", { activity: "idle", reason: "config_profile_restart" });
-        this.lastStartAt = nowIso();
-        this.loopPromise = this.runLoop();
+      if (reloadDeferred) {
+        reloadError = {
+          at: nowIso(),
+          message: "Runtime reload is uitgesteld omdat de bot draait. Herstart de bot om het profiel actief te maken."
+        };
+        await this.inspectExternalMode();
+      } else {
+        try {
+          await this.reinitializeBot();
+          this.lastModeSwitchAt = nowIso();
+        } catch (error) {
+          reloadOk = false;
+          reloadError = publicError(error);
+          this.lastError = summarizeError(error);
+          this.logger?.error?.("Config profile env write succeeded but reload failed", {
+            profileId,
+            error: error.message
+          });
+        }
       }
       return {
         applied: true,
@@ -839,7 +838,10 @@ export class BotManager {
         mismatches: writeResult.mismatches,
         reloadOk,
         reloadError,
-        restarted: reloadOk && wasRunning && nextMode !== "live",
+        reloadDeferred,
+        restartRequired: reloadDeferred,
+        restarted: false,
+        warnings: reloadDeferred ? [reloadError.message] : [],
         profiles: await this.getConfigProfiles(),
         snapshot: null,
         snapshotSkipped: "profile_apply_uses_lightweight_response"

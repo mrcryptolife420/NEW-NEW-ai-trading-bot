@@ -727,7 +727,7 @@ async function applyProfile(profile) {
   renderProfilePreview({
     profile,
     updates: profile.env || {},
-    warnings: ["Profiel wordt toegepast. .env wordt geschreven en configuratie wordt opnieuw geladen."]
+    warnings: ["Profiel wordt toegepast. .env wordt geschreven; bij een draaiende bot wordt de reload uitgesteld tot herstart."]
   });
   const result = await mutateAndRefresh("/api/config/profile/apply", body);
   if (!result) {
@@ -751,7 +751,7 @@ async function completeSetup(profileId = "beginner-paper-learning") {
   renderProfilePreview({
     profile: { label: "Setup wizard", mode: "paper" },
     updates: {},
-    warnings: ["Setup wordt afgerond. Het gekozen profiel wordt naar .env geschreven en daarna gecontroleerd."]
+    warnings: ["Setup wordt afgerond. Het gekozen profiel wordt naar .env geschreven; bij een draaiende bot wordt de reload uitgesteld tot herstart."]
   });
   const result = await mutateAndRefresh("/api/setup/complete", { profileId });
   renderProfilePreview({

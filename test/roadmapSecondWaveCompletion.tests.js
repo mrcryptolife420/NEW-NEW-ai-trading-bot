@@ -13,34 +13,46 @@ import { canRunManagerMutation, listManagerMutationContracts } from "../src/runt
 export async function registerRoadmapSecondWaveCompletionTests({ runCheck, assert, fs, os, path, BotManager }) {
   await runCheck("roadmap 11 manager mutation contracts block unsafe start while stopping", () => {
     const contracts = listManagerMutationContracts();
-    assert.ok(contracts.some((contract) => contract.id === "apply_config_profile" && contract.waitsForStop));
+    assert.ok(contracts.some((contract) => (
+      contract.id === "apply_config_profile"
+        && contract.waitsForStop === false
+        && contract.reloadMayDeferWhileRunning === true
+    )));
     const result = canRunManagerMutation("start", "stopping");
     assert.equal(result.allowed, false);
     assert.match(result.reason, /stopping/);
   });
 
-  await runCheck("roadmap 11 profile apply returns conflict while stop is still pending", async () => {
-    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-pending-stop-"));
+  await runCheck("roadmap 11 running paper profile apply writes env without stopping bot", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-running-apply-"));
     const envPath = path.join(projectRoot, ".env");
     await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=sim\nPAPER_EXECUTION_VENUE=internal\n", "utf8");
     const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
     manager.config = { envPath, botMode: "paper", profile: { id: "paper-safe" }, dashboardStopTimeoutMs: 1 };
-    manager.bot = {
-      close: async () => {},
-      getDashboardSnapshot: async () => ({ overview: { mode: "paper" }, ops: { readiness: { status: "ready", reasons: [] } } })
-    };
     manager.lifecycle = { state: "running", activity: "cycle", history: [] };
     manager.runState = "running";
-    manager.loopPromise = new Promise(() => {});
     manager.ensureBotReady = async () => {};
-    let caught = null;
-    try {
-      await manager.applyConfigProfile("beginner-paper-learning");
-    } catch (error) {
-      caught = error;
-    }
-    assert.equal(caught?.statusCode, 409);
-    assert.equal(manager.pendingStop.reason, "config_profile_apply");
+    manager.stopUnlocked = async () => {
+      throw new Error("profile apply must not stop a running paper bot");
+    };
+    manager.reinitializeBot = async () => {
+      throw new Error("running paper profile reload must be deferred");
+    };
+    manager.getSnapshot = async () => {
+      throw new Error("profile apply must not build a heavy dashboard snapshot");
+    };
+
+    const result = await manager.applyConfigProfile("beginner-paper-learning");
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.applied, true);
+    assert.equal(result.writeVerified, true);
+    assert.equal(result.reloadDeferred, true);
+    assert.equal(result.restartRequired, true);
+    assert.equal(result.reloadOk, false);
+    assert.equal(result.snapshot, null);
+    assert.match(result.warnings.join(" "), /Herstart/);
+    assert.match(written, /CONFIG_PROFILE=paper-learning/);
+    assert.equal(manager.pendingStop, null);
   });
 
   await runCheck("roadmap 12 dashboard action contracts cover live-sensitive profile routes", () => {
