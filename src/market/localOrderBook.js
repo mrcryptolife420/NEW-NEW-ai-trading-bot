@@ -298,14 +298,18 @@ export class LocalOrderBookEngine {
           const error = new Error(allowance.reason || "local_order_book_depth_snapshot_suppressed");
           error.code = "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED";
           error.restBudget = allowance;
-          const logMethod = allowance.reason === "local_book_depth_stream_not_ready" ? "info" : "warn";
-          this.logger?.[logMethod]?.("Local order book depth snapshot suppressed", {
+          const payload = {
             symbol,
             reason: allowance.reason,
             pressure: allowance.pressure,
             usedWeight1m: allowance.usedWeight1m,
             streamPrimary: allowance.streamPrimary
-          });
+          };
+          if (allowance.reason === "local_book_depth_stream_not_ready") {
+            this.logger?.debug?.("Local order book depth snapshot waiting for stream", payload);
+          } else {
+            this.logger?.warn?.("Local order book depth snapshot suppressed", payload);
+          }
           throw error;
         }
         this.client?.noteCacheDiagnostics?.({
@@ -435,7 +439,12 @@ export class LocalOrderBookEngine {
       }
       void this.ensurePrimed(symbol).catch((error) => {
         bucket.missedEvents += 1;
-        if (error?.code !== "LOCAL_BOOK_DEPTH_SNAPSHOT_COOLDOWN") {
+        const expectedStreamWarmup =
+          error?.code === "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED" &&
+          (error?.restBudget?.reason === "local_book_depth_stream_not_ready" || error.message === "local_book_depth_stream_not_ready");
+        if (expectedStreamWarmup) {
+          this.logger?.debug?.("Local order book prime waiting for stream", { symbol, error: error.message });
+        } else if (error?.code !== "LOCAL_BOOK_DEPTH_SNAPSHOT_COOLDOWN") {
           this.logger?.warn?.("Local order book prime failed", { symbol, error: error.message });
         }
       });

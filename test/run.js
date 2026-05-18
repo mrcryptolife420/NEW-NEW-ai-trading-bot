@@ -15453,6 +15453,28 @@ await runCheck("announcement service keeps cached summary when all feeds fail", 
   }
 });
 
+await runCheck("announcement service dedupes request-budget cooldown warnings across symbols", async () => {
+  const future = new Date(Date.now() + 8 * 60_000).toISOString();
+  const runtime = {
+    externalFeedHealth: {
+      "announcements:binance_cms:49": { group: "announcements", feed: "binance_cms:49", cooldownUntil: future },
+      "announcements:binance_cms:157": { group: "announcements", feed: "binance_cms:157", cooldownUntil: future },
+      "announcements:binance_cms:161": { group: "announcements", feed: "binance_cms:161", cooldownUntil: future }
+    }
+  };
+  const warnings = [];
+  const service = new BinanceAnnouncementService({
+    config: makeConfig({ announcementCacheMinutes: 1 }),
+    runtime,
+    logger: { info() {}, warn(message, meta) { warnings.push({ message, meta }); } }
+  });
+  await service.getSymbolSummary("BTCUSDT", ["BTC"]);
+  await service.getSymbolSummary("ETHUSDT", ["ETH"]);
+  assert.equal(warnings.filter((entry) => entry.message === "Binance announcement feed cooldown active").length, 3);
+  assert.equal(warnings.some((entry) => entry.message === "Binance announcement feed failed"), false);
+  assert.equal(warnings.every((entry) => entry.meta.cooldownUntil === future), true);
+});
+
 await runCheck("calendar service records a cached context use once per cache snapshot", async () => {
   const runtime = {
     calendarCache: {

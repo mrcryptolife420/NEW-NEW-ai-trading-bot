@@ -614,8 +614,11 @@ export class StreamCoordinator {
         const expectedStreamWarmup =
           error?.code === "LOCAL_BOOK_DEPTH_SNAPSHOT_SUPPRESSED" &&
           (error?.restBudget?.reason === "local_book_depth_stream_not_ready" || error.message === "local_book_depth_stream_not_ready");
-        const logMethod = expectedStreamWarmup ? "info" : "warn";
-        this.logger?.[logMethod]?.("Local order book prime failed", { symbol, error: error.message });
+        if (expectedStreamWarmup) {
+          this.logger?.debug?.("Local order book prime waiting for stream", { symbol, error: error.message });
+        } else {
+          this.logger?.warn?.("Local order book prime failed", { symbol, error: error.message });
+        }
         return { symbol, ok: false, error: error.message };
       }
     });

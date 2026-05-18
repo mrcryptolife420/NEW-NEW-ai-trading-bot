@@ -618,6 +618,7 @@ export async function registerLargeFoundationsTests({
     let orderBookCalls = 0;
     const warnMessages = [];
     const infoMessages = [];
+    const debugMessages = [];
     const client = {
       getRateLimitState() {
         return {
@@ -652,7 +653,8 @@ export async function registerLargeFoundationsTests({
       },
       logger: {
         warn(message) { warnMessages.push(message); },
-        info(message) { infoMessages.push(message); }
+        info(message) { infoMessages.push(message); },
+        debug(message) { debugMessages.push(message); }
       }
     });
     let error = null;
@@ -668,7 +670,8 @@ export async function registerLargeFoundationsTests({
     assert.equal(snapshot.lastPrimeRestBudget?.streamPrimary, false);
     assert.ok(snapshot.nextPrimeAllowedAt > Date.now());
     assert.equal(warnMessages.length, 0);
-    assert.equal(infoMessages.includes("Local order book depth snapshot suppressed"), true);
+    assert.equal(infoMessages.length, 0);
+    assert.equal(debugMessages.includes("Local order book depth snapshot waiting for stream"), true);
   });
 
   await runCheck("local order book releases cold-start suppression after first depth stream delta", async () => {

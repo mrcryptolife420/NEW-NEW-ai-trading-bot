@@ -1,6 +1,6 @@
 import { summarizeNews } from "../news/sentiment.js";
 import { nowIso } from "../utils/time.js";
-import { RequestBudget } from "../utils/requestBudget.js";
+import { isRequestBudgetCooldownError, RequestBudget } from "../utils/requestBudget.js";
 import { ExternalFeedRegistry } from "../runtime/externalFeedRegistry.js";
 
 const CMS_CATALOGS = [
@@ -139,6 +139,7 @@ async function fetchCatalogArticles(catalog, pageSize, requestBudget, runtime) {
       requestBudget.noteSuccess(feedKey, runtime);
       return normalizeCmsArticles(payload, catalog);
     } catch (error) {
+      error.catalog = catalog;
       lastError = error;
       if (error.code !== "REQUEST_BUDGET_COOLDOWN") {
         requestBudget.noteFailure(`binance_cms:${catalog.catalogId}`, Date.now(), runtime, error.message);
@@ -181,6 +182,45 @@ export class BinanceAnnouncementService {
       registry: new ExternalFeedRegistry(config),
       runtime,
       group: "announcements"
+    });
+    this.catalogInflight = new Map();
+    this.feedFailureLogState = new Map();
+  }
+
+  async fetchCatalogArticles(catalog) {
+    const feedKey = `binance_cms:${catalog.catalogId}`;
+    if (this.catalogInflight.has(feedKey)) {
+      return this.catalogInflight.get(feedKey);
+    }
+    const promise = fetchCatalogArticles(catalog, this.config.newsHeadlineLimit, this.requestBudget, this.runtime)
+      .finally(() => {
+        this.catalogInflight.delete(feedKey);
+      });
+    this.catalogInflight.set(feedKey, promise);
+    return promise;
+  }
+
+  logAnnouncementFeedFailure({ symbol, catalog = {}, error }) {
+    const message = error?.message || String(error);
+    if (isRequestBudgetCooldownError(error)) {
+      const cooldownUntil = error.cooldownUntil || "unknown";
+      const key = `${catalog.catalogId || catalog.label || "unknown"}:${cooldownUntil}`;
+      if (this.feedFailureLogState.get(key)) {
+        return;
+      }
+      this.feedFailureLogState.set(key, true);
+      this.logger.warn("Binance announcement feed cooldown active", {
+        catalog: catalog.label || catalog.catalogId || "unknown",
+        cooldownUntil,
+        firstSymbol: symbol,
+        error: message
+      });
+      return;
+    }
+    this.logger.warn("Binance announcement feed failed", {
+      symbol,
+      catalog: catalog.label || catalog.catalogId || "unknown",
+      error: message
     });
   }
 
@@ -239,7 +279,7 @@ export class BinanceAnnouncementService {
     }
 
     try {
-      const responses = await Promise.allSettled(CMS_CATALOGS.map((catalog) => fetchCatalogArticles(catalog, this.config.newsHeadlineLimit, this.requestBudget, this.runtime)));
+      const responses = await Promise.allSettled(CMS_CATALOGS.map((catalog) => this.fetchCatalogArticles(catalog)));
       const items = [];
       let fulfilledCatalogs = 0;
       for (const response of responses) {
@@ -248,9 +288,10 @@ export class BinanceAnnouncementService {
           items.push(...response.value);
           continue;
         }
-        this.logger.warn("Binance announcement feed failed", {
+        this.logAnnouncementFeedFailure({
           symbol,
-          error: response.reason?.message || String(response.reason)
+          catalog: response.reason?.catalog,
+          error: response.reason
         });
       }
       if (fulfilledCatalogs === 0) {
