@@ -21,6 +21,8 @@ export async function registerRoadmapSecondWaveCompletionTests({ runCheck, asser
     const result = canRunManagerMutation("start", "stopping");
     assert.equal(result.allowed, false);
     assert.match(result.reason, /stopping/);
+    assert.equal(canRunManagerMutation("applyConfigProfile", "stopping").allowed, true);
+    assert.equal(canRunManagerMutation("completeSetup", "stopping").allowed, true);
   });
 
   await runCheck("roadmap 11 running paper profile apply writes env without stopping bot", async () => {
@@ -55,13 +57,39 @@ export async function registerRoadmapSecondWaveCompletionTests({ runCheck, asser
     assert.equal(manager.pendingStop, null);
   });
 
+  await runCheck("roadmap 11 stopping paper profile apply writes env and defers reload", async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "codex-profile-stopping-apply-"));
+    const envPath = path.join(projectRoot, ".env");
+    await fs.writeFile(envPath, "BOT_MODE=paper\nCONFIG_PROFILE=paper-safe\nPAPER_MODE_PROFILE=sim\nPAPER_EXECUTION_VENUE=internal\n", "utf8");
+    const manager = new BotManager({ projectRoot, logger: { warn() {}, error() {} } });
+    manager.config = { envPath, botMode: "paper", profile: { id: "paper-safe" }, dashboardStopTimeoutMs: 1 };
+    manager.lifecycle = { state: "stopping", activity: "idle", history: [] };
+    manager.runState = "stopping";
+    manager.pendingStop = { reason: "dashboard_stop", requestedAt: new Date().toISOString(), acceptedBy: "manager" };
+    manager.ensureBotReady = async () => {};
+    manager.reinitializeBot = async () => {
+      throw new Error("stopping paper profile reload must be deferred");
+    };
+
+    const result = await manager.applyConfigProfile("beginner-paper-learning");
+    const written = await fs.readFile(envPath, "utf8");
+    assert.equal(result.applied, true);
+    assert.equal(result.writeVerified, true);
+    assert.equal(result.reloadDeferred, true);
+    assert.equal(result.restartRequired, true);
+    assert.match(result.warnings.join(" "), /Herstart/);
+    assert.match(written, /CONFIG_PROFILE=paper-learning/);
+  });
+
   await runCheck("roadmap 12 dashboard action contracts cover live-sensitive profile routes", () => {
     const contracts = listDashboardActionContracts();
     const profile = resolveDashboardActionContract("/api/config/profile/apply");
     const quickSettings = resolveDashboardActionContract("/api/config/quick-settings/apply");
     assert.equal(profile.liveSensitive, true);
+    assert.ok(profile.allowedLifecycleStates.includes("stopping"));
     assert.ok(profile.bodyFields.includes("profileId"));
     assert.equal(quickSettings.liveSensitive, true);
+    assert.ok(quickSettings.allowedLifecycleStates.includes("stopping"));
     assert.ok(quickSettings.bodyFields.includes("updates"));
     assert.equal(contracts.some((contract) => contract.path === "/api/setup/complete"), true);
     const envelope = buildDashboardActionEnvelope(profile, { applied: true }, { requestId: "r1", lifecycleBefore: "ready", lifecycleAfter: "stopped" });

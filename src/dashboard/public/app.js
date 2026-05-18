@@ -2032,6 +2032,7 @@ async function mutateAndRefresh(path, body = {}) {
     if (elements.controlHint) {
       elements.controlHint.textContent = `Actie mislukt: ${error?.message || "unknown error"}`;
     }
+    throw error;
   } finally {
     busy = false;
   }
@@ -2050,9 +2051,9 @@ async function requestLiveMode() {
 function bindUi() {
   elements.refreshBtn?.addEventListener?.("click", () => fetchSnapshot().catch((error) => showDashboardRenderIssue("refresh", error)));
   elements.setupWizardBtn?.addEventListener?.("click", () => fetchDiagnostics().catch((error) => renderProfilePreview({ profile: { label: "Setup wizard" }, warnings: [error.message] })));
-  elements.startBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/start"));
-  elements.stopBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/stop"));
-  elements.paperBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/mode", { mode: "paper" }));
+  elements.startBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/start").catch((error) => renderProfilePreview({ profile: { label: "Start" }, warnings: [error.message] })));
+  elements.stopBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/stop").catch((error) => renderProfilePreview({ profile: { label: "Stop" }, warnings: [error.message] })));
+  elements.paperBtn?.addEventListener?.("click", () => mutateAndRefresh("/api/mode", { mode: "paper" }).catch((error) => renderProfilePreview({ profile: { label: "Paper mode" }, warnings: [error.message] })));
   elements.liveBtn?.addEventListener?.("click", () => requestLiveMode().catch((error) => {
     console.error?.("dashboard_live_preflight_failed", error);
     if (elements.controlHint) {

@@ -37,6 +37,10 @@ function isDemoSpotEnvironment(config = {}) {
   return `${config?.binanceApiBaseUrl || ""}`.toLowerCase().includes("demo-api.binance.com");
 }
 
+function isRuntimeBusyForConfigReload({ runState = "stopped", lifecycle = null, pendingStop = null } = {}) {
+  return runState === "running" || runState === "stopping" || lifecycle?.state === "stopping" || Boolean(pendingStop);
+}
+
 function assertLiveModeGuardrails(config = {}) {
   if ((config?.botMode || "paper") !== "live") {
     return;
@@ -780,13 +784,13 @@ export class BotManager {
       });
       const updates = { ...preview.updates };
       const nextMode = updates.BOT_MODE || "paper";
-      const wasRunning = this.runState === "running";
+      const runtimeBusyForReload = isRuntimeBusyForConfigReload(this);
       if (nextMode === "live") {
         if (liveAcknowledgement !== "I_UNDERSTAND_LIVE_TRADING_RISK") {
           throw new Error("Live profiel vereist exacte bevestiging: I_UNDERSTAND_LIVE_TRADING_RISK.");
         }
         updates.LIVE_TRADING_ACKNOWLEDGED = liveAcknowledgement;
-        if (wasRunning) {
+        if (runtimeBusyForReload) {
           const error = new Error("Live profile apply requires a stopped bot.");
           error.statusCode = 409;
           error.publicMessage = "Stop de bot eerst voordat je een live profiel toepast.";
@@ -803,13 +807,13 @@ export class BotManager {
       const envPath = this.config?.envPath || await ensureEnvFile(this.projectRoot);
       this.activeMutation = { id: "apply_config_profile", startedAt: nowIso(), profileId };
       const writeResult = await updateEnvFile(envPath, updates);
-      const reloadDeferred = wasRunning && nextMode !== "live";
+      const reloadDeferred = runtimeBusyForReload && nextMode !== "live";
       let reloadOk = !reloadDeferred;
       let reloadError = null;
       if (reloadDeferred) {
         reloadError = {
           at: nowIso(),
-          message: "Runtime reload is uitgesteld omdat de bot draait. Herstart de bot om het profiel actief te maken."
+          message: "Runtime reload is uitgesteld omdat de bot draait of nog stopt. Herstart de bot om het profiel actief te maken."
         };
         await this.inspectExternalMode();
       } else {
@@ -957,13 +961,13 @@ export class BotManager {
       }
       this.activeMutation = { id: "apply_quick_settings", startedAt: nowIso(), keys: Object.keys(normalized.updates) };
       const writeResult = await updateEnvFile(envPath, normalized.updates);
-      const wasRunning = this.runState === "running";
-      let reloadOk = !wasRunning;
+      const runtimeBusyForReload = isRuntimeBusyForConfigReload(this);
+      let reloadOk = !runtimeBusyForReload;
       let reloadError = null;
-      if (wasRunning) {
+      if (runtimeBusyForReload) {
         reloadError = {
           at: nowIso(),
-          message: "Quick settings zijn naar .env geschreven. Herstart de bot om ze actief te maken."
+          message: "Quick settings zijn naar .env geschreven. Herstart de bot om ze actief te maken wanneer de bot draait of nog stopt."
         };
         await this.inspectExternalMode();
       } else {
@@ -993,9 +997,9 @@ export class BotManager {
         mismatches: writeResult.mismatches,
         reloadOk,
         reloadError,
-        reloadDeferred: wasRunning,
-        restartRequired: wasRunning,
-        warnings: wasRunning ? [reloadError.message] : [],
+        reloadDeferred: runtimeBusyForReload,
+        restartRequired: runtimeBusyForReload,
+        warnings: runtimeBusyForReload ? [reloadError.message] : [],
         settings: buildDashboardQuickSettingsStatus(afterValues),
         snapshot: null,
         snapshotSkipped: "quick_settings_uses_lightweight_response"

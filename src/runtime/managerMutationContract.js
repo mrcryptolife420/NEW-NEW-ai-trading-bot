@@ -48,8 +48,8 @@ const CONTRACTS = [
   {
     id: "apply_config_profile",
     method: "applyConfigProfile",
-    allowedStates: ["ready", "running", "stopped", "degraded"],
-    blockedStates: ["stopping", "closed"],
+    allowedStates: ["ready", "running", "stopping", "stopped", "degraded"],
+    blockedStates: ["closed"],
     effect: "writes_profile_env_and_reloads_or_defers",
     liveSensitive: true,
     waitsForStop: false,
@@ -58,8 +58,8 @@ const CONTRACTS = [
   {
     id: "complete_setup",
     method: "completeSetup",
-    allowedStates: ["ready", "running", "stopped", "degraded"],
-    blockedStates: ["stopping", "closed"],
+    allowedStates: ["ready", "running", "stopping", "stopped", "degraded"],
+    blockedStates: ["closed"],
     effect: "applies_profile_and_runs_checks_with_deferred_reload",
     liveSensitive: true,
     waitsForStop: false,
