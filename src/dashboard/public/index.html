@@ -9,6 +9,16 @@
   <body>
     <div class="shell">
       <main class="main">
+        <aside class="settings-sidebar" aria-label="Snelle instellingen">
+          <details class="settings-drawer" id="settingsDrawer">
+            <summary class="settings-drawer-toggle">
+              <span>Instellingen</span>
+              <small>Bot en .env</small>
+            </summary>
+            <div id="quickSettingsPanel" class="quick-settings-panel"></div>
+          </details>
+        </aside>
+
         <header class="topbar">
           <div class="topbar-head">
             <div class="brand-shell">
@@ -82,7 +92,6 @@
               <span id="configCurrentBadge" class="status-chip muted">Paper default</span>
             </div>
             <div id="configStatusPanel" class="config-status-grid"></div>
-            <div id="quickSettingsPanel" class="quick-settings-panel"></div>
             <div id="profileList" class="profile-grid"></div>
             <div id="setupWizardPanel" class="setup-wizard" hidden></div>
             <div id="profilePreview" class="profile-preview empty">Selecteer een profiel om de exacte .env wijzigingen te bekijken.</div>

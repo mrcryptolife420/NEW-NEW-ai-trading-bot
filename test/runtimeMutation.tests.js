@@ -345,8 +345,13 @@ export async function registerRuntimeMutationTests({
 
     const status = await manager.getQuickSettings();
     const interval = status.settings.find((setting) => setting.key === "TRADING_INTERVAL_SECONDS");
+    const groups = new Set(status.settings.map((setting) => setting.group));
     assert.equal(interval.value, "120");
     assert.match(interval.explanation, /cycli/i);
+    assert.equal(status.settings.length >= 30, true);
+    assert.equal(groups.has("Exit controls"), true);
+    assert.equal(groups.has("Performance"), true);
+    assert.equal(groups.has("Governance"), true);
 
     const preview = await manager.previewQuickSettings({
       TRADING_INTERVAL_SECONDS: "60",
@@ -355,6 +360,9 @@ export async function registerRuntimeMutationTests({
     assert.equal(preview.updates.TRADING_INTERVAL_SECONDS, "60");
     assert.equal(preview.errors[0].key, "BINANCE_API_KEY");
     assert.match(preview.items[0].changes, /TRADING_INTERVAL_SECONDS/);
+    const exitPreview = await manager.previewQuickSettings({ STOP_LOSS_PCT: "0.02" });
+    assert.equal(exitPreview.items[0].group, "Exit controls");
+    assert.match(exitPreview.items[0].explanation, /stop-loss/i);
   });
 
   await runCheck("running paper quick settings write env and defer reload without stopping", async () => {

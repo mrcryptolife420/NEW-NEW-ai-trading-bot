@@ -27,6 +27,7 @@ function createElements(doc) {
     attentionList: q("#attentionList"),
     actionList: q("#actionList"),
     quickActionsList: q("#quickActionsList"),
+    settingsDrawer: q("#settingsDrawer"),
     configCurrentBadge: q("#configCurrentBadge"),
     configStatusPanel: q("#configStatusPanel"),
     quickSettingsPanel: q("#quickSettingsPanel"),
