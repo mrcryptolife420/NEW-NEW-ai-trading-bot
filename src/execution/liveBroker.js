@@ -27,6 +27,7 @@ import {
   failExecutionIntent,
   flushExecutionIntentLedger,
   markExecutionIntentAmbiguous,
+  listExecutionIntents,
   resolveExecutionIntent,
   touchExecutionIntent
 } from "./executionIntentLedger.js";
@@ -176,6 +177,23 @@ function executionReportToTrade(event = {}) {
     time: Number(event.transactTime || event.raw?.T || event.raw?.E || Date.now()),
     source: "user_stream_execution_report"
   };
+}
+
+function positionHasReconcileBlock(position = {}) {
+  const state = `${position.lifecycleState || ""}`.toLowerCase();
+  return Boolean(position.reconcileRequired || position.manualReviewRequired)
+    || ["manual_review", "reconcile_required", "protect_only", "protection_pending"].includes(state);
+}
+
+function isUnfilledActiveBuyOrder(order = {}) {
+  const status = safeUpper(order.status);
+  const side = safeUpper(order.side);
+  const executedQty = safeNumber(order.executedQty ?? order.executedQuantity, 0);
+  const cumulativeQuote = safeNumber(order.cummulativeQuoteQty ?? order.cumulativeQuoteQty ?? order.executedQuoteQty, 0);
+  return side === "BUY"
+    && ["NEW", "PENDING_NEW"].includes(status)
+    && executedQty <= 0
+    && cumulativeQuote <= 0;
 }
 
 function normalizeExecution(execution) {
@@ -355,6 +373,123 @@ export class LiveBroker {
     const intent = touchExecutionIntent(runtime, intentId, patch, step);
     await flushExecutionIntentLedger(runtime).catch(() => {});
     return intent;
+  }
+
+  async resolveEntryIntentsForSymbol(runtime, symbol, detail, stepType = "reconcile_entry_intent_resolved") {
+    const intents = listExecutionIntents(runtime, { unresolvedOnly: true })
+      .filter((intent) => `${intent?.kind || ""}`.toLowerCase() === "entry" && intent?.symbol === symbol);
+    for (const intent of intents) {
+      await this.resolveExecutionIntent(runtime, intent.id, {
+        detail,
+        resolvedBy: "exchange_reconcile"
+      }, {
+        type: stepType,
+        status: "completed",
+        detail
+      });
+    }
+    return intents.length;
+  }
+
+  async cancelUnfilledEntryOrdersForReconcile({
+    runtime,
+    trackedOpenOrders = [],
+    assetMap = {},
+    warnings = [],
+    auditOnly = false,
+    evidenceFresh = false
+  } = {}) {
+    if (auditOnly || !evidenceFresh || !this.client.cancelOrder) {
+      return trackedOpenOrders;
+    }
+    const blockingSymbols = new Set(
+      (runtime.openPositions || [])
+        .filter((position) => positionHasReconcileBlock(position))
+        .map((position) => position.symbol)
+        .filter(Boolean)
+    );
+    for (const intent of listExecutionIntents(runtime, { unresolvedOnly: true })) {
+      if (`${intent?.kind || ""}`.toLowerCase() === "entry" && intent?.symbol) {
+        blockingSymbols.add(intent.symbol);
+      }
+    }
+    if (!blockingSymbols.size) {
+      return trackedOpenOrders;
+    }
+    let nextOpenOrders = [...trackedOpenOrders];
+    for (const order of [...trackedOpenOrders]) {
+      const symbol = order?.symbol || null;
+      const rules = symbol ? this.symbolRules[symbol] : null;
+      if (!symbol || !rules || !blockingSymbols.has(symbol) || !isUnfilledActiveBuyOrder(order)) {
+        continue;
+      }
+      const baseBalance = assetMap[rules.baseAsset]?.total || 0;
+      if (baseBalance >= Math.max(rules.minQty || 0, 0)) {
+        continue;
+      }
+      try {
+        await this.client.cancelOrder(symbol, { orderId: order.orderId });
+        nextOpenOrders = nextOpenOrders.filter((item) => !(item?.symbol === symbol && item?.orderId === order.orderId));
+        const resolvedIntents = await this.resolveEntryIntentsForSymbol(
+          runtime,
+          symbol,
+          `unfilled_entry_order_canceled:${order.orderId || "unknown"}`,
+          "reconcile_cancel_unfilled_entry_order"
+        );
+        warnings.push({
+          symbol,
+          issue: "auto_reconcile_unfilled_entry_order_canceled",
+          orderId: order.orderId || null,
+          resolvedIntents
+        });
+      } catch (error) {
+        warnings.push({
+          symbol,
+          issue: "stale_untracked_entry_order_cancel_failed",
+          orderId: order.orderId || null,
+          error: error.message
+        });
+      }
+    }
+    return nextOpenOrders;
+  }
+
+  async resolveStaleEntryIntentsFromExchangeTruth({
+    runtime,
+    trackedOpenOrders = [],
+    assetMap = {},
+    warnings = [],
+    auditOnly = false,
+    evidenceFresh = false
+  } = {}) {
+    if (auditOnly || !evidenceFresh) {
+      return 0;
+    }
+    let resolved = 0;
+    const runtimeSymbols = new Set((runtime.openPositions || []).map((position) => position.symbol).filter(Boolean));
+    for (const intent of listExecutionIntents(runtime, { unresolvedOnly: true })) {
+      const symbol = intent?.symbol || null;
+      const rules = symbol ? this.symbolRules[symbol] : null;
+      if (`${intent?.kind || ""}`.toLowerCase() !== "entry" || !symbol || !rules || runtimeSymbols.has(symbol)) {
+        continue;
+      }
+      const hasActiveEntryOrder = trackedOpenOrders.some((order) => order?.symbol === symbol && safeUpper(order?.side) === "BUY" && isActiveExchangeOrderStatus(order?.status));
+      const baseBalance = assetMap[rules.baseAsset]?.total || 0;
+      if (hasActiveEntryOrder || baseBalance >= Math.max(rules.minQty || 0, 0)) {
+        continue;
+      }
+      await this.resolveExecutionIntent(runtime, intent.id, {
+        detail: "fresh_exchange_truth_no_open_entry_order",
+        resolvedBy: "exchange_reconcile"
+      }, {
+        type: "reconcile_clear_stale_entry_intent",
+        status: "completed",
+        detail: symbol
+      });
+      resolved += 1;
+      warnings.push({ symbol, issue: "stale_entry_intent_resolved_from_exchange_truth", intentId: intent.id });
+    }
+    return resolved;
   }
 
   createDuplicateIntentError(symbol, kind, existingIntent = null) {
@@ -2542,6 +2677,14 @@ export class LiveBroker {
           });
         }
       }
+      trackedOpenOrders = await this.cancelUnfilledEntryOrdersForReconcile({
+        runtime,
+        trackedOpenOrders,
+        assetMap,
+        warnings,
+        auditOnly,
+        evidenceFresh: exchangeInventoryEvidenceFresh
+      });
 
     for (const position of [...runtime.openPositions]) {
       const rules = this.symbolRules[position.symbol];
@@ -2619,6 +2762,14 @@ export class LiveBroker {
         });
       }
     }
+      await this.resolveStaleEntryIntentsFromExchangeTruth({
+        runtime,
+        trackedOpenOrders,
+        assetMap,
+        warnings,
+        auditOnly,
+        evidenceFresh: exchangeInventoryEvidenceFresh
+      });
 
       for (const [symbol, rules] of Object.entries(this.symbolRules)) {
         if (runtime.openPositions.some((position) => position.symbol === symbol)) {

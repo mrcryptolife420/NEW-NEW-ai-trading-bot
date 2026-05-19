@@ -1,3 +1,5 @@
+import { beginExecutionIntent, listExecutionIntents } from "../src/execution/executionIntentLedger.js";
+
 export async function registerPaperExchangeSafetyTests({
   runCheck,
   assert,
@@ -603,6 +605,89 @@ export async function registerPaperExchangeSafetyTests({
       item.decision === "SAFE_AUTOFIX" &&
       item.applied === true &&
       item.autonomyState === "auto_heal_ready"
+    ));
+  });
+
+  await runCheck("reconcile cancels unfilled entry order and clears stale local manual-review position", async () => {
+    const rules = buildDemoRules({ symbol: "RENDERUSDT", baseAsset: "RENDER" });
+    const canceledOrders = [];
+    let entryOrderOpen = true;
+    const client = {
+      async getAccountInfo() {
+        return {
+          balances: [{ asset: "RENDER", free: "0", locked: "0" }],
+          canTrade: true,
+          accountType: "SPOT",
+          permissions: ["SPOT"]
+        };
+      },
+      async getOpenOrders() {
+        if (!entryOrderOpen) {
+          return [];
+        }
+        return [{
+          symbol: "RENDERUSDT",
+          orderId: 771,
+          side: "BUY",
+          status: "NEW",
+          origQty: "34.8051",
+          executedQty: "0",
+          cummulativeQuoteQty: "0"
+        }];
+      },
+      async getOpenOrderLists() {
+        return [];
+      },
+      async getMyTrades() {
+        return [];
+      },
+      async cancelOrder(symbol, params) {
+        canceledOrders.push({ symbol, ...params });
+        entryOrderOpen = false;
+        return { symbol, orderId: params.orderId, status: "CANCELED" };
+      }
+    };
+    const runtime = {
+      openPositions: [{
+        id: "pos-render-unfilled",
+        symbol: "RENDERUSDT",
+        entryAt: "2026-05-19T17:00:00.000Z",
+        entryPrice: 3.12,
+        quantity: 34.80516,
+        totalCost: 108.59,
+        entryFee: 0,
+        notional: 108.59,
+        brokerMode: "paper",
+        operatorMode: "protect_only",
+        lifecycleState: "manual_review",
+        manualReviewRequired: true,
+        reconcileRequired: true
+      }]
+    };
+    beginExecutionIntent(runtime, { kind: "entry", symbol: "RENDERUSDT", idempotencyKey: "entry" });
+    const broker = new LiveBroker({
+      client,
+      config: makeDemoConfig(),
+      logger: { warn() {}, info() {}, error() {} },
+      symbolRules: { RENDERUSDT: rules }
+    });
+
+    const result = await broker.reconcileRuntime({
+      runtime,
+      journal: { trades: [] },
+      getMarketSnapshot: async () => ({ book: { mid: 3.12, bid: 3.11, ask: 3.13 } })
+    });
+
+    assert.deepEqual(canceledOrders, [{ symbol: "RENDERUSDT", orderId: 771 }]);
+    assert.equal(runtime.openPositions.length, 0);
+    assert.equal(result.closedTrades.length, 1);
+    assert.equal(result.closedTrades[0].symbol, "RENDERUSDT");
+    assert.equal(listExecutionIntents(runtime, { unresolvedOnly: true }).length, 0);
+    assert.ok(result.warnings.some((item) => item.issue === "auto_reconcile_unfilled_entry_order_canceled"));
+    assert.ok(result.exchangeTruth.autoReconcileAudits.some((item) =>
+      item.symbol === "RENDERUSDT" &&
+      item.decision === "SAFE_AUTOFIX" &&
+      item.reason === "confirmed_flat_hard_inventory_conflict"
     ));
   });
 
