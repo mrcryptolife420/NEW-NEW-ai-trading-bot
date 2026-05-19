@@ -29,6 +29,9 @@ function issueSeverity(issue = "") {
   ].includes(issue)) {
     return "high";
   }
+  if (issue === "verified_external_inventory") {
+    return "medium";
+  }
   if ([
     "protective_order_rebuild_failed",
     "protective_order_for_recovered_position_failed",
@@ -143,6 +146,26 @@ function buildPaperBlockedSymbols({ runtime = {}, exchangeTruth = {} } = {}) {
     upsertBlockedSymbol(symbolMap, warning.symbol, reason, {
       source: "exchange_truth_warning",
       state: ["reconcile_required", "protect_only", "manual_review"].includes(reason) ? reason : null
+    });
+  }
+  for (const item of arr(exchangeTruth.externalInventoryDiagnostics)) {
+    const symbol = item?.symbol;
+    if (!symbol) {
+      continue;
+    }
+    upsertBlockedSymbol(symbolMap, symbol, "verified_external_inventory", {
+      source: "exchange_truth",
+      state: "intentionally_unmanaged",
+      quantity: item.quantity ?? null,
+      notional: item.notional ?? null,
+      action: "symbol_scoped_entry_block"
+    });
+  }
+  for (const symbol of arr(exchangeTruth.externalInventorySymbols)) {
+    upsertBlockedSymbol(symbolMap, symbol, "verified_external_inventory", {
+      source: "exchange_truth",
+      state: "intentionally_unmanaged",
+      action: "symbol_scoped_entry_block"
     });
   }
   return [...symbolMap.values()].sort((left, right) => `${left.symbol}`.localeCompare(`${right.symbol}`));
@@ -356,6 +379,8 @@ export function clearResolvedPaperSymbolState(runtime = {}, { symbol = null, pos
   );
   const autoReconcileAudits = arr(currentExchangeTruth.autoReconcileAudits).filter((item) => item?.symbol !== targetSymbol);
   const orphanedBalanceDiagnostics = arr(currentExchangeTruth.orphanedBalanceDiagnostics).filter((item) => item?.symbol !== targetSymbol);
+  const externalInventorySymbols = arr(currentExchangeTruth.externalInventorySymbols).filter((item) => item !== targetSymbol);
+  const externalInventoryDiagnostics = arr(currentExchangeTruth.externalInventoryDiagnostics).filter((item) => item?.symbol !== targetSymbol);
   const nextExchangeTruth = {
     ...currentExchangeTruth,
     orphanedSymbols,
@@ -367,7 +392,9 @@ export function clearResolvedPaperSymbolState(runtime = {}, { symbol = null, pos
     blockingOrphanedSymbols,
     warnings,
     autoReconcileAudits,
-    orphanedBalanceDiagnostics
+    orphanedBalanceDiagnostics,
+    externalInventorySymbols,
+    externalInventoryDiagnostics
   };
   maybeMarkCleaned("orphanedSymbols", currentExchangeTruth.orphanedSymbols, orphanedSymbols);
   maybeMarkCleaned("missingRuntimeSymbols", currentExchangeTruth.missingRuntimeSymbols, missingRuntimeSymbols);
@@ -379,6 +406,8 @@ export function clearResolvedPaperSymbolState(runtime = {}, { symbol = null, pos
   maybeMarkCleaned("warnings", currentExchangeTruth.warnings, warnings);
   maybeMarkCleaned("autoReconcileAudits", currentExchangeTruth.autoReconcileAudits, autoReconcileAudits);
   maybeMarkCleaned("orphanedBalanceDiagnostics", currentExchangeTruth.orphanedBalanceDiagnostics, orphanedBalanceDiagnostics);
+  maybeMarkCleaned("externalInventorySymbols", currentExchangeTruth.externalInventorySymbols, externalInventorySymbols);
+  maybeMarkCleaned("externalInventoryDiagnostics", currentExchangeTruth.externalInventoryDiagnostics, externalInventoryDiagnostics);
   nextExchangeTruth.autoReconcileSummary = buildAutoReconcileSummary(nextExchangeTruth.autoReconcileAudits);
   nextExchangeTruth.mismatchCount = computeExchangeTruthMismatchCount(nextExchangeTruth);
   nextExchangeTruth.freezeEntries = nextExchangeTruth.mismatchCount > 0 ? Boolean(nextExchangeTruth.freezeEntries) : false;
@@ -398,6 +427,8 @@ export function clearResolvedPaperSymbolState(runtime = {}, { symbol = null, pos
     staleProtectiveSymbols: currentExchangeTruth.staleProtectiveSymbols || [],
     warnings: currentExchangeTruth.warnings || [],
     autoReconcileAudits: currentExchangeTruth.autoReconcileAudits || [],
+    externalInventorySymbols: currentExchangeTruth.externalInventorySymbols || [],
+    externalInventoryDiagnostics: currentExchangeTruth.externalInventoryDiagnostics || [],
     mismatchCount: currentExchangeTruth.mismatchCount || 0
   }) !== JSON.stringify({
     orphanedSymbols: runtime.exchangeTruth.orphanedSymbols || [],
@@ -407,6 +438,8 @@ export function clearResolvedPaperSymbolState(runtime = {}, { symbol = null, pos
     staleProtectiveSymbols: runtime.exchangeTruth.staleProtectiveSymbols || [],
     warnings: runtime.exchangeTruth.warnings || [],
     autoReconcileAudits: runtime.exchangeTruth.autoReconcileAudits || [],
+    externalInventorySymbols: runtime.exchangeTruth.externalInventorySymbols || [],
+    externalInventoryDiagnostics: runtime.exchangeTruth.externalInventoryDiagnostics || [],
     mismatchCount: runtime.exchangeTruth.mismatchCount || 0
   });
 
@@ -531,6 +564,7 @@ export function buildExchangeSafetyAudit({
   const demoPaperSymbolFreezeCount = demoPaper ? buildBinanceDemoPaperMismatchSymbolCount(exchangeTruth) : mismatchCount;
   const demoPaperFreezeThreshold = Math.max(freezeMismatchThreshold, 3);
   const blockedSymbols = buildPaperBlockedSymbols({ runtime, exchangeTruth });
+  const externalInventorySymbols = uniqueSorted(exchangeTruth.externalInventorySymbols);
   const highSeveritySymbolBlocks = blockedSymbols.filter((item) => item.severity === "high");
   const protectionFailureSymbols = blockedSymbols.filter((item) =>
     ["protect_only", "protection_pending", "protective_order_rebuild_failed", "multiple_protective_order_lists_detected", "position_sync_failed"].includes(item.reason)
@@ -606,6 +640,9 @@ export function buildExchangeSafetyAudit({
     blockedSymbols.length
       ? `${blockedSymbols.length} symbool/symbolen lopen in protect_only/manual review en worden lokaal voor nieuwe entries geblokkeerd.`
       : "Geen symbool-specifieke exchange safety blocks actief.",
+    externalInventorySymbols.length
+      ? `Geverifieerde externe inventory blijft symbool-scoped geblokkeerd: ${externalInventorySymbols.join(", ")}.`
+      : "Geen geverifieerde externe inventory buiten botbeheer.",
     autoReconcileSummary.autoResolvedCount || autoReconcileSummary.manualRequiredCount || autoReconcileSummary.retryCount
       ? `Auto-reconcile: ${autoReconcileSummary.autoResolvedCount || 0} resolved, ${autoReconcileSummary.retryCount || 0} retry, ${autoReconcileSummary.manualRequiredCount || 0} manual.`
       : "Geen recente demo-paper auto-reconcile samenvatting beschikbaar.",

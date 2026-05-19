@@ -94,6 +94,59 @@ export async function registerPaperExchangeSafetyTests({
     assert.equal(audit.blockedSymbols[0]?.reconcileConfidence, 0.81);
   });
 
+  await runCheck("verified unmanaged exchange inventory becomes symbol-scoped instead of global freeze", async () => {
+    const rules = buildDemoRules();
+    const runtime = {
+      openPositions: [],
+      orderLifecycle: { pendingActions: [] },
+      exchangeTruth: {},
+      exchangeSafety: {}
+    };
+    const config = makeDemoConfig();
+    const broker = new LiveBroker({
+      client: {
+        async getAccountInfo() {
+          return {
+            balances: [{ asset: "BTC", free: "0.10015427", locked: "0" }],
+            canTrade: true,
+            accountType: "SPOT",
+            permissions: ["SPOT"]
+          };
+        },
+        async getOpenOrders() {
+          return [];
+        },
+        async getOpenOrderLists() {
+          return [];
+        }
+      },
+      config,
+      logger: { warn() {}, info() {}, error() {}, debug() {} },
+      symbolRules: { BTCUSDT: rules }
+    });
+
+    const result = await broker.reconcileRuntime({
+      runtime,
+      getMarketSnapshot: async () => ({ book: { mid: 100000, bid: 99999, ask: 100001 } })
+    });
+    const audit = buildExchangeSafetyAudit({
+      runtime: { ...runtime, exchangeTruth: result.exchangeTruth },
+      config,
+      report: { recentEvents: [] },
+      streamStatus: {},
+      nowIso: "2026-05-19T10:00:00.000Z"
+    });
+
+    assert.equal(result.exchangeTruth.mismatchCount, 0);
+    assert.equal(result.exchangeTruth.freezeEntries, false);
+    assert.deepEqual(result.exchangeTruth.orphanedSymbols, []);
+    assert.deepEqual(result.exchangeTruth.externalInventorySymbols, ["BTCUSDT"]);
+    assert.equal(result.warnings.some((item) => item.issue === "unmanaged_balance_detected"), false);
+    assert.equal(result.warnings.some((item) => item.issue === "verified_external_inventory"), true);
+    assert.equal(audit.globalFreezeEntries, false);
+    assert.equal(audit.blockedSymbols.some((item) => item.symbol === "BTCUSDT" && item.reason === "verified_external_inventory"), true);
+  });
+
   await runCheck("demo paper pure price mismatch auto-resolves after fresh confirmation", async () => {
     const rules = buildDemoRules();
     const client = {

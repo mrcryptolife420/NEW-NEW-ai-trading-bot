@@ -2513,6 +2513,8 @@ export class LiveBroker {
       const recoveredPositions = [];
       const warnings = [];
       const ignoredDustSymbols = new Set();
+      const verifiedExternalInventorySymbols = new Set();
+      const externalInventoryDiagnostics = [];
       const autoReconcileAudits = [];
       const reconcileSnapshotErrors = [
         openOrdersResult.error ? { source: "open_orders", error: openOrdersResult.error.message } : null,
@@ -2520,6 +2522,7 @@ export class LiveBroker {
         openOrdersFallback?.used ? { source: "open_orders_rest", error: openOrdersFallback.restError?.message || "rest_failed", fallback: "user_stream_execution_report" } : null,
         openOrderListsFallback?.used ? { source: "open_order_lists_rest", error: openOrderListsFallback.restError?.message || "rest_failed", fallback: "user_stream_list_status" } : null
       ].filter(Boolean);
+      const exchangeInventoryEvidenceFresh = reconcileSnapshotErrors.length === 0;
       const recentTradesBySymbol = new Map();
       if (this.client.getMyTrades) {
         const recentTradeResults = await Promise.allSettled(
@@ -2617,13 +2620,14 @@ export class LiveBroker {
       }
     }
 
-    for (const [symbol, rules] of Object.entries(this.symbolRules)) {
-      if (runtime.openPositions.some((position) => position.symbol === symbol)) {
-        continue;
-      }
-      const assetBalance = assetMap[rules.baseAsset]?.total || 0;
-      const symbolOpenOrders = trackedOpenOrders.filter((order) => order?.symbol === symbol);
-      const openSellOrders = symbolOpenOrders.filter((order) => `${order?.side || ""}`.toUpperCase() === "SELL");
+      for (const [symbol, rules] of Object.entries(this.symbolRules)) {
+        if (runtime.openPositions.some((position) => position.symbol === symbol)) {
+          continue;
+        }
+        const assetBalance = assetMap[rules.baseAsset]?.total || 0;
+        const symbolOpenOrders = trackedOpenOrders.filter((order) => order?.symbol === symbol);
+        const symbolOpenOrderLists = openOrderLists.filter((list) => list?.symbol === symbol);
+        const openSellOrders = symbolOpenOrders.filter((order) => `${order?.side || ""}`.toUpperCase() === "SELL");
       if (assetBalance < Math.max(rules.minQty || 0, 0)) {
         continue;
       }
@@ -2641,19 +2645,44 @@ export class LiveBroker {
         });
         continue;
       }
-      if (openSellOrders.length) {
-        warnings.push({
-          symbol,
-          issue: "orphaned_exit_order_with_balance",
-          orderCount: openSellOrders.length,
-          quantity: assetBalance
-        });
-        continue;
-      }
-      if (!this.config.allowRecoverUnsyncedPositions || auditOnly) {
-        warnings.push({ symbol, issue: "unmanaged_balance_detected", quantity: assetBalance });
-        continue;
-      }
+        if (openSellOrders.length) {
+          warnings.push({
+            symbol,
+            issue: "orphaned_exit_order_with_balance",
+            orderCount: openSellOrders.length,
+            quantity: assetBalance
+          });
+          continue;
+        }
+        if (
+          this.config.autoReconcileVerifyExternalInventory !== false &&
+          exchangeInventoryEvidenceFresh &&
+          symbolOpenOrders.length === 0 &&
+          symbolOpenOrderLists.length === 0 &&
+          (!this.config.allowRecoverUnsyncedPositions || auditOnly)
+        ) {
+          const diagnostic = {
+            symbol,
+            issue: "verified_external_inventory",
+            quantity: assetBalance,
+            normalizedQuantity,
+            notional: unmanagedNotional,
+            evidence: {
+              accountSnapshot: "fresh",
+              openOrders: "fresh_empty",
+              openOrderLists: "fresh_empty"
+            },
+            action: "symbol_scoped_entry_block"
+          };
+          verifiedExternalInventorySymbols.add(symbol);
+          externalInventoryDiagnostics.push(diagnostic);
+          warnings.push(diagnostic);
+          continue;
+        }
+        if (!this.config.allowRecoverUnsyncedPositions || auditOnly) {
+          warnings.push({ symbol, issue: "unmanaged_balance_detected", quantity: assetBalance });
+          continue;
+        }
       const recoveredPosition = {
         id: crypto.randomUUID(),
         symbol,
@@ -2756,7 +2785,7 @@ export class LiveBroker {
 
       const runtimeSymbols = new Set((runtime.openPositions || []).map((position) => position.symbol));
       const exchangeSymbols = Object.entries(this.symbolRules)
-        .filter(([symbol, rules]) => !ignoredDustSymbols.has(symbol) && (assetMap[rules.baseAsset]?.total || 0) >= Math.max(rules.minQty || 0, 0))
+        .filter(([symbol, rules]) => !ignoredDustSymbols.has(symbol) && !verifiedExternalInventorySymbols.has(symbol) && (assetMap[rules.baseAsset]?.total || 0) >= Math.max(rules.minQty || 0, 0))
         .map(([symbol]) => symbol);
       const trackedTruthSymbols = [...new Set([...runtimeSymbols, ...exchangeSymbols, ...trackedOpenOrders.map((order) => order.symbol).filter(Boolean)])].slice(0, 12);
       const unmatchedOrderSymbols = [...new Set(trackedOpenOrders.map((order) => order.symbol).filter((symbol) => symbol && !runtimeSymbols.has(symbol)))];
@@ -2850,6 +2879,8 @@ export class LiveBroker {
         missingRuntimeSymbols,
         unmatchedOrderSymbols,
         staleProtectiveSymbols,
+        externalInventorySymbols: [...verifiedExternalInventorySymbols],
+        externalInventoryDiagnostics: externalInventoryDiagnostics.slice(0, 12),
         recentFillSymbols,
         warnings: warnings.slice(0, 8),
         autoReconcileAudits: autoReconcileAudits.slice(0, 12),
