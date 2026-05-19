@@ -246,6 +246,7 @@ import { classifyTestDomain, resolveRequestedTestDomains } from "./domainTestReg
 import { registerDomainTestRegistryTests } from "./domainTestRegistry.tests.js";
 import { registerRoadmapCompletionTests } from "./roadmapCompletion.tests.js";
 import { registerRoadmapSecondWaveCompletionTests } from "./roadmapSecondWaveCompletion.tests.js";
+import { registerRoadmapThirdWaveCompletionTests } from "./roadmapThirdWaveCompletion.tests.js";
 import http from "node:http";
 
 const testStartedAt = Date.now();
@@ -33027,6 +33028,11 @@ await registerRoadmapSecondWaveCompletionTests({
   os,
   path,
   BotManager
+});
+
+await registerRoadmapThirdWaveCompletionTests({
+  runCheck,
+  assert
 });
 
 await registerDomainTestRegistryTests({
