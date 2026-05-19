@@ -551,7 +551,7 @@ export async function registerPaperExchangeSafetyTests({
     assert.ok(result.warnings.some((item) => item.issue === "auto_reconcile_manual_review_required"));
   });
 
-  await runCheck("demo paper hard inventory conflict fixture keeps manual review deterministic", async () => {
+  await runCheck("demo paper hard inventory conflict auto-closes after exchange flat quorum", async () => {
     const fixture = await loadFixture("demo-paper-hard-inventory-conflict.json");
     const rules = buildDemoRules({
       symbol: fixture.symbol,
@@ -592,21 +592,17 @@ export async function registerPaperExchangeSafetyTests({
       journal: { trades: [] },
       getMarketSnapshot: async () => fixture.marketSnapshot
     });
-    const position = runtime.openPositions[0];
-    assert.equal(position.autoReconcileDecision, fixture.expected.decision);
-    assert.equal(position.reconcileReason, fixture.expected.reason);
-    assert.equal(position.reconcileClassification, fixture.expected.classification);
-    assert.equal(position.manualReviewRequired, true);
-    assert.equal(position.lifecycleState, "manual_review");
-    assert.equal(position.reconcileAutonomyState, "manual_review_required");
-    assert.ok(Array.isArray(position.reconcileRetryHistory));
-    assert.equal(position.reconcileRetryHistory.at(-1)?.reason, fixture.expected.reason);
-    assert.equal(position.reconcileRetrySummary.manualReviewCount, 1);
-    assert.equal(position.reconcileRetrySummary.escalatedAfterAttempts, 1);
+    assert.equal(runtime.openPositions.length, 0);
+    assert.equal(result.closedTrades.length, 1);
+    assert.equal(result.closedTrades[0].symbol, fixture.symbol);
+    assert.equal(result.closedTrades[0].reason, "exchange_reconcile_confirmed_flat_hard_inventory_conflict");
+    assert.ok(result.warnings.some((item) => item.issue === "auto_reconcile_confirmed_flat_hard_inventory_conflict"));
     assert.ok(result.exchangeTruth.autoReconcileAudits.some((item) =>
       item.symbol === fixture.symbol &&
-      item.reason === fixture.expected.reason &&
-      item.decision === fixture.expected.decision
+      item.reason === "confirmed_flat_hard_inventory_conflict" &&
+      item.decision === "SAFE_AUTOFIX" &&
+      item.applied === true &&
+      item.autonomyState === "auto_heal_ready"
     ));
   });
 

@@ -935,6 +935,23 @@ function buildDemoPaperReconcileConfidence(position, samples = [], settings = {}
   };
 }
 
+function canAutoCloseConfirmedFlatHardInventory(samples = [], confidence = {}, demoSettings = {}) {
+  const quorum = Math.max(2, Math.round(safeNumber(demoSettings.autoClearQuorum, 2)));
+  const stableCount = Math.max(0, Math.round(safeNumber(confidence.stableConfirmationCount, 0)));
+  if (confidence.dominantMismatchType !== "hard_inventory_conflict" || stableCount < quorum || samples.length < quorum) {
+    return false;
+  }
+  return samples.every((sample) => {
+    const evidence = sample?.evidence || {};
+    return sample?.mismatchType === "hard_inventory_conflict"
+      && Boolean(evidence.noVenuePosition || evidence.effectiveVenueFlat)
+      && !evidence.snapshotPartial
+      && safeNumber(evidence.openOrderCount, 0) === 0
+      && safeNumber(evidence.unexpectedOrderCount, 0) === 0
+      && safeNumber(evidence.protectiveListCount, 0) === 0;
+  });
+}
+
 async function maybeResolveDemoPaperAutonomy(broker, {
   position,
   runtime,
@@ -972,7 +989,7 @@ async function maybeResolveDemoPaperAutonomy(broker, {
       getMarketSnapshot,
       attemptCount: attempt
     }));
-    if (["hard_inventory_conflict", "contradictory_open_order_state"].includes(samples.at(-1)?.mismatchType)) {
+    if (samples.at(-1)?.mismatchType === "contradictory_open_order_state") {
       break;
     }
   }
@@ -997,6 +1014,22 @@ async function maybeResolveDemoPaperAutonomy(broker, {
         reason: "confirmed_flat_unsellable_dust",
         action: "mark_closed_from_unsellable_dust",
         autofixKind: "confirmed_flat_unsellable_dust",
+        shouldRetry: false,
+        reconcileAutonomyState: "auto_heal_ready"
+      },
+      evidence: latestEvidence
+    };
+  }
+  if (canAutoCloseConfirmedFlatHardInventory(samples, confidence, demoSettings)) {
+    return {
+      decision: {
+        ...baseDecision,
+        decision: AUTO_RECONCILE_DECISION.SAFE_AUTOFIX,
+        reason: "confirmed_flat_hard_inventory_conflict",
+        action: "mark_closed_from_exchange_truth",
+        autofixKind: "confirmed_flat_local_close",
+        tradeReason: "exchange_reconcile_confirmed_flat_hard_inventory_conflict",
+        warningIssue: "auto_reconcile_confirmed_flat_hard_inventory_conflict",
         shouldRetry: false,
         reconcileAutonomyState: "auto_heal_ready"
       },
