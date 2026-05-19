@@ -402,7 +402,8 @@ button.warn,
 }
 
 .focus-grid,
-.detail-grid {
+.detail-grid,
+.module-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -421,6 +422,15 @@ button.warn,
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.module-summary-card {
+  grid-column: 1 / -1;
+}
+
+.module-card-body {
+  display: grid;
+  gap: 8px;
 }
 
 .stack-card h3,

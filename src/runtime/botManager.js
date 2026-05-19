@@ -14,6 +14,7 @@ import { buildMissionControlSummary } from "../ops/missionControl.js";
 import { buildLivePreflight } from "./livePreflight.js";
 import { buildRuntimeLivenessSummary, touchRuntimeLiveness } from "./runtimeLiveness.js";
 import { buildPendingStopSummary, canRunManagerMutation, listManagerMutationContracts } from "./managerMutationContract.js";
+import { buildRoadmapModuleSystemSnapshot } from "./roadmapModuleIntegration.js";
 
 function summarizeError(error) {
   return {
@@ -239,8 +240,25 @@ export class BotManager {
     return true;
   }
 
+  buildSystemModuleSnapshot(dashboard = null) {
+    return buildRoadmapModuleSystemSnapshot({
+      dashboard: dashboard || this.bot?.runtime?.dashboard || {},
+      config: this.config || {},
+      manager: this.buildManagerSummary()
+    });
+  }
+
   buildSnapshotFromDashboard(dashboard) {
-    const sourceTruthMode = dashboard?.sourceOfTruth?.mode || "paper";
+    const systemModules = this.buildSystemModuleSnapshot(dashboard);
+    const enrichedDashboard = {
+      ...dashboard,
+      systemModules,
+      ops: {
+        ...(dashboard?.ops || {}),
+        systemModules
+      }
+    };
+    const sourceTruthMode = enrichedDashboard?.sourceOfTruth?.mode || "paper";
     const manager = {
       runState: this.runState,
       lifecycle: this.lifecycle,
@@ -269,10 +287,10 @@ export class BotManager {
       manager,
       snapshot: {
         manager,
-        dashboard
+        dashboard: enrichedDashboard
       }
     });
-    snapshot.dashboard = dashboard;
+    snapshot.dashboard = enrichedDashboard;
     snapshot.manager.readiness = this.buildOperationalReadiness(snapshot);
     this.snapshotCache = { createdAtMs: Date.now(), value: snapshot };
     return snapshot;

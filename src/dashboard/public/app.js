@@ -39,6 +39,7 @@ function createElements(doc) {
     recentTradesList: q("#recentTradesList"),
     opportunityList: q("#opportunityList"),
     healthList: q("#healthList"),
+    systemModuleList: q("#systemModuleList"),
     learningList: q("#learningList"),
     diagnosticsList: q("#diagnosticsList"),
     explainabilityList: q("#explainabilityList"),
@@ -1740,6 +1741,52 @@ function renderHealth(snapshot) {
   replaceChildren(elements.healthList, items.map((item) => makeCard(item, "detail-card")));
 }
 
+function renderSystemModules(snapshot) {
+  if (!elements.systemModuleList) return;
+  const systemModules = snapshot?.dashboard?.systemModules || snapshot?.dashboard?.ops?.systemModules || {};
+  const modules = arr(systemModules.modules);
+  const summary = systemModules.summary || {};
+  if (!modules.length) {
+    replaceChildren(elements.systemModuleList, [makeEmptyState("Geen roadmap-module integraties beschikbaar in deze snapshot.")]);
+    return;
+  }
+  const summaryCard = makeCard({
+    title: "Module integratie",
+    detail: compactJoin([
+      `${summary.ready || 0}/${summary.total || modules.length} ready`,
+      summary.guarded ? `${summary.guarded} guarded` : null,
+      summary.degraded ? `${summary.degraded} degraded` : null,
+      summary.error ? `${summary.error} error` : null
+    ]) || "Module status onbekend.",
+    tone: systemModules.status === "error" ? "negative" : systemModules.status === "ready" ? "positive" : "warning",
+    body: makeMetricRow([
+      { label: "Modules", value: summary.total || modules.length, detail: "roadmaps 21-40" },
+      { label: "Ready", value: summary.ready || 0, detail: "actief" },
+      { label: "Aandacht", value: (summary.guarded || 0) + (summary.degraded || 0) + (summary.error || 0), detail: "guarded/degraded/error" }
+    ])
+  }, "detail-card module-card module-summary-card");
+  const cards = modules.map((module) => {
+    const body = makeNode("div", { className: "module-card-body" });
+    body.append(
+      makeMetricRow([
+        { label: "Roadmap", value: `#${module.roadmap || "-"}`, detail: titleize(module.domain || "system") },
+        { label: "Status", value: titleize(module.status || "unknown"), detail: module.updatedAt ? formatAgeCompact(module.updatedAt) : "-" },
+        { label: "Evidence", value: arr(module.evidence).length, detail: arr(module.evidence).slice(0, 2).join(" | ") || "-" }
+      ]),
+      makeNode("p", { text: `Doet: ${module.explanation || "Geen uitleg beschikbaar."}` }),
+      makeNode("p", { text: `Systeem: ${module.systemHook || "-"}` }),
+      makeNode("p", { text: `Dashboard: ${module.dashboardHook || "-"}` })
+    );
+    return makeCard({
+      title: module.title || module.id || "Module",
+      detail: compactJoin([`roadmap ${module.roadmap || "-"}`, titleize(module.domain || "system"), titleize(module.status || "unknown")]),
+      tone: module.tone || "neutral",
+      body
+    }, "detail-card module-card");
+  });
+  replaceChildren(elements.systemModuleList, [summaryCard, ...cards]);
+}
+
 function renderLearning(snapshot) {
   const digest = buildLearningDigest(snapshot);
   replaceChildren(elements.learningList, digest.map((item) => makeCard(item, "detail-card")));
@@ -1825,6 +1872,7 @@ function render(snapshot) {
   safeRenderSection("recentTrades", () => renderRecentTrades(snapshot));
   safeRenderSection("opportunityBoard", () => renderOpportunityBoard(snapshot));
   safeRenderSection("health", () => renderHealth(snapshot));
+  safeRenderSection("systemModules", () => renderSystemModules(snapshot));
   safeRenderSection("learning", () => renderLearning(snapshot));
   safeRenderSection("explainability", () => renderExplainability(snapshot));
   safeRenderSection("promotion", () => renderPromotion(snapshot));
@@ -2188,6 +2236,7 @@ function createFakeDashboardDocument() {
     "recentTradesList",
     "opportunityList",
     "healthList",
+    "systemModuleList",
     "learningList",
     "diagnosticsList",
     "explainabilityList",
@@ -2226,6 +2275,7 @@ export function __dashboardSmokeRender(snapshot) {
       refreshBadgeText: flattenNodeText(elements.refreshBadge),
       recentTradesText: flattenNodeText(elements.recentTradesList),
       healthText: flattenNodeText(elements.healthList),
+      systemModuleText: flattenNodeText(elements.systemModuleList),
       focusText: flattenNodeText(elements.focusList),
       positionsText: flattenNodeText(elements.positionsList),
       diagnosticsText: flattenNodeText(elements.diagnosticsList),

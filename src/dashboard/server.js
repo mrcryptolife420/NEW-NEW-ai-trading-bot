@@ -199,6 +199,9 @@ async function handleApi(request, response, manager, eventBus = null) {
       actions: listDashboardActionContracts()
     });
   }
+  if (request.method === "GET" && url.pathname === "/api/system/modules") {
+    return sendJson(response, 200, await manager.buildSystemModuleSnapshot());
+  }
 
   if (request.method !== "POST") {
     return sendJson(response, 405, { error: "Method not allowed" });
@@ -316,7 +319,6 @@ async function handleApi(request, response, manager, eventBus = null) {
   if (url.pathname === "/api/promotion/probation/decide") {
     return sendJson(response, 200, await manager.decidePromotionProbation(body.key, body.decision, body.note || null));
   }
-
   return sendJson(response, 404, { error: "Unknown API route" });
 }
 
