@@ -1800,7 +1800,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
   const sourceScopedEquitySnapshots = equitySnapshots.filter((item) => matchesTradingSource(item, currentTradingSource, botMode));
   const lookbackTrades = trades.slice(-config.reportLookbackTrades);
   const sourceScopedLookbackTrades = sourceScopedTrades.slice(-config.reportLookbackTrades);
-  const shouldScopePrimary = botMode === "paper" && currentTradingSource !== "paper:internal";
+  const shouldScopePrimary = botMode === "paper";
   const primaryTrades = shouldScopePrimary ? sourceScopedTrades : trades;
   const primaryLookbackTrades = shouldScopePrimary ? sourceScopedLookbackTrades : lookbackTrades;
   const primaryScaleOuts = shouldScopePrimary ? sourceScopedScaleOuts : scaleOuts;
@@ -1824,7 +1824,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
     days30: nowMs - 30 * 86_400_000
   });
   const lookbackScaleOuts = buildRecentScaleOuts(primaryScaleOuts, primaryLookbackTrades, config.reportLookbackTrades || 0);
-  const lookbackScaleOutPnl = lookbackScaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
+  const primaryLookbackScaleOutPnl = lookbackScaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
   const sourceScopedLookbackScaleOuts = buildRecentScaleOuts(sourceScopedScaleOuts, sourceScopedLookbackTrades, config.reportLookbackTrades || 0);
   const sourceScopedLookbackScaleOutPnl = sourceScopedLookbackScaleOuts.reduce((sum, item) => sum + safeNumber(item.realizedPnl, 0), 0);
   const tradeQualityReview = buildTradeQualitySummary(primaryTrades, journal.counterfactuals || []);
@@ -1844,7 +1844,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
     minSampleSize: config.paperLiveParityMinSamples || 3
   });
   const pnlDecomposition = buildPnlDecomposition(primaryLookbackTrades, config);
-  const reportStats = buildTradeStats(primaryLookbackTrades, { realizedPnlAdjustment: lookbackScaleOutPnl });
+  const reportStats = buildTradeStats(primaryLookbackTrades, { realizedPnlAdjustment: primaryLookbackScaleOutPnl });
   const sourceScopedStats = buildTradeStats(sourceScopedLookbackTrades, { realizedPnlAdjustment: sourceScopedLookbackScaleOutPnl });
   const postTradeAnalytics = buildPostTradeAnalytics(primaryTrades);
   const openPositionExitReview = buildOpenPositionExitReview(openPositions, {
@@ -1867,7 +1867,7 @@ export function buildPerformanceReport({ journal, runtime, config, now = null })
   }, {
     scaleOutPnlSummary: primaryScaleOutPnlSummary
   });
-  const sourceMixActive = botMode === "paper" && currentTradingSource !== "paper:internal" && (
+  const sourceMixActive = botMode === "paper" && (
     trades.some((trade) => !matchesTradingSource(trade, currentTradingSource, botMode) && matchesBrokerMode(trade, botMode)) ||
     equitySnapshots.some((snapshot) => !matchesTradingSource(snapshot, currentTradingSource, botMode) && matchesBrokerMode(snapshot, botMode))
   );

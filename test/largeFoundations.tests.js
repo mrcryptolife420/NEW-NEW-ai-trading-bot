@@ -1432,6 +1432,47 @@ export async function registerLargeFoundationsTests({
     assert.ok(report.rangeGridDamageReview.recommendedAction.includes("Review range-grid"));
   });
 
+  await runCheck("performance report scopes internal paper away from demo paper history", async () => {
+    const report = buildPerformanceReport({
+      journal: {
+        trades: [
+          {
+            id: "internal-win",
+            symbol: "BTCUSDT",
+            brokerMode: "paper",
+            executionVenue: "internal",
+            entryAt: "2026-01-01T00:00:00.000Z",
+            exitAt: "2026-01-01T00:30:00.000Z",
+            pnlQuote: 10,
+            netPnlPct: 0.01
+          },
+          {
+            id: "demo-loss",
+            symbol: "ETHUSDT",
+            brokerMode: "paper",
+            executionVenue: "binance_demo_spot",
+            entryAt: "2026-01-01T01:00:00.000Z",
+            exitAt: "2026-01-01T01:30:00.000Z",
+            pnlQuote: -99,
+            netPnlPct: -0.09
+          }
+        ],
+        scaleOuts: [],
+        blockedSetups: [],
+        researchRuns: [],
+        equitySnapshots: [],
+        events: []
+      },
+      runtime: { openPositions: [] },
+      config: makeConfig({ botMode: "paper", paperExecutionVenue: "internal", reportLookbackTrades: 20 }),
+      now: new Date("2026-01-02T00:00:00.000Z")
+    });
+
+    assert.equal(report.recentTrades.length, 1);
+    assert.equal(report.recentTrades[0].id, "internal-win");
+    assert.equal(report.sourceMix.active, true);
+  });
+
   await runCheck("persistence coordinator notifies read-model refresh hook after bundle save", async () => {
     let saved = false;
     let notifiedType = null;

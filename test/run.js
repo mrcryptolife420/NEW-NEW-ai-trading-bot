@@ -12914,6 +12914,7 @@ await runCheck("performance report includes scale-out pnl in realized totals wit
         {
           id: "paper-trade-1",
           brokerMode: "paper",
+          executionVenue: "internal",
           entryAt: "2026-03-09T08:00:00.000Z",
           exitAt: "2026-03-09T10:00:00.000Z",
           pnlQuote: 20,
@@ -12924,6 +12925,7 @@ await runCheck("performance report includes scale-out pnl in realized totals wit
         {
           id: "live-trade-1",
           brokerMode: "live",
+          executionVenue: "binance_spot",
           entryAt: "2026-03-07T08:00:00.000Z",
           exitAt: "2026-03-07T10:00:00.000Z",
           pnlQuote: -8,
@@ -12933,8 +12935,8 @@ await runCheck("performance report includes scale-out pnl in realized totals wit
         }
       ],
       scaleOuts: [
-        { positionId: "paper-trade-1", brokerMode: "paper", at: "2026-03-09T09:00:00.000Z", realizedPnl: 6, fraction: 0.4 },
-        { positionId: "live-trade-1", brokerMode: "live", at: "2026-03-07T09:00:00.000Z", realizedPnl: -3, fraction: 0.3 }
+        { positionId: "paper-trade-1", brokerMode: "paper", executionVenue: "internal", at: "2026-03-09T09:00:00.000Z", realizedPnl: 6, fraction: 0.4 },
+        { positionId: "live-trade-1", brokerMode: "live", executionVenue: "binance_spot", at: "2026-03-07T09:00:00.000Z", realizedPnl: -3, fraction: 0.3 }
       ],
       equitySnapshots: []
     },
@@ -12942,17 +12944,18 @@ await runCheck("performance report includes scale-out pnl in realized totals wit
     config: { reportLookbackTrades: 50 },
     now: new Date("2026-03-09T12:00:00.000Z")
   });
-  assert.equal(report.tradeCount, 2);
-  assert.equal(report.realizedPnl, 15);
+  assert.equal(report.reportScope, "source_scoped");
+  assert.equal(report.tradeCount, 1);
+  assert.equal(report.realizedPnl, 26);
   assert.equal(report.windows.today.tradeCount, 1);
   assert.equal(report.windows.today.realizedPnl, 26);
-  assert.equal(report.windows.days7.realizedPnl, 15);
-  assert.equal(report.windows.allTime.realizedPnl, 15);
+  assert.equal(report.windows.days7.realizedPnl, 26);
+  assert.equal(report.windows.allTime.realizedPnl, 26);
   assert.equal(report.modes.paper.tradeCount, 1);
   assert.equal(report.modes.paper.realizedPnl, 26);
   assert.equal(report.modes.live.tradeCount, 1);
   assert.equal(report.modes.live.realizedPnl, -11);
-  assert.equal(report.scaleOutSummary.realizedPnl, 3);
+  assert.equal(report.scaleOutSummary.realizedPnl, 6);
 });
 
 await runCheck("trading bot report surfaces source-scoped paper metrics alongside aggregate history", async () => {
@@ -13074,9 +13077,9 @@ await runCheck("trading bot report normalizes internal paper snapshot aliases to
 
   const report = await bot.getReport();
   assert.equal(report.currentTradingSource, "paper:internal");
-  assert.equal(report.reportScope, "aggregate");
-  assert.equal(report.sourceMix.active, false);
-  assert.equal(report.tradeCount, 2);
+  assert.equal(report.reportScope, "source_scoped");
+  assert.equal(report.sourceMix.active, true);
+  assert.equal(report.tradeCount, 1);
   assert.equal(report.sourceScoped.tradeCount, 1);
   assert.equal(report.sourceScoped.realizedPnl, -40);
   assert.ok(report.sourceScoped.maxDrawdownPct > 0);
@@ -15893,20 +15896,15 @@ await runCheck("paper broker keeps remainder open on partial exit fills", async 
     workingTimeMs: 900,
     notes: ["partial_fill"]
   });
-  await assert.rejects(
-    broker.exitPosition({
-      position,
-      marketSnapshot: { book: { bid: 70500, mid: 70510, spreadBps: 2, exitEstimate: { averagePrice: 70500 } } },
-      reason: "risk_exit",
-      runtime
-    }),
-    (error) => {
-      assert.equal(error.positionSafeguarded, true);
-      assert.ok(error.remainingQuantity > 0);
-      assert.ok(error.executedQuantity > 0);
-      return true;
-    }
-  );
+  const trade = await broker.exitPosition({
+    position,
+    marketSnapshot: { book: { bid: 70500, mid: 70510, spreadBps: 2, exitEstimate: { averagePrice: 70500 } } },
+    reason: "risk_exit",
+    runtime
+  });
+  assert.equal(trade.partialExit, true);
+  assert.ok(trade.remainingQuantity > 0);
+  assert.ok(trade.quantity > 0);
   assert.equal(runtime.openPositions.length, 1);
   assert.ok(runtime.openPositions[0].quantity < originalQuantity);
   assert.ok(runtime.paperPortfolio.realizedPnl !== 0);
@@ -32292,6 +32290,34 @@ await runCheck("reconcile missing_protection with invalid geometry does not cras
   assert.ok(geomWarning, "warning with issue=protective_rebuild_geometry_invalid should be emitted");
   assert.equal(geomWarning.symbol, "BTCUSDT");
   assert.ok(geomWarning.currentMid != null, "warning should include currentMid");
+});
+
+await runCheck("reconcile retry snapshot fetches symbol-scoped open orders", async () => {
+  const { fetchReconcileRetrySnapshot } = await import("../src/execution/liveBrokerReconcile.js");
+  const calls = [];
+  const broker = {
+    client: {
+      async getAccountInfo() {
+        calls.push({ method: "getAccountInfo" });
+        return { balances: [{ asset: "BTC", free: "0.01", locked: "0" }] };
+      },
+      async getOpenOrders(symbol) {
+        calls.push({ method: "getOpenOrders", symbol });
+        return [{ symbol, orderId: 42 }];
+      },
+      async getOpenOrderLists() {
+        calls.push({ method: "getOpenOrderLists" });
+        return [];
+      },
+      async getMyTrades(symbol) {
+        calls.push({ method: "getMyTrades", symbol });
+        return [];
+      }
+    }
+  };
+  const snapshot = await fetchReconcileRetrySnapshot(broker, "BTCUSDT", { openPositions: [] });
+  assert.equal(calls.find((call) => call.method === "getOpenOrders")?.symbol, "BTCUSDT");
+  assert.equal(snapshot.trackedOpenOrders[0].symbol, "BTCUSDT");
 });
 
 await runCheck("reconcile protective rebuild blocked by stale stop-loss above market marks safe blocked state", async () => {

@@ -125,7 +125,7 @@ async function handleApi(request, response, manager, eventBus = null) {
   }
 
   if (request.method === "GET" && url.pathname === "/api/snapshot") {
-    return sendJson(response, 200, await manager.getSnapshot());
+    return sendJson(response, 200, await manager.getSnapshot({ refreshPrerequisites: false }));
   }
   if (request.method === "GET" && url.pathname === "/metrics") {
     if (!manager.config?.metricsEnabled) return sendJson(response, 404, { error: "Metrics disabled" });
@@ -215,6 +215,21 @@ async function handleApi(request, response, manager, eventBus = null) {
   const actionContract = resolveDashboardActionContract(url.pathname);
   const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const lifecycleBefore = manager.lifecycle?.state || manager.runState || "unknown";
+  if (actionContract?.allowedLifecycleStates?.length && !actionContract.allowedLifecycleStates.includes(lifecycleBefore)) {
+    return sendJson(response, 409, {
+      error: `Action ${actionContract.id} is niet toegestaan in lifecycle state ${lifecycleBefore}.`,
+      action: actionContract.id,
+      lifecycle: lifecycleBefore,
+      allowedLifecycleStates: actionContract.allowedLifecycleStates
+    });
+  }
+  if (actionContract?.id === "mode_set" && `${body.mode || ""}`.toLowerCase() === "live" && body.liveAcknowledgement !== "I_UNDERSTAND_LIVE_TRADING_RISK") {
+    return sendJson(response, 409, {
+      error: "Live mode vereist exacte bevestiging: I_UNDERSTAND_LIVE_TRADING_RISK.",
+      action: actionContract.id,
+      liveSensitive: true
+    });
+  }
   const sendActionResult = async (resultPromise) => {
     const result = await resultPromise;
     return sendJson(response, 200, buildDashboardActionEnvelope(actionContract, result, {

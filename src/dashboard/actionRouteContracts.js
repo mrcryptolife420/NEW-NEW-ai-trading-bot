@@ -16,7 +16,7 @@ const ACTION_CONTRACTS = [
   { id: "alert_silence", path: "/api/alerts/silence", liveSensitive: false, allowedLifecycleStates: ["ready", "running", "stopped", "degraded", "stopping"], auditCategory: "alert", bodyFields: ["id", "minutes"] },
   { id: "alert_resolve", path: "/api/alerts/resolve", liveSensitive: false, allowedLifecycleStates: ["ready", "running", "stopped", "degraded", "stopping"], auditCategory: "alert", bodyFields: ["id", "resolved", "note"] },
   { id: "force_reconcile", path: "/api/ops/force-reconcile", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "ops", bodyFields: ["note"] },
-  { id: "position_review", path: "/api/positions/review", liveSensitive: false, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "ops", bodyFields: ["id", "note"] },
+  { id: "position_review", path: "/api/positions/review", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "ops", bodyFields: ["id", "note"] },
   { id: "probe_only", path: "/api/ops/probe-only", liveSensitive: false, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "ops", bodyFields: ["enabled", "minutes", "note"] },
   { id: "diagnostics_action", path: "/api/diagnostics/action", liveSensitive: false, allowedLifecycleStates: ["ready", "stopped", "degraded"], auditCategory: "diagnostics", bodyFields: ["action", "target", "note"] },
   { id: "policy_approve", path: "/api/policies/approve", liveSensitive: true, allowedLifecycleStates: ["ready", "running", "stopped", "degraded"], auditCategory: "policy", bodyFields: ["id", "action", "note"] },

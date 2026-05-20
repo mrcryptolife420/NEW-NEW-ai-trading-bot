@@ -11,6 +11,7 @@ import {
   buildStopPlanAtEntry
 } from "./tradeAnalyticsContext.js";
 import { buildTradeQualityAnalytics, initializePositionExcursionTracking } from "../runtime/tradeQualityAnalytics.js";
+import { getConfiguredTradingSource, matchesTradingSource } from "../utils/tradingSource.js";
 
 function ensurePaperState(runtime, startingCash) {
   if (!runtime.paperPortfolio) {
@@ -218,10 +219,13 @@ export class PaperBroker {
     const quoteFree = Number.isFinite(balanceSnapshot?.quoteFree)
       ? balanceSnapshot.quoteFree
       : runtime.paperPortfolio.quoteFree;
-    const positionsValue = (runtime.openPositions || []).reduce((total, position) => {
-      const mid = midPrices[position.symbol] || position.lastMarkedPrice || position.entryPrice;
-      return total + position.quantity * mid;
-    }, 0);
+    const tradingSource = getConfiguredTradingSource(this.config, "paper");
+    const positionsValue = (runtime.openPositions || [])
+      .filter((position) => matchesTradingSource(position, tradingSource, "paper"))
+      .reduce((total, position) => {
+        const mid = midPrices[position.symbol] || position.lastMarkedPrice || position.entryPrice;
+        return total + position.quantity * mid;
+      }, 0);
     return quoteFree + positionsValue;
   }
 
@@ -429,6 +433,7 @@ export class PaperBroker {
     const netProceeds = grossProceeds - fee;
     const proportion = executedQuantity / position.quantity;
     const allocatedCost = position.totalCost * proportion;
+    const allocatedEntryFee = position.entryFee ? position.entryFee * proportion : 0;
     const realizedPnl = netProceeds - allocatedCost;
     const exitExecutionAttribution = this.execution.buildExecutionAttribution({
       plan: exitPlan,
@@ -472,7 +477,7 @@ export class PaperBroker {
       price: executionPrice,
       grossProceeds,
       netProceeds,
-      entryFee: position.entryFee ? position.entryFee * proportion : 0,
+      entryFee: allocatedEntryFee,
       fee,
       allocatedCost,
       realizedPnl,
@@ -507,6 +512,7 @@ export class PaperBroker {
     const fee = grossProceeds * this.feeRate;
     const netProceeds = grossProceeds - fee;
     const allocatedCost = position.totalCost * (executedQuantity / Math.max(originalQuantity, 1e-9));
+    const allocatedEntryFee = position.entryFee ? position.entryFee * (executedQuantity / Math.max(originalQuantity, 1e-9)) : 0;
     const pnlQuote = netProceeds - allocatedCost;
     const netPnlPct = allocatedCost ? pnlQuote / allocatedCost : 0;
     const captureEfficiency = position.probabilityAtEntry ? netPnlPct / Math.max(position.probabilityAtEntry, 0.05) : 0;
@@ -552,11 +558,6 @@ export class PaperBroker {
       position.notional = position.entryPrice * position.quantity;
       position.entryFee = Math.max(0, (position.entryFee || 0) - (position.entryFee || 0) * (executedQuantity / Math.max(originalQuantity, 1e-9)));
       position.lastMarkedPrice = marketSnapshot.book.mid || position.lastMarkedPrice;
-      const partialExitError = new Error(`Paper exit for ${position.symbol} partially filled; ${remainingQuantity} remains open.`);
-      partialExitError.positionSafeguarded = true;
-      partialExitError.remainingQuantity = remainingQuantity;
-      partialExitError.executedQuantity = executedQuantity;
-      throw partialExitError;
     }
 
     const exitAt = nowIso();
@@ -576,7 +577,7 @@ export class PaperBroker {
       exitPrice: executionPrice,
       quantity: executedQuantity,
       totalCost: allocatedCost,
-      entryFee: position.entryFee ? position.entryFee * (executedQuantity / Math.max(originalQuantity, 1e-9)) : 0,
+      entryFee: allocatedEntryFee,
       exitFee: fee,
       proceeds: netProceeds,
       pnlQuote,
@@ -608,6 +609,8 @@ export class PaperBroker {
       committeeDecision: position.committeeDecision || position.entryRationale?.committee || null,
       executionPolicyDecision: position.executionPolicyDecision || position.entryRationale?.rlPolicy || null,
       exitSource: "paper_market_exit",
+      partialExit: executedQuantity < originalQuantity,
+      remainingQuantity: Math.max(0, originalQuantity - executedQuantity),
       brokerMode: "paper",
       executionVenue: "internal",
       learningLane: position.learningLane || null,

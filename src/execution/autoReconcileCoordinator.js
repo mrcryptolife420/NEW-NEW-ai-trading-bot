@@ -100,12 +100,20 @@ function activeOrderListsForSymbol(openOrderLists = [], symbol) {
   });
 }
 
-function hasProtectiveEvidence({ position = {}, openOrders = [], openOrderLists = [] } = {}) {
+function getProtectiveEvidence({ position = {}, openOrders = [], openOrderLists = [] } = {}) {
   const symbol = normalizeSymbol(position.symbol);
   const lists = activeOrderListsForSymbol(openOrderLists, symbol);
   const sellOrders = activeOrdersForSymbol(openOrders, symbol)
     .filter((order) => `${order?.side || ""}`.trim().toUpperCase() === "SELL");
-  return Boolean(position.protectiveOrderListId || position.ocoOrderListId || lists.length || sellOrders.length);
+  return {
+    protected: Boolean(position.protectiveOrderListId || position.ocoOrderListId || lists.length || sellOrders.length),
+    orderListId: position.protectiveOrderListId || position.ocoOrderListId || lists[0]?.orderListId || null,
+    orderIds: sellOrders.map((order) => order.orderId).filter(Boolean)
+  };
+}
+
+function hasProtectiveEvidence(input = {}) {
+  return getProtectiveEvidence(input).protected;
 }
 
 function getRecentTrades(recentTradesBySymbol = {}, symbol) {
@@ -209,9 +217,7 @@ function isPositionProtected(position = {}) {
   if (position.quantity <= 0) return true;
   if (position.protectiveOrderListId || position.ocoOrderListId) return true;
   const state = `${position.lifecycleState || ""}`.toLowerCase();
-  return ["protected", "protect_only", "intentionally_unmanaged"].includes(state)
-    || position.operatorMode === "protect_only"
-    || position.intentionalUnmanaged === true;
+  return state === "intentionally_unmanaged" || position.intentionalUnmanaged === true;
 }
 
 function buildAction(type, symbol, patch = {}) {
@@ -360,9 +366,14 @@ export function buildAutoReconcilePlan({
     }
 
     if (position.reconcileRequired && localOpen && exchangeOpen && protectedEvidence && evidence.freshEvidence.sufficient) {
+      const protection = getProtectiveEvidence({ position, openOrders, openOrderLists });
       actions.push(buildAction("clear_local_reconcile_flag", symbol, {
         positionId: position.id || null,
         reason: "exchange_account_and_protection_match_local_state",
+        adoptProtection: protection.orderListId ? {
+          protectiveOrderListId: protection.orderListId,
+          orderIds: protection.orderIds
+        } : null,
         evidence: positionEvidence
       }));
       continue;
@@ -630,6 +641,11 @@ export async function runAutoReconcilePlan({ broker = null, runtime = {}, plan =
     let error = null;
     try {
       if (action.type === "clear_local_reconcile_flag" && position) {
+        if (action.adoptProtection?.protectiveOrderListId && !position.protectiveOrderListId) {
+          position.protectiveOrderListId = action.adoptProtection.protectiveOrderListId;
+          position.protectiveOrderIds = action.adoptProtection.orderIds || position.protectiveOrderIds || [];
+          position.protectionAdoptedFromExchangeAt = timestamp;
+        }
         if (broker?.clearPositionReconcileFlags) {
           broker.clearPositionReconcileFlags(position, { reason: action.reason, evidenceSummary: action.evidence });
         } else {

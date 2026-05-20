@@ -56,8 +56,12 @@ export function createSnapshotPerformanceTracker({
 export async function refreshDashboardPrerequisites(bot, {
   referenceNow,
   context = "dashboard_snapshot",
-  tracker = null
+  tracker = null,
+  enabled = true
 } = {}) {
+  if (!enabled) {
+    return;
+  }
   const time = async (sectionId, work) => (tracker ? tracker.time(sectionId, work) : work());
   const requestWeight = bot?.client?.getRateLimitState ? bot.client.getRateLimitState() : null;
   const banActive = Boolean(requestWeight?.banActive);

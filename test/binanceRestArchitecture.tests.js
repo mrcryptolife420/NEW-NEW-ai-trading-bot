@@ -227,6 +227,31 @@ export async function registerBinanceRestArchitectureTests({
     assert.ok(updates.at(-1).state.topRestCallers["test.callback"].weight >= 1);
   });
 
+  await runCheck("binance client estimates documented weights for account and klines", async () => {
+    const client = new BinanceClient({
+      apiKey: "key",
+      apiSecret: "secret",
+      baseUrl: "https://api.binance.com",
+      fetchImpl: async (url) => ({
+        ok: true,
+        status: 200,
+        headers: makeHeaders(),
+        async text() {
+          return url.includes("/api/v3/account")
+            ? JSON.stringify({ balances: [] })
+            : JSON.stringify([]);
+        }
+      })
+    });
+
+    await client.getKlines("BTCUSDT", "1m", 10, { requestMeta: { caller: "test.klines_weight" } });
+    await client.getAccountInfo(true, { requestMeta: { caller: "test.account_weight" } });
+    const state = client.getRateLimitState();
+
+    assert.equal(state.topRestCallers["test.klines_weight"].weight, 2);
+    assert.equal(state.topRestCallers["test.account_weight"].weight, 20);
+  });
+
   await runCheck("binance client hard-pauses requests on 418 until ban expiry", async () => {
     let attempts = 0;
     const client = new BinanceClient({
@@ -264,6 +289,41 @@ export async function registerBinanceRestArchitectureTests({
     assert.equal(attempts, 1);
     assert.equal(state.banActive, true);
     assert.ok(state.banUntil >= 4_102_444_800_000);
+  });
+
+  await runCheck("binance client hard-pauses 418 using retry-after when body has no ban expiry", async () => {
+    let now = 1_700_000_000_000;
+    let attempts = 0;
+    const client = new BinanceClient({
+      apiKey: "",
+      apiSecret: "",
+      baseUrl: "https://api.binance.com",
+      nowFn: () => now,
+      fetchImpl: async () => {
+        attempts += 1;
+        return {
+          ok: false,
+          status: 418,
+          headers: makeHeaders({ "retry-after": "60" }),
+          async text() {
+            return JSON.stringify({ code: -1003, msg: "IP banned." });
+          }
+        };
+      }
+    });
+
+    await assert.rejects(
+      () => client.publicRequest("GET", "/api/v3/ping", {}, { caller: "test.ip_ban_retry_after" }),
+      /IP banned/
+    );
+    const state = client.getRateLimitState();
+    assert.equal(attempts, 1);
+    assert.equal(state.banActive, true);
+    assert.equal(state.banUntil, now + 60_000);
+    await assert.rejects(
+      () => client.publicRequest("GET", "/api/v3/time", {}, { caller: "test.ip_ban_retry_after_followup" }),
+      /Binance REST banned until/
+    );
   });
 
   await runCheck("exchange info responses are cached instead of re-fetched every caller loop", async () => {

@@ -73,10 +73,13 @@ export async function registerAutoReconcileCoordinatorTests({
     });
     assert.equal(plan.status, "can_auto_fix");
     assert.equal(plan.actions[0].type, "clear_local_reconcile_flag");
+    assert.equal(plan.actions[0].adoptProtection.protectiveOrderListId, 123);
     const result = await runAutoReconcilePlan({ runtime, plan, broker: {} });
     assert.equal(result.appliedCount >= 1, true);
     assert.equal(position.reconcileRequired, false);
     assert.equal(position.manualReviewRequired, false);
+    assert.equal(position.protectiveOrderListId, 123);
+    assert.equal(position.lifecycleState, "protected");
   });
 
   await runCheck("auto reconcile marks local position flat only with exchange-flat and sell evidence", async () => {

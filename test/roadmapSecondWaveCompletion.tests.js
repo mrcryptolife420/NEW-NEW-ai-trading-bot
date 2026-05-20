@@ -85,12 +85,14 @@ export async function registerRoadmapSecondWaveCompletionTests({ runCheck, asser
     const contracts = listDashboardActionContracts();
     const profile = resolveDashboardActionContract("/api/config/profile/apply");
     const quickSettings = resolveDashboardActionContract("/api/config/quick-settings/apply");
+    const positionReview = resolveDashboardActionContract("/api/positions/review");
     assert.equal(profile.liveSensitive, true);
     assert.ok(profile.allowedLifecycleStates.includes("stopping"));
     assert.ok(profile.bodyFields.includes("profileId"));
     assert.equal(quickSettings.liveSensitive, true);
     assert.ok(quickSettings.allowedLifecycleStates.includes("stopping"));
     assert.ok(quickSettings.bodyFields.includes("updates"));
+    assert.equal(positionReview.liveSensitive, true);
     assert.equal(contracts.some((contract) => contract.path === "/api/setup/complete"), true);
     const envelope = buildDashboardActionEnvelope(profile, { applied: true }, { requestId: "r1", lifecycleBefore: "ready", lifecycleAfter: "stopped" });
     assert.equal(envelope.applied, true);

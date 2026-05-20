@@ -16845,6 +16845,13 @@ export class TradingBot {
     position.reviewedAt = at;
     position.reviewNote = note || null;
     if (position.manualReviewRequired) {
+      const exchangeBacked = (this.config.botMode === "live" || usesDemoPaperExecution(this.config)) && this.config.enableExchangeProtection;
+      if (exchangeBacked && !position.protectiveOrderListId && !position.ocoOrderListId && !position.intentionalUnmanaged) {
+        const error = new Error("Manual review kan niet worden gedempt zonder verse exchange/protection evidence. Forceer eerst reconcile.");
+        error.statusCode = 409;
+        error.publicMessage = error.message;
+        throw error;
+      }
       position.manualReviewRequired = false;
       position.operatorMode = "protect_only";
       position.lifecycleState = "protect_only";
@@ -20717,6 +20724,15 @@ export class TradingBot {
 
     for (const position of [...this.runtime.openPositions]) {
       try {
+        const activeTradingSource = getPortfolioSnapshotSource(this.config);
+        if (!matchesTradingSource(position, activeTradingSource, this.config.botMode || "paper")) {
+          this.recordEvent("position_management_skipped_off_source", {
+            symbol: position.symbol,
+            positionSource: position.executionVenue || position.paperExecutionVenue || position.brokerMode || null,
+            activeTradingSource
+          });
+          continue;
+        }
         const aliases = this.config.symbolMetadata[position.symbol] || [position.symbol];
         const marketSnapshot = await this.getMarketSnapshot(position.symbol);
         marketSnapshot.book.exitEstimate = this.stream.estimateFill?.(position.symbol, "SELL", { quantity: position.quantity }) || null;
@@ -20894,7 +20910,7 @@ export class TradingBot {
           !exitDecision.shouldExit &&
           typeof this.broker.refreshProtectiveOrder === "function" &&
           this.config.enableExchangeProtection &&
-          (position.brokerMode || this.config.botMode) === "live"
+          ((position.brokerMode || this.config.botMode) === "live" || position.executionVenue === "binance_demo_spot")
         ) {
           try {
             const refresh = await this.broker.refreshProtectiveOrder(
@@ -25332,7 +25348,7 @@ export class TradingBot {
     };
   }
 
-  async getDashboardSnapshot() {
+  async getDashboardSnapshot({ refreshPrerequisites = true } = {}) {
     const referenceNow = nowIso();
     const snapshotPerformanceTracker = createSnapshotPerformanceTracker({
       totalBudgetMs: Number(this.config.dashboardSnapshotBudgetMs || 800),
@@ -25347,7 +25363,8 @@ export class TradingBot {
     await refreshDashboardPrerequisites(this, {
       referenceNow,
       context: "dashboard_snapshot",
-      tracker: snapshotPerformanceTracker
+      tracker: snapshotPerformanceTracker,
+      enabled: refreshPrerequisites
     });
 
     const report = this.getPerformanceReport();
@@ -25407,7 +25424,7 @@ export class TradingBot {
     const autoReconcilePlan = buildAutoReconcilePlan({
       config: this.config,
       runtime: this.runtime,
-      positions: this.runtime.openPositions || sourceTruth.sourceScopedPositions || [],
+      positions: sourceTruth.sourceScopedPositions || [],
       accountSnapshot: this.runtime.exchangeTruth?.accountSnapshot || this.runtime.accountSnapshot || this.runtime.portfolio || {},
       openOrders: this.runtime.exchangeTruth?.openOrders || this.runtime.openOrders || [],
       openOrderLists: this.runtime.exchangeTruth?.openOrderLists || this.runtime.openOrderLists || [],
@@ -25420,12 +25437,12 @@ export class TradingBot {
       plan: autoReconcilePlan,
       runtime: this.runtime,
       alerts: this.runtime.alerts || this.runtime.ops?.alerts?.items || [],
-      positions: this.runtime.openPositions || sourceTruth.sourceScopedPositions || []
+      positions: sourceTruth.sourceScopedPositions || []
     });
     const autoReconcileStatus = buildExchangeSafetyStatus({
       plan: autoReconcilePlan,
       unlock: autoReconcileUnlock,
-      runtime: { ...this.runtime, openPositions: this.runtime.openPositions || sourceTruth.sourceScopedPositions || [] }
+      runtime: { ...this.runtime, openPositions: sourceTruth.sourceScopedPositions || [] }
     });
     exchangeSafetySummary.entryBlocked = autoReconcileStatus.entryBlocked;
     exchangeSafetySummary.autoReconcileStatus = autoReconcileStatus.autoReconcileStatus;

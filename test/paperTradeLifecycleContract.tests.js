@@ -118,6 +118,91 @@ export async function registerPaperTradeLifecycleContractTests({
     assert.equal(runtime.openPositions.length, 0);
   });
 
+  await runCheck("paper scale-out reports allocated entry fee before mutating remaining position fee", async () => {
+    const config = makeConfig({
+      botMode: "paper",
+      paperFeeBps: 10,
+      paperSlippageBps: 0,
+      paperLatencyMs: 0,
+      startingCash: 10000
+    });
+    const runtime = { openPositions: [], paperPortfolio: { quoteFree: 10000, feesPaid: 0, realizedPnl: 0 } };
+    const broker = new PaperBroker(config, { info() {}, warn() {}, error() {}, debug() {} });
+    const position = await broker.enterPosition({
+      symbol: "BTCUSDT",
+      quoteAmount: 250,
+      rules: makeRules(),
+      marketSnapshot: makeMarketSnapshot(100),
+      decision: makeDecision(),
+      score: { probability: 0.72, regime: "trend" },
+      rawFeatures: { emaSlope: 0.4 },
+      strategySummary: { activeStrategy: "trend_following" },
+      newsSummary: {},
+      entryRationale: {},
+      runtime
+    });
+    const originalEntryFee = position.entryFee;
+    const scale = await broker.scaleOutPosition({
+      position,
+      marketSnapshot: makeMarketSnapshot(105),
+      fraction: 0.5,
+      reason: "exit_v2_trim",
+      runtime
+    });
+
+    assert.ok(originalEntryFee > 0);
+    assert.ok(scale.entryFee > 0);
+    assert.equal(Math.abs(scale.entryFee - originalEntryFee * scale.fraction) < 1e-9, true);
+    assert.equal(position.entryFee < originalEntryFee, true);
+  });
+
+  await runCheck("paper partial exit returns a journalable partial trade and keeps remainder open", async () => {
+    const config = makeConfig({
+      botMode: "paper",
+      paperFeeBps: 10,
+      paperSlippageBps: 0,
+      paperLatencyMs: 0,
+      startingCash: 10000
+    });
+    const runtime = { openPositions: [], paperPortfolio: { quoteFree: 10000, feesPaid: 0, realizedPnl: 0 } };
+    const broker = new PaperBroker(config, { info() {}, warn() {}, error() {}, debug() {} });
+    const position = await broker.enterPosition({
+      symbol: "ETHUSDT",
+      quoteAmount: 200,
+      rules: makeRules(),
+      marketSnapshot: makeMarketSnapshot(100),
+      decision: makeDecision(),
+      score: { probability: 0.72, regime: "trend" },
+      rawFeatures: { emaSlope: 0.4 },
+      strategySummary: { activeStrategy: "trend_following" },
+      newsSummary: {},
+      entryRationale: {},
+      runtime
+    });
+    const originalQuantity = position.quantity;
+    broker.execution.simulatePaperFill = ({ requestedQuantity }) => ({
+      fillPrice: 104,
+      executedQuantity: requestedQuantity * 0.5,
+      makerFillRatio: 0,
+      takerFillRatio: 0.5,
+      workingTimeMs: 0,
+      notes: ["forced_partial_test"]
+    });
+
+    const trade = await broker.exitPosition({
+      position,
+      marketSnapshot: makeMarketSnapshot(104),
+      reason: "exit_v2_exit",
+      runtime
+    });
+
+    assert.equal(trade.partialExit, true);
+    assert.equal(trade.remainingQuantity > 0, true);
+    assert.equal(runtime.openPositions.length, 1);
+    assert.equal(runtime.openPositions[0].quantity, originalQuantity * 0.5);
+    assert.equal(trade.quantity, originalQuantity * 0.5);
+  });
+
   await runCheck("paper trade lifecycle contract keeps hard safety blocked before broker", async () => {
     const evidence = buildPaperTradeLifecycleEvidence({
       mode: "paper",

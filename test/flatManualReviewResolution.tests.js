@@ -113,6 +113,35 @@ export async function registerFlatManualReviewResolutionTests({
     };
   }
 
+  await runCheck("manual review acknowledgement cannot clear exchange-backed position without protection evidence", async () => {
+    const bot = Object.create(TradingBot.prototype);
+    bot.config = makeConfig({
+      botMode: "paper",
+      paperExecutionVenue: "binance_demo_spot",
+      enableExchangeProtection: true
+    });
+    bot.runtime = {
+      openPositions: [makePosition({
+        id: "demo-unprotected",
+        protectiveOrderListId: null,
+        ocoOrderListId: null,
+        manualReviewRequired: true,
+        lifecycleState: "manual_review"
+      })]
+    };
+    bot.recordEvent = () => {};
+    bot.syncOrderLifecycleState = () => {};
+    bot.refreshOperationalViews = () => {};
+    bot.persistRuntimeAndSnapshot = async () => ({ ok: true });
+
+    await assert.rejects(
+      () => bot.markPositionReviewed("demo-unprotected", { note: "checked" }),
+      /zonder verse exchange\/protection evidence/
+    );
+    assert.equal(bot.runtime.openPositions[0].manualReviewRequired, true);
+    assert.equal(bot.runtime.openPositions[0].lifecycleState, "manual_review");
+  });
+
   await runCheck("flat venue + no orders => position removed locally", async () => {
     const rules = buildDemoRules();
     const runtime = {

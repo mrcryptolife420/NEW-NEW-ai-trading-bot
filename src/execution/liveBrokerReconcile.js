@@ -139,7 +139,7 @@ export async function fetchRecentTrades(client, symbol, limit = 8) {
 export async function fetchReconcileRetrySnapshot(broker, symbol, runtime) {
   const account = await broker.client.getAccountInfo(true);
   const openOrdersResult = broker.client.getOpenOrders
-    ? await fetchReconcileCollection(() => broker.client.getOpenOrders(), [])
+    ? await fetchReconcileCollection(() => broker.client.getOpenOrders(symbol), [])
     : { items: [], error: null };
   const openOrderListsResult = broker.client.getOpenOrderLists
     ? await fetchReconcileCollection(() => broker.client.getOpenOrderLists(), [])
@@ -416,7 +416,7 @@ export function clearPositionReconcileFlags(position, result = {}) {
   position.operatorMode = "normal";
   position.priceMismatchEscalationCount = 0;
   if (!position.lifecycleState || ["reconcile_required", "manual_review", "protect_only", "protection_pending"].includes(position.lifecycleState)) {
-    position.lifecycleState = position.protectiveOrderListId ? "protected" : "open";
+    position.lifecycleState = position.protectiveOrderListId || position.ocoOrderListId ? "protected" : "protection_pending";
   }
   updatePositionReconcileStatus(position, {
     ...result,

@@ -1421,7 +1421,7 @@ export class BotManager {
     });
   }
 
-  async getSnapshot({ allowClosedBot = false, force = false } = {}) {
+  async getSnapshot({ allowClosedBot = false, force = false, refreshPrerequisites = true } = {}) {
     const ttlMs = Math.max(0, Number(this.config?.dashboardSnapshotCacheMs || 8000));
     const now = Date.now();
     if (!force && this.snapshotCache && ttlMs > 0 && now - this.snapshotCache.createdAtMs <= ttlMs) {
@@ -1432,7 +1432,7 @@ export class BotManager {
     }
     this.snapshotInFlight = (async () => {
       await this.ensureBotReady({ allowClosed: allowClosedBot });
-      const dashboard = await this.bot.getDashboardSnapshot();
+      const dashboard = await this.bot.getDashboardSnapshot({ refreshPrerequisites });
       const snapshot = this.buildSnapshotFromDashboard(dashboard);
       this.snapshotCache = { createdAtMs: Date.now(), value: snapshot };
       return snapshot;

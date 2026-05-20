@@ -144,6 +144,12 @@ function toRequestCallerKey({ scope = "spot", method = "GET", pathname = "", req
 
 function estimateRequestWeight({ pathname = "", params = {} } = {}) {
   const normalized = `${pathname || ""}`.toLowerCase();
+  if (normalized.includes("/api/v3/account")) {
+    return 20;
+  }
+  if (normalized.includes("/api/v3/klines")) {
+    return 2;
+  }
   if (normalized.includes("/api/v3/depth")) {
     const limit = Number(params?.limit || 100);
     if (limit > 1000) return 250;
@@ -502,7 +508,7 @@ export class BinanceClient {
       return;
     }
     if (status === 418) {
-      const banUntil = parseBanExpiryMs(payload, rawBody);
+      const banUntil = parseBanExpiryMs(payload, rawBody) || (Number.isFinite(retryAfterMs) && retryAfterMs > 0 ? this.nowFn() + retryAfterMs : null);
       state.consecutiveRateLimitHits += 1;
       state.totalRateLimitHits += 1;
       state.lastRateLimitStatus = 418;
