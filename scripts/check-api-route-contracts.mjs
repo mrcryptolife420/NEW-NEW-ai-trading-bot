@@ -48,6 +48,14 @@ if (!/statusCode\s*=\s*413/.test(source) || !/sendJson\(response,\s*error\.statu
 if (!/sendJson\(response,\s*404,\s*\{\s*error:\s*"Unknown API route"/.test(source)) failures.push("unknown API 404 response is missing");
 if (!/server\.listen\(listenPort,\s*"127\.0\.0\.1"/.test(source)) failures.push("dashboard is not explicitly bound to 127.0.0.1");
 if (!/getLivePreflight\(\)/.test(source)) failures.push("live preflight API route is not wired to manager.getLivePreflight()");
+for (const routePath of ["/api/start", "/api/stop"]) {
+  const routeIndex = source.indexOf(`url.pathname === "${routePath}"`);
+  const nextRouteIndex = source.indexOf("if (url.pathname ===", routeIndex + 1);
+  const routeBlock = source.slice(routeIndex, nextRouteIndex > routeIndex ? nextRouteIndex : routeIndex + 500);
+  if (routeIndex < 0 || !routeBlock.includes("sendResolvedActionResult(result)")) {
+    failures.push(`${routePath} does not return dashboard action envelope`);
+  }
+}
 
 if (failures.length) {
   console.error(`API route contract failed:\n${failures.map((item) => `- ${item}`).join("\n")}`);

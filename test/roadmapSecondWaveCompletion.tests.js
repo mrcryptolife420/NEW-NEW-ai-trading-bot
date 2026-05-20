@@ -86,6 +86,10 @@ export async function registerRoadmapSecondWaveCompletionTests({ runCheck, asser
     const profile = resolveDashboardActionContract("/api/config/profile/apply");
     const quickSettings = resolveDashboardActionContract("/api/config/quick-settings/apply");
     const positionReview = resolveDashboardActionContract("/api/positions/review");
+    const start = resolveDashboardActionContract("/api/start");
+    const stop = resolveDashboardActionContract("/api/stop");
+    assert.equal(start.responseShape, "dashboard_action_result");
+    assert.equal(stop.responseShape, "dashboard_action_result");
     assert.equal(profile.liveSensitive, true);
     assert.ok(profile.allowedLifecycleStates.includes("stopping"));
     assert.ok(profile.bodyFields.includes("profileId"));
@@ -97,6 +101,17 @@ export async function registerRoadmapSecondWaveCompletionTests({ runCheck, asser
     const envelope = buildDashboardActionEnvelope(profile, { applied: true }, { requestId: "r1", lifecycleBefore: "ready", lifecycleAfter: "stopped" });
     assert.equal(envelope.applied, true);
     assert.equal(envelope.action.id, "config_profile_apply");
+    const stopEnvelope = buildDashboardActionEnvelope(stop, { stop: { pending: true } }, { requestId: "r2", lifecycleBefore: "running", lifecycleAfter: "stopping" });
+    assert.equal(stopEnvelope.action.id, "stop");
+    assert.equal(stopEnvelope.action.status, "pending");
+  });
+
+  await runCheck("roadmap 12 package scripts expose safe shape and coverage contracts", async () => {
+    const packageJson = JSON.parse(await fs.readFile(path.join(process.cwd(), "package.json"), "utf8"));
+    assert.equal(packageJson.scripts.typecheck, "node scripts/check-shape-contracts.mjs");
+    assert.equal(packageJson.scripts["test:safe"], "npm run test:safety");
+    assert.match(packageJson.scripts["coverage:check"], /--check-coverage/);
+    assert.match(packageJson.scripts["qa:quick"], /npm run typecheck/);
   });
 
   await runCheck("roadmap 13 blocker root cause explorer groups derived no-trade reasons", () => {

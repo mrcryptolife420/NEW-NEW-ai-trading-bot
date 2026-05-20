@@ -230,26 +230,26 @@ async function handleApi(request, response, manager, eventBus = null) {
       liveSensitive: true
     });
   }
-  const sendActionResult = async (resultPromise) => {
-    const result = await resultPromise;
+  const sendResolvedActionResult = (result) => {
     return sendJson(response, 200, buildDashboardActionEnvelope(actionContract, result, {
       requestId,
       lifecycleBefore,
       lifecycleAfter: manager.lifecycle?.state || manager.runState || "unknown"
     }));
   };
+  const sendActionResult = async (resultPromise) => sendResolvedActionResult(await resultPromise);
 
   if (url.pathname === "/api/start") {
     const result = await manager.start();
     eventBus?.publish("bot_status", { action: "start", result });
-    return sendJson(response, 200, result);
+    return sendResolvedActionResult(result);
   }
   if (url.pathname === "/api/stop") {
     const result = await manager.stop("dashboard_stop", {
       timeoutMs: Number(manager.config?.dashboardStopTimeoutMs || 3000)
     });
     eventBus?.publish("bot_status", { action: "stop", result });
-    return sendJson(response, 200, result);
+    return sendResolvedActionResult(result);
   }
   if (url.pathname === "/api/refresh") {
     return sendJson(response, 200, await manager.refreshAnalysis());
