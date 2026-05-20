@@ -6491,6 +6491,7 @@ export class RiskManager {
     );
     const trailingStopPrice = updatedHigh * (1 - trailingStopPct);
     const heldMinutes = minutesBetween(position.entryAt, nowIso);
+    const positionPnlPct = position.entryPrice > 0 ? (currentPrice - position.entryPrice) / position.entryPrice : 0;
     const scaleOutTriggerPrice =
       (position.scaleOutTriggerPrice || position.entryPrice * (1 + this.config.scaleOutTriggerPct)) *
       (adaptiveExitPolicy.scaleOutTriggerMultiplier || 1) *
@@ -6580,11 +6581,13 @@ export class RiskManager {
         return withExitV2({ shouldExit: true, shouldScaleOut: false, reason: "grid_take_profit", updatedHigh, updatedLow });
       }
     }
-    const canScaleOut =
+    const canScaleOutBySize =
       !position.scaleOutCompletedAt &&
       !position.scaleOutInProgress &&
       (position.scaleOutFraction || this.config.scaleOutFraction) > 0 &&
-      notional >= (position.scaleOutMinNotionalUsd || this.config.scaleOutMinNotionalUsd) * (1.2 + Math.max(0, holdToleranceBias) * 0.15) &&
+      notional >= (position.scaleOutMinNotionalUsd || this.config.scaleOutMinNotionalUsd) * (1.2 + Math.max(0, holdToleranceBias) * 0.15);
+    const canScaleOut =
+      canScaleOutBySize &&
       currentPrice >= scaleOutTriggerPrice;
     const strongContinuationHold =
       contextualAction === "hold" &&
@@ -6616,10 +6619,35 @@ export class RiskManager {
         exitPolicy: adaptiveExitPolicy
       });
     }
-    if (
-      canScaleOut &&
+    const v2TrimActionReady = Boolean(
       exitIntelligenceV2?.currentExitRecommendation === "trim" &&
-      exitIntelligenceV2.partialTakeProfitScore >= Math.max(0.5, this.config.exitIntelligenceTrimScore - 0.08) &&
+      (
+        exitIntelligenceV2.partialTakeProfitScore >= Math.max(0.5, this.config.exitIntelligenceTrimScore - 0.08) ||
+        exitIntelligenceV2.orderflowReversalScore >= 0.66 ||
+        exitIntelligenceV2.timeDecayScore >= 0.72
+      )
+    );
+    const v2TrimOverride =
+      canScaleOutBySize &&
+      !canScaleOut &&
+      exitIntelligenceV2?.currentExitRecommendation === "trim" &&
+      v2TrimActionReady &&
+      !strongContinuationHold &&
+      (
+        positionPnlPct >= -0.006 ||
+        exitIntelligenceV2.structureInvalidationScore >= 0.42 ||
+        exitIntelligenceV2.vwapLossScore >= 0.35
+      ) &&
+      (
+        exitIntelligenceV2.orderflowReversalScore >= 0.66 ||
+        exitIntelligenceV2.timeDecayScore >= 0.72 ||
+        exitIntelligenceV2.partialTakeProfitScore >= 0.66 ||
+        exitIntelligenceV2.fullExitScore >= 0.52
+      );
+    if (
+      (canScaleOut || v2TrimOverride) &&
+      exitIntelligenceV2?.currentExitRecommendation === "trim" &&
+      v2TrimActionReady &&
       !strongContinuationHold
     ) {
       return withExitV2({
@@ -6634,7 +6662,7 @@ export class RiskManager {
           0.95
         ),
         scaleOutReason: exitIntelligenceV2.explanation?.primaryReason
-          ? `exit_v2_trim_${exitIntelligenceV2.explanation.primaryReason}`
+          ? `${v2TrimOverride ? "exit_v2_trim_before_scale_trigger" : "exit_v2_trim"}_${exitIntelligenceV2.explanation.primaryReason}`
           : "exit_intelligence_v2_trim",
         updatedHigh,
         updatedLow,

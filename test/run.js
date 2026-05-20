@@ -2533,6 +2533,59 @@ await runCheck("live broker places protective OCO after a buy", async () => {
   assert.equal(ocoCall.params.belowType, "STOP_LOSS_LIMIT");
 });
 
+await runCheck("live broker refreshes protective OCO after stop tightening", async () => {
+  const clientCalls = [];
+  const client = {
+    async cancelOrderList(params) {
+      clientCalls.push({ type: "cancel", params });
+      return {
+        orderListId: params.orderListId,
+        listStatusType: "EXECUTING",
+        orders: [{ orderId: 11 }, { orderId: 12 }]
+      };
+    },
+    async placeOrderListOco(params) {
+      clientCalls.push({ type: "oco", params });
+      return {
+        orderListId: 1000,
+        listClientOrderId: "protect-2",
+        orders: [{ orderId: 21 }, { orderId: 22 }],
+        listStatusType: "EXEC_STARTED"
+      };
+    }
+  };
+  const broker = new LiveBroker({
+    client,
+    config: makeConfig({ enableExchangeProtection: true }),
+    logger: { warn() {}, info() {} },
+    symbolRules: { BTCUSDT: rules }
+  });
+  const runtime = {};
+  const position = {
+    id: "pos-refresh",
+    symbol: "BTCUSDT",
+    quantity: 0.01,
+    entryPrice: 70000,
+    stopLossPrice: 69600,
+    takeProfitPrice: 73500,
+    protectiveOrderListId: 999,
+    protectiveOrders: [{ orderId: 11 }, { orderId: 12 }],
+    protectiveOrderStatus: "EXEC_STARTED"
+  };
+  const result = await broker.refreshProtectiveOrder(
+    position,
+    rules,
+    runtime,
+    "exit_intelligence_stop_refresh",
+    { book: { bid: 70990, ask: 71010, mid: 71000 } }
+  );
+  assert.equal(result.refreshed, true);
+  assert.equal(position.protectiveOrderListId, 1000);
+  assert.equal(clientCalls[0].type, "cancel");
+  assert.equal(clientCalls[1].type, "oco");
+  assert.equal(clientCalls[1].params.belowStopPrice >= 69600, true);
+});
+
 await runCheck("live broker nets base-asset commissions out of managed entry quantity", async () => {
   const broker = new LiveBroker({
     client: {},

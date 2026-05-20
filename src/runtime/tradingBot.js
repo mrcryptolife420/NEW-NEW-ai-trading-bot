@@ -20800,8 +20800,13 @@ export class TradingBot {
               nowIso: nowIso()
             })
           : summarizeExitIntelligence({ action: "disabled", nextReviewBias: "disabled" });
+        let stopProtectionRefresh = null;
         if (exitIntelligenceSummary.shouldTightenStop && exitIntelligenceSummary.suggestedStopLossPrice > (position.stopLossPrice || 0)) {
           position.stopLossPrice = exitIntelligenceSummary.suggestedStopLossPrice;
+          stopProtectionRefresh = {
+            reason: exitIntelligenceSummary.reason || "protect_winner",
+            stopLossPrice: position.stopLossPrice
+          };
           this.recordEvent("position_stop_tightened", {
             symbol: position.symbol,
             stopLossPrice: position.stopLossPrice,
@@ -20835,6 +20840,10 @@ export class TradingBot {
           enrichedExitIntelligenceSummary.suggestedStopLossPrice < marketSnapshot.book.mid
         ) {
           position.stopLossPrice = enrichedExitIntelligenceSummary.suggestedStopLossPrice;
+          stopProtectionRefresh = {
+            reason: exitDecision.exitIntelligenceV2 ? "exit_intelligence_v2_trail" : (exitIntelligenceSummary.reason || "protect_winner"),
+            stopLossPrice: position.stopLossPrice
+          };
           this.recordEvent("position_stop_tightened", {
             symbol: position.symbol,
             stopLossPrice: position.stopLossPrice,
@@ -20877,6 +20886,45 @@ export class TradingBot {
             } else if (!position.lifecycleState || ["protect_only", "manual_review", "reconcile_required", "protection_pending"].includes(position.lifecycleState)) {
               position.lifecycleState = position.protectiveOrderListId ? "protected" : (brokerMode === "live" ? "open" : "simulated_open");
             }
+          }
+        }
+        if (
+          stopProtectionRefresh &&
+          !exitDecision.shouldScaleOut &&
+          !exitDecision.shouldExit &&
+          typeof this.broker.refreshProtectiveOrder === "function" &&
+          this.config.enableExchangeProtection &&
+          (position.brokerMode || this.config.botMode) === "live"
+        ) {
+          try {
+            const refresh = await this.broker.refreshProtectiveOrder(
+              position,
+              this.symbolRules[position.symbol],
+              this.runtime,
+              "exit_intelligence_stop_refresh",
+              marketSnapshot
+            );
+            if (refresh?.closedTrade) {
+              refresh.closedTrade.exitIntelligenceSummary = enrichedExitIntelligenceSummary;
+              refresh.closedTrade.replayCheckpoints = arr(position.replayCheckpoints || []);
+              this.journal.trades.push(refresh.closedTrade);
+              this.markReportDirty();
+              await this.learnFromTrade(refresh.closedTrade, "Closed position");
+              continue;
+            }
+            this.recordEvent("position_stop_protection_refreshed", {
+              symbol: position.symbol,
+              stopLossPrice: stopProtectionRefresh.stopLossPrice,
+              reason: stopProtectionRefresh.reason,
+              refreshed: Boolean(refresh?.refreshed || refresh?.orderList)
+            });
+          } catch (error) {
+            this.recordEvent("position_stop_protection_refresh_failed", {
+              symbol: position.symbol,
+              stopLossPrice: stopProtectionRefresh.stopLossPrice,
+              reason: stopProtectionRefresh.reason,
+              error: error.message
+            });
           }
         }
         if (exitDecision.shouldScaleOut) {

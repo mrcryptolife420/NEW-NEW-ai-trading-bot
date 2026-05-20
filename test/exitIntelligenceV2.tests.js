@@ -189,4 +189,47 @@ export async function registerExitIntelligenceV2Tests({ runCheck, assert, RiskMa
     assert.equal(decision.exitIntelligenceV2.currentExitRecommendation, "exit");
     assert.equal(decision.exitContext.exitV2.structureInvalidationScore >= 0.78, true);
   });
+
+  await runCheck("risk manager lets strong exit v2 trim act before legacy scale trigger", async () => {
+    const risk = new RiskManager(makeConfig({
+      enableExitIntelligence: true,
+      exitIntelligenceTrimScore: 0.6,
+      scaleOutTriggerPct: 0.02,
+      scaleOutFraction: 0.35,
+      scaleOutMinNotionalUsd: 10,
+      maxHoldMinutes: 360
+    }));
+    const decision = risk.evaluateExit({
+      position: makePosition({
+        highestPrice: 100.8,
+        notional: 100,
+        totalCost: 100,
+        stopLossPrice: 98.5,
+        takeProfitPrice: 108,
+        scaleOutTriggerPrice: 102
+      }),
+      currentPrice: 100.4,
+      marketSnapshot: makeSnapshot({
+        book: { mid: 100.4, bookPressure: -0.86, weightedDepthImbalance: -0.74, depthConfidence: 0.28 },
+        market: {
+          vwap: 100,
+          structureLow: 98.8,
+          cvdTrendAlignment: -0.82,
+          cvdDivergenceScore: -0.75,
+          orderflowToxicityScore: 0.88,
+          bearishPatternScore: 0.68
+        }
+      }),
+      marketStructureSummary: { signalScore: -0.08, riskScore: 0.42 },
+      newsSummary: {},
+      announcementSummary: {},
+      calendarSummary: {},
+      exitIntelligenceSummary: { continuationQuality: 0.1 },
+      nowIso: "2026-01-01T00:45:00.000Z"
+    });
+    assert.equal(decision.shouldScaleOut, true);
+    assert.equal(decision.shouldExit, false);
+    assert.equal(decision.scaleOutReason.startsWith("exit_v2_trim_before_scale_trigger"), true);
+    assert.equal(decision.exitIntelligenceV2.currentExitRecommendation, "trim");
+  });
 }

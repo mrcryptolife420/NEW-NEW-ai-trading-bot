@@ -688,6 +688,44 @@ export class LiveBroker {
     return this.placeProtectiveOrder(position, rules, runtime, origin, marketSnapshot, intentId);
   }
 
+  async refreshProtectiveOrder(position, rules, runtime = null, origin = "protective_refresh", marketSnapshot = null) {
+    if (!this.config.enableExchangeProtection) {
+      return { skipped: true, reason: "exchange_protection_disabled" };
+    }
+    if (!position?.quantity || position.quantity <= 0) {
+      return { skipped: true, reason: "position_not_open" };
+    }
+    if (position.manualReviewRequired || position.reconcileRequired) {
+      return { skipped: true, reason: position.manualReviewRequired ? "manual_review" : "reconcile_required" };
+    }
+    if (position.protectiveOrderListId) {
+      const cancel = await this.cancelProtectiveOrders(position, {
+        strict: true,
+        runtime,
+        origin: `${origin}_cancel`
+      });
+      if (cancel?.closedTrade || cancel?.partialFill || cancel?.ambiguous) {
+        return cancel;
+      }
+    }
+    try {
+      const orderList = await this.ensureProtectiveOrder(
+        position,
+        rules,
+        runtime,
+        `${origin}_rebuild`,
+        marketSnapshot
+      );
+      return { refreshed: Boolean(orderList), orderList };
+    } catch (error) {
+      this.clearProtectiveOrderState(position);
+      position.reconcileRequired = true;
+      position.lifecycleState = "reconcile_required";
+      position.lastManagementError = error.message;
+      throw error;
+    }
+  }
+
   clearProtectiveOrderState(position, status = null) {
     position.protectiveOrderListId = null;
     position.protectiveListClientOrderId = null;
