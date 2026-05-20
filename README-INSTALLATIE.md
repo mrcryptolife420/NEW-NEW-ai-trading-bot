@@ -1,101 +1,41 @@
-﻿# Codex multi-agent pack voor crypto trading bot
+﻿# Codebase-specifieke Codex agents installeren
 
-## Wat zit hierin?
+## Plaatsing
 
-Deze pack bevat:
-- `.codex/config.toml`
-- `.codex/agents/code-mapper.toml`
-- `.codex/agents/architecture-auditor.toml`
-- `.codex/agents/paper-mode-auditor.toml`
-- `.codex/agents/trade-lifecycle-auditor.toml`
-- `.codex/agents/risk-security-reviewer.toml`
-- `.codex/agents/binance-rate-limit-auditor.toml`
-- `.codex/agents/test-runner.toml`
-- `.codex/agents/roadmap-planner.toml`
-- `.codex/agents/implementer.toml`
-- `.codex/agents/regression-reviewer.toml`
-- `AGENTS.md`
-
-## Waar plaats je dit?
-
-Plaats de map `.codex` en het bestand `AGENTS.md` in de root van je project.
-
-Voorbeeld:
+Zet deze bestanden in de root van je repo:
 
 ```txt
-jouw-crypto-bot/
-â”œâ”€ .git/
-â”œâ”€ src/
-â”œâ”€ package.json
+Codex-ai-trading-bot-/
 â”œâ”€ AGENTS.md
+â”œâ”€ ANALYSE-SAMENVATTING.md
+â”œâ”€ PROMPTS-CODEX.md
 â””â”€ .codex/
    â”œâ”€ config.toml
    â””â”€ agents/
-      â”œâ”€ code-mapper.toml
-      â”œâ”€ architecture-auditor.toml
-      â”œâ”€ paper-mode-auditor.toml
-      â”œâ”€ trade-lifecycle-auditor.toml
-      â”œâ”€ risk-security-reviewer.toml
-      â”œâ”€ binance-rate-limit-auditor.toml
-      â”œâ”€ test-runner.toml
-      â”œâ”€ roadmap-planner.toml
-      â”œâ”€ implementer.toml
-      â””â”€ regression-reviewer.toml
+      â”œâ”€ cli-command-surface-auditor.toml
+      â”œâ”€ core-tradingbot-lifecycle-auditor.toml
+      â”œâ”€ botmanager-exchange-health-auditor.toml
+      â”œâ”€ paper-live-boundary-auditor.toml
+      â”œâ”€ dashboard-state-api-auditor.toml
+      â”œâ”€ positions-pnl-trim-auditor.toml
+      â”œâ”€ binance-rate-limit-circuitbreaker-auditor.toml
+      â”œâ”€ test-contract-runner.toml
+      â”œâ”€ roadmap-continuity-planner.toml
+      â”œâ”€ repo-patch-implementer.toml
+      â””â”€ regression-safety-gatekeeper.toml
 ```
 
-## Windows PowerShell
+## PowerShell installeren
 
-Vanuit je projectroot:
+Download `install_codebase_specific_codex_agents.ps1`, zet het in je projectroot en run:
 
 ```powershell
-mkdir .codex
-mkdir .codex\agents
+cd "C:\Users\highlife\Documents\GitHub\Codex-ai-trading-bot-"
+powershell -ExecutionPolicy Bypass -File .\install_codebase_specific_codex_agents.ps1
 ```
 
-Kopieer daarna de bestanden in dezelfde structuur.
+## Daarna in Codex
 
-## Belangrijk
+Gebruik de prompts uit `PROMPTS-CODEX.md`.
 
-Codex moet je project als trusted zien, anders kan project-local `.codex/` config genegeerd worden.
-
-## Goede startprompt
-
-```txt
-Gebruik mijn project-agents.
-
-Spawn parallel:
-- code_mapper
-- architecture_auditor
-- paper_mode_auditor
-- trade_lifecycle_auditor
-- risk_security_reviewer
-- binance_rate_limit_auditor
-- test_runner
-- roadmap_planner
-
-Doel:
-analyseer de volledige codebase van mijn crypto trading bot. Controleer paper/demo/live scheiding, simulated open lifecycle, trim, dynamic stop, dynamic target, Exit v2, Binance REST ban handling, rate limits, risk controls, PnL, exposure en UI/API-koppelingen.
-
-Maak geen codewijzigingen.
-
-Wacht tot alle agents klaar zijn en geef daarna Ã©Ã©n geconsolideerd rapport met:
-- bewezen werkende onderdelen
-- niet-aangesloten modules
-- bugs
-- risico's
-- ontbrekende tests
-- roadmap-prioriteiten
-- concrete files/functies waar ik moet beginnen
-```
-
-## Implementatieprompt na analyse
-
-```txt
-Gebruik de vorige analyse.
-
-Spawn implementer voor alleen de hoogste prioriteit fix.
-Spawn regression_reviewer read-only om de patch daarna te controleren.
-Hou de wijziging klein.
-Voeg of update tests.
-Geen live-trading wijziging zonder expliciete bevestiging.
-```
+Begin altijd met read-only analyse. Laat `repo_patch_implementer` pas werken nadat je een rapport hebt en Ã©Ã©n specifieke fix gekozen is.

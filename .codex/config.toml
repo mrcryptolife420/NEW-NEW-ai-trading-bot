@@ -1,16 +1,7 @@
 ﻿# .codex/config.toml
-# Project-local Codex config voor multi-agent werk in je crypto trading bot.
-# Zet deze map in de root van je repo en markeer het project als trusted in Codex.
+# Codebase-specifieke Codex config voor mrcryptolife420/NEW-NEW-ai-trading-bot.
 
 [agents]
-# Hoeveel agent threads tegelijk actief mogen blijven.
-# 6 is een sterke standaard: snel genoeg, maar nog niet totale chaos met een gebruikersinterface.
 max_threads = 6
-
-# Houd subagents plat. Dus: hoofdagent -> subagents.
-# Niet: agent -> agent -> agent -> agent -> "waarom is mijn pc aan het huilen?"
 max_depth = 1
-
-# Timeout per agent job in seconden.
-# 1800 = 30 minuten, ruim genoeg voor grote codebase-analyse.
 job_max_runtime_seconds = 1800

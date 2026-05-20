@@ -1,61 +1,80 @@
-﻿# AGENTS.md
+# AGENTS.md
 
-## Project context
+## Repo-context
 
-Dit project is een crypto trading bot. Werk altijd voorzichtig met alles dat trading, exchange-API's, live orders, balances, positions, exits, paper mode of demo mode raakt.
+Repo: `mrcryptolife420/NEW-NEW-ai-trading-bot`
 
-Belangrijke domeinen:
-- Paper mode
-- Demo mode
-- Live mode
-- Simulated Open lifecycle
-- Open positions
-- Trim
-- Dynamic stop
-- Dynamic target
-- Exit v2
-- Binance REST ban / rate limits
-- Risk management
-- Position sizing
-- Exposure
-- PnL
-- UI/API-koppelingen
-- Roadmap docs
-- Voltooid docs
+Dit is een TypeScript/JavaScript crypto trading bot met:
 
-## Algemene werkregels
+- CLI entrypoint via `src/cli.js`
+- hoofd-CLI orchestration via `src/cli/runCli.js`
+- runtime orchestration via `src/runtime/botManager.js`
+- `src/runtime/tradingBot.js` als bridge/re-export naar de core trading bot
+- core trading lifecycle rond `src/core/tradingBot.js`
+- dashboard server/API rond `src/dashboard/**`
+- paper/demo/live veiligheid rond config/runtime guards en paper services
+- Binance/exchange code rond `src/exchange/**` en `src/shared/**`
+- positions, PnL, lifecycle en open positions rond `src/services/**`
+- bestaande roadmaps en debugdocs in root/docs
 
-- Analyseer eerst de volledige relevante execution flow voordat je fixes voorstelt.
-- Controleer altijd of features echt aangesloten zijn en niet alleen bestaan als losse module.
-- Vermeld altijd concrete bestanden, functies, imports, exports, routes, services of hooks.
-- Geen live-trading wijzigingen zonder expliciete toestemming.
-- Bescherm paper/live scheiding.
-- Maak kleine, controleerbare wijzigingen.
-- Geen grote refactors zonder duidelijke reden.
-- Voeg tests toe of pas tests aan wanneer gedrag wijzigt.
-- Vermijd gokken. Als bewijs ontbreekt, schrijf dat expliciet.
-- Als commands onbekend zijn, inspecteer package.json, pnpm-lock.yaml, yarn.lock, pyproject.toml, Makefile, README en scripts.
+## Projectprioriteiten
+
+1. Bescherm live trading altijd.
+2. Verifieer paper/demo/live scheiding vóór elke wijziging.
+3. Controleer of features echt aangesloten zijn, niet alleen aanwezig als losse module.
+4. Traceer runtime flows vanuit `package.json` scripts en `src/cli/runCli.js`.
+5. Gebruik bestaande roadmaps en Voltooid docs om dubbel werk te vermijden.
+6. Voer alleen veilige testcommands uit. Geen watch-mode, geen dev server, geen live orders.
+
+## Belangrijke package scripts
+
+- `npm start` / `npm run dev` -> `node src/cli.js`
+- `npm run paper` -> `node src/cli.js paper`
+- `npm run live` -> `node src/cli.js live`
+- `npm run gui` -> `node src/cli.js gui`
+- `npm test`
+- `npm run test:safe`
+- `npm run test:dashboard`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run debug:inventory`
+
+## Veiligheidsregels
+
+- Geen live ordergedrag wijzigen zonder expliciete toestemming.
+- Geen real exchange write actions uitvoeren.
+- Geen secrets printen.
+- Geen `.env` dumpen.
+- Geen `npm run live` starten.
+- Geen long-running `test:watch` starten.
+- Geen productie-migraties of destructive scripts zonder expliciete toestemming.
+- Als een command riskant of onduidelijk is: niet uitvoeren, maar rapporteren.
 
 ## Roadmap-regel
 
-Bij elke nieuwe roadmap:
-- Controleer eerst bestaande Roadmap docs en Voltooid docs.
-- Bouw verder op vorige roadmaps.
-- Vermijd dubbele features of dubbele debugtaken.
-- Doe eerst codebase-analyse voordat nieuwe updates of features worden voorgesteld.
-- Schrijf roadmaps in afvinkbare Markdown met prioriteiten en concrete file targets.
+Bij elke roadmap:
 
-## Multi-agent voorkeur
+- Check eerst bestaande `ROADMAP*.md`, `Voltooid-roadmap.md`, `docs/**`, en debug inventory.
+- Bouw voort op bestaande roadmaps.
+- Vermijd dubbele taken.
+- Doe eerst codebase-analyse.
+- Roadmaps moeten afvinkbaar zijn met file targets en testvalidatie.
 
-Gebruik bij grote analyse meerdere read-only agents vÃ³Ã³r implementatie:
-- code_mapper
-- architecture_auditor
-- paper_mode_auditor
-- trade_lifecycle_auditor
-- risk_security_reviewer
-- binance_rate_limit_auditor
-- test_runner
-- roadmap_planner
-- regression_reviewer
+## Multi-agent workflow
 
-Gebruik implementer pas nadat de analyse duidelijk is.
+Eerst read-only analyse:
+
+- `cli_command_surface_auditor`
+- `core_tradingbot_lifecycle_auditor`
+- `botmanager_exchange_health_auditor`
+- `paper_live_boundary_auditor`
+- `dashboard_state_api_auditor`
+- `positions_pnl_trim_auditor`
+- `binance_rate_limit_circuitbreaker_auditor`
+
+Daarna pas:
+
+- `test_contract_runner`
+- `roadmap_continuity_planner`
+- `repo_patch_implementer`
+- `regression_safety_gatekeeper`
