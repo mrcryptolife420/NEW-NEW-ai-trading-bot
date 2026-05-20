@@ -46,6 +46,14 @@ const DOCUMENTED_CONFIG_ONLY_FLAGS = {
   }
 };
 
+const BLOCKING_FEATURE_CLASSIFICATIONS = new Set([
+  "config_only",
+  "module_exists_but_unused",
+  "partial",
+  "missing_tests",
+  "missing_dashboard"
+]);
+
 const TARGET_FEATURES = [
   {
     id: "indicator_feature_registry",
@@ -407,10 +415,10 @@ function classifyFeature({ modulesPresent, runtimeRefs, testsPresent, dashboardR
   if (definition.liveRisk) {
     classifications.push("live_risk_review_needed");
   }
-  if (!classifications.length) {
-    classifications.push("complete");
+  if (!hasBlockingFeatureClassifications(classifications)) {
+    classifications.unshift("complete");
   }
-  return classifications;
+  return [...new Set(classifications)];
 }
 
 function classifyFlag({ key, refs, envPresent, mappedFeature = null }) {
@@ -448,11 +456,11 @@ function classifyFlag({ key, refs, envPresent, mappedFeature = null }) {
 }
 
 function derivePriority(classifications = [], definition = {}) {
+  if (classifications.includes("complete") && !hasBlockingFeatureClassifications(classifications)) {
+    return "complete";
+  }
   if (definition.priority) {
     return definition.priority;
-  }
-  if (classifications.includes("complete")) {
-    return "complete";
   }
   if (classifications.includes("config_only") || classifications.includes("module_exists_but_unused")) {
     return "P1";
@@ -464,6 +472,14 @@ function derivePriority(classifications = [], definition = {}) {
     return "P4";
   }
   return "P4";
+}
+
+function hasBlockingFeatureClassifications(classifications = []) {
+  return classifications.some((classification) => BLOCKING_FEATURE_CLASSIFICATIONS.has(classification));
+}
+
+function deriveFeatureStatus(classifications = []) {
+  return classifications.find((classification) => BLOCKING_FEATURE_CLASSIFICATIONS.has(classification)) || "complete";
 }
 
 function buildPriorityReasons(classifications = []) {
@@ -608,7 +624,7 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
       id: definition.id,
       flags: featureFlags,
       classifications,
-      status: classifications[0],
+      status: deriveFeatureStatus(classifications),
       priority: derivePriority(classifications, definition),
       priorityReasons: buildPriorityReasons(classifications),
       completionPlan: definition.completionPlan || "Review integration status before adding behavior.",
@@ -638,7 +654,8 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
       counts[classification] = (counts[classification] || 0) + 1;
     }
   }
-  const incompleteFeatures = features.filter((feature) => !feature.classifications.includes("complete"));
+  const incompleteFeatures = features.filter((feature) => hasBlockingFeatureClassifications(feature.classifications));
+  const liveRiskReviewFeatures = features.filter((feature) => feature.classifications.includes("live_risk_review_needed"));
   return {
     status: incompleteFeatures.length ? "review_required" : "complete",
     generatedAt: new Date().toISOString(),
@@ -647,6 +664,14 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
     classificationCounts: counts,
     flags,
     features,
+    liveRiskReviewCount: liveRiskReviewFeatures.length,
+    liveRiskReviewFeatures: liveRiskReviewFeatures.map((feature) => ({
+      id: feature.id,
+      status: feature.status,
+      priority: feature.priority,
+      reviewDossier: feature.reviewDossier,
+      liveBehaviorPolicy: feature.liveBehaviorPolicy
+    })),
     findings: incompleteFeatures.map((feature) => ({
       id: feature.id,
       classifications: feature.classifications,

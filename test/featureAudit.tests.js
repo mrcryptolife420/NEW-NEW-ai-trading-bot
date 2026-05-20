@@ -123,6 +123,32 @@ export async function registerFeatureAuditTests({ runCheck, assert, fs, os }) {
     assert.equal(audit.features.find((item) => item.id === "indicator_feature_registry").priority, "P3");
   });
 
+  await runCheck("feature audit treats wired live-risk dossiers as complete", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "feature-audit-live-risk-complete-"));
+    await writeFile(fs, path.join(root, ".env.example"), [
+      "ENABLE_NET_EDGE_GATE=false",
+      "NET_EDGE_GATE_LIVE_BLOCK_ONLY=true"
+    ].join("\n"));
+    await writeFile(fs, path.join(root, "src/runtime/netEdgeGate.js"), "export function buildNetEdgeGate() {}\n");
+    await writeFile(fs, path.join(root, "src/runtime/decisionSupportDiagnostics.js"), "buildNetEdgeGate(); const netEdgeGate = {};\n");
+    await writeFile(fs, path.join(root, "src/dashboard/public/app.js"), "render(netEdgeGate);\n");
+    await writeFile(fs, path.join(root, "test/decisionSupportFoundation.tests.js"), "buildNetEdgeGate();\n");
+    const audit = await buildFeatureAudit({
+      projectRoot: root,
+      config: {
+        enableNetEdgeGate: false,
+        netEdgeGateLiveBlockOnly: true
+      }
+    });
+    const feature = audit.features.find((item) => item.id === "net_edge_gate");
+    assert.equal(feature.status, "complete");
+    assert.equal(feature.priority, "complete");
+    assert.ok(feature.classifications.includes("complete"));
+    assert.ok(feature.classifications.includes("live_risk_review_needed"));
+    assert.equal(audit.findings.some((item) => item.id === "net_edge_gate"), false);
+    assert.ok(audit.liveRiskReviewFeatures.some((item) => item.id === "net_edge_gate"));
+  });
+
   await runCheck("feature audit classifies known legacy umbrella flags as documented config-only", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "feature-audit-config-only-"));
     await writeFile(fs, path.join(root, ".env.example"), [

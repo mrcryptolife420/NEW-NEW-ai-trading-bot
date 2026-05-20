@@ -9365,6 +9365,8 @@ export class TradingBot {
       filesToChange: arr(feature.filesToChange || []),
       testsToAdd: arr(feature.testsToAdd || []),
       liveBehaviorPolicy: feature.liveBehaviorPolicy || null,
+      liveRiskReviewRequired: arr(feature.classifications || []).includes("live_risk_review_needed"),
+      reviewDossierStatus: feature.reviewDossier?.status || null,
       configStatus: feature.configStatus || null,
       runtimeRefCount: arr(feature.runtimeRefs || []).length,
       dashboardRefCount: arr(feature.dashboardRefs || []).length,
@@ -9386,6 +9388,12 @@ export class TradingBot {
       classificationCounts: audit.classificationCounts || {},
       priorityCounts,
       incompleteCount: incomplete.length,
+      liveRiskReviewCount: Number.isFinite(Number(audit.liveRiskReviewCount))
+        ? Number(audit.liveRiskReviewCount)
+        : features.filter((feature) => feature.liveRiskReviewRequired).length,
+      liveRiskReviewFeatures: arr(audit.liveRiskReviewFeatures || [])
+        .map((feature) => ({ id: feature.id || null, status: feature.status || null, priority: feature.priority || null }))
+        .slice(0, 12),
       p1Count: p1.length,
       p3Count: p3.length,
       topP1: p1.slice(0, 6),

@@ -1797,6 +1797,7 @@ function renderLearning(snapshot) {
     || {};
   const topP1 = arr(featureAudit.topP1 || []);
   const topMissingDashboard = arr(featureAudit.topMissingDashboard || []);
+  const liveRiskReviewCount = Number(featureAudit.liveRiskReviewCount);
   const cards = [
     { title: "Action items", detail: diagnostics.actionItems?.length ? diagnostics.actionItems.map((item) => item.title).slice(0, 2).join(" · ") : "Geen extra operator-diagnostiek." },
     { title: "Readiness", detail: compactJoin([titleize(snapshot?.dashboard?.ops?.readiness?.status || "unknown"), snapshot?.dashboard?.ops?.missedTradeTuning?.actionClass ? titleize(snapshot.dashboard.ops.missedTradeTuning.actionClass) : null]) },
@@ -1805,6 +1806,7 @@ function renderLearning(snapshot) {
       detail: compactJoin([
         featureAudit.status ? titleize(featureAudit.status) : "Onbekend",
         Number.isFinite(Number(featureAudit.incompleteCount)) ? `${featureAudit.incompleteCount} incomplete` : null,
+        Number.isFinite(liveRiskReviewCount) && liveRiskReviewCount > 0 ? `${liveRiskReviewCount} live reviews` : null,
         topP1[0]?.id ? `P1 ${titleize(topP1[0].id)}` : null,
         topMissingDashboard[0]?.id ? `dashboard ${titleize(topMissingDashboard[0].id)}` : null
       ]) || "Feature audit nog niet beschikbaar.",

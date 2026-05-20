@@ -213,10 +213,11 @@ export async function registerDashboardSnapshotTests({
     assert.equal(snapshot.report.recentTrades[0].maximumAdverseExcursionPct, -0.012);
     assert.equal(snapshot.report.recentTrades[0].exitEfficiencyPct, 0.63);
     assert.equal(snapshot.report.tradeQualitySummary.averageExitEfficiencyPct, 0.63);
-    assert.equal(snapshot.featureIntegrationAudit.status, "review_required");
-    assert.equal(snapshot.ops.featureIntegrationAudit.status, "review_required");
-    assert.equal(snapshot.report.featureIntegrationAudit.status, "review_required");
-    assert.ok(snapshot.featureIntegrationAudit.topP1.some((item) => item.id === "net_edge_gate"));
+    assert.equal(snapshot.featureIntegrationAudit.status, "complete");
+    assert.equal(snapshot.ops.featureIntegrationAudit.status, "complete");
+    assert.equal(snapshot.report.featureIntegrationAudit.status, "complete");
+    assert.equal(snapshot.featureIntegrationAudit.topP1.some((item) => item.id === "net_edge_gate"), false);
+    assert.ok(snapshot.featureIntegrationAudit.liveRiskReviewFeatures.some((item) => item.id === "net_edge_gate"));
     assert.equal(snapshot.featureIntegrationAudit.classificationCounts.missing_dashboard || 0, 0);
     assert.equal(snapshot.topDecisions[0].decisionSupportDiagnostics.status, "disabled");
     assert.equal(snapshot.ops.riskLocks.manualReviewPending, true);
