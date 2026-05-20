@@ -87,3 +87,4 @@ Bij elk geconsolideerd agentrapport:
 - Schrijf het rapport als Markdownbestand in `docs/Md rapports/`.
 - Vermeld expliciet welke punten nog open zijn en welke punten al afgewerkt zijn.
 - Maak geen dubbele rapporten aan als een bestaand rapport kan worden bijgewerkt.
+- Als een geconsolideerd agentrapport volledig afgewerkt en klaar is, verplaats het naar `docs/Compleet rapports/`.
