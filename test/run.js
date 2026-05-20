@@ -22285,6 +22285,71 @@ await runCheck("manageOpenPositions preserves protect_only and flags missing liv
   assert.equal(bot.runtime.openPositions[1].lifecycleState, "protection_pending");
 });
 
+await runCheck("manageOpenPositions ignores legacy stop tighten suggestions above market", async () => {
+  const bot = Object.create(TradingBot.prototype);
+  bot.config = makeConfig({
+    botMode: "paper",
+    enableExitIntelligence: true,
+    enableMarketSentimentContext: false,
+    enableOnChainLiteContext: false,
+    enableCrossTimeframeConsensus: false
+  });
+  bot.config.symbolMetadata = {};
+  bot.runtime = {
+    openPositions: [{
+      id: "pos-stale-stop",
+      symbol: "BTCUSDT",
+      quantity: 1,
+      entryPrice: 100,
+      totalCost: 100,
+      notional: 100,
+      stopLossPrice: 95,
+      takeProfitPrice: 110,
+      highestPrice: 100,
+      lowestPrice: 95,
+      brokerMode: "paper",
+      executionVenue: "internal",
+      operatorMode: "normal",
+      lifecycleState: "simulated_open",
+      manualReviewRequired: false,
+      reconcileRequired: false
+    }],
+    offlineTrainer: {},
+    sourceReliability: {}
+  };
+  bot.journal = { trades: [], scaleOuts: [], events: [] };
+  bot.symbolRules = { BTCUSDT: { minQty: 0.0001, minNotional: 5 } };
+  bot.broker = { reconcileRuntime: async () => ({ closedTrades: [], recoveredPositions: [], warnings: [] }) };
+  bot.applyReconciliation = async () => {};
+  bot.getMarketSnapshot = async () => ({
+    symbol: "BTCUSDT",
+    book: { mid: 100, spreadBps: 2, bookPressure: 0.1 },
+    market: {},
+    stream: {}
+  });
+  bot.news = { getSymbolSummary: async () => ({ riskScore: 0 }) };
+  bot.exchangeNotices = { getSymbolSummary: async () => ({ riskScore: 0 }) };
+  bot.calendar = { getSymbolSummary: async () => ({}) };
+  bot.marketStructure = { getSymbolSummary: async () => ({ signalScore: 0, riskScore: 0 }) };
+  bot.marketSentiment = { getSummary: async () => ({}) };
+  bot.onChainLite = { getSummary: async () => ({ stressScore: 0 }) };
+  bot.exitIntelligence = {
+    evaluate: () => ({
+      shouldTightenStop: true,
+      suggestedStopLossPrice: 105,
+      reason: "legacy_bad_stop"
+    })
+  };
+  bot.model = { inferRegime: () => ({ reasons: [] }), scoreExit: () => ({}) };
+  bot.risk = { evaluateExit: () => ({ updatedHigh: 100, updatedLow: 95, shouldScaleOut: false, shouldExit: false, exitPolicy: null }) };
+  bot.stream = { estimateFill: () => null, getSymbolStreamFeatures: () => ({}) };
+  bot.recordEvent = () => {};
+  bot.syncOrderLifecycleState = () => ({});
+  bot.logger = { warn() {} };
+  await TradingBot.prototype.manageOpenPositions.call(bot);
+  assert.equal(bot.runtime.openPositions[0].stopLossPrice, 95);
+});
+
 await runCheck("trading bot diagnostics actions reset external feeds and keep audit history", async () => {
   const bot = Object.create(TradingBot.prototype);
   bot.config = makeConfig();

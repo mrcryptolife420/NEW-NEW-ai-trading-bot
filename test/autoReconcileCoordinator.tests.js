@@ -287,4 +287,46 @@ export async function registerAutoReconcileCoordinatorTests({
     assert.equal(planOutput.plan.status, "can_auto_fix");
     assert.equal(statusOutput.autoReconcileStatus, "can_auto_fix");
   });
+
+  await runCheck("auto reconcile CLI run keeps cleared position protection-pending without OCO evidence", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "auto-reconcile-cli-run-"));
+    const runtimeDir = path.join(root, "runtime");
+    const { StateStore } = await import("../src/storage/stateStore.js");
+    const store = new StateStore(runtimeDir);
+    await store.init();
+    const runtime = await store.loadRuntime();
+    runtime.openPositions = [{
+      id: "pos-cli-run",
+      symbol: "BTCUSDT",
+      quantity: 0.01,
+      reconcileRequired: true,
+      manualReviewRequired: true,
+      lifecycleState: "reconcile_required"
+    }];
+    runtime.exchangeTruth = {
+      accountSnapshot: freshAccount("BTC", 0.01),
+      openOrders: [{ symbol: "BTCUSDT", side: "SELL", status: "NEW", orderId: 99 }],
+      openOrderLists: [],
+      recentTradesBySymbol: {}
+    };
+    runtime.userStreamSnapshot = { fresh: true };
+    runtime.symbolRules = symbolRules;
+    await store.saveRuntime(runtime);
+    const config = { ...baseConfig, runtimeDir, projectRoot: root };
+    const logger = { info() {}, warn() {}, error() {}, debug() {} };
+    const lines = [];
+    const previousLog = console.log;
+    console.log = (line) => lines.push(line);
+    try {
+      await runCli({ command: "reconcile:run", args: [], config, logger, processState: { exitCode: undefined } });
+    } finally {
+      console.log = previousLog;
+    }
+    const runOutput = JSON.parse(lines[0]);
+    const reloaded = await store.loadRuntime();
+    assert.equal(runOutput.result.appliedCount >= 1, true);
+    assert.equal(reloaded.openPositions[0].reconcileRequired, false);
+    assert.equal(reloaded.openPositions[0].manualReviewRequired, false);
+    assert.equal(reloaded.openPositions[0].lifecycleState, "protection_pending");
+  });
 }

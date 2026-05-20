@@ -20818,7 +20818,11 @@ export class TradingBot {
           : summarizeExitIntelligence({ action: "disabled", nextReviewBias: "disabled" });
         let stopProtectionRefresh = null;
         let targetProtectionRefresh = null;
-        if (exitIntelligenceSummary.shouldTightenStop && exitIntelligenceSummary.suggestedStopLossPrice > (position.stopLossPrice || 0)) {
+        if (
+          exitIntelligenceSummary.shouldTightenStop &&
+          exitIntelligenceSummary.suggestedStopLossPrice > (position.stopLossPrice || 0) &&
+          exitIntelligenceSummary.suggestedStopLossPrice < marketSnapshot.book.mid
+        ) {
           position.stopLossPrice = exitIntelligenceSummary.suggestedStopLossPrice;
           stopProtectionRefresh = {
             reason: exitIntelligenceSummary.reason || "protect_winner",

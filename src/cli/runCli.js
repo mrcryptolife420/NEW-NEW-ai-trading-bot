@@ -25,6 +25,7 @@ import {
   evaluateExchangeSafetyUnlock,
   runAutoReconcilePlan
 } from "../execution/autoReconcileCoordinator.js";
+import { clearPositionReconcileFlags } from "../execution/liveBrokerReconcile.js";
 import {
   buildPostReconcileProbationStatus,
   resolvePostReconcileProbationState
@@ -889,11 +890,10 @@ export default async function runCli({
       logger,
       broker: {
         clearPositionReconcileFlags(position, result = {}) {
-          position.reconcileRequired = false;
-          position.manualReviewRequired = false;
-          position.lifecycleState = position.protectiveOrderListId ? "protected" : "open";
-          position.lastAutoReconcileAction = result.reason || "cli_auto_reconcile_clear";
-          position.lastAutoReconcileAt = new Date().toISOString();
+          clearPositionReconcileFlags(position, {
+            ...result,
+            reason: result.reason || "cli_auto_reconcile_clear"
+          });
         }
       }
     });
