@@ -20817,6 +20817,7 @@ export class TradingBot {
             })
           : summarizeExitIntelligence({ action: "disabled", nextReviewBias: "disabled" });
         let stopProtectionRefresh = null;
+        let targetProtectionRefresh = null;
         if (exitIntelligenceSummary.shouldTightenStop && exitIntelligenceSummary.suggestedStopLossPrice > (position.stopLossPrice || 0)) {
           position.stopLossPrice = exitIntelligenceSummary.suggestedStopLossPrice;
           stopProtectionRefresh = {
@@ -20848,7 +20849,9 @@ export class TradingBot {
           exitQuality: exitDecision.exitQuality ?? exitIntelligenceSummary.exitQuality ?? null,
           currentExitRecommendation: exitDecision.currentExitRecommendation || exitIntelligenceSummary.currentExitRecommendation || exitIntelligenceSummary.contextualAction || exitIntelligenceSummary.action || "hold",
           suggestedStopLossPrice: exitDecision.suggestedStopLossPrice || exitIntelligenceSummary.suggestedStopLossPrice || null,
-          shouldTightenStop: Boolean(exitDecision.shouldTightenStop || exitIntelligenceSummary.shouldTightenStop)
+          shouldTightenStop: Boolean(exitDecision.shouldTightenStop || exitIntelligenceSummary.shouldTightenStop),
+          suggestedTakeProfitPrice: exitDecision.suggestedTakeProfitPrice || exitIntelligenceSummary.suggestedTakeProfitPrice || null,
+          shouldRefreshTakeProfit: Boolean(exitDecision.shouldRefreshTakeProfit || exitIntelligenceSummary.shouldRefreshTakeProfit)
         };
         if (
           enrichedExitIntelligenceSummary.shouldTightenStop &&
@@ -20864,6 +20867,28 @@ export class TradingBot {
             symbol: position.symbol,
             stopLossPrice: position.stopLossPrice,
             reason: exitDecision.exitIntelligenceV2 ? "exit_intelligence_v2_trail" : (exitIntelligenceSummary.reason || "protect_winner")
+          });
+        }
+        if (
+          enrichedExitIntelligenceSummary.shouldRefreshTakeProfit &&
+          enrichedExitIntelligenceSummary.suggestedTakeProfitPrice > marketSnapshot.book.mid &&
+          (
+            safeNumber(position.takeProfitPrice, 0) <= marketSnapshot.book.mid ||
+            enrichedExitIntelligenceSummary.suggestedTakeProfitPrice > safeNumber(position.takeProfitPrice, 0) * 1.001
+          )
+        ) {
+          const previousTakeProfitPrice = position.takeProfitPrice || null;
+          position.takeProfitPrice = enrichedExitIntelligenceSummary.suggestedTakeProfitPrice;
+          targetProtectionRefresh = {
+            reason: "exit_intelligence_v2_target_refresh",
+            takeProfitPrice: position.takeProfitPrice,
+            previousTakeProfitPrice
+          };
+          this.recordEvent("position_take_profit_target_refreshed", {
+            symbol: position.symbol,
+            previousTakeProfitPrice,
+            takeProfitPrice: position.takeProfitPrice,
+            reason: "exit_intelligence_v2_target_refresh"
           });
         }
         updateOpenPositionExcursion(position, {
@@ -20905,7 +20930,7 @@ export class TradingBot {
           }
         }
         if (
-          stopProtectionRefresh &&
+          (stopProtectionRefresh || targetProtectionRefresh) &&
           !exitDecision.shouldScaleOut &&
           !exitDecision.shouldExit &&
           typeof this.broker.refreshProtectiveOrder === "function" &&
@@ -20917,7 +20942,7 @@ export class TradingBot {
               position,
               this.symbolRules[position.symbol],
               this.runtime,
-              "exit_intelligence_stop_refresh",
+              stopProtectionRefresh ? "exit_intelligence_stop_refresh" : "exit_intelligence_target_refresh",
               marketSnapshot
             );
             if (refresh?.closedTrade) {
@@ -20928,17 +20953,19 @@ export class TradingBot {
               await this.learnFromTrade(refresh.closedTrade, "Closed position");
               continue;
             }
-            this.recordEvent("position_stop_protection_refreshed", {
+            this.recordEvent(stopProtectionRefresh ? "position_stop_protection_refreshed" : "position_target_protection_refreshed", {
               symbol: position.symbol,
-              stopLossPrice: stopProtectionRefresh.stopLossPrice,
-              reason: stopProtectionRefresh.reason,
+              stopLossPrice: stopProtectionRefresh?.stopLossPrice || position.stopLossPrice,
+              takeProfitPrice: targetProtectionRefresh?.takeProfitPrice || position.takeProfitPrice,
+              reason: stopProtectionRefresh?.reason || targetProtectionRefresh?.reason,
               refreshed: Boolean(refresh?.refreshed || refresh?.orderList)
             });
           } catch (error) {
-            this.recordEvent("position_stop_protection_refresh_failed", {
+            this.recordEvent(stopProtectionRefresh ? "position_stop_protection_refresh_failed" : "position_target_protection_refresh_failed", {
               symbol: position.symbol,
-              stopLossPrice: stopProtectionRefresh.stopLossPrice,
-              reason: stopProtectionRefresh.reason,
+              stopLossPrice: stopProtectionRefresh?.stopLossPrice || position.stopLossPrice,
+              takeProfitPrice: targetProtectionRefresh?.takeProfitPrice || position.takeProfitPrice,
+              reason: stopProtectionRefresh?.reason || targetProtectionRefresh?.reason,
               error: error.message
             });
           }

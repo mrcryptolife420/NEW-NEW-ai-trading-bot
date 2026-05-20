@@ -6535,10 +6535,21 @@ export class RiskManager {
           suggestedStopLossPrice < currentPrice
         )
       );
+      const suggestedTakeProfitPrice = safeValue(exitIntelligenceV2.suggestedTargets?.fullTakeProfitPrice, 0);
+      const currentTakeProfitPrice = safeValue(position.takeProfitPrice, 0);
+      const shouldRefreshTakeProfit = Boolean(
+        suggestedTakeProfitPrice > currentPrice &&
+        (
+          currentTakeProfitPrice <= currentPrice ||
+          suggestedTakeProfitPrice > currentTakeProfitPrice * 1.001
+        )
+      );
       return {
         ...decision,
         suggestedStopLossPrice: decision.suggestedStopLossPrice || (shouldTightenStop ? suggestedStopLossPrice : null),
         shouldTightenStop,
+        suggestedTakeProfitPrice: decision.suggestedTakeProfitPrice || (shouldRefreshTakeProfit ? suggestedTakeProfitPrice : null),
+        shouldRefreshTakeProfit,
         exitQuality: exitIntelligenceV2.exitQualityScore,
         currentExitRecommendation: exitIntelligenceV2.currentExitRecommendation,
         exitIntelligenceV2,

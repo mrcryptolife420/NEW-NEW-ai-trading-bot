@@ -124,6 +124,17 @@ function resolveTightenedStop({ position = {}, currentPrice, updatedHigh, sugges
   return Math.max(...candidates);
 }
 
+function resolveActionableUpsideTarget({ currentPrice, currentTarget = 0, resistance = 0, fallbackTarget = 0, minBufferPct = 0.002 } = {}) {
+  const floor = currentPrice * (1 + clamp(finite(minBufferPct, 0.002), 0.0005, 0.02));
+  const candidates = [
+    currentTarget,
+    resistance,
+    fallbackTarget,
+    currentPrice * (1 + clamp(finite(minBufferPct, 0.002) * 2, 0.002, 0.04))
+  ].filter((value) => Number.isFinite(value) && value > floor);
+  return candidates.length ? Math.max(...candidates) : 0;
+}
+
 export function buildExitIntelligenceV2({
   position = {},
   currentPrice = 0,
@@ -255,7 +266,13 @@ export function buildExitIntelligenceV2({
     nextResistanceTarget: resistance ? num(resistance, 8) : null,
     nextSupportTarget: support ? num(support, 8) : null,
     partialTakeProfitPrice: priceFrom(position.scaleOutTriggerPrice, entryPrice * (1 + finite(config.scaleOutTriggerPct, 0.012)), resistance * 0.985) || null,
-    fullTakeProfitPrice: priceFrom(position.takeProfitPrice, resistance, entryPrice * (1 + finite(config.takeProfitPct, 0.03))) || null
+    fullTakeProfitPrice: resolveActionableUpsideTarget({
+      currentPrice: price,
+      currentTarget: finite(position.takeProfitPrice, 0),
+      resistance,
+      fallbackTarget: entryPrice * (1 + finite(config.takeProfitPct, 0.03)),
+      minBufferPct: config.dynamicTargetMinBufferPct
+    }) || null
   };
   suggestedTargets.partialTakeProfitPrice = suggestedTargets.partialTakeProfitPrice ? num(suggestedTargets.partialTakeProfitPrice, 8) : null;
   suggestedTargets.fullTakeProfitPrice = suggestedTargets.fullTakeProfitPrice ? num(suggestedTargets.fullTakeProfitPrice, 8) : null;

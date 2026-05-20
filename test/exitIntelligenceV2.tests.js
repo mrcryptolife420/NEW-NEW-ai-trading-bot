@@ -232,4 +232,46 @@ export async function registerExitIntelligenceV2Tests({ runCheck, assert, RiskMa
     assert.equal(decision.scaleOutReason.startsWith("exit_v2_trim_before_scale_trigger"), true);
     assert.equal(decision.exitIntelligenceV2.currentExitRecommendation, "trim");
   });
+
+  await runCheck("exit intelligence v2 can raise stale dynamic take-profit target without forcing exit", async () => {
+    const risk = new RiskManager(makeConfig({
+      enableExitIntelligence: true,
+      takeProfitPct: 0.03,
+      maxHoldMinutes: 360
+    }));
+    const decision = risk.evaluateExit({
+      position: makePosition({
+        entryAt: "2026-01-01T00:00:00.000Z",
+        highestPrice: 104.8,
+        notional: 100,
+        totalCost: 100,
+        stopLossPrice: 101,
+        takeProfitPrice: 106,
+        scaleOutTriggerPrice: 108,
+        marketConditionAtEntry: "trend_up"
+      }),
+      currentPrice: 104,
+      marketSnapshot: makeSnapshot({
+        book: { mid: 104, bookPressure: 0.42, weightedDepthImbalance: 0.35, depthConfidence: 0.8 },
+        market: {
+          vwap: 102.8,
+          structureLow: 101.5,
+          structureHigh: 110,
+          cvdTrendAlignment: 0.46,
+          orderflowToxicityScore: 0.08,
+          bearishPatternScore: 0.02
+        }
+      }),
+      marketStructureSummary: { signalScore: 0.42, riskScore: 0.16 },
+      newsSummary: {},
+      announcementSummary: {},
+      calendarSummary: {},
+      exitIntelligenceSummary: { continuationQuality: 0.76, contextualAction: "hold" },
+      nowIso: "2026-01-01T00:45:00.000Z"
+    });
+    assert.equal(decision.shouldExit, false);
+    assert.equal(decision.shouldScaleOut, false);
+    assert.equal(decision.shouldRefreshTakeProfit, true);
+    assert.equal(decision.suggestedTakeProfitPrice > 106, true);
+  });
 }
