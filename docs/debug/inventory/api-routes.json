@@ -77,6 +77,10 @@
       "path": "/api/action-contracts"
     },
     {
+      "method": "GET",
+      "path": "/api/system/modules"
+    },
+    {
       "method": "ANY",
       "path": "/api/start"
     },

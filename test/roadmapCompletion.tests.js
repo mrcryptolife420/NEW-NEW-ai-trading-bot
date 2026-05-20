@@ -80,6 +80,12 @@ export async function registerRoadmapCompletionTests({ runCheck, assert }) {
     });
     assert.equal(setup.state, "live_locked");
     assert.ok(setup.reasons.includes("live_acknowledgement_missing"));
+    const setupFromDiagnostics = buildSetupStateMachine({
+      config: { botMode: "paper", envPath: "C:/tmp/.env", tradeProfileId: "safe-paper-template" },
+      diagnostics: { dashboardReachable: true }
+    });
+    assert.equal(setupFromDiagnostics.state, "paper_ready");
+    assert.equal(setupFromDiagnostics.dashboardReachable, true);
     const diff = buildProfileDiffPreview({
       preview: {
         safeDefault: false,
@@ -114,4 +120,3 @@ export async function registerRoadmapCompletionTests({ runCheck, assert }) {
     assert.ok(command.deniedActions.includes("open_new_live_entries_without_review"));
   });
 }
-

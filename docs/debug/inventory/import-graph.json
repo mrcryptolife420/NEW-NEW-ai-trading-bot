@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T20:07:01.813Z",
+  "generatedAt": "2026-05-20T14:23:23.920Z",
   "edges": [
     {
       "from": "src/accounts/accountProfileRegistry.js",
@@ -1037,6 +1037,11 @@
       "type": "static"
     },
     {
+      "from": "src/dashboard/server.js",
+      "to": "src/dashboard/actionRouteContracts.js",
+      "type": "static"
+    },
+    {
       "from": "src/docs/autoDocsGenerator.js",
       "to": "node:fs/promises",
       "type": "static"
@@ -1697,6 +1702,11 @@
       "type": "static"
     },
     {
+      "from": "src/reporting/accountingEvent.js",
+      "to": "node:crypto",
+      "type": "static"
+    },
+    {
       "from": "src/reporting/tradingSystemScorecard.js",
       "to": "src/utils/score.js",
       "type": "static"
@@ -2058,6 +2068,16 @@
     },
     {
       "from": "src/runtime/botManager.js",
+      "to": "src/config/dashboardQuickSettings.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/setupStateMachine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
       "to": "src/utils/time.js",
       "type": "static"
     },
@@ -2089,6 +2109,16 @@
     {
       "from": "src/runtime/botManager.js",
       "to": "src/runtime/runtimeLiveness.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/managerMutationContract.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/botManager.js",
+      "to": "src/runtime/roadmapModuleIntegration.js",
       "type": "static"
     },
     {
@@ -2462,6 +2492,16 @@
       "type": "static"
     },
     {
+      "from": "src/runtime/marketDataIntelligence.js",
+      "to": "src/runtime/dataQualityScoreV2.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/marketDataIntelligence.js",
+      "to": "src/runtime/dataFreshnessScore.js",
+      "type": "static"
+    },
+    {
       "from": "src/runtime/marketHistory.js",
       "to": "src/binance/client.js",
       "type": "static"
@@ -2737,6 +2777,11 @@
       "type": "static"
     },
     {
+      "from": "src/runtime/providerBudgetOrchestrator.js",
+      "to": "src/runtime/providerSloRegistry.js",
+      "type": "static"
+    },
+    {
       "from": "src/runtime/replayChaosLab.js",
       "to": "src/runtime/stressLab.js",
       "type": "static"
@@ -2877,6 +2922,106 @@
       "type": "static"
     },
     {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/ai/modelBenchmarkHarness.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/storage/dataGovernanceCatalog.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/execution/protectiveOrderHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/accounts/accountAllocationPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/reporting/accountingEvent.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/docs/runtimeArchitectureMap.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/ops/sloRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/strategies/pluginLifecycle.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/backupRestorePlanner.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/runtimePerformanceSnapshot.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/execution/reconcileSelfHealingPlan.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/execution/orderLifecycleStateMachine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/operatorActionSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/decisionTruthEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/promotionEvidenceDossier.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/dataTrustArbitrator.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/config/configPolicyCompiler.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/autofixReplayRegressionLab.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/falseNegativeRecoveryEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/roadmapModuleIntegration.js",
+      "to": "src/runtime/runtimeServiceBoundaries.js",
+      "type": "static"
+    },
+    {
       "from": "src/runtime/rootBlockerStalenessVerifier.js",
       "to": "src/risk/reasonRegistry.js",
       "type": "static"
@@ -2974,6 +3119,11 @@
     {
       "from": "src/runtime/strategyResearchMiner.js",
       "to": "src/runtime/externalFeedRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/strategyResearchWorkflow.js",
+      "to": "src/research/strategyDsl.js",
       "type": "static"
     },
     {
@@ -3659,6 +3809,31 @@
     {
       "from": "src/runtime/tradingBot.js",
       "to": "src/runtime/marketSnapshotFlowDebug.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/marketDataIntelligence.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/modelLifecycleDossier.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/strategyResearchWorkflow.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/setupStateMachine.js",
+      "type": "static"
+    },
+    {
+      "from": "src/runtime/tradingBot.js",
+      "to": "src/runtime/liveIncidentCommand.js",
       "type": "static"
     },
     {
@@ -5272,6 +5447,11 @@
       "type": "static"
     },
     {
+      "from": "test/paperExchangeSafety.tests.js",
+      "to": "src/execution/executionIntentLedger.js",
+      "type": "static"
+    },
+    {
       "from": "test/paperExitPolicyLab.tests.js",
       "to": "src/runtime/paperExitPolicyLab.js",
       "type": "static"
@@ -5509,6 +5689,186 @@
     {
       "from": "test/riskSetupQualityPolicy.tests.js",
       "to": "src/risk/policies/setupQualityPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapCompletion.tests.js",
+      "to": "src/runtime/marketDataIntelligence.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapCompletion.tests.js",
+      "to": "src/runtime/modelLifecycleDossier.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapCompletion.tests.js",
+      "to": "src/runtime/strategyResearchWorkflow.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapCompletion.tests.js",
+      "to": "src/runtime/setupStateMachine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapCompletion.tests.js",
+      "to": "src/runtime/liveIncidentCommand.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/dashboard/actionRouteContracts.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/runtime/blockerRootCauseGraph.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/runtime/replayScenarioCatalog.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/config/configLineage.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/config/envMigrationPlan.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/execution/executionQualityRecord.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/runtime/scanPerformanceBudget.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/runtime/providerBudgetOrchestrator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/ops/windowsEntrypointContracts.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/utils/sensitiveFields.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapSecondWaveCompletion.tests.js",
+      "to": "src/runtime/managerMutationContract.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/ai/modelBenchmarkHarness.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/storage/dataGovernanceCatalog.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/execution/protectiveOrderHealth.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/accounts/accountAllocationPolicy.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/reporting/accountingEvent.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/docs/runtimeArchitectureMap.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/ops/sloRegistry.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/strategies/pluginLifecycle.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/backupRestorePlanner.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/runtimePerformanceSnapshot.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/execution/reconcileSelfHealingPlan.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/execution/orderLifecycleStateMachine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/operatorActionSimulator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/decisionTruthEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/promotionEvidenceDossier.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/dataTrustArbitrator.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/config/configPolicyCompiler.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/autofixReplayRegressionLab.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/falseNegativeRecoveryEngine.js",
+      "type": "static"
+    },
+    {
+      "from": "test/roadmapThirdWaveCompletion.tests.js",
+      "to": "src/runtime/runtimeServiceBoundaries.js",
       "type": "static"
     },
     {
@@ -6628,6 +6988,31 @@
     },
     {
       "from": "test/run.js",
+      "to": "test/roadmapCompletion.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/roadmapSecondWaveCompletion.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/roadmapThirdWaveCompletion.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/systemModuleIntegration.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
+      "to": "test/dashboardClosedTradeMetrics.tests.js",
+      "type": "static"
+    },
+    {
+      "from": "test/run.js",
       "to": "node:http",
       "type": "static"
     },
@@ -6999,6 +7384,11 @@
     {
       "from": "test/symbolQualityDecay.tests.js",
       "to": "src/runtime/dashboardPayloadNormalizers.js",
+      "type": "static"
+    },
+    {
+      "from": "test/systemModuleIntegration.tests.js",
+      "to": "src/runtime/roadmapModuleIntegration.js",
       "type": "static"
     },
     {

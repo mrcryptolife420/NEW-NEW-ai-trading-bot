@@ -23,6 +23,7 @@ const manager = {
   async init() { return { manager: { dashboardPort: 0 } }; },
   async stop() {},
   async getSnapshot() { return snapshot; },
+  async getHealthStatus() { return { ok: true, status: "ready", source: "smoke" }; },
   async getOperationalReadiness() { return { ok: true, status: "ready", reasons: [], checkedAt: new Date().toISOString() }; },
   async getLivePreflight() { return { contract: { kind: "live_preflight" }, preflight: { safeToStartLive: false, status: "blocked", blockingReasons: ["acknowledgement"] } }; },
   async getSafeEnvStatus() { return { status: "ok", duplicateKeys: [] }; },

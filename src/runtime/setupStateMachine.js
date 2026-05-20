@@ -27,7 +27,7 @@ export function buildSetupStateMachine({
   const profileId = getConfigValue(config, "tradeProfileId", env.TRADE_PROFILE_ID || null);
   const liveAcknowledged = getConfigValue(config, "liveTradingAcknowledged", env.LIVE_TRADING_ACKNOWLEDGED || "") === "I_UNDERSTAND_LIVE_TRADING_RISK";
   const doctorWarnings = arr(doctor.warnings || doctor.failed || doctor.checks).filter((item) => item?.passed === false || item?.status === "warning" || item?.status === "failed");
-  const dashboardReachable = dashboard.reachable ?? dashboard.status === "ready" ?? diagnostics.dashboardReachable;
+  const dashboardReachable = dashboard.reachable ?? diagnostics.dashboardReachable ?? dashboard.status === "ready";
   const reasons = [];
   if (!envPath) reasons.push("env_path_missing");
   if (!profileId) reasons.push("trade_profile_not_selected");
@@ -111,4 +111,3 @@ export function buildProfileDiffPreview({ preview = {}, currentConfig = {}, curr
     }
   };
 }
-
