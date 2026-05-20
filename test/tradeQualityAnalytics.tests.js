@@ -114,6 +114,30 @@ export async function registerTradeQualityAnalyticsTests({ runCheck, assert, mak
     assert.equal(capped.tradeQualityLabels.includes("take_profit_too_close"), true);
   });
 
+  await runCheck("trade quality analytics reconstructs legacy closed trade path metrics from exit path", async () => {
+    const profitable = buildTradeQualityAnalytics({
+      trade: {
+        entryPrice: 100,
+        exitPrice: 103,
+        netPnlPct: 0.03,
+        maximumFavorableExcursionPct: 0,
+        maximumAdverseExcursionPct: 0
+      }
+    });
+    const drawdown = buildTradeQualityAnalytics({
+      trade: {
+        entryPrice: 100,
+        exitPrice: 98,
+        netPnlPct: -0.02
+      }
+    });
+
+    assert.equal(profitable.maximumFavorableExcursionPct, 0.03);
+    assert.equal(profitable.exitEfficiencyPct, 1);
+    assert.equal(profitable.tradeQualityLabels.includes("bad_entry_bad_exit"), false);
+    assert.equal(drawdown.maximumAdverseExcursionPct, -0.02);
+  });
+
   await runCheck("performance report exposes trade path quality summary", async () => {
     const trades = [
       {

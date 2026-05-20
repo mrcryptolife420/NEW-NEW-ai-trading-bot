@@ -248,6 +248,7 @@ import { registerRoadmapCompletionTests } from "./roadmapCompletion.tests.js";
 import { registerRoadmapSecondWaveCompletionTests } from "./roadmapSecondWaveCompletion.tests.js";
 import { registerRoadmapThirdWaveCompletionTests } from "./roadmapThirdWaveCompletion.tests.js";
 import { registerSystemModuleIntegrationTests } from "./systemModuleIntegration.tests.js";
+import { registerDashboardClosedTradeMetricsTests } from "./dashboardClosedTradeMetrics.tests.js";
 import http from "node:http";
 
 const testStartedAt = Date.now();
@@ -33040,6 +33041,13 @@ await registerSystemModuleIntegrationTests({
   runCheck,
   assert,
   __dashboardSmokeRender
+});
+
+await registerDashboardClosedTradeMetricsTests({
+  runCheck,
+  assert,
+  TradingBot,
+  makeConfig
 });
 
 await registerDomainTestRegistryTests({

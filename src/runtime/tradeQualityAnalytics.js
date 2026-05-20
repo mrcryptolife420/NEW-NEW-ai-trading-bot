@@ -37,27 +37,49 @@ function resolveMinutesSinceEntry(position = {}, at) {
 }
 
 function resolveTradeMfePct(trade = {}) {
+  const candidates = [];
   if (Number.isFinite(Number(trade.maximumFavorableExcursionPct))) {
-    return Number(trade.maximumFavorableExcursionPct);
+    candidates.push(Number(trade.maximumFavorableExcursionPct));
   }
   if (Number.isFinite(Number(trade.mfePct))) {
-    return Number(trade.mfePct);
+    candidates.push(Number(trade.mfePct));
   }
   const entry = safeNumber(trade.entryPrice, 0);
   const best = safeNumber(trade.bestPossibleExitPrice, safeNumber(trade.highestPrice, 0));
-  return entry > 0 && best > 0 ? Math.max(0, (best - entry) / entry) : 0;
+  if (entry > 0 && best > 0) {
+    candidates.push(Math.max(0, (best - entry) / entry));
+  }
+  const exit = safeNumber(trade.exitPrice, 0);
+  if (entry > 0 && exit > 0) {
+    candidates.push(Math.max(0, (exit - entry) / entry));
+  }
+  if (Number.isFinite(Number(trade.netPnlPct))) {
+    candidates.push(Math.max(0, Number(trade.netPnlPct)));
+  }
+  return candidates.length ? Math.max(...candidates) : 0;
 }
 
 function resolveTradeMaePct(trade = {}) {
+  const candidates = [];
   if (Number.isFinite(Number(trade.maximumAdverseExcursionPct))) {
-    return Number(trade.maximumAdverseExcursionPct);
+    candidates.push(Number(trade.maximumAdverseExcursionPct));
   }
   if (Number.isFinite(Number(trade.maePct))) {
-    return Number(trade.maePct);
+    candidates.push(Number(trade.maePct));
   }
   const entry = safeNumber(trade.entryPrice, 0);
   const worst = safeNumber(trade.worstAdversePrice, safeNumber(trade.lowestPrice, 0));
-  return entry > 0 && worst > 0 ? Math.min(0, (worst - entry) / entry) : 0;
+  if (entry > 0 && worst > 0) {
+    candidates.push(Math.min(0, (worst - entry) / entry));
+  }
+  const exit = safeNumber(trade.exitPrice, 0);
+  if (entry > 0 && exit > 0) {
+    candidates.push(Math.min(0, (exit - entry) / entry));
+  }
+  if (Number.isFinite(Number(trade.netPnlPct))) {
+    candidates.push(Math.min(0, Number(trade.netPnlPct)));
+  }
+  return candidates.length ? Math.min(...candidates) : 0;
 }
 
 export function initializePositionExcursionTracking(position = {}, { price = null, at = null } = {}) {
@@ -172,7 +194,11 @@ export function buildTradeQualityAnalytics({ position = {}, trade = {}, exitPric
     ?? (entryPrice > 0 && resolvedExitPrice > 0 ? (resolvedExitPrice - entryPrice) / entryPrice : 0);
   const mfePct = resolveTradeMfePct({ ...position, ...trade });
   const maePct = resolveTradeMaePct({ ...position, ...trade });
-  const exitEfficiencyPct = mfePct > 0 ? clamp(resolvedNetPnlPct / Math.max(mfePct, 1e-9), -1, 1.5) : (resolvedNetPnlPct > 0 ? 1 : 0);
+  const fallbackExitEfficiencyPct = mfePct > 0 ? clamp(resolvedNetPnlPct / Math.max(mfePct, 1e-9), -1, 1.5) : (resolvedNetPnlPct > 0 ? 1 : 0);
+  const explicitExitEfficiencyPct = optionalNumber(trade.exitEfficiencyPct) ?? optionalNumber(trade.captureEfficiency);
+  const exitEfficiencyPct = explicitExitEfficiencyPct != null && (explicitExitEfficiencyPct !== 0 || fallbackExitEfficiencyPct === 0)
+    ? explicitExitEfficiencyPct
+    : fallbackExitEfficiencyPct;
   const gaveBackPct = Math.max(0, mfePct - resolvedNetPnlPct);
   const bestPossibleExitPrice = safeNumber(trade.bestPossibleExitPrice, safeNumber(position.bestPossibleExitPrice, safeNumber(position.highestPrice, entryPrice))) || null;
   const worstAdversePrice = safeNumber(trade.worstAdversePrice, safeNumber(position.worstAdversePrice, safeNumber(position.lowestPrice, entryPrice))) || null;

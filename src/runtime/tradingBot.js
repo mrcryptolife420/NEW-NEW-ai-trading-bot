@@ -24042,6 +24042,7 @@ export class TradingBot {
     const pnl = buildTradePnlBreakdown(trade, this.config);
     const reasonView = summarizeTradeReasonView(trade, pnl);
     const review = buildTradeQualityReview(trade);
+    const pathQuality = review.pathQuality || {};
     return {
       id: trade.id,
       symbol: trade.symbol,
@@ -24059,18 +24060,18 @@ export class TradingBot {
       netAfterFees: num(pnl.netAfterFees || 0, 2),
       executionDragEstimate: num(pnl.executionDragEstimate || 0, 2),
       netPnlPct: num(trade.netPnlPct || 0, 4),
-      mfePct: num(trade.mfePct || 0, 4),
-      maePct: num(trade.maePct || 0, 4),
-      maximumFavorableExcursionPct: num(trade.maximumFavorableExcursionPct ?? trade.mfePct ?? 0, 4),
-      maximumAdverseExcursionPct: num(trade.maximumAdverseExcursionPct ?? trade.maePct ?? 0, 4),
-      exitEfficiencyPct: num(trade.exitEfficiencyPct ?? review.pathQuality?.exitEfficiencyPct ?? 0, 4),
-      gaveBackPct: num(trade.gaveBackPct ?? review.pathQuality?.gaveBackPct ?? 0, 4),
-      bestPossibleExitPrice: trade.bestPossibleExitPrice == null ? null : num(trade.bestPossibleExitPrice, 6),
-      worstAdversePrice: trade.worstAdversePrice == null ? null : num(trade.worstAdversePrice, 6),
-      timeToMfeMinutes: trade.timeToMfeMinutes == null ? null : num(trade.timeToMfeMinutes, 2),
-      timeToMaeMinutes: trade.timeToMaeMinutes == null ? null : num(trade.timeToMaeMinutes, 2),
-      tradeQualityLabel: trade.tradeQualityLabel || review.pathQuality?.tradeQualityLabel || null,
-      tradeQualityLabels: arr(trade.tradeQualityLabels || review.pathQuality?.tradeQualityLabels || []).slice(0, 8),
+      mfePct: num(pathQuality.maximumFavorableExcursionPct ?? trade.mfePct ?? 0, 4),
+      maePct: num(pathQuality.maximumAdverseExcursionPct ?? trade.maePct ?? 0, 4),
+      maximumFavorableExcursionPct: num(pathQuality.maximumFavorableExcursionPct ?? trade.maximumFavorableExcursionPct ?? trade.mfePct ?? 0, 4),
+      maximumAdverseExcursionPct: num(pathQuality.maximumAdverseExcursionPct ?? trade.maximumAdverseExcursionPct ?? trade.maePct ?? 0, 4),
+      exitEfficiencyPct: num(pathQuality.exitEfficiencyPct ?? trade.exitEfficiencyPct ?? 0, 4),
+      gaveBackPct: num(pathQuality.gaveBackPct ?? trade.gaveBackPct ?? 0, 4),
+      bestPossibleExitPrice: (pathQuality.bestPossibleExitPrice ?? trade.bestPossibleExitPrice) == null ? null : num(pathQuality.bestPossibleExitPrice ?? trade.bestPossibleExitPrice, 6),
+      worstAdversePrice: (pathQuality.worstAdversePrice ?? trade.worstAdversePrice) == null ? null : num(pathQuality.worstAdversePrice ?? trade.worstAdversePrice, 6),
+      timeToMfeMinutes: (pathQuality.timeToMfeMinutes ?? trade.timeToMfeMinutes) == null ? null : num(pathQuality.timeToMfeMinutes ?? trade.timeToMfeMinutes, 2),
+      timeToMaeMinutes: (pathQuality.timeToMaeMinutes ?? trade.timeToMaeMinutes) == null ? null : num(pathQuality.timeToMaeMinutes ?? trade.timeToMaeMinutes, 2),
+      tradeQualityLabel: trade.tradeQualityLabel || pathQuality.tradeQualityLabel || null,
+      tradeQualityLabels: arr(trade.tradeQualityLabels || pathQuality.tradeQualityLabels || []).slice(0, 8),
       labelScore: num(trade.labelScore || 0, 4),
       brokerMode: trade.brokerMode || null,
       executionQualityScore: num(trade.executionQualityScore || 0, 4),
