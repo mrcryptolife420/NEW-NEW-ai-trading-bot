@@ -70,6 +70,38 @@ function buildConfigRuntimeSignature(config = {}) {
   });
 }
 
+function listRuntimeOpenPositions(runtime = {}) {
+  return Array.isArray(runtime?.openPositions) ? runtime.openPositions.filter(Boolean) : [];
+}
+
+function listRuntimeUnresolvedExecutionIntentIds(runtime = {}) {
+  const ledger = runtime?.orderLifecycle?.executionIntentLedger || {};
+  if (Array.isArray(ledger.unresolvedIntentIds)) {
+    return ledger.unresolvedIntentIds.filter(Boolean);
+  }
+  return Object.values(ledger.intents || {})
+    .filter((intent) => intent?.unresolved === true || intent?.status === "unresolved" || intent?.state === "unresolved")
+    .map((intent) => intent.id)
+    .filter(Boolean);
+}
+
+function assertModeSwitchSafe(runtime = {}) {
+  const openPositions = listRuntimeOpenPositions(runtime);
+  const unresolvedIntentIds = listRuntimeUnresolvedExecutionIntentIds(runtime);
+  const blockers = [];
+  if (openPositions.length) blockers.push("open positions");
+  if (unresolvedIntentIds.length) blockers.push("unresolved execution intents");
+  if (!blockers.length) return;
+  const error = new Error(`Mode switch blocked: resolve ${blockers.join(" and ")} before changing paper/live mode.`);
+  error.statusCode = 409;
+  error.publicMessage = "Mode switch geblokkeerd: sluit/reconcile open posities en unresolved execution intents eerst.";
+  error.modeSwitchBlockers = {
+    openPositionSymbols: openPositions.map((position) => position.symbol || null).filter(Boolean),
+    unresolvedIntentIds
+  };
+  throw error;
+}
+
 export class BotManager {
   constructor({ projectRoot = process.cwd(), logger }) {
     this.projectRoot = projectRoot;
@@ -382,8 +414,14 @@ export class BotManager {
   }
 
   buildLightweightSnapshot() {
+    const reason = this.stopReason || (this.runState === "stopped" ? "bot_stopped" : "lightweight_snapshot");
     return {
       contract: { version: "v1", kind: "manager_lightweight_snapshot" },
+      reason,
+      botNeedsReinitialize: Boolean(this.botNeedsReinitialize),
+      lastStopAt: this.lastStopAt,
+      stopReason: this.stopReason || null,
+      safeToPoll: true,
       manager: {
         runState: this.runState,
         lifecycle: this.lifecycle,
@@ -462,6 +500,25 @@ export class BotManager {
     }
     await this.bot.close();
     this.botNeedsReinitialize = true;
+  }
+
+  computeCycleDelayMs({ now = Date.now() } = {}) {
+    const baseDelayMs = Math.max(0, Number(this.config?.tradingIntervalSeconds || 0) * 1000);
+    const pauseCapMs = Math.max(baseDelayMs, Number(this.config?.managerRateLimitPauseCapMs || 5 * 60_000));
+    let rateLimitState = null;
+    try {
+      rateLimitState = this.bot?.client?.getRateLimitState?.() || null;
+    } catch (error) {
+      return baseDelayMs;
+    }
+    if (!rateLimitState?.banActive && !rateLimitState?.backoffActive) {
+      return baseDelayMs;
+    }
+    const nextAllowedAt = Number(rateLimitState.nextAllowedAt || rateLimitState.banUntil || rateLimitState.backoffUntil || 0);
+    if (!Number.isFinite(nextAllowedAt) || nextAllowedAt <= now) {
+      return baseDelayMs;
+    }
+    return Math.max(baseDelayMs, Math.min(nextAllowedAt - now, pauseCapMs));
   }
 
   async interruptibleDelay(ms) {
@@ -590,7 +647,7 @@ export class BotManager {
         break;
       }
       this.noteLiveness("cycle_waiting", { status: "idle" });
-      await this.interruptibleDelay(this.config.tradingIntervalSeconds * 1000);
+      await this.interruptibleDelay(this.computeCycleDelayMs());
     }
     this.noteLiveness("manager_stopping", { status: "stopping", reason: this.stopReason || "loop_stop" });
     if (["running", "ready", "degraded"].includes(this.lifecycle.state)) {
@@ -849,6 +906,7 @@ export class BotManager {
           botMode: "live"
         });
       }
+      assertModeSwitchSafe(this.bot?.runtime || {});
 
       await this.stopUnlocked("mode_switch");
       await updateEnvFile(envPath, { BOT_MODE: normalized });
@@ -1431,7 +1489,17 @@ export class BotManager {
       return this.snapshotInFlight;
     }
     this.snapshotInFlight = (async () => {
+      if (allowClosedBot && (this.lifecycle.state === "stopped" || this.runState === "stopped") && (!this.bot || this.botNeedsReinitialize)) {
+        const snapshot = this.buildLightweightSnapshot();
+        this.snapshotCache = { createdAtMs: Date.now(), value: snapshot };
+        return snapshot;
+      }
       await this.ensureBotReady({ allowClosed: allowClosedBot });
+      if (allowClosedBot && this.botNeedsReinitialize) {
+        const snapshot = this.buildLightweightSnapshot();
+        this.snapshotCache = { createdAtMs: Date.now(), value: snapshot };
+        return snapshot;
+      }
       const dashboard = await this.bot.getDashboardSnapshot({ refreshPrerequisites });
       const snapshot = this.buildSnapshotFromDashboard(dashboard);
       this.snapshotCache = { createdAtMs: Date.now(), value: snapshot };

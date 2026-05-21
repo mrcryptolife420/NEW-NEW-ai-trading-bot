@@ -326,6 +326,81 @@ export async function registerBinanceRestArchitectureTests({
     );
   });
 
+  await runCheck("binance client hard-pauses 418 with conservative fallback when expiry is missing", async () => {
+    let now = 1_700_000_000_000;
+    let attempts = 0;
+    const client = new BinanceClient({
+      apiKey: "",
+      apiSecret: "",
+      baseUrl: "https://api.binance.com",
+      nowFn: () => now,
+      fetchImpl: async () => {
+        attempts += 1;
+        return {
+          ok: false,
+          status: 418,
+          headers: makeHeaders(),
+          async text() {
+            return JSON.stringify({ code: -1003, msg: "IP banned without an expiry." });
+          }
+        };
+      }
+    });
+    client.requestWeightState.banUntil = now - 1;
+
+    await assert.rejects(
+      () => client.publicRequest("GET", "/api/v3/ping", {}, { caller: "test.ip_ban_fallback" }),
+      /IP banned without an expiry/
+    );
+    const state = client.getRateLimitState();
+    assert.equal(attempts, 1);
+    assert.equal(state.banActive, true);
+    assert.ok(state.banUntil >= now + 30 * 60_000);
+    assert.equal(state.nextAllowedAt, state.banUntil);
+    assert.equal(state.schedulerAction, "pause_until_ban_expires");
+    await assert.rejects(
+      () => client.publicRequest("GET", "/api/v3/time", {}, { caller: "test.ip_ban_fallback_followup" }),
+      (error) => {
+        assert.match(error.message, /Binance REST banned until/);
+        assert.equal(error.rateLimitState.nextAllowedAt, state.banUntil);
+        assert.equal(error.rateLimitState.schedulerAction, "pause_until_ban_expires");
+        return true;
+      }
+    );
+    assert.equal(attempts, 1);
+  });
+
+  await runCheck("binance client serializes shared request-weight fetches across burst callers", async () => {
+    let activeFetches = 0;
+    let maxActiveFetches = 0;
+    const client = new BinanceClient({
+      apiKey: "",
+      apiSecret: "",
+      baseUrl: "https://api.binance.com",
+      fetchImpl: async () => {
+        activeFetches += 1;
+        maxActiveFetches = Math.max(maxActiveFetches, activeFetches);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        activeFetches -= 1;
+        return {
+          ok: true,
+          status: 200,
+          headers: makeHeaders({ "x-mbx-used-weight-1m": "10" }),
+          async text() {
+            return JSON.stringify({ ok: true });
+          }
+        };
+      }
+    });
+
+    await Promise.all([
+      client.publicRequest("GET", "/api/v3/ticker/price", { symbol: "BTCUSDT" }, { caller: "burst.btc" }),
+      client.publicRequest("GET", "/api/v3/ticker/price", { symbol: "ETHUSDT" }, { caller: "burst.eth" }),
+      client.publicRequest("GET", "/api/v3/ticker/price", { symbol: "SOLUSDT" }, { caller: "burst.sol" })
+    ]);
+    assert.equal(maxActiveFetches, 1);
+  });
+
   await runCheck("exchange info responses are cached instead of re-fetched every caller loop", async () => {
     let attempts = 0;
     const client = new BinanceClient({
@@ -687,5 +762,31 @@ export async function registerBinanceRestArchitectureTests({
     assert.equal(scan.familyCounts.klines, 1);
     assert.equal(scan.familyCounts.book_ticker || 0, 0);
     assert.equal(scan.callers.some((caller) => caller.file.includes("dist-new")), false);
+  });
+
+  await runCheck("request-weight queue recovers after rejected fetch", async () => {
+    const client = new BinanceClient({
+      apiKey: "",
+      apiSecret: "",
+      baseUrl: "https://api.binance.com",
+      maxRetries: 0,
+      fetchImpl: async (url) => {
+        if (url.includes("first")) {
+          throw new Error("simulated transport failure");
+        }
+        return {
+          ok: true,
+          status: 200,
+          headers: makeHeaders({ "x-mbx-used-weight-1m": "3" }),
+          async text() {
+            return JSON.stringify({ ok: true });
+          }
+        };
+      }
+    });
+    await assert.rejects(() => client.request("GET", "/api/v3/ping", { first: true }), /simulated transport failure/);
+    const result = await client.request("GET", "/api/v3/ping", { second: true });
+    assert.deepEqual(result, { ok: true });
+    assert.equal(client.getRateLimitState().usedWeight1m, 3);
   });
 }

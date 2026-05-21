@@ -1,10 +1,7 @@
+import { safeNumber as num } from "../utils/numberSafety.js";
+
 function arr(value) {
   return Array.isArray(value) ? value : [];
-}
-
-function num(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function changeKey(change = {}) {

@@ -34,6 +34,8 @@ function isSafeRetryMethod(method) {
   return ["GET", "HEAD"].includes(`${method || ""}`.toUpperCase());
 }
 
+const DEFAULT_418_FALLBACK_BAN_MS = 30 * 60 * 1000;
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -266,6 +268,7 @@ export class BinanceClient {
     this.exchangeInfoCache = new Map();
     this.exchangeInfoInflight = new Map();
     this.futuresPublicCache = new Map();
+    this.requestQueue = Promise.resolve();
     this.requestWeightState = {
       lastUpdatedAt: null,
       usedWeight: null,
@@ -386,12 +389,17 @@ export class BinanceClient {
     const now = this.nowFn();
     const backoffUntil = Number(this.requestWeightState.backoffUntil || 0);
     const banUntil = Number(this.requestWeightState.banUntil || 0);
+    const banActive = banUntil > now;
+    const backoffActive = backoffUntil > now;
+    const nextAllowedAt = banActive ? banUntil : backoffActive ? backoffUntil : null;
     return {
       ...this.requestWeightState,
-      backoffActive: backoffUntil > now,
-      backoffRemainingMs: backoffUntil > now ? backoffUntil - now : 0,
-      banActive: banUntil > now,
-      banRemainingMs: banUntil > now ? banUntil - now : 0,
+      backoffActive,
+      backoffRemainingMs: backoffActive ? backoffUntil - now : 0,
+      banActive,
+      banRemainingMs: banActive ? banUntil - now : 0,
+      nextAllowedAt,
+      schedulerAction: banActive ? "pause_until_ban_expires" : backoffActive ? "delay_until_backoff_expires" : "ready",
       topRestCallers: cloneTopCallerMap(this.requestWeightState.topRestCallers)
     };
   }
@@ -508,7 +516,15 @@ export class BinanceClient {
       return;
     }
     if (status === 418) {
-      const banUntil = parseBanExpiryMs(payload, rawBody) || (Number.isFinite(retryAfterMs) && retryAfterMs > 0 ? this.nowFn() + retryAfterMs : null);
+      const now = this.nowFn();
+      const parsedBanUntil = parseBanExpiryMs(payload, rawBody);
+      const retryAfterBanUntil = Number.isFinite(retryAfterMs) && retryAfterMs > 0 ? now + retryAfterMs : null;
+      const activePriorBanUntil = Number.isFinite(Number(state.banUntil)) && Number(state.banUntil) > now ? Number(state.banUntil) : null;
+      const fallbackBanUntil = now + DEFAULT_418_FALLBACK_BAN_MS;
+      const validBanUntilCandidates = [parsedBanUntil, retryAfterBanUntil, activePriorBanUntil]
+        .map((value) => Number(value || 0))
+        .filter((value) => Number.isFinite(value) && value > now);
+      const banUntil = validBanUntilCandidates.length ? Math.max(...validBanUntilCandidates) : fallbackBanUntil;
       state.consecutiveRateLimitHits += 1;
       state.totalRateLimitHits += 1;
       state.lastRateLimitStatus = 418;
@@ -555,6 +571,12 @@ export class BinanceClient {
     }
   }
 
+  async enqueueRequestWeightFetch(work) {
+    const run = this.requestQueue.then(work, work);
+    this.requestQueue = run.catch(() => {});
+    return run;
+  }
+
   async respectActiveRateLimits() {
     const state = this.getRateLimitState();
     if (state.banActive) {
@@ -591,7 +613,7 @@ export class BinanceClient {
         const url = `${this.baseUrl}${pathname}${queryString ? `?${queryString}` : ""}${signature ? `${queryString ? "&" : "?"}signature=${signature}` : ""}`;
         this.noteRequestDiagnostics({ scope, method, pathname, requestMeta, params });
 
-        const response = await this.fetchImpl(url, {
+        const response = await this.enqueueRequestWeightFetch(() => this.fetchImpl(url, {
           method,
           headers: {
             "Content-Type": "application/json",
@@ -599,7 +621,7 @@ export class BinanceClient {
             ...extraHeaders
           },
           signal: AbortSignal.timeout(10_000)
-        });
+        }));
 
         const text = await response.text();
         let responsePayload = null;
@@ -672,14 +694,14 @@ export class BinanceClient {
         const queryString = createQueryString(params);
         const url = `${cleanBaseUrl}${pathname}${queryString ? `?${queryString}` : ""}`;
         this.noteRequestDiagnostics({ scope, method, pathname, requestMeta, params });
-        const response = await this.fetchImpl(url, {
+        const response = await this.enqueueRequestWeightFetch(() => this.fetchImpl(url, {
           method,
           headers: {
             "Content-Type": "application/json",
             ...extraHeaders
           },
           signal: AbortSignal.timeout(10_000)
-        });
+        }));
         const text = await response.text();
         let payload = null;
         try {
@@ -751,11 +773,11 @@ export class BinanceClient {
         const queryString = createQueryString(params);
         const url = `${this.baseUrl}${pathname}${queryString ? `?${queryString}` : ""}`;
         this.noteRequestDiagnostics({ scope: "api_key", method, pathname, requestMeta, params });
-        const response = await this.fetchImpl(url, {
+        const response = await this.enqueueRequestWeightFetch(() => this.fetchImpl(url, {
           method,
           headers: buildUserDataHeaders(this.apiKey),
           signal: AbortSignal.timeout(10_000)
-        });
+        }));
         const text = await response.text();
         let payload = {};
         try {

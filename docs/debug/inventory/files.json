@@ -1,22 +1,122 @@
 [
   {
-    "path": ".claude/rules/lean-ctx.md",
-    "size": 1526,
-    "mtimeMs": 1777488009247,
-    "hash": "77a9ad0b9fb1f6c72e22a5aa7810380902cc9765388f68506236514cf72c9936",
-    "type": "md",
+    "path": ".codex/agents/binance-rate-limit-circuitbreaker-auditor.toml",
+    "size": 1807,
+    "mtimeMs": 1779291993288,
+    "hash": "8f56ae268a6b378fd9f84526f0a041ba416c7b574e443cbcc6407d13d913759e",
+    "type": "toml",
     "emptyClass": null,
-    "lineCount": 34,
+    "lineCount": null,
     "largeFileReview": false
   },
   {
-    "path": ".claude/settings.local.json",
-    "size": 509,
-    "mtimeMs": 1777132791219,
-    "hash": "1992930980d29effa5ea28c033d6466ca985085183c261f3c94c2ae7ac39ede4",
-    "type": "json",
+    "path": ".codex/agents/botmanager-exchange-health-auditor.toml",
+    "size": 1750,
+    "mtimeMs": 1779291993276,
+    "hash": "0ee44f6a438f6e66c37f95425856deb9892efba10525e8f6c3ec827c7e6f7274",
+    "type": "toml",
     "emptyClass": null,
-    "lineCount": 24,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/cli-command-surface-auditor.toml",
+    "size": 1967,
+    "mtimeMs": 1779291993269,
+    "hash": "1bbbbc02075073b656c8ba3eb324395b75ec83dc5f1d5e58f2d030cdfcfee153",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/core-tradingbot-lifecycle-auditor.toml",
+    "size": 1939,
+    "mtimeMs": 1779291993272,
+    "hash": "746bc35b0ce4268dfebd5359d6ae3cfc49f8e46e143088bc1f0dc87678181fb5",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/dashboard-state-api-auditor.toml",
+    "size": 1707,
+    "mtimeMs": 1779291993282,
+    "hash": "ec07cdd0b5df1a03857c564e3541a3f18a0ed437f734cc8e2ef6350477cf5203",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/paper-live-boundary-auditor.toml",
+    "size": 1745,
+    "mtimeMs": 1779291993279,
+    "hash": "ff30ed966f266b4b14e66f3141ab9e18eb462ae585006de6db0a9f3b00d40eda",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/positions-pnl-trim-auditor.toml",
+    "size": 1938,
+    "mtimeMs": 1779291993285,
+    "hash": "53bbfa0a7682aab5d7f8b3c843445a5df79bda528388f399b56c57ca420b419f",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/regression-safety-gatekeeper.toml",
+    "size": 1324,
+    "mtimeMs": 1779291993300,
+    "hash": "6b5b3e8108dde1fe8c9f000ec0edb5909241d0692fd55c57132b10e86b0929d1",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/repo-patch-implementer.toml",
+    "size": 1483,
+    "mtimeMs": 1779291993297,
+    "hash": "2b05645fe5887356a3fd0590b18fcce9a92c5b01085094136ab6c3f52766dd8e",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/roadmap-continuity-planner.toml",
+    "size": 1485,
+    "mtimeMs": 1779291993294,
+    "hash": "a648ddd32441ce22c168c178d51bdac4dbe1139818f56ea51e08c15417735303",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/agents/test-contract-runner.toml",
+    "size": 1533,
+    "mtimeMs": 1779291993291,
+    "hash": "bc3d43efbb3ede0be4343910259b8812bdd1567341fa7658c95d4430d8e70742",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".codex/config.toml",
+    "size": 176,
+    "mtimeMs": 1779291993255,
+    "hash": "7ba43fff35b9577c2ec428c6d6fc57e25d6716c4b519e655361b479a6607c790",
+    "type": "toml",
+    "emptyClass": null,
+    "lineCount": null,
     "largeFileReview": false
   },
   {
@@ -31,22 +131,282 @@
   },
   {
     "path": ".env",
+    "size": 11260,
+    "mtimeMs": 1779132048389,
+    "hash": "56350731ae68b6eed8c3bf4cc68bd6394a6b3d86a68e5c3fc71b450f27756903",
+    "type": "none",
+    "emptyClass": null,
+    "lineCount": 341,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260516-185155",
     "size": 10747,
     "mtimeMs": 1777919813094,
     "hash": "d1554717dc4ff5ac1e98c1d392c60f9c105afd3720a7cd0123228d558cf5cc17",
-    "type": "none",
+    "type": "bak-20260516-185155",
     "emptyClass": null,
-    "lineCount": 324,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260516-185216",
+    "size": 11109,
+    "mtimeMs": 1778957515708,
+    "hash": "01f2c340a5bcd3088670a12f96b3351e92f5fada298b586fc408dfacf978c7fe",
+    "type": "bak-20260516-185216",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260516-185252",
+    "size": 11109,
+    "mtimeMs": 1778957536693,
+    "hash": "01f2c340a5bcd3088670a12f96b3351e92f5fada298b586fc408dfacf978c7fe",
+    "type": "bak-20260516-185252",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260516-185402",
+    "size": 11109,
+    "mtimeMs": 1778957572129,
+    "hash": "01f2c340a5bcd3088670a12f96b3351e92f5fada298b586fc408dfacf978c7fe",
+    "type": "bak-20260516-185402",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260516-201237",
+    "size": 11109,
+    "mtimeMs": 1778957642058,
+    "hash": "01f2c340a5bcd3088670a12f96b3351e92f5fada298b586fc408dfacf978c7fe",
+    "type": "bak-20260516-201237",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-122529",
+    "size": 11151,
+    "mtimeMs": 1778962357552,
+    "hash": "d973ba2bf8e229b37bab516b60034d52432915028ecca18191a339dafb78efd1",
+    "type": "bak-20260518-122529",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-124420",
+    "size": 11151,
+    "mtimeMs": 1779107129588,
+    "hash": "d973ba2bf8e229b37bab516b60034d52432915028ecca18191a339dafb78efd1",
+    "type": "bak-20260518-124420",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-133751",
+    "size": 11215,
+    "mtimeMs": 1779108260014,
+    "hash": "0fe483253d7a5b84f497bc0a2fb192c58f8a0f26cf6e07041564ee64152d3bab",
+    "type": "bak-20260518-133751",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-133903",
+    "size": 11214,
+    "mtimeMs": 1779111471441,
+    "hash": "ad0b20dee1e18530fc5db81ea67574b311e390ed55c783ee33f7cdc4c301774b",
+    "type": "bak-20260518-133903",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-181215",
+    "size": 11214,
+    "mtimeMs": 1779111543051,
+    "hash": "ad0b20dee1e18530fc5db81ea67574b311e390ed55c783ee33f7cdc4c301774b",
+    "type": "bak-20260518-181215",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-181402",
+    "size": 11214,
+    "mtimeMs": 1779127935630,
+    "hash": "ad0b20dee1e18530fc5db81ea67574b311e390ed55c783ee33f7cdc4c301774b",
+    "type": "bak-20260518-181402",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-181530",
+    "size": 11213,
+    "mtimeMs": 1779128042272,
+    "hash": "fa788f424d5cedae5ea488bd955f766c96365e9824f1ae1ddfd61ccf72700987",
+    "type": "bak-20260518-181530",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-185126",
+    "size": 11213,
+    "mtimeMs": 1779128130997,
+    "hash": "404a85f4aa4900e0ae913a9bc0425bf14ad7c5483d0f8b50fe75dd185a140cf7",
+    "type": "bak-20260518-185126",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-190203",
+    "size": 11214,
+    "mtimeMs": 1779130286851,
+    "hash": "357445cf1fa40f81f7c6d5a9ad2f1b2072d1b42316ff9bc0cc9a7db455c82a60",
+    "type": "bak-20260518-190203",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-190228",
+    "size": 11214,
+    "mtimeMs": 1779130923032,
+    "hash": "357445cf1fa40f81f7c6d5a9ad2f1b2072d1b42316ff9bc0cc9a7db455c82a60",
+    "type": "bak-20260518-190228",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-191813",
+    "size": 11214,
+    "mtimeMs": 1779130948028,
+    "hash": "357445cf1fa40f81f7c6d5a9ad2f1b2072d1b42316ff9bc0cc9a7db455c82a60",
+    "type": "bak-20260518-191813",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-191827",
+    "size": 11213,
+    "mtimeMs": 1779131893352,
+    "hash": "0a1766c49899500179a67f8371bc0daf9023c329f57117e1fd4aaa8c23f5cad0",
+    "type": "bak-20260518-191827",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-191848",
+    "size": 11213,
+    "mtimeMs": 1779131907694,
+    "hash": "5ab6c5b2850b445e5f24156aeeadc6539dc36dc546dd70736a0bf8eb73cdbefd",
+    "type": "bak-20260518-191848",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-191859",
+    "size": 11213,
+    "mtimeMs": 1779131928244,
+    "hash": "77b8669e4721ca15e9d3437b0bbc015799637cb89e389ff234e5da6b6627a4d9",
+    "type": "bak-20260518-191859",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-191928",
+    "size": 11213,
+    "mtimeMs": 1779131939199,
+    "hash": "86cc9074501f32c4c5a5db4dbfeb4ff0207518f0c8e656f938800cf92cb6b257",
+    "type": "bak-20260518-191928",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-191934",
+    "size": 11212,
+    "mtimeMs": 1779131968086,
+    "hash": "68433223c1b6dbdc9f57eb4f278ab1fc579f2b17ced0eae2febc56d37e1a0eec",
+    "type": "bak-20260518-191934",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-191951",
+    "size": 11212,
+    "mtimeMs": 1779131974089,
+    "hash": "68433223c1b6dbdc9f57eb4f278ab1fc579f2b17ced0eae2febc56d37e1a0eec",
+    "type": "bak-20260518-191951",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-192003",
+    "size": 11260,
+    "mtimeMs": 1779131991924,
+    "hash": "09ccd7298b592d9025e91b72d52697f3e658f6baecc1fabbe3148f420292610b",
+    "type": "bak-20260518-192003",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-192021",
+    "size": 11260,
+    "mtimeMs": 1779132003248,
+    "hash": "bc06aa31bfd3517ed435d34bbcdfdb76dcf7fcbea6df78ac2f863e0be6c985d2",
+    "type": "bak-20260518-192021",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-192033",
+    "size": 11260,
+    "mtimeMs": 1779132021763,
+    "hash": "42efd8f028019c66fcd3a265d575f8da23b95290ccf76ba4e57d5a6649b558c5",
+    "type": "bak-20260518-192033",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
+    "path": ".env.bak-20260518-192048",
+    "size": 11260,
+    "mtimeMs": 1779132033490,
+    "hash": "9f45d8288348117ebb167e4caf481a59d1dfb95f0548d25d2448fe0657e0ea08",
+    "type": "bak-20260518-192048",
+    "emptyClass": null,
+    "lineCount": null,
     "largeFileReview": false
   },
   {
     "path": ".env.example",
-    "size": 18733,
-    "mtimeMs": 1778303947111,
-    "hash": "64f727cfb868a4814e422237fcdcb9680a0572cd1668014eca5ef9866115a8e4",
+    "size": 18855,
+    "mtimeMs": 1778962315489,
+    "hash": "2a2ac9fec724d57bc2756b9581a3177448eb118300d1cf557bed8021fe361e0d",
     "type": "example",
     "emptyClass": null,
-    "lineCount": 545,
+    "lineCount": 548,
     "largeFileReview": false
   },
   {
@@ -81,12 +441,12 @@
   },
   {
     "path": ".github/workflows/ci.yml",
-    "size": 2678,
-    "mtimeMs": 1778303986659,
-    "hash": "db131dc98f18765007097908ac2ac5f1ed581e00bf2fba84d15a56744f9cb6e5",
+    "size": 2889,
+    "mtimeMs": 1779031162686,
+    "hash": "9b55ef5e7592d5f54ecc486aafe9c5b590500deec474ffd91fbf6afeb3f6a0af",
     "type": "yml",
     "emptyClass": null,
-    "lineCount": 121,
+    "lineCount": 130,
     "largeFileReview": false
   },
   {
@@ -101,82 +461,12 @@
   },
   {
     "path": ".gitignore",
-    "size": 820,
-    "mtimeMs": 1778269546360,
-    "hash": "033f74db027db0a05473b59ade264f34f560db270611cce610adfa0fa8f29cfe",
+    "size": 834,
+    "mtimeMs": 1779309200842,
+    "hash": "e1db76b4a30739f7512aa3cf21dc6dc45ae86b916442ee5f2d70273e5d056cd3",
     "type": "none",
     "emptyClass": null,
     "lineCount": null,
-    "largeFileReview": false
-  },
-  {
-    "path": ".lean-ctx/graph.db",
-    "size": 237568,
-    "mtimeMs": 1778219388729,
-    "hash": "a75ac9230993c8073b4785118886997bb4781c7cef4b7738220cace0cadd0752",
-    "type": "db",
-    "emptyClass": null,
-    "lineCount": null,
-    "largeFileReview": false
-  },
-  {
-    "path": ".lean-ctx/graph.meta.json",
-    "size": 206,
-    "mtimeMs": 1778219388545,
-    "hash": "8b4cbb763471cb48ed53368f1453cf997d5817901d897c805121da1b73cd4f24",
-    "type": "json",
-    "emptyClass": null,
-    "lineCount": 10,
-    "largeFileReview": false
-  },
-  {
-    "path": ".obsidian/app.json",
-    "size": 2,
-    "mtimeMs": 1778104956949,
-    "hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-    "type": "json",
-    "emptyClass": null,
-    "lineCount": 1,
-    "largeFileReview": false
-  },
-  {
-    "path": ".obsidian/appearance.json",
-    "size": 2,
-    "mtimeMs": 1778104956950,
-    "hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-    "type": "json",
-    "emptyClass": null,
-    "lineCount": 1,
-    "largeFileReview": false
-  },
-  {
-    "path": ".obsidian/core-plugins.json",
-    "size": 696,
-    "mtimeMs": 1778104956475,
-    "hash": "763cf20a921fd9955735b278006820b90b207b2fc04d9e79ca648279c7c14276",
-    "type": "json",
-    "emptyClass": null,
-    "lineCount": 33,
-    "largeFileReview": false
-  },
-  {
-    "path": ".obsidian/graph.json",
-    "size": 511,
-    "mtimeMs": 1778105730523,
-    "hash": "4f29b60e966b1907b5225203c8fe6bb7e91bb7768d0c48616e52bf9b3697c393",
-    "type": "json",
-    "emptyClass": null,
-    "lineCount": 22,
-    "largeFileReview": false
-  },
-  {
-    "path": ".obsidian/workspace.json",
-    "size": 5838,
-    "mtimeMs": 1778106589711,
-    "hash": "f87783793acef389783441275bab6c6a0f43e025389f2f9ee5fbd0ba1d0189da",
-    "type": "json",
-    "emptyClass": null,
-    "lineCount": 197,
     "largeFileReview": false
   },
   {
@@ -200,23 +490,33 @@
     "largeFileReview": false
   },
   {
-    "path": "AGENTS.md",
-    "size": 17591,
-    "mtimeMs": 1778105008323,
-    "hash": "19afe511f4d504db4493e19e4577285a14e784d150425a2153e1cfeef24d6b4a",
+    "path": "2026-05-10.md",
+    "size": 0,
+    "mtimeMs": 1778438345846,
+    "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "type": "md",
-    "emptyClass": null,
-    "lineCount": 1000,
-    "largeFileReview": true
+    "emptyClass": "warning",
+    "lineCount": 1,
+    "largeFileReview": false
   },
   {
-    "path": "ai trading bot/.gitattributes",
-    "size": 66,
-    "mtimeMs": 1777486805761,
-    "hash": "1a1dbe176bc233b499d35a57db7513f2941c99ab9759f177830c9149be99005b",
-    "type": "none",
+    "path": "AGENTS.md",
+    "size": 3205,
+    "mtimeMs": 1779324865207,
+    "hash": "6e629f0bd5d171296047c77c012b7e9d92d28a0384eee54e177e2e840abb289c",
+    "type": "md",
     "emptyClass": null,
-    "lineCount": null,
+    "lineCount": 91,
+    "largeFileReview": false
+  },
+  {
+    "path": "ANALYSE-SAMENVATTING.md",
+    "size": 2477,
+    "mtimeMs": 1779292348322,
+    "hash": "ef4d6cac89e2476f68832e897c5d06be0d7694f88d9280ac8dc359dd6e25c952",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 44,
     "largeFileReview": false
   },
   {
@@ -241,32 +541,32 @@
   },
   {
     "path": "config/profiles/binance-demo-spot.env.example",
-    "size": 309,
-    "mtimeMs": 1778303803443,
-    "hash": "a53f42689a85fbd6a253b1b62e3fa49b043892d28957e688f3092d601267ddb6",
+    "size": 592,
+    "mtimeMs": 1778962315492,
+    "hash": "449095d1aa17815df67257be20a06a3985f33ffc971f159d8fa62d87ad3954e9",
     "type": "example",
     "emptyClass": null,
-    "lineCount": 10,
+    "lineCount": 18,
     "largeFileReview": false
   },
   {
     "path": "config/profiles/live-conservative.env.example",
-    "size": 333,
-    "mtimeMs": 1778303803447,
-    "hash": "a4aca1e3d5d40c5dbce3121f59274b325656d3b1b0edb472463e644bbe4e9dd2",
+    "size": 472,
+    "mtimeMs": 1778962315494,
+    "hash": "fe9ea6f6b8d655bdd358e15153bcb2ee9892aabb725f3cd9060823c6e5e2ad9e",
     "type": "example",
     "emptyClass": null,
-    "lineCount": 14,
+    "lineCount": 18,
     "largeFileReview": false
   },
   {
     "path": "config/profiles/live-minimal.env.example",
-    "size": 249,
-    "mtimeMs": 1778303803443,
-    "hash": "e64b4ec35b5b5c07f1ba945abf929d101cf7c5377af86c0dc8395f9740eb0837",
+    "size": 388,
+    "mtimeMs": 1778962315493,
+    "hash": "6595b959f7777cbc59bd4b345d273a40e4c7ef873dca2c35396d34f7066b7fd0",
     "type": "example",
     "emptyClass": null,
-    "lineCount": 11,
+    "lineCount": 15,
     "largeFileReview": false
   },
   {
@@ -281,22 +581,22 @@
   },
   {
     "path": "config/profiles/paper-learn.env.example",
-    "size": 319,
-    "mtimeMs": 1778303803442,
-    "hash": "953b546bdcbdb79548b8d4274b02a86324613375336dd5bcd46a11525cdbd4ca",
+    "size": 545,
+    "mtimeMs": 1778962315491,
+    "hash": "cc0e0846bdd278109daf8af04cf9f962af427c553d8c676a0b381e0a0fd48469",
     "type": "example",
     "emptyClass": null,
-    "lineCount": 13,
+    "lineCount": 19,
     "largeFileReview": false
   },
   {
     "path": "config/profiles/paper-safe.env.example",
-    "size": 252,
-    "mtimeMs": 1778303803442,
-    "hash": "fe019f5abf65d5a7b09f34b8208a15fa26c4ec12fd7d9a0aa69b1e4e3b67a3e1",
+    "size": 359,
+    "mtimeMs": 1778962315490,
+    "hash": "8945345cff1b1f7451089aa051c6764642f332aa75ff87040ff7b624cf189412",
     "type": "example",
     "emptyClass": null,
-    "lineCount": 11,
+    "lineCount": 14,
     "largeFileReview": false
   },
   {
@@ -360,573 +660,453 @@
     "largeFileReview": false
   },
   {
-    "path": "docs/advanced_neural_improvements_extra_roadmap.md",
-    "size": 21401,
-    "mtimeMs": 1778247894654,
-    "hash": "fe3d75c0d666f8cb1b7475ed7f7eea58bb57ea38ecaa33eb46a53ad2d512c855",
+    "path": "docs/Compleet rapports/geconsolideerd-agentrapport-2026-05-20-open-punten.md",
+    "size": 5965,
+    "mtimeMs": 1779309208470,
+    "hash": "228db8c26db2313e171621af39868bfe18c7c71e2d4991b9f0edf346e9c6e70d",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 985,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/ai-trading-bot-extra-volledige-debug-overhaul-v3-2026-05-09.md",
-    "size": 57419,
-    "mtimeMs": 1778304122183,
-    "hash": "6a08bd733e3808067699f26666809e5e2788304e91eb944a4ca1f2328cbbe3b2",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 1752,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/ai-trading-bot-volledige-debug-roadmap-2026-05-08(1).md",
-    "size": 46223,
-    "mtimeMs": 1778303461114,
-    "hash": "136e5579b718b06276d142c171b5fe75a8499b5944372f90147c2cc0d88b22ff",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 1743,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/ai-trading-bot-volledige-overhaul-debug-roadmap-2026-05-09(1).md",
-    "size": 41765,
-    "mtimeMs": 1778303441430,
-    "hash": "35af23b49c1330f46058ec8b30619761c211ae81dbdb5f1761dafab1c53113a5",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 1186,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/ARCHITECTURE.md",
-    "size": 2255,
-    "mtimeMs": 1777756696099,
-    "hash": "db6bceb8f4c5b65c05c07c237442b94d8c5997019a5614772599b77a25b7432c",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 72,
+    "lineCount": 175,
     "largeFileReview": false
   },
   {
-    "path": "docs/autonomous_neural_replay_trading_roadmap.md",
-    "size": 28979,
-    "mtimeMs": 1778242917685,
-    "hash": "310e94450a8d84db96309fadf04a098620bca3697bc0beefef2de95dc0182980",
+    "path": "docs/config-placeholder-deprecation-plan.md",
+    "size": 1087,
+    "mtimeMs": 1779326665552,
+    "hash": "3284fafc2449256735dc2561cb5f4194e9f145d3ced01569b289dc5537d743c0",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 1157,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/BACKTESTING.md",
-    "size": 1696,
-    "mtimeMs": 1777756696100,
-    "hash": "c30984e4ded8129ce6afce56ed0092448cc8b0a57b8b4b556a47b2b8cce0ef75",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 65,
+    "lineCount": 15,
     "largeFileReview": false
   },
   {
-    "path": "docs/BACKTEST_QUALITY.md",
-    "size": 1863,
-    "mtimeMs": 1777866056593,
-    "hash": "15bdb86414b9bb09511f2ab4f3eeac352a883ad2d2e42de2534b0886d9fed25c",
+    "path": "docs/feature-audit-latest.md",
+    "size": 4243,
+    "mtimeMs": 1779327316724,
+    "hash": "699fe873250903dadacb6df5827b1d2cff0436590cc076a2c24ebedc58024309",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 64,
+    "lineCount": 31,
     "largeFileReview": false
   },
   {
-    "path": "docs/CODEX_ADDITIONAL_RECOMMENDATIONS_B24_B31.md",
-    "size": 19360,
-    "mtimeMs": 1777863590534,
-    "hash": "66794f11e71f1f0368eb4bdc54cc370ccda4bc07d87748b51c208e257194bf90",
+    "path": "docs/Md rapports/geconsolideerd-agentrapport-2026-05-21-read-only-codebase-analyse.md",
+    "size": 13902,
+    "mtimeMs": 1779317283372,
+    "hash": "b0284a61539b3f04bb6530a46a2d8e0286c3c97d287a0521f0adf96097dfe7d3",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 422,
+    "lineCount": 371,
     "largeFileReview": false
   },
   {
-    "path": "docs/CODEX_CRYPTO_BACKLOG_EXTENSIONS.md",
-    "size": 10948,
-    "mtimeMs": 1777821155910,
-    "hash": "e8ae063081452adb284dc57ccc2ac0d58aeb3491dff3072c822962e1900301fd",
+    "path": "docs/roadmap-41-codebase-next-updates-2026-05-21.md",
+    "size": 19022,
+    "mtimeMs": 1779325990055,
+    "hash": "18d81768a26d2ca34657934c3a2289e44bd0f4cafc3dcf5649ba94453aa9fc9f",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 241,
+    "lineCount": 491,
     "largeFileReview": false
   },
   {
-    "path": "docs/CODEX_EXECUTION_PLAN.md",
-    "size": 61217,
-    "mtimeMs": 1778058485885,
-    "hash": "30b93405fba4673c17eb15c43e5d0c9b85ea78f3c88f2f597095db78fd23c0c8",
+    "path": "docs/voltooid/roadmap-01-trading-path-inactivity-observability.md",
+    "size": 4383,
+    "mtimeMs": 1779047224522,
+    "hash": "b0d05e3d9db743b76de45e95f6f5566a58f0807b5e0c9316a4a8ccf56644f239",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 1362,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/CODEX_NEXT_BUILD_PLAN.md",
-    "size": 42776,
-    "mtimeMs": 1778050752220,
-    "hash": "cfe3ead129c0f54363250ab8f8253208ef1ee1d9897487209e5b0e914fc82812",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 1033,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/CODEX_NEXT_BUILD_PLAN_V2.md",
-    "size": 25910,
-    "mtimeMs": 1778058467910,
-    "hash": "4de876ce6e0d0742a263c6d5ba3800bb4697d12a100f474e3b772e859356fd35",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 679,
+    "lineCount": 80,
     "largeFileReview": false
   },
   {
-    "path": "docs/DATA_INTEGRITY.md",
-    "size": 4285,
-    "mtimeMs": 1778010083809,
-    "hash": "26cf5cac68a3ef84d41cc62ec3fc0e6956c093a03753f3975dbede8790754203",
+    "path": "docs/voltooid/roadmap-02-paper-live-execution-safety-parity.md",
+    "size": 4169,
+    "mtimeMs": 1779047224626,
+    "hash": "cac470ff338503b500527e32e36e1b63a4040bc217088b4a382f26fd47d2a0be",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 128,
+    "lineCount": 81,
     "largeFileReview": false
   },
   {
-    "path": "docs/DEBUG_AUDIT_REPORT.md",
-    "size": 6258,
-    "mtimeMs": 1777821806364,
-    "hash": "b180614d1f0ac299bb58d20b98d8260a958a3e00219d66cbd270b762c768a9ef",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 60,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/DEBUG_COMMANDS.md",
-    "size": 546,
-    "mtimeMs": 1778303986660,
-    "hash": "acfbd08b6788a6616ec9afcf2ba48dfe17864475972db01d8139d1c3e0691e73",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 32,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/DEBUG_OVERHAUL_REPORT.md",
-    "size": 806,
-    "mtimeMs": 1778303986660,
-    "hash": "f28aae8e291b65b0b55bdbc5c0e65c458c4dff99aa3091385731d48eb33bb1f1",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 21,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/DEBUG_PLAYBOOK.md",
-    "size": 7496,
-    "mtimeMs": 1777864911976,
-    "hash": "1dfb44b01ae9b21237c10a2febc66530acb86b597bed5ca57714917bebdb515a",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 120,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/desktop_gui_profiles_neural_setup_roadmap.md",
-    "size": 23319,
-    "mtimeMs": 1778269630279,
-    "hash": "488bca5571247459356b3bab99e903cbafdab0cf36f6aa0169a21de6814473bb",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 930,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/DESKTOP_GUI_TROUBLESHOOTING.md",
-    "size": 409,
-    "mtimeMs": 1778269409130,
-    "hash": "2b7d965b0b52f26632eecc173a301b6d51e1c3ecc4b76c80e692f347b6030915",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 12,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/DISASTER_RECOVERY.md",
-    "size": 2051,
-    "mtimeMs": 1778243601879,
-    "hash": "5b00a22f95a12d1cea655e233d6b5f1e232a7f0dcf90325d4691e6d8311374ef",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 67,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/EXCHANGE_SAFETY.md",
-    "size": 3553,
-    "mtimeMs": 1777772903200,
-    "hash": "2ed616ba48f8169c5a70cc1acaa64a372cee85827b2196256c0a5807847f72c5",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 57,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/EXECUTION_SAFETY.md",
-    "size": 1045,
-    "mtimeMs": 1777893919787,
-    "hash": "5ba9217639ab2b8e9007d3c910926a4e9785ee029546fcb0130e17d8c26b3fe0",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 26,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/extra_production_ready_trading_bot_roadmap.md",
-    "size": 19279,
-    "mtimeMs": 1778124992802,
-    "hash": "f4c2b6c86b880f61a83f2a0bb1ac68cfa12a5b200a9912eaca1ba39503d75c23",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 759,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/extra_verbeteringen_ai_trading_bot_roadmap.md",
-    "size": 16951,
-    "mtimeMs": 1778247169604,
-    "hash": "7ab219becf88d77fc793a05359e757800ab71caed5328e04766a306d48bf779b",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 741,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/FEATURE_AUDIT.md",
-    "size": 897,
-    "mtimeMs": 1777756696100,
-    "hash": "d2d51071e87522636001d4f22939252f3435b6695e82484767488ed134c4f7c9",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 26,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/FEATURE_COMPLETION_PLAN.md",
-    "size": 8864,
-    "mtimeMs": 1778058534837,
-    "hash": "385a2e6a91a675ef9df4865917b1e588a24baa6b3a6c5c1bd7d76282c295c7d3",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 180,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/FEATURE_STATUS.md",
-    "size": 1268,
-    "mtimeMs": 1777488009260,
-    "hash": "74265be0ffcd576d7254970932456188071aa364c71b5394564d4c99f78379d4",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 25,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/IMPLEMENTATION_MATRIX.md",
-    "size": 23536,
-    "mtimeMs": 1778058516294,
-    "hash": "0afebf67658a89a56f6a57a6dd82a6d6e5d6bd557db4799b41bf467f88efce32",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 109,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/INCIDENT_RESPONSE.md",
-    "size": 2543,
-    "mtimeMs": 1777769398491,
-    "hash": "8e408fdfdd02d5a075d564f9b825514fe6256cb279c653de6ab647bab7cddab4",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 52,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/INDICATOR_REGISTRY.md",
-    "size": 2278,
-    "mtimeMs": 1777756696101,
-    "hash": "c2dd1aa83e527f9716384a9b89ed006e658d4e900a495a17030bbf2a822270f4",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 61,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/LEARNING_ANALYTICS.md",
-    "size": 2620,
-    "mtimeMs": 1777757945854,
-    "hash": "a3ba2a73b8014a7e84032c00b2527c8dbe06d6da55ac5fa2cffed2503de36f7c",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 95,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/mission_control_risk_intelligence_roadmap.md",
-    "size": 21084,
-    "mtimeMs": 1778244189077,
-    "hash": "04d9556f74faec2e5fb17103e9c42a25292a2ead4eaddf1ea78c73857d6e3367",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 809,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/neural_autonomy_engine_roadmap.md",
-    "size": 30726,
-    "mtimeMs": 1778247691007,
-    "hash": "403c5baa3ddf2da9bfa6aa7215d160cbcdb2c0f8b435b68ebcfd2f7e5512faf3",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 1493,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/NEURAL_PAPER_MODE.md",
-    "size": 367,
-    "mtimeMs": 1778269409130,
-    "hash": "050feef5d30618da62ba1b95b886ca64f62da3ee5339e18fdbf440334984f7fc",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 12,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/neural_safety_debug_autonomy_extensions.md",
-    "size": 19658,
-    "mtimeMs": 1778124801449,
-    "hash": "d56a5891cfdc80502fea2eac1c29453aab7ec4bff5b90d7729346eeaf6333e3f",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 684,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/OPERATOR_COMMANDS.md",
-    "size": 6829,
-    "mtimeMs": 1777850278839,
-    "hash": "d912a871d27bb8a272303cbce65d6bcb27dceca00a302fdaf9cc987a79a7945d",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 61,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/paper_demo_mode_wiring_roadmap.md",
-    "size": 13073,
-    "mtimeMs": 1778244521482,
-    "hash": "facea11da04c5e496710967606a5dc7f8df522459279a43345ed137dad730132",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 427,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/PERFORMANCE_LEDGER.md",
-    "size": 1137,
-    "mtimeMs": 1777867801676,
-    "hash": "f69f35c5e284d54ee53da125e731cbbe3f6e8940113734793f8dfd3a5988abf7",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 21,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/PROFILE_APPLY_FLOW.md",
-    "size": 402,
-    "mtimeMs": 1778269409130,
-    "hash": "d275e9156120872bdd1204edb199f71dbcd7b7977a45c46ecc67a2cc17789395",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 12,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/PROFILE_MATRIX.md",
-    "size": 862,
-    "mtimeMs": 1778269409129,
-    "hash": "3e13f428d85f6820dd36db2dc30b8355d322eb3ff2b6f9c0092426710f2a7c60",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 13,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/RECOMMENDED_UPDATES.md",
-    "size": 20942,
-    "mtimeMs": 1778224402905,
-    "hash": "c3a19a4a714678f1c9a72b21a1fe059770fef16377c791c9089ef6ef9aab3453",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 811,
-    "largeFileReview": true
-  },
-  {
-    "path": "docs/RELEASE_CHECKLIST.md",
-    "size": 496,
-    "mtimeMs": 1778243601880,
-    "hash": "91f8a3f58d9555fd760f6669afc83211d0cf8ce6f027cb911b98b8091369099c",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 13,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/RELEASE_NOTES.md",
-    "size": 396,
-    "mtimeMs": 1778243601882,
-    "hash": "c28418401fcf5b078b3016fe2567ff8c6146cd1e02055bb947620931d6bd95c7",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 8,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/RISK_MANAGEMENT.md",
-    "size": 1515,
-    "mtimeMs": 1777867010314,
-    "hash": "cf87e9042e4801642656362200af98da0a56b95543c7bf2cf963332514151198",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 25,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/ROLLBACK_PLAN.md",
-    "size": 425,
-    "mtimeMs": 1778243601881,
-    "hash": "229cf6781b3f32664c1f03850009a8f5240bd4f4afa8f03f29d3a65e787d477f",
-    "type": "md",
-    "emptyClass": null,
-    "lineCount": 18,
-    "largeFileReview": false
-  },
-  {
-    "path": "docs/RUNBOOKS.md",
-    "size": 3106,
-    "mtimeMs": 1778243601880,
-    "hash": "af7465996986280db800a6fa1eb91339629bb6d39e14641cff258cb701685a33",
+    "path": "docs/voltooid/roadmap-03-dashboard-readmodel-operator-truth.md",
+    "size": 3999,
+    "mtimeMs": 1779047224721,
+    "hash": "cc717f21267dd78c6feb047c9c34451281dc0e2751de9b63764ecfcce7eabc2b",
     "type": "md",
     "emptyClass": null,
     "lineCount": 82,
     "largeFileReview": false
   },
   {
-    "path": "docs/safety_kernel_live_unlock_governance_roadmap.md",
-    "size": 20259,
-    "mtimeMs": 1778128165468,
-    "hash": "adfe7201950d6ef4007c7ee34e1c85797654dc25903dd4e420dd6df311381b60",
+    "path": "docs/voltooid/roadmap-04-data-storage-replay-observability.md",
+    "size": 3868,
+    "mtimeMs": 1779047224818,
+    "hash": "22f6f7e6bb9363e471dc1e33924314ceaf610c659f9d6a3bf777a591ee8ae244",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 776,
+    "lineCount": 82,
     "largeFileReview": false
   },
   {
-    "path": "docs/scalability_multi_exchange_policy_observability_roadmap.md",
-    "size": 18699,
-    "mtimeMs": 1778243987037,
-    "hash": "2d50847cd60b72ce80b03db8f80cc9acd3d534343490aad291bb218442ebde07",
+    "path": "docs/voltooid/roadmap-05-codebase-consolidation-feature-governance.md",
+    "size": 4120,
+    "mtimeMs": 1779047224912,
+    "hash": "e385237f96a3c3e501064f0fba5060f27b293fdb70b93a120e8b4505d7829b26",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 719,
+    "lineCount": 82,
     "largeFileReview": false
   },
   {
-    "path": "docs/SETUP_WIZARD.md",
-    "size": 308,
-    "mtimeMs": 1778269409134,
-    "hash": "4e333a88c5468d7ed7404a654e747bdc984d257652ddd621222e320e0654095f",
+    "path": "docs/voltooid/roadmap-06-market-data-intelligence-provider-resilience.md",
+    "size": 10173,
+    "mtimeMs": 1779050658688,
+    "hash": "f24e6379b39bc993d96eff330cfea2f727fcbb16d49f0f01b3fbac34a80f6fdd",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 10,
+    "lineCount": 274,
     "largeFileReview": false
   },
   {
-    "path": "docs/strategy_validation_costs_portfolio_ux_roadmap.md",
-    "size": 21237,
-    "mtimeMs": 1778243723802,
-    "hash": "029d0ee07540fb2b79b5332e22d9366ff7ddd7443b9969e40e244c689394c8ec",
+    "path": "docs/voltooid/roadmap-07-ai-model-lifecycle-adaptive-learning-lab.md",
+    "size": 9157,
+    "mtimeMs": 1779050658786,
+    "hash": "403b65f4208bf196b6dad4a1ce64a99366d941f71b3b86bc55f91f99c9e3c34b",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 797,
+    "lineCount": 276,
     "largeFileReview": false
   },
   {
-    "path": "docs/TRADINGBOT_DECOMPOSITION_PLAN.md",
-    "size": 1689,
-    "mtimeMs": 1777756696102,
-    "hash": "9dea84e9fa76be49220220ba5f5469cddfdde1d7469fa715368e4403b7a32c72",
+    "path": "docs/voltooid/roadmap-08-strategy-research-portfolio-optimizer-expansion.md",
+    "size": 8622,
+    "mtimeMs": 1779050658876,
+    "hash": "674756f2f63eabac6e28f19d03ec1b51a3ade380e6e71cb9e4bcc6b46f71672e",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 30,
+    "lineCount": 256,
     "largeFileReview": false
   },
   {
-    "path": "docs/TRADING_FEATURE_INVENTORY.md",
-    "size": 8682,
-    "mtimeMs": 1777895364431,
-    "hash": "90c02949772a2ea2b7149ab0a940c267645ca8bc6d0d58848a8f8ba550ad9b61",
+    "path": "docs/voltooid/roadmap-09-operator-desktop-setup-and-workflow-ux.md",
+    "size": 7998,
+    "mtimeMs": 1779050658965,
+    "hash": "fdbcd1238f6319ca3f4d01803233e655edf4e72b5b7db03632ce2a311e6cd2e7",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 68,
+    "lineCount": 255,
     "largeFileReview": false
   },
   {
-    "path": "docs/TRADING_PATH_INACTIVE_DEBUG.md",
-    "size": 5688,
-    "mtimeMs": 1777804576721,
-    "hash": "3c0b6d1a9095695e74e74282484fa97980da6d4330ee8dda09eac486796c5e80",
+    "path": "docs/voltooid/roadmap-10-live-incident-response-and-capital-protection.md",
+    "size": 9331,
+    "mtimeMs": 1779050659062,
+    "hash": "210eef21e9038b7097f033b47f362012badfea83b1098538e149f2b7991aa98f",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 296,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-11-runtime-lifecycle-concurrency-hardening.md",
+    "size": 5624,
+    "mtimeMs": 1779074889745,
+    "hash": "15794ab3372e32cc36b28629542198a3e936d6a86935e838be77ec4015f752ae",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 160,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-12-dashboard-api-action-contracts.md",
+    "size": 4670,
+    "mtimeMs": 1779074889745,
+    "hash": "69bf104d0aa2a21322e3442111cc6e09e96e85156aadd95e9ff90c8d35e7c9bb",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 165,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-13-blocker-root-cause-explorer.md",
+    "size": 4687,
+    "mtimeMs": 1779074889746,
+    "hash": "ded32cbe61abc47054f2c69669c2c44d70e85e00ad71ae60d3807bb70a32ff23",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 171,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-14-deterministic-chaos-replay-library.md",
+    "size": 3954,
+    "mtimeMs": 1779074889746,
+    "hash": "4b703448159e9d64734e3b2a8467d8baf87e5e6a2f7dba5ef819a4cf93544882",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 157,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-15-config-env-profile-integrity.md",
+    "size": 4005,
+    "mtimeMs": 1779074889747,
+    "hash": "35a79c9441bd54e2fd7631a07466eac3ba2e225b1bfbddfb71bd64df1d8f9244",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 181,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-16-execution-cost-fill-quality-feedback.md",
+    "size": 3922,
+    "mtimeMs": 1779074889747,
+    "hash": "8053ca7e05a4c1dc45a7b92abb45aac22b3762f201feeccbed7c58ed587fdd9f",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 154,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-17-universe-scan-performance-budget.md",
+    "size": 3706,
+    "mtimeMs": 1779074889748,
+    "hash": "db4f9af5ba6da87e2ad607b71f9c7503a254e7e502f7d70d100552955a7ac6df",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 151,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-18-provider-budget-slo-orchestrator.md",
+    "size": 3745,
+    "mtimeMs": 1779074889748,
+    "hash": "7f853bcc7349f65e165893235c1201f3773f28fe130306f57e9424e6d8efb617",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 148,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-19-release-qa-windows-operations.md",
+    "size": 3701,
+    "mtimeMs": 1779074889749,
+    "hash": "1ab71ae7d3d5fd42d0b95fdfc28388aae9de107a507a78a826bd32e47fd77738",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 158,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-20-local-security-audit-privacy-hardening.md",
+    "size": 3686,
+    "mtimeMs": 1779074889749,
+    "hash": "802e5cf38a10f4165f033e4f57e3b114bb10f0a4f8437198f189b12eef6ceaa3",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 163,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-21-model-evaluation-benchmark-harness.md",
+    "size": 4179,
+    "mtimeMs": 1779107269395,
+    "hash": "bd7ce21791cabeb5fa169db1c86481be9cd3a323fd25b1c59c6f8eedd3e191fc",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 154,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-22-data-lake-retention-lineage-governance.md",
+    "size": 3612,
+    "mtimeMs": 1779107269396,
+    "hash": "48f969c7fd9c5a762ea36c0cb8486a663da3c4eeaedfd857d227c5217ba55d76",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 156,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-23-exit-management-protective-order-intelligence.md",
+    "size": 3581,
+    "mtimeMs": 1779107269396,
+    "hash": "fda7dfeaac73c7305b43a0b6c745169eb692f66fae4b32a6db7f430824eb92ae",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 147,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-24-multi-account-portfolio-allocation-control.md",
+    "size": 3305,
+    "mtimeMs": 1779107269397,
+    "hash": "fb5c1783c393e7baa073bab40aa40a8c7ded7d2adb70c835ce235fefd68c9688",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 132,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-25-compliance-tax-audit-export.md",
+    "size": 2880,
+    "mtimeMs": 1779107269397,
+    "hash": "9ddd7a1d37026abd7c0f6740a72499651f0237d6ee023a46248bfaa17b3eb3b0",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 147,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-26-autodocs-runtime-architecture-map.md",
+    "size": 2800,
+    "mtimeMs": 1779107269398,
+    "hash": "229f9ebd27a1b87b3cd68d013b6dbe11b0a13ec0dec516bcb4e2ec86edcd45c2",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 127,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-27-observability-slo-alert-routing.md",
+    "size": 2976,
+    "mtimeMs": 1779107269398,
+    "hash": "91edabd809f90aa6b361bdbdb32d63915dcb9bb8938209c3d62594376c7b89ca",
     "type": "md",
     "emptyClass": null,
     "lineCount": 141,
     "largeFileReview": false
   },
   {
-    "path": "docs/TRADING_QUALITY.md",
-    "size": 6637,
-    "mtimeMs": 1777894633764,
-    "hash": "17497f798cad191f78c6593af83e8c9a5404bd9af41d6e34543a49883d4b997e",
+    "path": "docs/voltooid/roadmap-28-strategy-plugin-lifecycle-marketplace.md",
+    "size": 2922,
+    "mtimeMs": 1779107269399,
+    "hash": "8f9d544fb9dbad42cd61f68f30e197adc48a56de8fe6b494b85b9bd15bda3fdb",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 60,
+    "lineCount": 140,
     "largeFileReview": false
   },
   {
-    "path": "docs/windows_gui_fast_trading_execution_roadmap.md",
-    "size": 20860,
-    "mtimeMs": 1778230689719,
-    "hash": "bb4073de7aad1e5e5e5b2380cc4c8ce81cea173bd0daabcfd48dd5be82e6d248",
+    "path": "docs/voltooid/roadmap-29-disaster-recovery-backup-restore.md",
+    "size": 2998,
+    "mtimeMs": 1779107269399,
+    "hash": "ea22dc66b3296214a9fd45a1558ce4ff7c4121c72da4ccb27f1eeaeef8b67642",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 744,
+    "lineCount": 134,
     "largeFileReview": false
   },
   {
-    "path": "docs/WINDOWS_INSTALLER_TEST_PLAN.md",
-    "size": 380,
-    "mtimeMs": 1778269409135,
-    "hash": "92a10269a23730e3ecf467fb60e2051f95affd1f526d86675988caa954ebdc48",
+    "path": "docs/voltooid/roadmap-30-runtime-performance-memory-profiling.md",
+    "size": 3072,
+    "mtimeMs": 1779107269400,
+    "hash": "8bc1b3c42aed5fe6bb8a1275157a2b177b17e5461bee2fc961ea1965b4ff3c6c",
     "type": "md",
     "emptyClass": null,
-    "lineCount": 12,
+    "lineCount": 140,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-31-autonomous-reconcile-self-healing.md",
+    "size": 4107,
+    "mtimeMs": 1779220899969,
+    "hash": "944c117c1bad1f0a4a071365068327757602858f82ec416ba2f06ec763eedb7b",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 89,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-32-order-lifecycle-intent-state-machine-v2.md",
+    "size": 3607,
+    "mtimeMs": 1779220900063,
+    "hash": "75aeb8b0a0b382029673fb6fac6dd2517e98a06f8b1fb23e7de88bd5028e4103",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 86,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-33-operator-action-simulator-safe-controls.md",
+    "size": 2859,
+    "mtimeMs": 1779220900159,
+    "hash": "352aea155ed897de1fa51e576081b2e0a5538611a6ae42ce3c5c3fc76eb751da",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 85,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-34-decision-truth-and-blocker-dedup-engine.md",
+    "size": 3008,
+    "mtimeMs": 1779220900264,
+    "hash": "9f546d834e0e67910d8d12a6f829963e2ffc32544fefd8fff351e470130be8d2",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 81,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-35-paper-live-promotion-evidence-dossier.md",
+    "size": 2624,
+    "mtimeMs": 1779220900359,
+    "hash": "1aa84f8562ce8188878997d4af5024102f8d4ea2647d6c50130ea6c267a9c283",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 87,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-36-market-data-trust-arbitration-v2.md",
+    "size": 2861,
+    "mtimeMs": 1779220900451,
+    "hash": "b4eb10a1cc1ae00cdd5e47a044228e67630ad86776f87ce32be482e063237784",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 88,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-37-config-policy-compiler-env-journal.md",
+    "size": 2562,
+    "mtimeMs": 1779220900556,
+    "hash": "61c0d082949e8df614b7704d1736ae381b76d412bbe7a5df04c35a1d0c8632e6",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 91,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-38-replay-driven-autofix-regression-lab.md",
+    "size": 2588,
+    "mtimeMs": 1779220900647,
+    "hash": "46557f015856c639a90b4e43edeb8d719a28c220dd24708e8cf6a97e8aa9e061",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 83,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-39-trading-opportunity-recovery-false-negative-learning.md",
+    "size": 2997,
+    "mtimeMs": 1779220900751,
+    "hash": "b0e87a2f8c54e979b0c101a5f0b9b921dd0b19589bbed3fa9ec86d7ff8fb8b9b",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 92,
+    "largeFileReview": false
+  },
+  {
+    "path": "docs/voltooid/roadmap-40-runtime-modularization-service-boundaries.md",
+    "size": 2741,
+    "mtimeMs": 1779220900844,
+    "hash": "0429d1e07828367a1528af7682e5fa3310c32f5c92092b4b3788e7cfbd08ddc0",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 85,
     "largeFileReview": false
   },
   {
@@ -970,6 +1150,26 @@
     "largeFileReview": false
   },
   {
+    "path": "install_codebase_specific_codex_agents.ps1",
+    "size": 31270,
+    "mtimeMs": 1779291873802,
+    "hash": "7bd4bad7f05582fc9e2e47c68b3df44fdc253aeacceff43620c291aad68e7f14",
+    "type": "ps1",
+    "emptyClass": null,
+    "lineCount": 844,
+    "largeFileReview": true
+  },
+  {
+    "path": "install_codex_agents_crypto_bot.ps1",
+    "size": 27444,
+    "mtimeMs": 1779288122099,
+    "hash": "28e44bffec8359e6a258e5a6466a200cd470db1c7955de4c1995748447751eb1",
+    "type": "ps1",
+    "emptyClass": null,
+    "lineCount": 841,
+    "largeFileReview": true
+  },
+  {
     "path": "LEAN-CTX.md",
     "size": 1577,
     "mtimeMs": 1777488009254,
@@ -991,12 +1191,12 @@
   },
   {
     "path": "package.json",
-    "size": 4096,
-    "mtimeMs": 1778304476296,
-    "hash": "e63f14f32ce5fe45aabae74980bda0d2b644360477a31f2f41bd596118fe7d5b",
+    "size": 5701,
+    "mtimeMs": 1779308733393,
+    "hash": "1266ebf7f986bbd38c0a9a9aed36b8f2d3b9813c14284b5d230c626c844f8116",
     "type": "json",
     "emptyClass": null,
-    "lineCount": 76,
+    "lineCount": 95,
     "largeFileReview": false
   },
   {
@@ -1007,6 +1207,26 @@
     "type": "txt",
     "emptyClass": null,
     "lineCount": 14,
+    "largeFileReview": false
+  },
+  {
+    "path": "PROMPTS-CODEX.md",
+    "size": 2283,
+    "mtimeMs": 1779292356766,
+    "hash": "e7739d2e70031ce321046ebeae7551e228cf1974c46259b63f0d95309abba845",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 90,
+    "largeFileReview": false
+  },
+  {
+    "path": "README-INSTALLATIE.md",
+    "size": 1439,
+    "mtimeMs": 1779291993263,
+    "hash": "125caf85c2828fa5326d6f2ba97c360d356bb2e6f6840518bf73c83b435aa5f0",
+    "type": "md",
+    "emptyClass": null,
+    "lineCount": 42,
     "largeFileReview": false
   },
   {
@@ -1030,13 +1250,23 @@
     "largeFileReview": false
   },
   {
+    "path": "runtime/read-model.sqlite",
+    "size": 110592,
+    "mtimeMs": 1779025844207,
+    "hash": "2625df064691b785d1b7418eae62de3f188728bd8f324f144e1d9afbbc80aae6",
+    "type": "sqlite",
+    "emptyClass": null,
+    "lineCount": null,
+    "largeFileReview": false
+  },
+  {
     "path": "scripts/analyze-dependencies.mjs",
-    "size": 3826,
-    "mtimeMs": 1778304460690,
-    "hash": "f41e855c3a700936c27c2fc87b56b34ca2e84fd7a19b8932f5a08e69cba06be0",
+    "size": 3825,
+    "mtimeMs": 1779028874362,
+    "hash": "2a750f857fa99b853bbc6121ac91794975607ca476ee04117d5e13f8be64789a",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 84,
+    "lineCount": 83,
     "largeFileReview": false
   },
   {
@@ -1051,42 +1281,52 @@
   },
   {
     "path": "scripts/check-api-route-contracts.mjs",
-    "size": 3291,
-    "mtimeMs": 1778304992008,
-    "hash": "99240094e7237c39ac93ab98867bf5ae14015e04c0ff00fa863a995b83677aee",
+    "size": 3778,
+    "mtimeMs": 1779308767275,
+    "hash": "8419a2a220bfac3a35ade2bc6fd8f3ea6c1e9e76430978e577bc619747ded3d1",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 61,
+    "lineCount": 69,
     "largeFileReview": false
   },
   {
     "path": "scripts/check-critical-files.mjs",
-    "size": 1023,
-    "mtimeMs": 1778303758233,
-    "hash": "e54ef49a933e1809cc9b5ffb638a1d60d51c7ee5c6b9d40ad21a96020beefd2e",
+    "size": 1057,
+    "mtimeMs": 1778305145694,
+    "hash": "f69b0f10ac88dec5c77ffb27e85560012e5179b1743035a4b3f8eafbbef2e1a0",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 35,
+    "lineCount": 36,
     "largeFileReview": false
   },
   {
     "path": "scripts/check-dashboard-dom-contract.mjs",
-    "size": 1671,
-    "mtimeMs": 1778304460688,
-    "hash": "f2995da88e0f3a327bae35b2d7c8eef311282dd6dfa4aebc772f68bccb13afac",
+    "size": 1820,
+    "mtimeMs": 1778305136122,
+    "hash": "81bc9bdc2afc5637ff6bfd9d1933b8a287f44c8355ea3109279612d5d0b580c5",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 43,
+    "lineCount": 45,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-debug-inventory-freshness.mjs",
+    "size": 1758,
+    "mtimeMs": 1779326881237,
+    "hash": "b1f3cb1dbb6551afa32fbd2c4b2902e73b007f601c0ff7711ee260dab2dd4e30",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 45,
     "largeFileReview": false
   },
   {
     "path": "scripts/check-env-duplicates.mjs",
-    "size": 1188,
-    "mtimeMs": 1778304460687,
-    "hash": "95658835853da4329093380c5287a90f89cb302a1ec2e6458578fbb433efed9b",
+    "size": 1187,
+    "mtimeMs": 1779028874363,
+    "hash": "5f8da1c30bd7e3154b43103676f93460b565729815f24041e802a99a83d8638e",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 34,
+    "lineCount": 33,
     "largeFileReview": false
   },
   {
@@ -1101,22 +1341,42 @@
   },
   {
     "path": "scripts/check-imports.mjs",
-    "size": 1376,
-    "mtimeMs": 1778303947112,
-    "hash": "97f3f5e5c92f4cfd12dd300b8ab377914ee4416dd255814df0bd52f7f8c6d3d4",
+    "size": 1434,
+    "mtimeMs": 1778305156933,
+    "hash": "fce486dc5bbd24278368860a242771675efd2d20b71f88ea2666161a43b4cd14",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 37,
+    "lineCount": 38,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-order-routing.mjs",
+    "size": 307,
+    "mtimeMs": 1779029500538,
+    "hash": "2e44a402d26d836a5db17897fa6dd0536d9673bbce61f4f09137a8bc5eae5dad",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 11,
     "largeFileReview": false
   },
   {
     "path": "scripts/check-package-scripts.mjs",
-    "size": 2406,
-    "mtimeMs": 1778304605802,
-    "hash": "3366bc98df2be95c378ceaa60ab2b7c2ccc41b52cf08daa4ef65a3544a9bea94",
+    "size": 3110,
+    "mtimeMs": 1779327000402,
+    "hash": "2ab1cf0861f3b034d6fe7b965db83cc368049f3e5bbb7d3f75b7ab7e36792822",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 46,
+    "lineCount": 56,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/check-shape-contracts.mjs",
+    "size": 3576,
+    "mtimeMs": 1779308716060,
+    "hash": "709d3fe5884d5168e75b329625ed0df70a0d55d1ebef06bff6f5c3b99b0d0980",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 93,
     "largeFileReview": false
   },
   {
@@ -1140,13 +1400,33 @@
     "largeFileReview": false
   },
   {
-    "path": "scripts/scan-secrets.mjs",
-    "size": 3054,
-    "mtimeMs": 1778304888565,
-    "hash": "33b62ed56aff0a3266829afe285242b1d7bed24d95139a6eb06651fbf1189bb3",
+    "path": "scripts/run-mode.mjs",
+    "size": 1960,
+    "mtimeMs": 1779029123149,
+    "hash": "cd06097b87e1c958b9e677a845c72836a4f06e5418091ec83f022314f5df2598",
     "type": "mjs",
     "emptyClass": null,
     "lineCount": 67,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/scan-secrets.mjs",
+    "size": 3218,
+    "mtimeMs": 1778953955588,
+    "hash": "d4b1c7542b6b5a7397158fb6678725c2a61f407bed266309aa1b0bb46633050f",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 69,
+    "largeFileReview": false
+  },
+  {
+    "path": "scripts/security-scan-report.mjs",
+    "size": 4359,
+    "mtimeMs": 1779024358458,
+    "hash": "c77da796e8544b9f4bce2e1fde09e24abf9cc9b6523e9a68bc50ee114148cf93",
+    "type": "mjs",
+    "emptyClass": null,
+    "lineCount": 107,
     "largeFileReview": false
   },
   {
@@ -1161,22 +1441,22 @@
   },
   {
     "path": "scripts/smoke-cli.mjs",
-    "size": 713,
-    "mtimeMs": 1778304460692,
-    "hash": "e7f0f6ca4fe74217c410ed188c1db9ef99a154661b20c2167fe12a81a4e5ca38",
+    "size": 712,
+    "mtimeMs": 1779028874363,
+    "hash": "6ff6696920e456c8b5dc62f727b9962ce7357c548fd1df21648b17e7e0aff76a",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 29,
+    "lineCount": 28,
     "largeFileReview": false
   },
   {
     "path": "scripts/smoke-dashboard.mjs",
-    "size": 3178,
-    "mtimeMs": 1778305008966,
-    "hash": "c7e06152f13e11120105399baf461c696755179fcb11e4bfbbec3716760f0b41",
+    "size": 3264,
+    "mtimeMs": 1779286902969,
+    "hash": "e4c89a415beaf6863c96f423feb900089f74726034fad2e8a227e20c11869deb",
     "type": "mjs",
     "emptyClass": null,
-    "lineCount": 69,
+    "lineCount": 70,
     "largeFileReview": false
   },
   {
@@ -1187,6 +1467,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 294,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/accounts/accountAllocationPolicy.js",
+    "size": 1561,
+    "mtimeMs": 1779221782275,
+    "hash": "ad20597d83fa8a38e3acee4c4af60b6cf93f076c9bd5b41c6f36ace164f243a4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 37,
     "largeFileReview": false
   },
   {
@@ -1211,12 +1501,12 @@
   },
   {
     "path": "src/ai/antiOverfitGovernor.js",
-    "size": 3259,
-    "mtimeMs": 1777773972123,
-    "hash": "8d174dc8ccce105316641c0cf668e5243446c78f98c950bd727045922bb53bc8",
+    "size": 3197,
+    "mtimeMs": 1779326576186,
+    "hash": "6dc1ee92bf12d1b10ca3b66a126468b33d46e36272d8ee9348db9ab8eba1bfe0",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 76,
+    "lineCount": 73,
     "largeFileReview": false
   },
   {
@@ -1317,6 +1607,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 160,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ai/modelBenchmarkHarness.js",
+    "size": 3694,
+    "mtimeMs": 1779326574744,
+    "hash": "34f447298cd94d3bb3c6a4c67e745315f6df75e07576154628751bd20a1ca88a",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 90,
     "largeFileReview": false
   },
   {
@@ -1751,12 +2051,12 @@
   },
   {
     "path": "src/binance/client.js",
-    "size": 33121,
-    "mtimeMs": 1777518914406,
-    "hash": "b13daa3df8947c1e6ad9c7ff9e8cbdcd0649c8e09bdc5cbf9206d9cbfe66689f",
+    "size": 40901,
+    "mtimeMs": 1779325530238,
+    "hash": "50eb395a8900d59fc734709168267b012996444aa2311d2c5d657e596fbdc428",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 938,
+    "lineCount": 1108,
     "largeFileReview": true
   },
   {
@@ -1771,22 +2071,22 @@
   },
   {
     "path": "src/cli/commandRegistry.js",
-    "size": 6448,
-    "mtimeMs": 1778304460685,
-    "hash": "7c64feba8170656abe4fb4fcca1fb3d7e43cd48ecdb6fb25f71b7094f737a6bb",
+    "size": 14017,
+    "mtimeMs": 1779327308940,
+    "hash": "eac174bc96e2f24ee1ba60f10de8e8cc5ebc5851d14633f46d7b8f3cc9e20dc4",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 52,
+    "lineCount": 162,
     "largeFileReview": false
   },
   {
     "path": "src/cli/runCli.js",
-    "size": 50095,
-    "mtimeMs": 1778304460686,
-    "hash": "4fb76294810db182c107fb5b0f2755daa3af77cd6b0db803069d49d2771156dd",
+    "size": 58686,
+    "mtimeMs": 1779326682294,
+    "hash": "129b8a68eb98318a1c4ac8996990209d65f1aed4ab890014a8c528f853f36414",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 1244,
+    "lineCount": 1437,
     "largeFileReview": true
   },
   {
@@ -1807,6 +2107,36 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 66,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/configLineage.js",
+    "size": 2047,
+    "mtimeMs": 1779105893929,
+    "hash": "b2764d00b276f7523602f266acc42541bd32fd3d72517ddad661c7be15087e2f",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 63,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/configPolicyCompiler.js",
+    "size": 1301,
+    "mtimeMs": 1779221783464,
+    "hash": "bf342a8b1c07ad81af9ff18c6c17f159438a8916ce8a08d6ce7ab729b7219559",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 38,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/config/dashboardQuickSettings.js",
+    "size": 16791,
+    "mtimeMs": 1779127169358,
+    "hash": "553530f48503920fb8b6b8c463a3c817fd496483fd3fc8cc6ab762822912dc22",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 545,
     "largeFileReview": false
   },
   {
@@ -1920,6 +2250,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/config/envMigrationPlan.js",
+    "size": 1128,
+    "mtimeMs": 1779106218945,
+    "hash": "398f361aa0cbfa99378f18f7f51d51469fb6da1951792e85e9743c388b0eeb52",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 41,
+    "largeFileReview": false
+  },
+  {
     "path": "src/config/envValidation.js",
     "size": 3687,
     "mtimeMs": 1778303877078,
@@ -2011,12 +2351,12 @@
   },
   {
     "path": "src/config/tradeProfiles.js",
-    "size": 6557,
-    "mtimeMs": 1778271932765,
-    "hash": "3c4bb6151fcc192f1394c4d4b53bdeed005db6cb2646a5ca80fb99eb8de35261",
+    "size": 6848,
+    "mtimeMs": 1778962315488,
+    "hash": "08bfc6068d26f3bfa0ad5340e70e6543c506c3ff05d460141659e6871b23a066",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 180,
+    "lineCount": 186,
     "largeFileReview": false
   },
   {
@@ -2027,6 +2367,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 506,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/actionRouteContracts.js",
+    "size": 7049,
+    "mtimeMs": 1779292566586,
+    "hash": "5c4756d0f4af085d0e7dbbf51c03ca22161c48f6495f4af74138ba7c471c8da8",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 67,
     "largeFileReview": false
   },
   {
@@ -2061,42 +2411,72 @@
   },
   {
     "path": "src/dashboard/public/app.js",
-    "size": 99204,
-    "mtimeMs": 1778304983687,
-    "hash": "9966f6dc815d0a02e9f58fbbe492a1720aa8c1b3dcc3962031d7f5b636c1bc51",
+    "size": 112837,
+    "mtimeMs": 1779285009587,
+    "hash": "9d2540958a52cc88bffaa9310b51e00ebee3e42ccaf688dd1f9d8cf118e9539a",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 2044,
+    "lineCount": 2301,
     "largeFileReview": true
   },
   {
     "path": "src/dashboard/public/index.html",
-    "size": 7436,
-    "mtimeMs": 1778272268224,
-    "hash": "cddc03c0db5afe8cd661acd33b1514fe62435e05a401d56316586625b43381dd",
+    "size": 8249,
+    "mtimeMs": 1779228549576,
+    "hash": "42535c2896e9328630a707cadda7058533a8a10c9aff78fd61e8a80d1b7bf0d9",
     "type": "html",
     "emptyClass": null,
-    "lineCount": 191,
+    "lineCount": 213,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/public/renderRestBudgetPanel.js",
+    "size": 1510,
+    "mtimeMs": 1779327135369,
+    "hash": "21d0af713c84e3f7aac4b909ad82241b57bca73433fcb9ab3a7dfb51b2c355ed",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 25,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/public/renderSafetyPanel.js",
+    "size": 652,
+    "mtimeMs": 1779327148656,
+    "hash": "c256750e2ba6b41aaa34dc5e27a55d1154971027f135af3b99fbf96970e97900",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 13,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/dashboard/public/renderTradingQualityPanel.js",
+    "size": 1507,
+    "mtimeMs": 1779327170807,
+    "hash": "87372e1760e1beeb7e42f816ac8fcd937d70857489c7fff12af12525789d16d1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 18,
     "largeFileReview": false
   },
   {
     "path": "src/dashboard/public/styles.css",
-    "size": 11887,
-    "mtimeMs": 1778272298415,
-    "hash": "5de72f43a60123f1ac41059f90f7d31856062a781e0de904e6a8286b0a524d03",
+    "size": 14426,
+    "mtimeMs": 1779228549761,
+    "hash": "57a2d7d624cf9e490641ac050eaf13f9b09737aa7a5dad0e058560af23c4bbeb",
     "type": "css",
     "emptyClass": null,
-    "lineCount": 677,
-    "largeFileReview": false
+    "lineCount": 827,
+    "largeFileReview": true
   },
   {
     "path": "src/dashboard/server.js",
-    "size": 15085,
-    "mtimeMs": 1778304967712,
-    "hash": "4ee3eea27006dcd0ed1a20620086d5349ed901f3ef5728073724396028f8a06b",
+    "size": 16961,
+    "mtimeMs": 1779308694836,
+    "hash": "065782f06a93073a05e6546ae6c02c639742c6e2e9901a668d26f87797f25fe6",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 394,
+    "lineCount": 428,
     "largeFileReview": false
   },
   {
@@ -2110,13 +2490,23 @@
     "largeFileReview": false
   },
   {
-    "path": "src/events/binanceAnnouncementService.js",
-    "size": 11054,
-    "mtimeMs": 1777488009298,
-    "hash": "edce0271413f20becb45afe5ef042da87897d1a869696fdac5d2b125e03998a6",
+    "path": "src/docs/runtimeArchitectureMap.js",
+    "size": 3867,
+    "mtimeMs": 1779326721960,
+    "hash": "2d249cfb0f0ad3649438b3b8330a783cca27d348feabdbd730f28ad4b06057c2",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 339,
+    "lineCount": 96,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/events/binanceAnnouncementService.js",
+    "size": 12430,
+    "mtimeMs": 1779067760235,
+    "hash": "bbd07b48cd3d4fc1ef2004b44f237c6be30947f9db67e53fc83e45bb164b78ca",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 380,
     "largeFileReview": false
   },
   {
@@ -2181,12 +2571,12 @@
   },
   {
     "path": "src/execution/autoReconcileCoordinator.js",
-    "size": 31268,
-    "mtimeMs": 1777775113242,
-    "hash": "7282f155e976a8f11419d6f6a5b2ef55b0e8782dd1cfcea4383ac3c39969ba58",
+    "size": 32104,
+    "mtimeMs": 1779292999259,
+    "hash": "0008b6d2071beef4b6df2ef23d16867c05feddb8aa22060977c9e1ce5aa19c45",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 743,
+    "lineCount": 759,
     "largeFileReview": false
   },
   {
@@ -2270,6 +2660,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/execution/executionQualityRecord.js",
+    "size": 2021,
+    "mtimeMs": 1779106218961,
+    "hash": "3b8c6e31ea1539cd561d1c70014d581d24b2f21e6e7f5ca1b40466931e87fc8b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 62,
+    "largeFileReview": false
+  },
+  {
     "path": "src/execution/feeAccounting.js",
     "size": 4394,
     "mtimeMs": 1777491621525,
@@ -2281,22 +2681,22 @@
   },
   {
     "path": "src/execution/liveBroker.js",
-    "size": 144655,
-    "mtimeMs": 1777691575022,
-    "hash": "693206fc3197b48496a069a00ae2911e12935fd01828217791029b27a85340b7",
+    "size": 152913,
+    "mtimeMs": 1779285651068,
+    "hash": "20a65c2f895b671fbf98f319c7dee74d25841f4adcc8c4c48525491ecb65d921",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 3365,
+    "lineCount": 3585,
     "largeFileReview": true
   },
   {
     "path": "src/execution/liveBrokerReconcile.js",
-    "size": 86779,
-    "mtimeMs": 1777821155940,
-    "hash": "55f53408b5d664d53978480325a647a7c89e2b10dfd5822f1b7daae2a885db11",
+    "size": 88284,
+    "mtimeMs": 1779293799172,
+    "hash": "00283619a498b161502b95f405f2a58e0be22e9ada7ea55f60b335c39283d634",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 2025,
+    "lineCount": 2058,
     "largeFileReview": true
   },
   {
@@ -2307,6 +2707,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 141,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/manualReviewReasonRegistry.js",
+    "size": 1535,
+    "mtimeMs": 1779326482719,
+    "hash": "e8639ce62fb66316e4df8ac01e33889bd605a11a0ffd7c871fff99ee59e5c225",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
     "largeFileReview": false
   },
   {
@@ -2340,6 +2750,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/execution/orderLifecycleStateMachine.js",
+    "size": 1922,
+    "mtimeMs": 1779221783005,
+    "hash": "87e5c59b1370bbf5b6a72d11ad4e85d8814c875c9a64be195ae86846aaea47a7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
     "path": "src/execution/orderStyleAdvisor.js",
     "size": 4801,
     "mtimeMs": 1777893880687,
@@ -2351,12 +2771,22 @@
   },
   {
     "path": "src/execution/paperBroker.js",
-    "size": 28181,
-    "mtimeMs": 1777691569879,
-    "hash": "b65bd77f9ba0a08e62a3779b288f13831693acc1a289281693c4528d2d183c39",
+    "size": 28323,
+    "mtimeMs": 1779292495964,
+    "hash": "335a3f0ff7b271967277a56c292e1ec4955d20266787a931d0a7c1e365698153",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 667,
+    "lineCount": 670,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/protectiveOrderHealth.js",
+    "size": 1976,
+    "mtimeMs": 1779221782183,
+    "hash": "e93972d21222449dca0acee65fdddb6584a022413609c237169e20247887401b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 41,
     "largeFileReview": false
   },
   {
@@ -2367,6 +2797,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 62,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/execution/reconcileSelfHealingPlan.js",
+    "size": 1542,
+    "mtimeMs": 1779221782915,
+    "hash": "380928ceb66cff42ff475de1a77ba102420daa0ce8c42f6deaa5d7d2bfe07ec3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 40,
     "largeFileReview": false
   },
   {
@@ -2471,12 +2911,12 @@
   },
   {
     "path": "src/market/localOrderBook.js",
-    "size": 20105,
-    "mtimeMs": 1777675113202,
-    "hash": "48e70884cc7905ada3aa7e50b091f629de458e83b855f733fad033c8d2531b26",
+    "size": 22093,
+    "mtimeMs": 1779067760048,
+    "hash": "ca9b40a77238448e7606fd0c4e231b96baf7115c1c8b4eaaf1a0a8b1effcd39b",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 548,
+    "lineCount": 590,
     "largeFileReview": false
   },
   {
@@ -2851,12 +3291,12 @@
   },
   {
     "path": "src/ops/productionOps.js",
-    "size": 17455,
-    "mtimeMs": 1778243835652,
-    "hash": "f367e9aa06d3fdf639ede9b63f63d71993dd93e7065dbf966e5563fa0caa3c8a",
+    "size": 26438,
+    "mtimeMs": 1779025628327,
+    "hash": "e9cd2f18e86a977151b740d6839d48cc5b3835bd4338e555e2af1b4e4fe32701",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 324,
+    "lineCount": 498,
     "largeFileReview": false
   },
   {
@@ -2880,6 +3320,26 @@
     "largeFileReview": false
   },
   {
+    "path": "src/ops/sloRegistry.js",
+    "size": 1397,
+    "mtimeMs": 1779221782551,
+    "hash": "b99a960cc5c857e0745dbdba81b9c3f81ab2c957afbe089e724d4d705b933ce9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 40,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/ops/windowsEntrypointContracts.js",
+    "size": 1687,
+    "mtimeMs": 1779106218975,
+    "hash": "8306b1b6aa1b15506514288e4a23f0462c45c6566d7c9b8a29a034ee8ea5d4c6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 58,
+    "largeFileReview": false
+  },
+  {
     "path": "src/policy/policyEngine.js",
     "size": 3021,
     "mtimeMs": 1778243819421,
@@ -2897,6 +3357,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 38,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/reporting/accountingEvent.js",
+    "size": 2286,
+    "mtimeMs": 1779221782366,
+    "hash": "a1528c6b811b6870986a8444ffcff40dc40d155a2fecf1acb7aee5c9a23aef8c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 66,
     "largeFileReview": false
   },
   {
@@ -3061,12 +3531,12 @@
   },
   {
     "path": "src/risk/exitIntelligenceV2.js",
-    "size": 14825,
-    "mtimeMs": 1777689415437,
-    "hash": "77ce09193eaae2bcfd94c4b9f5d90f37b99803b9e7eab6581cb1072a429e72d8",
+    "size": 15502,
+    "mtimeMs": 1779295412628,
+    "hash": "f4aa260c3dd2b0a32584138f3b73c8c32a6a5cc1a47c01685aabb30d8a589395",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 350,
+    "lineCount": 367,
     "largeFileReview": false
   },
   {
@@ -3140,6 +3610,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/risk/policies/reasonPolicy.js",
+    "size": 3009,
+    "mtimeMs": 1778968072834,
+    "hash": "d47854fd7985013e6e06e42a330e448475e4949fad6694d5505fc65e7f38adb9",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 80,
+    "largeFileReview": false
+  },
+  {
     "path": "src/risk/policies/recoveryProbePolicy.js",
     "size": 15687,
     "mtimeMs": 1777585554072,
@@ -3147,6 +3627,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 391,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/risk/policies/setupQualityPolicy.js",
+    "size": 5017,
+    "mtimeMs": 1778970264217,
+    "hash": "d30130ae1482cc10f78f70e5fb3fc26609f458a01b8acf44f71bbe3c7acf32d4",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 117,
     "largeFileReview": false
   },
   {
@@ -3221,12 +3711,12 @@
   },
   {
     "path": "src/risk/riskManager.js",
-    "size": 316592,
-    "mtimeMs": 1777772779977,
-    "hash": "3c7faca6929625f95de5fb6367a0c1d2a009c78feda2099a564550fd69cca164",
+    "size": 311195,
+    "mtimeMs": 1779295422230,
+    "hash": "79e4957a2618f4eee3db52a732bfaae9bc64764c97bddba721dadfb7299666bb",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 6997,
+    "lineCount": 6840,
     "largeFileReview": true
   },
   {
@@ -3290,6 +3780,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/autofixReplayRegressionLab.js",
+    "size": 1311,
+    "mtimeMs": 1779221783559,
+    "hash": "7916d52fe0ff437181d8894c7b901f57c61b6828963f83e7b481a0e9a0905fe3",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 31,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/backtestExecution.js",
     "size": 13258,
     "mtimeMs": 1777488009342,
@@ -3310,6 +3810,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/backupRestorePlanner.js",
+    "size": 1567,
+    "mtimeMs": 1779221782734,
+    "hash": "bd03f3c0b829d53030f3221ba4b035da84c12b8d2b81f96e0258b7d9bf8002f1",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/badVetoLearningService.js",
     "size": 5481,
     "mtimeMs": 1777488009344,
@@ -3317,6 +3827,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 141,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/blockerRootCauseGraph.js",
+    "size": 3272,
+    "mtimeMs": 1779106218990,
+    "hash": "e70a5c813eb06267e0957ff66ea8f29b35947c57b193b9fbcc455347dca77bd6",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 83,
     "largeFileReview": false
   },
   {
@@ -3331,12 +3851,12 @@
   },
   {
     "path": "src/runtime/botManager.js",
-    "size": 38372,
-    "mtimeMs": 1778304954603,
-    "hash": "1f81b30092a55d32132e023756b5eb4b3496cd647fb6bb38571864d4226fe824",
+    "size": 58841,
+    "mtimeMs": 1779326784054,
+    "hash": "076895d9a78076b6df95e08d29ce969017ecb3e54a18fe88f04724c812c3f851",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 1042,
+    "lineCount": 1515,
     "largeFileReview": true
   },
   {
@@ -3381,12 +3901,12 @@
   },
   {
     "path": "src/runtime/candidateOutcomeTracker.js",
-    "size": 7353,
-    "mtimeMs": 1778012746440,
-    "hash": "8b9ffa19b579de88b2d9529b7729266b9a649acb19fa9b6bb5fcac23a8b82f61",
+    "size": 12517,
+    "mtimeMs": 1778964323236,
+    "hash": "3e8780c2caef8174eb92193430b02ffd84312ef63fd8da730a533ca5095d3bed",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 222,
+    "lineCount": 333,
     "largeFileReview": false
   },
   {
@@ -3461,22 +3981,22 @@
   },
   {
     "path": "src/runtime/dashboardPayloadNormalizers.js",
-    "size": 25481,
-    "mtimeMs": 1778059783568,
-    "hash": "a622ff98c17dfb3ffb1c43a8332ffb70d4a87accc6dae82fabceebe8a2a6c0a3",
+    "size": 26726,
+    "mtimeMs": 1779048080518,
+    "hash": "1321a016b177bf0fc60f3fa127db5430b0b9c81be7821365a05f1be46f7bf60a",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 574,
+    "lineCount": 596,
     "largeFileReview": false
   },
   {
     "path": "src/runtime/dashboardSnapshotBuilder.js",
-    "size": 4514,
-    "mtimeMs": 1777488009350,
-    "hash": "4af6a466591e21025c44355ce5e27843370e270ccc41c7f577ba08f7c279a317",
+    "size": 5877,
+    "mtimeMs": 1779326776988,
+    "hash": "489a77ab584daadc28023b464a2f07b30c78a07fccd83317df75abb7cf6814eb",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 127,
+    "lineCount": 155,
     "largeFileReview": false
   },
   {
@@ -3520,6 +4040,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/dataTrustArbitrator.js",
+    "size": 1420,
+    "mtimeMs": 1779221783374,
+    "hash": "61c3554d46520b9be886fcbf56c6b8e3b208c95296aa464c51402c9501073e28",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 36,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/decisionContract.js",
     "size": 3283,
     "mtimeMs": 1777846918685,
@@ -3527,6 +4057,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 87,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/decisionFunnel.js",
+    "size": 9060,
+    "mtimeMs": 1779048079967,
+    "hash": "540034817ed49ecf703a0ce5388b833879394b0e8ae3ceb95afd7a6b9eaffcc0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 196,
     "largeFileReview": false
   },
   {
@@ -3541,12 +4081,12 @@
   },
   {
     "path": "src/runtime/decisionPipeline.js",
-    "size": 5210,
-    "mtimeMs": 1777488009352,
-    "hash": "b7f3357311e96699fabf95b604a5e04ed81089763956670b312217037df5219a",
+    "size": 6304,
+    "mtimeMs": 1779048565699,
+    "hash": "20426827cb8da5c405a9e39944e2e16d100026331fe1ed89f5103b1c0399a762",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 134,
+    "lineCount": 159,
     "largeFileReview": false
   },
   {
@@ -3557,6 +4097,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 251,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/decisionTruthEngine.js",
+    "size": 1384,
+    "mtimeMs": 1779221783193,
+    "hash": "116582cdde9d6dd9425895e85aa63c7f8c42bfd04e6dea2a94a669518a345887",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 41,
     "largeFileReview": false
   },
   {
@@ -3591,12 +4141,12 @@
   },
   {
     "path": "src/runtime/exchangeSafetyReconciler.js",
-    "size": 28845,
-    "mtimeMs": 1777488009356,
-    "hash": "3a68826594535a89c33aefc71355157d8066c1f2b9b9ea66510ff96a80896340",
+    "size": 30833,
+    "mtimeMs": 1779208337799,
+    "hash": "199531b0a02b55382e2db6dab64104a7b53fd13b486b6ae2afdcc973fa0c614d",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 661,
+    "lineCount": 698,
     "largeFileReview": false
   },
   {
@@ -3650,13 +4200,23 @@
     "largeFileReview": false
   },
   {
-    "path": "src/runtime/fastExecutionTrace.js",
-    "size": 2953,
-    "mtimeMs": 1778230327320,
-    "hash": "367aebdcd7211b31b03cc6b41bd8d2714dd7b8741200ee7795b7ba8495ef1b14",
+    "path": "src/runtime/falseNegativeRecoveryEngine.js",
+    "size": 1209,
+    "mtimeMs": 1779221783666,
+    "hash": "65ee65630293884b8b21d2c7edccd59b2ff52918d0b40420193eea48b3684b9d",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 81,
+    "lineCount": 29,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/fastExecutionTrace.js",
+    "size": 3786,
+    "mtimeMs": 1778964370200,
+    "hash": "e008ea56346f1b686c774fcea41a492a5e3be7ec044a9e275f2ba37953460019",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 101,
     "largeFileReview": false
   },
   {
@@ -3671,12 +4231,12 @@
   },
   {
     "path": "src/runtime/fastSignalTriggerService.js",
-    "size": 4062,
-    "mtimeMs": 1778230018692,
-    "hash": "61fb11ed8482507577bbc0ea147a9d160d842567808f433e13b2e4043db41929",
+    "size": 5305,
+    "mtimeMs": 1778964348378,
+    "hash": "4fd58dc806ca2cde2aebeef82ab6b01c5da7f6114c1bfd21e7ed8f3c13e46742",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 104,
+    "lineCount": 127,
     "largeFileReview": false
   },
   {
@@ -3691,12 +4251,12 @@
   },
   {
     "path": "src/runtime/featureAudit.js",
-    "size": 26503,
-    "mtimeMs": 1778056513851,
-    "hash": "134944091634c0c0ed8463fae8faae437b7e86a7f5d30e67dad19ebb9d9382fd",
+    "size": 31847,
+    "mtimeMs": 1779326656274,
+    "hash": "8b12b45ac9ee1550ffb2a134e46aee7801019ac27b9c275cf293d527d5aa6158",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 611,
+    "lineCount": 739,
     "largeFileReview": false
   },
   {
@@ -3751,12 +4311,12 @@
   },
   {
     "path": "src/runtime/immediateEntryQueue.js",
-    "size": 3223,
-    "mtimeMs": 1778226210486,
-    "hash": "d9382c3b44af18a3c3ed0e40ff538a1681fd535b8b8daf80770d987a514028ec",
+    "size": 3922,
+    "mtimeMs": 1778964338234,
+    "hash": "36c7c5412e834955e70dcae18b3dc688ae1cc21ba9661da7358e6fa335ea0ee5",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 74,
+    "lineCount": 96,
     "largeFileReview": false
   },
   {
@@ -3830,13 +4390,23 @@
     "largeFileReview": false
   },
   {
-    "path": "src/runtime/livePreflight.js",
-    "size": 2319,
-    "mtimeMs": 1778303803423,
-    "hash": "e734cad53e2283b39d194361baa15ff2fe5d9e3216b03a68bb27d26dabe00d3d",
+    "path": "src/runtime/liveIncidentCommand.js",
+    "size": 6300,
+    "mtimeMs": 1779050063122,
+    "hash": "59ded30c69af8eddc5524df92c8134f18c3c2ded7b400f2d85c0c7b74c907294",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 47,
+    "lineCount": 162,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/livePreflight.js",
+    "size": 4579,
+    "mtimeMs": 1778970217853,
+    "hash": "ddcafa28aaf27566592a29f745c1ee02f056446ad45a4d16bf01d49ad246c7b7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 88,
     "largeFileReview": false
   },
   {
@@ -3860,6 +4430,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/managerMutationContract.js",
+    "size": 3640,
+    "mtimeMs": 1779128477559,
+    "hash": "a67d283ea4a6a8785417d15561bb7cadf624bf7bdaccd74349017dcd9e6994a7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 119,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/marketConditionController.js",
     "size": 11193,
     "mtimeMs": 1777488009359,
@@ -3867,6 +4447,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 259,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/marketDataIntelligence.js",
+    "size": 10760,
+    "mtimeMs": 1779050373416,
+    "hash": "855434a3447716d3e83f02cdc582f52dca41f9655a3b14501d9ce6f89c44562c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 241,
     "largeFileReview": false
   },
   {
@@ -3891,12 +4481,12 @@
   },
   {
     "path": "src/runtime/marketScanner.js",
-    "size": 55293,
-    "mtimeMs": 1777648754038,
-    "hash": "b240c17d472b8e453f939d119443d9aa6f98425daa6c9af62ccf94d995264828",
+    "size": 56799,
+    "mtimeMs": 1779010210426,
+    "hash": "f17f2048cc9e8a93af64ae49d0a5a866c287d8a382f3686aab1546c2e04bc7af",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 1494,
+    "lineCount": 1524,
     "largeFileReview": true
   },
   {
@@ -3917,6 +4507,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 168,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/modelLifecycleDossier.js",
+    "size": 7072,
+    "mtimeMs": 1779050062831,
+    "hash": "2bf5f3b44b5eb69d429dee38c52128f1c0306d0d06c4c96aa441ae2c148b7104",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 154,
     "largeFileReview": false
   },
   {
@@ -3950,6 +4550,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/noTradeTimeline.js",
+    "size": 9220,
+    "mtimeMs": 1779028341801,
+    "hash": "d35b517b4052bc8fa97d4b5db9a5c7c6cd00bdf6cf48fa89c78399b796f6c854",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 177,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/offlineTrainer.js",
     "size": 175558,
     "mtimeMs": 1777488009364,
@@ -3971,9 +4581,9 @@
   },
   {
     "path": "src/runtime/operationalTruth.js",
-    "size": 4525,
-    "mtimeMs": 1777534713471,
-    "hash": "cb272b14b4ce7c7d1ad881820f55680c45208b6a1efc1c04a1801622072767bb",
+    "size": 4491,
+    "mtimeMs": 1779133040406,
+    "hash": "c0876e2d14c485d1ce42f22706c6b355845796fc4c416c7031677d93aac93b54",
     "type": "js",
     "emptyClass": null,
     "lineCount": 137,
@@ -3987,6 +4597,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 148,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/operatorActionSimulator.js",
+    "size": 1291,
+    "mtimeMs": 1779221783098,
+    "hash": "293a3f7a1be9163e9e797e857cc41c5dd21a4d756def9264e15c850079574092",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 31,
     "largeFileReview": false
   },
   {
@@ -4060,6 +4680,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/orderRoutingAudit.js",
+    "size": 4793,
+    "mtimeMs": 1779030034391,
+    "hash": "fab3e80c138ce476a5ca075d06dde654ead24eced3e217b8a534950f55bcfafa",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 128,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/pairHealthMonitor.js",
     "size": 10009,
     "mtimeMs": 1777488009368,
@@ -4091,12 +4721,12 @@
   },
   {
     "path": "src/runtime/paperEvidenceSpine.js",
-    "size": 7170,
-    "mtimeMs": 1778057872471,
-    "hash": "d3d3f9c0d9f1cadfb4ce863f3b7a89d8a4e0b281cbb32f22116ad0b95fa78a2e",
+    "size": 8073,
+    "mtimeMs": 1779026969809,
+    "hash": "7ecde40020c8a034c4933b686412d4d5c0f2e77d3f48b6f8db24e9dd84693ac5",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 211,
+    "lineCount": 241,
     "largeFileReview": false
   },
   {
@@ -4220,6 +4850,36 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/promotionEvidenceDossier.js",
+    "size": 1185,
+    "mtimeMs": 1779221783284,
+    "hash": "7d079b0736bd1d48ee6673546f2f4a426a88cd46408d496c4b426ba7285e1539",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 33,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/providerBudgetOrchestrator.js",
+    "size": 1123,
+    "mtimeMs": 1779106219019,
+    "hash": "8d63d80c48af28790844390ad0edf0323820ab0a496a290f336cd5f811030a0b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 25,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/providerSloRegistry.js",
+    "size": 942,
+    "mtimeMs": 1779106219032,
+    "hash": "db6e13d62249da3b4f614c9dbc95b067cf710baf7bf9ced9f18e748c77da4491",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 17,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/regimeConfusion.js",
     "size": 1901,
     "mtimeMs": 1777757724463,
@@ -4280,10 +4940,20 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/replayScenarioCatalog.js",
+    "size": 2332,
+    "mtimeMs": 1779106219044,
+    "hash": "215a00cc43866eefbfe8d1d85f1f64e15e856870500f5f73b2f16c2f37525b1e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/reportBuilder.js",
-    "size": 87916,
-    "mtimeMs": 1778013381338,
-    "hash": "8b697623fd71b91a75878fb019a4ed7628a44f9f0730f17a4bfdf9fed7f72898",
+    "size": 87835,
+    "mtimeMs": 1779293480168,
+    "hash": "5844e461ca00852afab2fbd81492b3affcf64e5cf94f777028e6d1478f792122",
     "type": "js",
     "emptyClass": null,
     "lineCount": 2045,
@@ -4311,22 +4981,32 @@
   },
   {
     "path": "src/runtime/restArchitectureAudit.js",
-    "size": 8865,
-    "mtimeMs": 1777518730374,
-    "hash": "fa96b94ddae60b90935ddec495966af5b285e870bc7b4a6d84a36fa702a96667",
+    "size": 9030,
+    "mtimeMs": 1779026969519,
+    "hash": "d5c49b28c28f54adebf40b290733464838fc1fe2cdabb89565674f589c117f26",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 244,
+    "lineCount": 249,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/restBanPause.js",
+    "size": 1565,
+    "mtimeMs": 1779014249122,
+    "hash": "69180d16c7e4521017493fdc6e1b1acdff77d5dcd9896f1e05c669b72a5a31cc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 44,
     "largeFileReview": false
   },
   {
     "path": "src/runtime/restBudgetGovernor.js",
-    "size": 13285,
-    "mtimeMs": 1777672187979,
-    "hash": "c79cb939cd6eb5fc2564091203f3657ecd0ea46ebdf1e146e4f3dc59e746234d",
+    "size": 18359,
+    "mtimeMs": 1779024237572,
+    "hash": "cd75d07265d83a9c1e52eda42d8483145bc2b6bdcc2d2a0ccc0966841babcd19",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 372,
+    "lineCount": 476,
     "largeFileReview": false
   },
   {
@@ -4337,6 +5017,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 54,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/roadmapModuleIntegration.js",
+    "size": 23143,
+    "mtimeMs": 1779228777655,
+    "hash": "3b25325fd64f1ca9dfda1dfca7766882dbf409169f0534218ba0d89c1b982ae7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 417,
     "largeFileReview": false
   },
   {
@@ -4351,12 +5041,12 @@
   },
   {
     "path": "src/runtime/rootBlockerOrchestrator.js",
-    "size": 5417,
-    "mtimeMs": 1777488009372,
-    "hash": "e019b1316f0f16c691e7527e102739ea67f74523143a2b2c8fbddd27cb395c5d",
+    "size": 6187,
+    "mtimeMs": 1779048080192,
+    "hash": "78cca759029b7ed634e22317766ba286cca497a1b2a98137cdaf4dd894a6b44b",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 164,
+    "lineCount": 183,
     "largeFileReview": false
   },
   {
@@ -4370,6 +5060,36 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/runtimeLiveness.js",
+    "size": 8630,
+    "mtimeMs": 1779025577726,
+    "hash": "4d423c7963783a307d11630a673731fd8a2f6df23d38af04421deeee2eed06ea",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 206,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/runtimePerformanceSnapshot.js",
+    "size": 1714,
+    "mtimeMs": 1779326577491,
+    "hash": "b2660c4e5574e07d4e2e0fa28947789463af20fae1b01aa16d7319e6167f6de0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 36,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/runtimeServiceBoundaries.js",
+    "size": 1613,
+    "mtimeMs": 1779221783760,
+    "hash": "e3402e0cc7cd294977039b5746c60544f3febf882e4cb54f637bcca31e627479",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 47,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/safetySnapshot.js",
     "size": 3452,
     "mtimeMs": 1777895300057,
@@ -4377,6 +5097,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 82,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/scanPerformanceBudget.js",
+    "size": 1301,
+    "mtimeMs": 1779106219057,
+    "hash": "f46c7694517069aba3195a9cd628eb9a6511e2bd5f93fc54fad9959720589165",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 37,
     "largeFileReview": false
   },
   {
@@ -4417,6 +5147,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/setupStateMachine.js",
+    "size": 4553,
+    "mtimeMs": 1779286417621,
+    "hash": "640a9b90b33c9b49c062856f0cf350b202c1ce01e0211e77f2a0552efae20599",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 114,
     "largeFileReview": false
   },
   {
@@ -4490,6 +5230,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/runtime/strategyResearchWorkflow.js",
+    "size": 5395,
+    "mtimeMs": 1779050062926,
+    "hash": "95a839e9325fb19a437eb2f95ff950de5ec68d73735d2fe80e769fe879a8f43e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 128,
+    "largeFileReview": false
+  },
+  {
     "path": "src/runtime/strategyRetirementEngine.js",
     "size": 21642,
     "mtimeMs": 1777866524072,
@@ -4501,12 +5251,12 @@
   },
   {
     "path": "src/runtime/streamCoordinator.js",
-    "size": 59367,
-    "mtimeMs": 1777675119040,
-    "hash": "a0eb5ef27769070180a73c609ebc8f88dbe7168facc64430fbaf25ae437462e4",
+    "size": 59470,
+    "mtimeMs": 1779067760143,
+    "hash": "909743b6ef1b3ffbdcaa73ef7879a874aefacd67be8da4b6a94ffdbe8a283345",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 1635,
+    "lineCount": 1638,
     "largeFileReview": true
   },
   {
@@ -4601,12 +5351,12 @@
   },
   {
     "path": "src/runtime/tradeQualityAnalytics.js",
-    "size": 11881,
-    "mtimeMs": 1777690992841,
-    "hash": "8b15398fdf19644a498bde522b4cdc52921c1152148666fd1545eecb11dfd367",
+    "size": 12958,
+    "mtimeMs": 1779235677895,
+    "hash": "34cf79dbc6bd76f3a0e4c343786838788dd6d9c2ead9a68e1bd85de8d22e3002",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 264,
+    "lineCount": 290,
     "largeFileReview": false
   },
   {
@@ -4631,22 +5381,32 @@
   },
   {
     "path": "src/runtime/tradingBot.js",
-    "size": 1288480,
-    "mtimeMs": 1778304144944,
-    "hash": "2e55a8a0a0dbfd4d8fcfcd661222d5f6dce74aa2b77f9f68c8c40b0230e94e0c",
+    "size": 1299905,
+    "mtimeMs": 1779326560376,
+    "hash": "5ec6c28fa8bc90ec034c4ca0895389d6fcee99131dee0d104668c963da9ae4dd",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 26093,
+    "lineCount": 26315,
     "largeFileReview": true
   },
   {
     "path": "src/runtime/tradingBotDecomposition.js",
-    "size": 2438,
-    "mtimeMs": 1777495885123,
-    "hash": "710f16efbbccf461f2a6b1a0b855565d87509641068c7580ee9f632399685ca2",
+    "size": 3023,
+    "mtimeMs": 1778970416549,
+    "hash": "f06f8141f660e9c9a7f9d5f6aa8623cd9e19048b9ba8a97303048ebf9672b5f0",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 64,
+    "lineCount": 76,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/runtime/tradingBotSliceMap.js",
+    "size": 2445,
+    "mtimeMs": 1779326472252,
+    "hash": "1ab1d83483d5928323640e3e9494be020d4b7207f1779a1ad65add4dddf40689",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 65,
     "largeFileReview": false
   },
   {
@@ -4661,12 +5421,12 @@
   },
   {
     "path": "src/runtime/tradingPathHealth.js",
-    "size": 15828,
-    "mtimeMs": 1778010083811,
-    "hash": "ef513a24b17526f4a7b6845463a3fa56a7b9b217d32a20f1a6e5890b7b6dfae3",
+    "size": 22784,
+    "mtimeMs": 1779048080303,
+    "hash": "feee8a692774747877a096a89f724dbd73348882f2cab05dc3dc22ea00957f7e",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 362,
+    "lineCount": 502,
     "largeFileReview": false
   },
   {
@@ -4751,12 +5511,12 @@
   },
   {
     "path": "src/setup/setupWizard.js",
-    "size": 2822,
-    "mtimeMs": 1778243574202,
-    "hash": "9fa59a6eb64f41cdbab911935b492b24c06e0a9e553337ca0843d03d2e3e161b",
+    "size": 2964,
+    "mtimeMs": 1778953272207,
+    "hash": "f6b14e29590f5a1c96c212f29eea1cb26ead50cc5df4630f8c9a8507b625297d",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 78,
+    "lineCount": 81,
     "largeFileReview": false
   },
   {
@@ -4777,6 +5537,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 66,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/dataGovernanceCatalog.js",
+    "size": 2175,
+    "mtimeMs": 1779221782093,
+    "hash": "0d0d6e69bb2f30fa1ff5a4dee27a2f7ff5091bb0888c5755df74212fab6cd9af",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 60,
     "largeFileReview": false
   },
   {
@@ -4811,22 +5581,22 @@
   },
   {
     "path": "src/storage/readModelAnalyticsQueries.js",
-    "size": 8288,
-    "mtimeMs": 1778059749905,
-    "hash": "946dc2998f477db295b9bd25280f432592a8cf757a4026f0f1928fced931a9f6",
+    "size": 17889,
+    "mtimeMs": 1778970100295,
+    "hash": "67a5c6dba57c2a4ae87143cbf8bb0d553e840da0eef7ec0472e5d58792130b9e",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 233,
+    "lineCount": 423,
     "largeFileReview": false
   },
   {
     "path": "src/storage/readModelStore.js",
-    "size": 41904,
-    "mtimeMs": 1778270006598,
-    "hash": "9efae6391d503334d68cc543da68f8e88f8ba5f114babd0d896482920643f3b2",
+    "size": 56575,
+    "mtimeMs": 1779025553108,
+    "hash": "904e822748e09023807751b64e67415ed4fefce2b9dc253de2eab96319aec201",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 1102,
+    "lineCount": 1408,
     "largeFileReview": true
   },
   {
@@ -4861,12 +5631,22 @@
   },
   {
     "path": "src/storage/storageAudit.js",
-    "size": 2613,
-    "mtimeMs": 1777767218124,
-    "hash": "56ca37225c152ad2276d495d9a3794bd3a2adc5667fc8cb4be8b7191d078b9c2",
+    "size": 9985,
+    "mtimeMs": 1779024407509,
+    "hash": "0933c056fa90dbbb9bda4ae1778c2ef9fec256f5aa56a641840068745ed9119b",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 65,
+    "lineCount": 251,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/storage/storageTruthMatrix.js",
+    "size": 3684,
+    "mtimeMs": 1779048080409,
+    "hash": "95f4304bda166f62e2f29fae37d027b2adee0b7a5777b3deaad7fedee0c6c064",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 97,
     "largeFileReview": false
   },
   {
@@ -4877,6 +5657,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 34,
+    "largeFileReview": false
+  },
+  {
+    "path": "src/strategies/pluginLifecycle.js",
+    "size": 1633,
+    "mtimeMs": 1779221782643,
+    "hash": "60ec22ecbb76738d2e615c8607a2ebebf064094f63c1c44acbad8ad039537477",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 45,
     "largeFileReview": false
   },
   {
@@ -5000,6 +5790,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/strategy/multiTimeframeConfluence.js",
+    "size": 2621,
+    "mtimeMs": 1779326499390,
+    "hash": "227c72fe1c8471362e819d4d720a0a604c12f08a3e3dbc92069bae507b3f8f5b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 56,
+    "largeFileReview": false
+  },
+  {
     "path": "src/strategy/setupThesis.js",
     "size": 8042,
     "mtimeMs": 1777822599356,
@@ -5100,6 +5900,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/utils/numberSafety.js",
+    "size": 973,
+    "mtimeMs": 1779326456483,
+    "hash": "2f418477ff8efc4c181ef1836c33280f7b43acc108a4659c9cff79eb13b01c9d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 28,
+    "largeFileReview": false
+  },
+  {
     "path": "src/utils/redactSecrets.js",
     "size": 1468,
     "mtimeMs": 1777755196914,
@@ -5150,6 +5960,16 @@
     "largeFileReview": false
   },
   {
+    "path": "src/utils/sensitiveFields.js",
+    "size": 889,
+    "mtimeMs": 1779106219071,
+    "hash": "917989e9bc984eb23d327df3fabdcd69988610547f4f8271634f48dac4a81964",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 33,
+    "largeFileReview": false
+  },
+  {
     "path": "src/utils/time.js",
     "size": 887,
     "mtimeMs": 1777488009399,
@@ -5191,12 +6011,12 @@
   },
   {
     "path": "Start-Everything.cmd",
-    "size": 5373,
-    "mtimeMs": 1777644953750,
-    "hash": "91e62e017dd66a775755f84c36641017f320f3c3d34b6c498336d77172c1c983",
+    "size": 5930,
+    "mtimeMs": 1779065801387,
+    "hash": "573bad4e256db8ccf7c1538e5ca3490a8ab5768a057264421fbdacb9092befe5",
     "type": "cmd",
     "emptyClass": null,
-    "lineCount": 92,
+    "lineCount": 97,
     "largeFileReview": false
   },
   {
@@ -5261,22 +6081,22 @@
   },
   {
     "path": "test/autoReconcileCoordinator.tests.js",
-    "size": 11883,
-    "mtimeMs": 1777775137208,
-    "hash": "8d1280b1b54b6daa119790185d533299fd5f80671f439959ddb91e4d71b016ba",
+    "size": 13901,
+    "mtimeMs": 1779306064797,
+    "hash": "967b99e357fdb03337c7b22ff3425b4edda9fecba88395621262b18999c20fe2",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 288,
+    "lineCount": 333,
     "largeFileReview": false
   },
   {
     "path": "test/binanceRestArchitecture.tests.js",
-    "size": 12503,
-    "mtimeMs": 1777518253943,
-    "hash": "fa6f575a6970425f64f0b95e57bd575cf2f14cf81b5c98fa103c6762f4fa3724",
+    "size": 29223,
+    "mtimeMs": 1779327212846,
+    "hash": "e4b78cfe0e2948ce24f3067bfd3db492de5551c521693a3a4786bdb2f42b2bdf",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 381,
+    "lineCount": 793,
     "largeFileReview": false
   },
   {
@@ -5301,12 +6121,12 @@
   },
   {
     "path": "test/brokerFactory.tests.js",
-    "size": 2743,
-    "mtimeMs": 1778305129288,
-    "hash": "86fe195cf91d21be629f30ea514f58c45e3cb4a23afdbb058beb7616901d9fc9",
+    "size": 4265,
+    "mtimeMs": 1779029518778,
+    "hash": "4c7f4dab8936914418b53f06ef6c67fb3287c8df68b5f096563f47c003bc121f",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 63,
+    "lineCount": 83,
     "largeFileReview": false
   },
   {
@@ -5341,12 +6161,12 @@
   },
   {
     "path": "test/candidateOutcomeTracker.tests.js",
-    "size": 5353,
-    "mtimeMs": 1778012786755,
-    "hash": "f082aea8a2eef0342a87fe238731e41dc644484492b00686c92b676db6b7c37a",
+    "size": 6651,
+    "mtimeMs": 1778964387307,
+    "hash": "2f8c9a1762a64c5cc43c3e51d5e4e385f457b0fd543be657900e72b19d61d68b",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 143,
+    "lineCount": 175,
     "largeFileReview": false
   },
   {
@@ -5381,22 +6201,22 @@
   },
   {
     "path": "test/configOperatorMaintenance.tests.js",
-    "size": 13560,
-    "mtimeMs": 1778243650947,
-    "hash": "7a9973b77fb8662a405f1c258cf98d3fcfa0053932c514423a2f2253bce24aaa",
+    "size": 15723,
+    "mtimeMs": 1779133491228,
+    "hash": "bd1d0cef4285c40967ca42a8b43bbd73aa505d3367422abdb3ccd009efe0508a",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 335,
+    "lineCount": 388,
     "largeFileReview": false
   },
   {
     "path": "test/configSchema.tests.js",
-    "size": 4593,
-    "mtimeMs": 1778304046229,
-    "hash": "fedf8cc08a77299560322463f8ed3d2dc3c239824bc7f2e0e99a7fbc5fec2248",
+    "size": 8302,
+    "mtimeMs": 1779029144247,
+    "hash": "b867617038e44094030a7edbc733b56609c5f749d93fa3d297dd5a9dea794d2f",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 111,
+    "lineCount": 182,
     "largeFileReview": false
   },
   {
@@ -5417,6 +6237,16 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 120,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/dashboardClosedTradeMetrics.tests.js",
+    "size": 1442,
+    "mtimeMs": 1779235620011,
+    "hash": "11517900be8f1c5e9cdb8ce011009a6c4bec80ef625e5b2465e033b824ceb0cc",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 42,
     "largeFileReview": false
   },
   {
@@ -5441,22 +6271,22 @@
   },
   {
     "path": "test/dashboardSnapshot.tests.js",
-    "size": 11772,
-    "mtimeMs": 1777750677592,
-    "hash": "2abfb3f83da1616b5f8f3700fbdbd51b1b3dcce35255fa07c85e175f20ae976e",
+    "size": 11877,
+    "mtimeMs": 1779284861378,
+    "hash": "4c3287283833bda2118450b67e59d30ee770661af83a352065eb7e9ca1443fe2",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 287,
+    "lineCount": 288,
     "largeFileReview": false
   },
   {
     "path": "test/dataIntegrityMaintenance.tests.js",
-    "size": 12709,
-    "mtimeMs": 1777825911796,
-    "hash": "ea4dbe5fc608b1fb5429a7c0ff940ba8ece10a32f2b611e52f5010743294fa85",
+    "size": 15317,
+    "mtimeMs": 1779048187440,
+    "hash": "55d86502db12ffb45202b3197f3efe50b96037c3550c71d843dfbdde45d1869d",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 246,
+    "lineCount": 284,
     "largeFileReview": false
   },
   {
@@ -5481,12 +6311,12 @@
   },
   {
     "path": "test/decisionPipeline.tests.js",
-    "size": 3211,
-    "mtimeMs": 1777488009408,
-    "hash": "a892bff1c57bf0bb2218f7a45660d9907a9f6c859a604ed2ce26b29c1cb6c4a2",
+    "size": 4448,
+    "mtimeMs": 1779048168569,
+    "hash": "b910f913fbd7b732b118371adac8ce2581eeb66579ee804598073a8148d1c6dc",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 100,
+    "lineCount": 123,
     "largeFileReview": false
   },
   {
@@ -5497,6 +6327,26 @@
     "type": "js",
     "emptyClass": null,
     "lineCount": 205,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/domainTestRegistry.js",
+    "size": 1303,
+    "mtimeMs": 1779010753497,
+    "hash": "b25497628d4dde742bf61fceac9093d745758dc07b31a28a6b1153d10161cccf",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 20,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/domainTestRegistry.tests.js",
+    "size": 1315,
+    "mtimeMs": 1779010635038,
+    "hash": "97e301e12a08f4584a765902fc6053e066e85c337899637c2da1d70b89904c8b",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 18,
     "largeFileReview": false
   },
   {
@@ -5561,12 +6411,12 @@
   },
   {
     "path": "test/exitIntelligenceV2.tests.js",
-    "size": 6678,
-    "mtimeMs": 1777689779392,
-    "hash": "f57bbc4d6ae038f5e07a9ea797254565a46738b225179bc649cebe043f54527d",
+    "size": 9744,
+    "mtimeMs": 1779295456427,
+    "hash": "d1fa572993d0a19e322b9815c6c737a3c9c2aaf75fc56409e7734c94f9eb4eca",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 193,
+    "lineCount": 278,
     "largeFileReview": false
   },
   {
@@ -5581,12 +6431,12 @@
   },
   {
     "path": "test/fastExecutionCore.tests.js",
-    "size": 3432,
-    "mtimeMs": 1778226253065,
-    "hash": "b2195af2088944e5dc4ae3664024746672725f58008e1b0531e7d5013154dabc",
+    "size": 4079,
+    "mtimeMs": 1778964399037,
+    "hash": "0d027d2c5cc5e7120c5ad67eb3c2dc1e6c901e26b4e559c1e2fecc77e77eaa0d",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 78,
+    "lineCount": 94,
     "largeFileReview": false
   },
   {
@@ -5611,12 +6461,12 @@
   },
   {
     "path": "test/fastExecutionTrace.tests.js",
-    "size": 2248,
-    "mtimeMs": 1778230374433,
-    "hash": "081055bbbb002b73ff21a1b4934933a25fc960ffec7d6f69a58edd4a9460ce68",
+    "size": 2471,
+    "mtimeMs": 1778964419309,
+    "hash": "afb3d908847764ecc75fb4c450f0a4855f7350c57e28dcb8971c95874116ed3d",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 51,
+    "lineCount": 55,
     "largeFileReview": false
   },
   {
@@ -5631,12 +6481,12 @@
   },
   {
     "path": "test/fastSignalTriggerService.tests.js",
-    "size": 3302,
-    "mtimeMs": 1778230042985,
-    "hash": "5775f080780e645849fc2d057b7bef4f72dec1707185d6f4824625ff82b93798",
+    "size": 3665,
+    "mtimeMs": 1778964469591,
+    "hash": "3aaaf9bc6ac942d2def978b4210ff1269fbd670427d68e72ce32ca4727e2830d",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 83,
+    "lineCount": 89,
     "largeFileReview": false
   },
   {
@@ -5651,12 +6501,12 @@
   },
   {
     "path": "test/featureAudit.tests.js",
-    "size": 8536,
-    "mtimeMs": 1778056591795,
-    "hash": "b5d2f6b49dbf7e018fca2dce114082f89b88c96f204dad4a7f5e0610e130715f",
+    "size": 12673,
+    "mtimeMs": 1779284877148,
+    "hash": "de8778ef96298b663062000a0d0ee355d4f98373b3b1314fd5c17b9581d5c348",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 154,
+    "lineCount": 217,
     "largeFileReview": false
   },
   {
@@ -5681,12 +6531,12 @@
   },
   {
     "path": "test/featureWiringCompletionGate.tests.js",
-    "size": 4851,
-    "mtimeMs": 1778056608296,
-    "hash": "4bfdfd66fb5a0ed13e459fddd39f2569f6aeb516befecfcc4aea3056579ee4e5",
+    "size": 4926,
+    "mtimeMs": 1779048197534,
+    "hash": "68226080761963716ab8e44c7799801a2d4c61e1b8ab209dc7605b7642c7dc1f",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 133,
+    "lineCount": 134,
     "largeFileReview": false
   },
   {
@@ -5771,12 +6621,12 @@
   },
   {
     "path": "test/flatManualReviewResolution.tests.js",
-    "size": 27065,
-    "mtimeMs": 1777488009412,
-    "hash": "14814d372179e15e0dba010b15370de36edd07dc9046d563b622385077976a4d",
+    "size": 28148,
+    "mtimeMs": 1779292984638,
+    "hash": "adbce8c3c2395275d42147e94d3d484cba8e1959c13b7ff7de694a8c41f87563",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 745,
+    "lineCount": 774,
     "largeFileReview": false
   },
   {
@@ -5821,12 +6671,12 @@
   },
   {
     "path": "test/largeFoundations.tests.js",
-    "size": 54996,
-    "mtimeMs": 1777675127576,
-    "hash": "07c6d7f428a5fee5ccafd91398f58021a0c475a56f98b6c5622d36b8c9e48fa8",
+    "size": 63541,
+    "mtimeMs": 1779292932125,
+    "hash": "966e28f219065441eeb70ab31fcf8ce9d4f7c509e850c94a3abfd2aba69cad51",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 1434,
+    "lineCount": 1631,
     "largeFileReview": true
   },
   {
@@ -5950,6 +6800,16 @@
     "largeFileReview": false
   },
   {
+    "path": "test/noTradeTimeline.tests.js",
+    "size": 4817,
+    "mtimeMs": 1779028357995,
+    "hash": "a0aec33e6f0bc38797d4d4702f4d3a7c3b8c011ca3cf53033d7484b50584b31c",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 89,
+    "largeFileReview": false
+  },
+  {
     "path": "test/onlineModel.test.js",
     "size": 2155,
     "mtimeMs": 1777488009416,
@@ -5991,12 +6851,12 @@
   },
   {
     "path": "test/operatorSafetyTooling.tests.js",
-    "size": 10369,
-    "mtimeMs": 1777766237944,
-    "hash": "1f1a9b0955e411f4c0087bb509aaed89e4be85523a6511b5120c24d75cb98fcb",
+    "size": 13340,
+    "mtimeMs": 1779025687467,
+    "hash": "c794b1ea2eb7b7cc68846cdf0068144198f0a8ec411dd676c6c485ad5eacf74a",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 209,
+    "lineCount": 259,
     "largeFileReview": false
   },
   {
@@ -6041,23 +6901,23 @@
   },
   {
     "path": "test/paperEvidenceSpine.tests.js",
-    "size": 3746,
-    "mtimeMs": 1778058120660,
-    "hash": "833ca948cf6c0dc59ccaa503bc7d6e7f6621cc760e3262c37dd08e2b3fb758ab",
+    "size": 5003,
+    "mtimeMs": 1779027055898,
+    "hash": "72428390b9c950dc97f184b21c31c356c14ddc0e1fd438da50aba4df2999082f",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 106,
+    "lineCount": 136,
     "largeFileReview": false
   },
   {
     "path": "test/paperExchangeSafety.tests.js",
-    "size": 30370,
-    "mtimeMs": 1777488009416,
-    "hash": "393a8bf5e09dfe76ed39928212cfa52d7b2009347a05995101fe3bb4ee56bb70",
+    "size": 34913,
+    "mtimeMs": 1779212465853,
+    "hash": "2fda8ba1a782245c4e0d972bac9df81199d79cdbd998bb7ae598f9fe261332ea",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 775,
-    "largeFileReview": false
+    "lineCount": 909,
+    "largeFileReview": true
   },
   {
     "path": "test/paperExitPolicyLab.tests.js",
@@ -6111,12 +6971,12 @@
   },
   {
     "path": "test/paperTradeLifecycleContract.tests.js",
-    "size": 6789,
-    "mtimeMs": 1778011970487,
-    "hash": "ac6a9e57b29f2eb340c7bc7a9eb478c1e1bbea1c991298b8ac7d63b74986ccd4",
+    "size": 9846,
+    "mtimeMs": 1779292699755,
+    "hash": "5f06929835f49790d0f1cc9b4c3a73689204697aa369e0414d5a1d282d62b923",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 213,
+    "lineCount": 298,
     "largeFileReview": false
   },
   {
@@ -6171,12 +7031,12 @@
   },
   {
     "path": "test/readModelAnalyticsQueries.tests.js",
-    "size": 6335,
-    "mtimeMs": 1778059866605,
-    "hash": "1c9ddaef9b0008ee70cbd72a30a6222c181a8adc0c65dc3871fb1c8bee6de713",
+    "size": 8714,
+    "mtimeMs": 1778970349285,
+    "hash": "80e515cb89be12d10ad84794dcd86c0c50e2cdfed0d486edd0268512027a9ccc",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 139,
+    "lineCount": 195,
     "largeFileReview": false
   },
   {
@@ -6240,13 +7100,73 @@
     "largeFileReview": false
   },
   {
-    "path": "test/rootBlockerOrchestrator.tests.js",
-    "size": 2760,
-    "mtimeMs": 1777488009421,
-    "hash": "aa44d0f92c953c95a841a80480ea94f75f0d486d15ac31e9c2bdc689986246aa",
+    "path": "test/riskReasonPolicy.tests.js",
+    "size": 911,
+    "mtimeMs": 1778968090343,
+    "hash": "896bebaa2ccf63a5280db1fbe22231897f9391a3ef7858097f19ce49a6d67545",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 79,
+    "lineCount": 21,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/riskSetupQualityPolicy.tests.js",
+    "size": 2023,
+    "mtimeMs": 1778970319757,
+    "hash": "a742e222941c9c050de6a963c1def459656c840888ed21db40e80ba3aee81ec0",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 41,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/roadmap41.tests.js",
+    "size": 10068,
+    "mtimeMs": 1779327093163,
+    "hash": "84b8d087ab6eeb074b08e9d9c4466abb3ea8bff44ef450e3335dcc73a1f45fc2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 177,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/roadmapCompletion.tests.js",
+    "size": 6205,
+    "mtimeMs": 1779286417715,
+    "hash": "9c6d520f4a8452c27b32acb552c155df76d9909fd0db7e342622de9e443e7781",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 123,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/roadmapSecondWaveCompletion.tests.js",
+    "size": 11357,
+    "mtimeMs": 1779308748409,
+    "hash": "7f6243ee63627cce33599c6db2a36aad489b2acdf8e775f97683f3017cd4ab5d",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 196,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/roadmapThirdWaveCompletion.tests.js",
+    "size": 15264,
+    "mtimeMs": 1779221886116,
+    "hash": "0b9c366485731273676c8188609eb0e9381d60f1bf003a98ceea4f3d0ff0fd4e",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 218,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/rootBlockerOrchestrator.tests.js",
+    "size": 3392,
+    "mtimeMs": 1779048175849,
+    "hash": "62f58b1bb651a204334f177f022bd7a2953e007a225f27e6b097fd0e306207a7",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 95,
     "largeFileReview": false
   },
   {
@@ -6261,22 +7181,22 @@
   },
   {
     "path": "test/run.js",
-    "size": 1411016,
-    "mtimeMs": 1778305095120,
-    "hash": "137edc811d0d2de5d9a889f9350f003b7e852e62a404368f158503592a0d61ce",
+    "size": 1422149,
+    "mtimeMs": 1779327107998,
+    "hash": "7584b841c605dd4d1a49af5fb7a6e78fb98588afff989c71bbb2bf5b49e8d2ef",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 33010,
+    "lineCount": 33324,
     "largeFileReview": true
   },
   {
     "path": "test/runtimeMutation.tests.js",
-    "size": 8960,
-    "mtimeMs": 1778272312294,
-    "hash": "e48d49dcf3e200584edcdbb4735e0b2425c645feaa954de9c7e999b333ad1a0c",
+    "size": 31518,
+    "mtimeMs": 1779133148364,
+    "hash": "f3cc9894af3abfa1c3af21fd81a5e60bfc442fe54bcc30267a2eeb7cd585383c",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 177,
+    "lineCount": 666,
     "largeFileReview": false
   },
   {
@@ -6371,12 +7291,12 @@
   },
   {
     "path": "test/strategyValidationCostsPortfolioUx.tests.js",
-    "size": 7776,
-    "mtimeMs": 1778243702362,
-    "hash": "8359d38aff129fa28fa63df8f268d81561a7cfe20bc66dbba369201419ca5066",
+    "size": 8996,
+    "mtimeMs": 1778953291627,
+    "hash": "7a33bdf782d64e33f6fdc3a554ad461cdc6c3eea7f11be8e245f748381469886",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 119,
+    "lineCount": 142,
     "largeFileReview": false
   },
   {
@@ -6430,23 +7350,33 @@
     "largeFileReview": false
   },
   {
-    "path": "test/tradeQualityAnalytics.tests.js",
-    "size": 5630,
-    "mtimeMs": 1777690437352,
-    "hash": "e4bb980b49bcbf38ff16046352bbc86be4893ef273be2f920f15299ea6d4bd84",
+    "path": "test/systemModuleIntegration.tests.js",
+    "size": 2300,
+    "mtimeMs": 1779228637634,
+    "hash": "49b6671a997ddb9e4ba0aa79f73a56a2f6ead5e6eba3376754af51f4c8b6b909",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 170,
+    "lineCount": 49,
+    "largeFileReview": false
+  },
+  {
+    "path": "test/tradeQualityAnalytics.tests.js",
+    "size": 6412,
+    "mtimeMs": 1779235619917,
+    "hash": "955e96b835fda9767f82ecff95fecf2e28ab08f531a839a165c3a90b5f7d7be2",
+    "type": "js",
+    "emptyClass": null,
+    "lineCount": 194,
     "largeFileReview": false
   },
   {
     "path": "test/tradingPathHealth.tests.js",
-    "size": 16363,
-    "mtimeMs": 1777807597130,
-    "hash": "785ef7b498279bb894cf308b0c8fc29e3d4bea845474ac2ee0eab1b2d7e97521",
+    "size": 22717,
+    "mtimeMs": 1779048228724,
+    "hash": "fb016a7e9118eb44f69fe29c8799333792e60935959b3468fd72b75d0f667ef2",
     "type": "js",
     "emptyClass": null,
-    "lineCount": 391,
+    "lineCount": 532,
     "largeFileReview": false
   },
   {

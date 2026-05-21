@@ -1,7 +1,4 @@
-function toNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { safeNumber as toNumber } from "../utils/numberSafety.js";
 
 function normalizeCase(testCase = {}, index = 0) {
   return {

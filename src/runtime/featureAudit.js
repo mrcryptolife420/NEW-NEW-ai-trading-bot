@@ -54,6 +54,15 @@ const BLOCKING_FEATURE_CLASSIFICATIONS = new Set([
   "missing_dashboard"
 ]);
 
+const PLACEHOLDER_ACTIONS = {
+  enableCvdConfirmation: "deprecate",
+  enableLiquidationMagnetContext: "map-to-provider",
+  enablePriceActionStructure: "map-to-provider",
+  enableStrategyRouter: "keep",
+  enableTrailingProtection: "map-to-provider",
+  canaryTradingEnabled: "keep"
+};
+
 const TARGET_FEATURES = [
   {
     id: "indicator_feature_registry",
@@ -451,6 +460,7 @@ function classifyFlag({ key, refs, envPresent, mappedFeature = null }) {
     auditStatus: documentedConfigOnly?.status || null,
     note: documentedConfigOnly?.note || null,
     nextSafeAction: documentedConfigOnly?.nextSafeAction || null,
+    placeholderAction: PLACEHOLDER_ACTIONS[key] || null,
     referencedIn: refs
   };
 }
@@ -555,6 +565,44 @@ function buildLiveRiskReviewDossier(feature = {}) {
   };
 }
 
+function priorityRank(priority = "") {
+  const value = `${priority || ""}`.toLowerCase();
+  if (value === "complete") return 99;
+  const match = value.match(/^p(\d+)/);
+  return match ? Number(match[1]) : 50;
+}
+
+function sortFeatures(features = []) {
+  return [...features].sort((left, right) =>
+    priorityRank(left.priority) - priorityRank(right.priority) ||
+    `${left.id}`.localeCompare(`${right.id}`)
+  );
+}
+
+export function buildFeatureAuditMarkdown(report = {}) {
+  const features = sortFeatures(report.features || []);
+  const lines = [
+    "# Feature Audit",
+    "",
+    `schemaVersion: ${report.schemaVersion || 1}`,
+    `status: ${report.status || "unknown"}`,
+    "",
+    "| Feature | Priority | Status | Activation | liveBehaviorPolicy | Missing dashboard fields | Tests required |",
+    "| --- | --- | --- | --- | --- | --- | --- |"
+  ];
+  for (const feature of features) {
+    lines.push(`| ${feature.id} | ${feature.priority || ""} | ${feature.status || ""} | ${feature.activationStage || ""} | ${(feature.liveBehaviorPolicy || "").replace(/\|/g, "\\|")} | ${(feature.missingDashboardFields || []).join(", ") || "-"} | ${(feature.testsToAdd?.length ? feature.testsToAdd : feature.testRefs || []).join(", ") || "-"} |`);
+  }
+  const placeholders = (report.flags || []).filter((flag) => flag.placeholderAction);
+  if (placeholders.length) {
+    lines.push("", "## Config placeholder actions", "", "| Flag | Action | Next safe action |", "| --- | --- | --- |");
+    for (const flag of placeholders.sort((a, b) => a.key.localeCompare(b.key))) {
+      lines.push(`| ${flag.key} | ${flag.placeholderAction} | ${flag.nextSafeAction || "review"} |`);
+    }
+  }
+  return `${lines.join("\n")}\n`;
+}
+
 export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd() } = {}) {
   const entries = await buildSourceIndex(projectRoot);
   const envKeys = await readEnvExampleKeys(projectRoot);
@@ -656,14 +704,17 @@ export async function buildFeatureAudit({ config = {}, projectRoot = process.cwd
   }
   const incompleteFeatures = features.filter((feature) => hasBlockingFeatureClassifications(feature.classifications));
   const liveRiskReviewFeatures = features.filter((feature) => feature.classifications.includes("live_risk_review_needed"));
+  const sortedFeatures = sortFeatures(features);
+  const sortedFlags = [...flags].sort((left, right) => `${left.key}`.localeCompare(`${right.key}`));
   return {
+    schemaVersion: 2,
     status: incompleteFeatures.length ? "review_required" : "complete",
     generatedAt: new Date().toISOString(),
     featureFlagCount: flags.length,
     auditedFeatureCount: features.length,
     classificationCounts: counts,
-    flags,
-    features,
+    flags: sortedFlags,
+    features: sortedFeatures,
     liveRiskReviewCount: liveRiskReviewFeatures.length,
     liveRiskReviewFeatures: liveRiskReviewFeatures.map((feature) => ({
       id: feature.id,

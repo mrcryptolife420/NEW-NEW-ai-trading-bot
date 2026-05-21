@@ -59,7 +59,8 @@ export async function refreshDashboardPrerequisites(bot, {
   tracker = null,
   enabled = true
 } = {}) {
-  if (!enabled) {
+  const runState = bot?.manager?.runState || bot?.runtime?.manager?.runState || bot?.runtime?.runState || null;
+  if (!enabled || runState === "stopped") {
     return;
   }
   const time = async (sectionId, work) => (tracker ? tracker.time(sectionId, work) : work());
@@ -70,19 +71,42 @@ export async function refreshDashboardPrerequisites(bot, {
       await bot.maybeRunExchangeTruthLoop({ auditOnly: true });
     }
   });
-  await time("market_history", async () => {
-    await bot.safeRefreshMarketHistorySnapshot({ referenceNow, context });
-  });
-  await time("scanner_snapshot", async () => {
-    if (!banActive) {
+  if (!banActive) {
+    await time("market_history", async () => {
+      await bot.safeRefreshMarketHistorySnapshot({ referenceNow, context });
+    });
+  }
+  if (!banActive) {
+    await time("scanner_snapshot", async () => {
       await bot.safeRefreshScannerSnapshot({ referenceNow, context, persist: false });
-    }
-  });
+    });
+  }
   if (!banActive && bot.shouldRefreshPortfolioSnapshot(referenceNow)) {
     await time("portfolio_snapshot", async () => {
       await bot.updatePortfolioSnapshot();
     });
   }
+}
+
+export function buildRestBudgetSnapshot({ requestWeight = {}, readModel = null, referenceNow = new Date().toISOString() } = {}) {
+  const source = requestWeight || {};
+  const topMap = source.topRestCallers || readModel?.topRestCallers || {};
+  const topRestCallers = Array.isArray(topMap)
+    ? topMap
+    : Object.entries(topMap).map(([caller, item]) => ({ caller, weight: item.weight || item.totalWeight || 0, count: item.count || 0 }));
+  const banActive = Boolean(source.banActive || source.bannedUntil || source.status === "banned");
+  const nextAllowedAt = source.nextAllowedAt || source.bannedUntil || source.backoffUntil || null;
+  const backoffActive = Boolean(!banActive && nextAllowedAt);
+  const schedulerAction = source.schedulerAction || (banActive ? "paused_by_ban" : backoffActive ? "delayed" : "ready");
+  return {
+    banActive,
+    backoffActive,
+    nextAllowedAt,
+    schedulerAction,
+    topRestCallers: topRestCallers.sort((a, b) => (b.weight || 0) - (a.weight || 0)).slice(0, 8),
+    timestamp: source.updatedAt || source.timestamp || referenceNow,
+    freshness: source.updatedAt || source.timestamp ? "cached" : "unknown"
+  };
 }
 
 export function buildDashboardSnapshotContract(buildContract, schemaVersion = 3) {

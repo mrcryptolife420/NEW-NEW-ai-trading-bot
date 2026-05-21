@@ -1,3 +1,6 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+
 function buildRuntimeArchitectureMap({ modules = [], routes = [], commands = [], tests = [] } = {}) {
   const domains = {};
   for (const module of modules) {
@@ -42,4 +45,52 @@ function buildRoadmapTraceability({ roadmaps = [], tests = [] } = {}) {
   }));
 }
 
-export { buildRuntimeArchitectureMap, buildArchitectureMarkdown, buildRoadmapTraceability };
+async function listRoadmapFiles(projectRoot) {
+  const dirs = [path.join(projectRoot, "docs"), path.join(projectRoot, "docs", "voltooid")];
+  const files = [];
+  for (const dir of dirs) {
+    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (entry.isFile() && /^roadmap-.*\.md$/i.test(entry.name)) {
+        files.push(path.join(dir, entry.name));
+      }
+    }
+  }
+  return files.sort((a, b) => a.localeCompare(b));
+}
+
+function extractMentions(markdown = "") {
+  const mentionedFiles = [...new Set([...markdown.matchAll(/`((?:src|test|scripts|docs)\/[^`]+)`/g)].map((match) => match[1]))].sort();
+  const mentionedTests = mentionedFiles.filter((file) => file.startsWith("test/") || file.includes(".tests."));
+  return { mentionedFiles, mentionedTests };
+}
+
+async function testFileExists(projectRoot, testPath) {
+  if (/[{}*?[\]]/.test(testPath)) return true;
+  return fs.stat(path.join(projectRoot, testPath)).then((stat) => stat.isFile()).catch(() => false);
+}
+
+async function buildRoadmapTraceabilityFromFiles({ projectRoot = process.cwd() } = {}) {
+  const files = await listRoadmapFiles(projectRoot);
+  const roadmaps = [];
+  for (const file of files) {
+    const content = await fs.readFile(file, "utf8").catch(() => "");
+    const rel = path.relative(projectRoot, file).replace(/\\/g, "/");
+    const { mentionedFiles, mentionedTests } = extractMentions(content);
+    const missingTests = [];
+    for (const testPath of mentionedTests) {
+      if (!(await testFileExists(projectRoot, testPath))) missingTests.push(testPath);
+    }
+    if (!mentionedTests.length) missingTests.push("no_tests_mentioned");
+    roadmaps.push({
+      file: rel,
+      status: rel.includes("docs/voltooid/") ? "completed" : "open",
+      mentionedFiles,
+      mentionedTests,
+      missingTests
+    });
+  }
+  return { schemaVersion: 1, status: "ok", roadmapCount: roadmaps.length, roadmaps };
+}
+
+export { buildRuntimeArchitectureMap, buildArchitectureMarkdown, buildRoadmapTraceability, buildRoadmapTraceabilityFromFiles };

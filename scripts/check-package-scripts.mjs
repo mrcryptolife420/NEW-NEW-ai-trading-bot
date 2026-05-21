@@ -7,16 +7,21 @@ const desktopPackageJson = JSON.parse(await fs.readFile(path.join(root, "desktop
 const runCliSource = await fs.readFile(path.join(root, "src", "cli", "runCli.js"), "utf8");
 const registrySource = await fs.readFile(path.join(root, "src", "cli", "commandRegistry.js"), "utf8").catch(() => "");
 const commandPattern = /command\s*(?:={2,3})\s*"([^"]+)"|BOT_COMMANDS\s*=\s*new Set\(\[([^\]]*)\]\)/g;
-const knownCommands = new Set(["help", "--help", "-h", "commands", "version", "config:check"]);
+const dispatchedCommands = new Set(["help", "--help", "-h", "commands", "version", "config:check"]);
+const registryCommands = new Set();
+const internalOnlyCommands = new Set();
 let match;
 
 while ((match = commandPattern.exec(runCliSource))) {
-  if (match[1]) knownCommands.add(match[1]);
+  if (match[1]) dispatchedCommands.add(match[1]);
   if (match[2]) {
-    for (const item of match[2].matchAll(/"([^"]+)"/g)) knownCommands.add(item[1]);
+    for (const item of match[2].matchAll(/"([^"]+)"/g)) dispatchedCommands.add(item[1]);
   }
 }
-for (const item of registrySource.matchAll(/command:\s*"([^"]+)"/g)) knownCommands.add(item[1]);
+for (const item of registrySource.matchAll(/command:\s*"([^"]+)"/g)) registryCommands.add(item[1]);
+for (const item of registrySource.matchAll(/\{[^\n{}]*command:\s*"([^"]+)"[^\n{}]*internalOnly:\s*true[^\n{}]*\}/g)) {
+  internalOnlyCommands.add(item[1]);
+}
 
 const failures = [];
 for (const [name, script] of Object.entries(packageJson.scripts || {})) {
@@ -33,8 +38,13 @@ for (const [name, script] of Object.entries(packageJson.scripts || {})) {
   }
   for (const ref of script.matchAll(/node\s+src\/cli\.js\s+([^\s&|]+)/g)) {
     const command = ref[1].replace(/^['"]|['"]$/g, "");
-    if (!knownCommands.has(command)) failures.push(`${name}: references unknown CLI command ${command}`);
+    if (!dispatchedCommands.has(command)) failures.push(`${name}: references unknown CLI command ${command}`);
+    if (!registryCommands.has(command)) failures.push(`${name}: references CLI command ${command} without commandRegistry metadata`);
   }
+}
+
+for (const command of registryCommands) {
+  if (!dispatchedCommands.has(command) && !internalOnlyCommands.has(command)) failures.push(`commandRegistry: declares undispatched CLI command ${command}`);
 }
 
 if (failures.length) {
@@ -42,4 +52,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Package script check passed (${Object.keys(packageJson.scripts || {}).length} scripts, ${knownCommands.size} known commands).`);
+console.log(`Package script check passed (${Object.keys(packageJson.scripts || {}).length} scripts, ${dispatchedCommands.size} dispatched commands, ${registryCommands.size} registry commands, ${internalOnlyCommands.size} intentional internal-only).`);

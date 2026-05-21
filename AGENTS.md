@@ -10,7 +10,7 @@ Dit is een TypeScript/JavaScript crypto trading bot met:
 - hoofd-CLI orchestration via `src/cli/runCli.js`
 - runtime orchestration via `src/runtime/botManager.js`
 - `src/runtime/tradingBot.js` als bridge/re-export naar de core trading bot
-- core trading lifecycle rond `src/core/tradingBot.js`
+- core trading lifecycle rond `src/runtime/tradingBot.js` (er is bewust geen `src/core/tradingBot.js`; `src/runtime/tradingBot.js` is de core/bridge)
 - dashboard server/API rond `src/dashboard/**`
 - paper/demo/live veiligheid rond config/runtime guards en paper services
 - Binance/exchange code rond `src/exchange/**` en `src/shared/**`

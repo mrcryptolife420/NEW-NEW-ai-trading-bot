@@ -1,7 +1,7 @@
 ﻿import { runBacktest } from "../runtime/backtestRunner.js";
 import { runHistoryCommand } from "../runtime/marketHistory.js";
 import { parseBacktestWalkForwardArgs, runBacktestWalkForward } from "../runtime/walkForwardBacktest.js";
-import { buildFeatureAudit } from "../runtime/featureAudit.js";
+import { buildFeatureAudit, buildFeatureAuditMarkdown } from "../runtime/featureAudit.js";
 import { buildFeatureWiringCompletionGate } from "../runtime/featureWiringCompletionGate.js";
 import { parseMarketReplayArgs, runMarketReplay } from "../runtime/marketReplayEngine.js";
 import { runReadModelCommand, runReadModelTraceCommand } from "../storage/readModelStore.js";
@@ -93,6 +93,7 @@ import { buildSafeDegradationStatus } from "../ops/safeDegradation.js";
 import { buildDataLakeReport } from "../storage/dataLake.js";
 import { runScenarioOffline, compareScenarios } from "../research/scenarioLab.js";
 import { buildAutoDocs, writeAutoDocs } from "../docs/autoDocsGenerator.js";
+import { buildRoadmapTraceabilityFromFiles } from "../docs/runtimeArchitectureMap.js";
 import { buildMetricsStatus } from "../ops/metricsExporter.js";
 import { buildMissionControlSummary } from "../ops/missionControl.js";
 import { buildTradingSystemScorecard } from "../reporting/tradingSystemScorecard.js";
@@ -103,7 +104,15 @@ function shouldUseReadOnlyInit(command) {
   return ["status", "doctor", "report", "learning", "replay"].includes(command);
 }
 
+function assertNoAmbiguousGlobalFlags(command, args = []) {
+  if (!BOT_COMMANDS.has(command)) return;
+  const ambiguous = args.find((arg) => AMBIGUOUS_GLOBAL_FLAGS.has(`${arg}`));
+  if (!ambiguous) return;
+  throw new Error(`Ambiguous CLI flag ${ambiguous} for command '${command}'. Use explicit package scripts such as npm run paper, npm run paper:once, npm run demo, or the dedicated CLI command instead.`);
+}
+
 const BOT_COMMANDS = new Set(["run", "once", "status", "doctor", "report", "learning", "research", "scan", "replay"]);
+const AMBIGUOUS_GLOBAL_FLAGS = new Set(["--once", "--paper", "--live", "--dry-run"]);
 const DEFAULT_BOT_FACTORY = ({ config: cfg, logger: log }) => new TradingBot({ config: cfg, logger: log });
 const DEFAULT_MANAGER_FACTORY = ({ projectRoot, logger: log }) => new BotManager({ projectRoot, logger: log });
 const OPS_DRY_RUN_COMMANDS = new Set([
@@ -384,6 +393,8 @@ export default async function runCli({
   signalSource = process,
   processState = process
 }) {
+  assertNoAmbiguousGlobalFlags(command, args);
+
   if (command === "help" || command === "--help" || command === "-h") {
     const commands = listCommandMetadata();
     console.log([
@@ -541,7 +552,30 @@ export default async function runCli({
 
   if (command === "feature:audit") {
     const result = await buildFeatureAudit({ config, projectRoot: config.projectRoot });
-    console.log(JSON.stringify(result, null, 2));
+    const format = parseNamedArg(args, "format", "json");
+    const writeTarget = parseNamedArg(args, "write", null);
+    if (format === "markdown") {
+      const markdown = buildFeatureAuditMarkdown(result);
+      if (writeTarget) {
+        const fs = await import("node:fs/promises");
+        const path = await import("node:path");
+        const target = path.resolve(config.projectRoot || process.cwd(), writeTarget);
+        await fs.mkdir(path.dirname(target), { recursive: true });
+        await fs.writeFile(target, markdown, "utf8");
+        console.log(JSON.stringify({ status: "ok", format, written: writeTarget, schemaVersion: result.schemaVersion }, null, 2));
+      } else {
+        console.log(markdown);
+      }
+    } else {
+      console.log(JSON.stringify(result, null, 2));
+    }
+    markCommandSuccess(processState);
+    return;
+  }
+
+  if (command === "roadmap:trace") {
+    const result = await buildRoadmapTraceabilityFromFiles({ projectRoot: config.projectRoot });
+    console.log(JSON.stringify({ readOnly: true, ...result }, null, 2));
     markCommandSuccess(processState);
     return;
   }

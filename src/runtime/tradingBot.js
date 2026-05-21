@@ -1,4 +1,5 @@
 import path from "node:path";
+export { buildTradingBotSliceMap } from "./tradingBotSliceMap.js";
 import { assertValidConfig } from "../config/validate.js";
 import { AdaptiveTradingModel } from "../ai/adaptiveModel.js";
 import { MultiAgentCommittee } from "../ai/multiAgentCommittee.js";

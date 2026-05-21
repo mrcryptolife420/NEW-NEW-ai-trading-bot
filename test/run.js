@@ -29,6 +29,7 @@ import { loadConfig } from "../src/config/index.js";
 import { ConfigValidationError } from "../src/config/errors.js";
 import { updateEnvFile } from "../src/config/envFile.js";
 import runCli from "../src/cli/runCli.js";
+import { findCommandMetadata } from "../src/cli/commandRegistry.js";
 import { validateConfig } from "../src/config/validate.js";
 import { resolveExchangeCapabilities } from "../src/config/exchangeCapabilities.js";
 import { HealthMonitor } from "../src/runtime/healthMonitor.js";
@@ -249,6 +250,7 @@ import { registerRoadmapSecondWaveCompletionTests } from "./roadmapSecondWaveCom
 import { registerRoadmapThirdWaveCompletionTests } from "./roadmapThirdWaveCompletion.tests.js";
 import { registerSystemModuleIntegrationTests } from "./systemModuleIntegration.tests.js";
 import { registerDashboardClosedTradeMetricsTests } from "./dashboardClosedTradeMetrics.tests.js";
+import { registerRoadmap41Tests } from "./roadmap41.tests.js";
 import http from "node:http";
 
 const testStartedAt = Date.now();
@@ -13508,6 +13510,15 @@ await runCheck("run cli uses managed loop for run command and stops on SIGINT", 
   assert.equal(signalSource.listenerCount("SIGTERM"), 0);
 });
 
+await runCheck("dashboard command metadata marks long-running live-sensitive mutation surface", async () => {
+  const metadata = findCommandMetadata("dashboard");
+  assert.equal(metadata.readOnly, false);
+  assert.equal(metadata.longRunning, true);
+  assert.equal(metadata.mutating, true);
+  assert.equal(metadata.liveSensitive, true);
+  assert.ok(metadata.description.includes("live-sensitive"));
+});
+
 await runCheck("run cli keeps dashboard command alive until server closes", async () => {
   let released = false;
   let started = false;
@@ -14044,6 +14055,24 @@ await runCheck("trading bot soft-seeds scanner priorities without replacing the 
   assert.deepEqual(prioritized, ["ETHUSDT", "XRPUSDT", "ADAUSDT", "BTCUSDT", "DOGEUSDT"]);
 });
 
+await runCheck("run cli rejects ambiguous global mode flags before manager init", async () => {
+  let managerFactoryCalled = false;
+  await assert.rejects(
+    runCli({
+      command: "run",
+      args: ["--once"],
+      config: makeConfig(),
+      logger: { info() {}, error() {}, warn() {} },
+      managerFactory: () => {
+        managerFactoryCalled = true;
+        throw new Error("manager factory must not be called for ambiguous flags");
+      }
+    }),
+    /Ambiguous CLI flag --once/i
+  );
+  assert.equal(managerFactoryCalled, false);
+});
+
 await runCheck("run cli rejects unknown commands before bot init", async () => {
   let initCalled = false;
   await assert.rejects(
@@ -14075,6 +14104,64 @@ await runCheck("shared status tone keeps runtime and dashboard semantics aligned
   assert.equal(resolveStatusTone("paper"), "positive");
   assert.equal(resolveStatusTone("blocked"), "negative");
   assert.equal(resolveStatusTone("unknown_state"), "neutral");
+});
+
+await runCheck("bot manager stretches cycle delay while Binance REST ban is active", async () => {
+  const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {}, info() {} } });
+  manager.config = makeConfig({ tradingIntervalSeconds: 2, managerRateLimitPauseCapMs: 60_000 });
+  manager.bot = {
+    client: {
+      getRateLimitState() {
+        return { banActive: true, nextAllowedAt: Date.now() + 30 * 60_000 };
+      }
+    }
+  };
+  const delayMs = manager.computeCycleDelayMs();
+  assert.ok(delayMs >= 55_000, `expected ban-aware delay, got ${delayMs}`);
+  assert.ok(delayMs <= 60_000, `expected delay cap, got ${delayMs}`);
+});
+
+await runCheck("bot manager blocks mode switches with open positions or unresolved execution intents", async () => {
+  const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {}, info() {} } });
+  manager.config = makeConfig({ botMode: "live" });
+  manager.bot = {
+    runtime: {
+      openPositions: [{ symbol: "BTCUSDT", brokerMode: "live", executionVenue: "binance_spot" }],
+      orderLifecycle: {
+        executionIntentLedger: {
+          unresolvedIntentIds: ["entry-1"],
+          intents: { "entry-1": { id: "entry-1", symbol: "ETHUSDT", kind: "entry" } }
+        }
+      }
+    }
+  };
+  manager.reinitializeBot = async () => {
+    throw new Error("reinitialize must not be called before mode-switch safety guard");
+  };
+  manager.stopUnlocked = async () => {
+    throw new Error("stop must not be called before mode-switch safety guard");
+  };
+
+  await assert.rejects(
+    () => manager.setMode("paper"),
+    /Mode switch blocked.*open positions.*unresolved execution intents/i
+  );
+});
+
+await runCheck("bot manager returns stopped lightweight snapshot without reinitializing closed bot", async () => {
+  const manager = new BotManager({ projectRoot: process.cwd(), logger: { warn() {}, error() {}, info() {} } });
+  manager.config = makeConfig();
+  manager.runState = "stopped";
+  manager.forceLifecycle("stopped", { reason: "test_closed" });
+  manager.bot = null;
+  manager.botNeedsReinitialize = true;
+  manager.reinitializeBot = async () => {
+    throw new Error("stopped allowClosed snapshot must not reinitialize the bot");
+  };
+  const snapshot = await manager.getSnapshot({ allowClosedBot: true, force: true });
+  assert.equal(snapshot.contract.kind, "manager_lightweight_snapshot");
+  assert.equal(snapshot.manager.runState, "stopped");
+  assert.equal(snapshot.dashboard, null);
 });
 
 await runCheck("bot manager API envelopes expose contract version and fixed payload shape", async () => {
@@ -33192,6 +33279,13 @@ await registerDashboardClosedTradeMetricsTests({
   assert,
   TradingBot,
   makeConfig
+});
+
+await registerRoadmap41Tests({
+  runCheck,
+  assert,
+  fs,
+  os
 });
 
 await registerDomainTestRegistryTests({

@@ -1,7 +1,9 @@
+import { safeNumber } from "../utils/numberSafety.js";
+
 function buildRuntimePerformanceSnapshot({ memory = {}, loops = [], caches = {} } = {}) {
   return {
-    heapUsedMb: Number(memory.heapUsedMb || memory.heapUsed / 1024 / 1024 || 0),
-    loopP95Ms: loops.length ? [...loops].sort((a, b) => a - b)[Math.floor((loops.length - 1) * 0.95)] : 0,
+    heapUsedMb: safeNumber(memory.heapUsedMb, safeNumber(memory.heapUsed, 0) / 1024 / 1024),
+    loopP95Ms: loops.length ? [...loops].map((value) => safeNumber(value, 0)).sort((a, b) => a - b)[Math.floor((loops.length - 1) * 0.95)] : 0,
     cacheKeys: Object.keys(caches).length,
     capturedAt: new Date(0).toISOString()
   };
